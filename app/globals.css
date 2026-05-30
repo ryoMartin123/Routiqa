@@ -1,0 +1,75 @@
+@import "tailwindcss";
+
+@theme {
+  --font-family-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+}
+
+/* ─── Light theme (default) ─────────────────────────────── */
+:root {
+  --bg-page:          #f9fafb;
+  --bg-surface:       #ffffff;
+  --bg-surface-2:     #f3f4f6;
+  --bg-input:         #f3f4f6;
+
+  --border:           #e5e7eb;
+  --border-subtle:    #f3f4f6;
+
+  --text-primary:     #111827;
+  --text-secondary:   #6b7280;
+  --text-muted:       #9ca3af;
+
+  --sidebar-bg:              #111827;
+  --sidebar-border:          #1f2937;
+  --sidebar-text:            #9ca3af;
+  --sidebar-text-active:     #ffffff;
+  --sidebar-item-active:     #1f2937;
+  --sidebar-section-label:   #4b5563;
+
+  --topbar-bg:        #ffffff;
+  --topbar-border:    #f3f4f6;
+
+  --bubble-out-bg:    #111827;
+  --bubble-out-text:  #ffffff;
+  --bubble-in-bg:     #f3f4f6;
+  --bubble-in-text:   #111827;
+
+  --shadow-card:      0 1px 3px 0 rgba(0, 0, 0, 0.05);
+}
+
+/* ─── Dark theme ─────────────────────────────────────────── */
+[data-theme="dark"] {
+  --bg-page:          #0f1117;
+  --bg-surface:       #1a1f2e;
+  --bg-surface-2:     #141824;
+  --bg-input:         #252b3b;
+
+  --border:           #2d3348;
+  --border-subtle:    #1e2436;
+
+  --text-primary:     #e2e8f0;
+  --text-secondary:   #8892a4;
+  --text-muted:       #5a6478;
+
+  --sidebar-bg:              #090d16;
+  --sidebar-border:          #141824;
+  --sidebar-text:            #5a6478;
+  --sidebar-text-active:     #e2e8f0;
+  --sidebar-item-active:     #141824;
+  --sidebar-section-label:   #374055;
+
+  --topbar-bg:        #1a1f2e;
+  --topbar-border:    #2d3348;
+
+  --bubble-out-bg:    #4f46e5;
+  --bubble-out-text:  #ffffff;
+  --bubble-in-bg:     #252b3b;
+  --bubble-in-text:   #e2e8f0;
+
+  --shadow-card:      0 1px 3px 0 rgba(0, 0, 0, 0.3);
+}
+
+body {
+  background-color: var(--bg-page);
+  color: var(--text-primary);
+  font-family: var(--font-family-sans);
+}
