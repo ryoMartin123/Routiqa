@@ -200,7 +200,7 @@ export default function PipelinesSection() {
       )}
 
       {/* Add form (when adding) */}
-      {showAdd && <FormCard />}
+      {showAdd && FormCard()}
 
       {/* Table */}
       <div className="rounded-xl overflow-hidden"
@@ -229,7 +229,7 @@ export default function PipelinesSection() {
         {sorted.map((s, i) => (
           editingId === s.id ? (
             <div key={s.id} className="p-4" style={{ borderBottom: i < sorted.length - 1 ? "1px solid var(--border-subtle)" : "none" }}>
-              <FormCard />
+              {FormCard()}
             </div>
           ) : (
             <div key={s.id}

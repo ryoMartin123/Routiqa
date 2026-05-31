@@ -263,6 +263,52 @@ export const ALL_LEADS: Lead[] = [
   },
 ];
 
+// ─── Bulk test leads (preview a busy pipeline) ────────────
+// Deterministic generation (no randomness → no hydration mismatch). Piled into
+// new_lead/contacted so per-column scrolling is visible.
+const _stagePlan: { stage: LeadStage; count: number }[] = [
+  { stage: "new_lead", count: 14 },
+  { stage: "contacted", count: 9 },
+  { stage: "appointment_scheduled", count: 5 },
+  { stage: "estimate_needed", count: 4 },
+  { stage: "estimate_sent", count: 5 },
+  { stage: "follow_up", count: 3 },
+];
+const _first = ["James","Maria","Robert","Linda","David","Patricia","John","Jennifer","Michael","Elizabeth","William","Susan","Richard","Karen","Joseph","Nancy","Thomas","Betty","Chris","Sandra","Daniel","Ashley","Paul","Donna","Mark","Carol","Kevin","Ruth","Brian","Sharon","George","Michelle","Edward","Laura","Ronald","Amy","Steven","Angela","Jason","Melissa"];
+const _last  = ["Carter","Bennett","Foster","Hughes","Powell","Sanders","Brooks","Ward","Cook","Bailey","Reed","Cooper","Bell","Murphy","Rivera","Gomez","Long","Ross","Hayes","Price","Wood","Barnes","Ellis","Coleman","Jenkins","Perry","Russell","Sullivan","Bryant","Wells","Alexander","Griffin","Patton","Diaz","Myers","Ford","Hart","Stone","Cross","Vance"];
+const _titles = ["AC Tune-Up","Furnace Replacement","Thermostat Upgrade","Ductwork Repair","Heat Pump Install","Mini-Split Install","Maintenance Plan","Emergency Repair Quote","Air Quality System","New Construction HVAC","Coil Cleaning","Zoning System"];
+const _srcs: LeadSource[] = ["website","referral","google_lsa","google_ads","phone","social","door_knock","repeat"];
+const _reps: [string, string][] = [["J. Patel","JP"],["M. Cole","MC"],["D. Nguyen","DN"],["Sara (CSR)","SC"]];
+const _cities: [string, string, string][] = [["Augusta","loc_augusta","sa_augusta"],["Martinez","loc_augusta","sa_martinez"],["Grovetown","loc_augusta","sa_grovetown"],["Evans","loc_evans","sa_evans"]];
+const _months: [string, string][] = [["Mar","03"],["Apr","04"],["May","05"]];
+
+let _ti = 0;
+for (const { stage, count } of _stagePlan) {
+  for (let k = 0; k < count; k++) {
+    const i = _ti++;
+    const first = _first[i % _first.length];
+    const last  = _last[(i * 7) % _last.length];
+    const rep   = _reps[i % _reps.length];
+    const city  = _cities[i % _cities.length];
+    const [mon, mm] = _months[i % _months.length];
+    const day = (i % 27) + 1;
+    ALL_LEADS.push({
+      id: `lt${i + 1}`,
+      companyId: "co_hvac", locationId: city[1], serviceAreaId: city[2],
+      title: _titles[i % _titles.length],
+      stage, source: _srcs[i % _srcs.length],
+      estimatedValue: i % 4 === 0 ? "TBD" : `$${(1 + (i % 9)) * 1000 + (i % 5) * 250}`,
+      assignedTo: rep[0], assignedToInitials: rep[1],
+      customerName: `${first} ${last}`, customerInitials: (first[0] + last[0]).toUpperCase(),
+      customerPhone: `(706) 555-${String(1000 + i).slice(-4)}`,
+      customerAddress: `${100 + i} Maple Ave, ${city[0]}, GA`,
+      createdAt: `2026-${mm}-${String(day).padStart(2, "0")}`,
+      displayDate: `${mon} ${day}, 2026`,
+      locationName: city[1] === "loc_evans" ? "Evans Branch" : "Augusta Branch",
+    });
+  }
+}
+
 // ─── Lead notes ───────────────────────────────────────────
 export const LEAD_NOTES: Record<string, LeadNote[]> = {
   "l1": [

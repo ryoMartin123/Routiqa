@@ -19,6 +19,8 @@ export type CalendarLayer = CalendarItemType;
 
 export type CalendarView = "dispatch" | "day" | "week";
 
+export type ItemPriority = "low" | "normal" | "high" | "urgent";
+
 export interface CalendarItem {
   id: string;
   type: CalendarItemType;
@@ -48,6 +50,10 @@ export interface CalendarItem {
   color: string;
   customerName?: string;
   address?: string;
+  city?: string;
+  jobType?: string;
+  priority?: ItemPriority;
+  contact?: string;
 }
 
 // An item awaiting a slot (no start time yet).
@@ -63,7 +69,44 @@ export interface UnscheduledItem {
   sourceId: string;
   sourceModule: CalendarItem["sourceModule"];
   color: string;
+  priority: ItemPriority;
+  city?: string;
+  address?: string;
+  durationMinutes: number;
+  preferredDate?: string;
+  jobType?: string;
 }
+
+// ─── Priority config ──────────────────────────────────────
+export const PRIORITY_CONFIG: Record<ItemPriority, { label: string; bg: string; color: string }> = {
+  low:    { label: "Low",    bg: "var(--bg-input)", color: "var(--text-muted)" },
+  normal: { label: "Normal", bg: "#e0e7ff",         color: "#3730a3" },
+  high:   { label: "High",   bg: "#ffedd5",         color: "#9a3412" },
+  urgent: { label: "Urgent", bg: "#fee2e2",         color: "#991b1b" },
+};
+
+// ─── Technician status ────────────────────────────────────
+export type TechStatusKind = "available" | "on_job" | "off_today" | "on_call" | "late_shift";
+
+export const TECH_STATUS_CONFIG: Record<TechStatusKind, { label: string; color: string }> = {
+  available:  { label: "Available", color: "#10b981" },
+  on_job:     { label: "On Job",    color: "#3b82f6" },
+  off_today:  { label: "Off Today", color: "#9ca3af" },
+  on_call:    { label: "On Call",   color: "#8b5cf6" },
+  late_shift: { label: "Late Shift",color: "#f59e0b" },
+};
+
+// ─── Service blocks (alternative to the hourly grid) ──────
+export type DispatchMode = "hourly" | "blocks";
+
+export interface ServiceBlock { key: string; label: string; startHour: number; endHour: number; }
+
+export const SERVICE_BLOCKS: ServiceBlock[] = [
+  { key: "b1", label: "8–10",  startHour: 8,  endHour: 10 },
+  { key: "b2", label: "10–12", startHour: 10, endHour: 12 },
+  { key: "b3", label: "1–3",   startHour: 13, endHour: 15 },
+  { key: "b4", label: "3–5",   startHour: 15, endHour: 17 },
+];
 
 // ─── Layer display config ─────────────────────────────────
 export const LAYER_CONFIG: Record<CalendarItemType, { label: string; color: string }> = {

@@ -9,7 +9,7 @@ import type { SelectionValue } from "@/lib/hierarchy/types";
 // ─── Pages that show the full context selector ────────────
 const OPERATIONAL_PREFIXES = [
   "/dashboard", "/inbox", "/customers", "/leads", "/jobs",
-  "/tasks", "/calendar", "/files", "/agreements", "/marketing", "/reports",
+  "/tasks", "/dispatching", "/files", "/agreements", "/marketing", "/reports",
 ];
 
 function isOperational(pathname: string) {

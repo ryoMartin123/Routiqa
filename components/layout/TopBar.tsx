@@ -1,7 +1,7 @@
-import { Search, Bell, Plus } from "lucide-react";
+import { Search, Bell, Plus, ChevronUp } from "lucide-react";
 import HierarchySelector from "@/components/layout/HierarchySelector";
 
-export default function TopBar() {
+export default function TopBar({ onHide }: { onHide?: () => void }) {
   return (
     <div
       className="flex items-center gap-4 px-6 py-3 shrink-0"
@@ -49,6 +49,13 @@ export default function TopBar() {
           <Plus className="w-4 h-4" />
           Create
         </button>
+        {onHide && (
+          <button onClick={onHide} title="Hide bar"
+            className="p-2 rounded-lg transition-colors hover:bg-[var(--bg-surface-2)]"
+            style={{ color: "var(--text-muted)" }}>
+            <ChevronUp className="w-4 h-4" />
+          </button>
+        )}
       </div>
     </div>
   );

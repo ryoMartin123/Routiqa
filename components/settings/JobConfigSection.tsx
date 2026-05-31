@@ -138,7 +138,7 @@ function JobTypesTab({ register }: { register: Saver }) {
     <div className="space-y-4">
       {dirty && <div className="text-xs px-3 py-1.5 rounded-lg inline-block" style={{ backgroundColor: "#fef3c7", color: "#92400e" }}>Unsaved changes</div>}
 
-      {showAdd && <Form />}
+      {showAdd && Form()}
 
       <div className="rounded-xl overflow-hidden"
         style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
@@ -158,7 +158,7 @@ function JobTypesTab({ register }: { register: Saver }) {
           <span>Order</span><span>Name</span><span>Key</span><span>Duration</span><span>Category</span><span className="text-center">Active</span><span />
         </div>
         {sorted.map((t, i) => editingId === t.id ? (
-          <div key={t.id} className="p-4" style={{ borderBottom: i < sorted.length - 1 ? "1px solid var(--border-subtle)" : "none" }}><Form /></div>
+          <div key={t.id} className="p-4" style={{ borderBottom: i < sorted.length - 1 ? "1px solid var(--border-subtle)" : "none" }}>{Form()}</div>
         ) : (
           <div key={t.id} className="grid px-4 py-3 items-center hover:bg-[var(--bg-surface-2)] transition-colors"
             style={{ gridTemplateColumns: "auto 2fr 1.4fr 0.8fr 1fr 0.8fr auto", gap: "0.75rem", borderBottom: i < sorted.length - 1 ? "1px solid var(--border-subtle)" : "none", opacity: t.active ? 1 : 0.5 }}>
@@ -293,7 +293,7 @@ function JobStatusesTab({ register }: { register: Saver }) {
     <div className="space-y-4">
       {dirty && <div className="text-xs px-3 py-1.5 rounded-lg inline-block" style={{ backgroundColor: "#fef3c7", color: "#92400e" }}>Unsaved changes</div>}
 
-      {showAdd && <Form />}
+      {showAdd && Form()}
 
       <div className="rounded-xl overflow-hidden"
         style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
@@ -313,7 +313,7 @@ function JobStatusesTab({ register }: { register: Saver }) {
           <span>Order</span><span>Status</span><span>Key</span><span>Category</span><span className="text-center">Active</span><span />
         </div>
         {sorted.map((s, i) => editingId === s.id ? (
-          <div key={s.id} className="p-4" style={{ borderBottom: i < sorted.length - 1 ? "1px solid var(--border-subtle)" : "none" }}><Form /></div>
+          <div key={s.id} className="p-4" style={{ borderBottom: i < sorted.length - 1 ? "1px solid var(--border-subtle)" : "none" }}>{Form()}</div>
         ) : (
           <div key={s.id} className="grid px-4 py-3 items-center hover:bg-[var(--bg-surface-2)] transition-colors"
             style={{ gridTemplateColumns: "auto 2fr 1.5fr 1fr 0.8fr auto", gap: "0.75rem", borderBottom: i < sorted.length - 1 ? "1px solid var(--border-subtle)" : "none", opacity: s.active ? 1 : 0.5 }}>

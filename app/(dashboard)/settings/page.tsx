@@ -7,7 +7,7 @@ import {
   Puzzle, Factory, Sliders, CreditCard, ArrowUpDown,
   TrendingUp, Briefcase, ClipboardList, Image as ImageIcon,
   FileText, ChevronRight, Plus, Pencil, LayoutDashboard,
-  Settings2, ArrowLeft,
+  Settings2, ArrowLeft, CalendarClock,
 } from "lucide-react";
 import { useTheme } from "@/components/providers/ThemeProvider";
 import { useHierarchy } from "@/components/providers/HierarchyProvider";
@@ -26,6 +26,7 @@ const JobConfigSection          = dynamic(() => import("@/components/settings/Jo
 const WorkOrderTemplatesSection = dynamic(() => import("@/components/settings/WorkOrderTemplatesSection"), { loading: SectionLoading, ssr: false });
 const PhotoCategoriesSection    = dynamic(() => import("@/components/settings/PhotoCategoriesSection"),    { loading: SectionLoading, ssr: false });
 const IndustryDefaultsSection   = dynamic(() => import("@/components/settings/IndustryDefaultsSection"),   { loading: SectionLoading, ssr: false });
+const CalendarDispatchSection   = dynamic(() => import("@/components/settings/CalendarDispatchSection"),   { loading: SectionLoading, ssr: false });
 import { companies, locations, serviceAreas } from "@/lib/hierarchy/data";
 import type { HierarchyMode } from "@/lib/hierarchy/types";
 
@@ -33,7 +34,7 @@ import type { HierarchyMode } from "@/lib/hierarchy/types";
 type SectionKey =
   | "appearance" | "business_structure"
   | "organization" | "companies" | "locations" | "service_areas"
-  | "pipelines" | "job_types" | "work_orders" | "photo_categories" | "agreements"
+  | "pipelines" | "job_types" | "work_orders" | "photo_categories" | "calendar_dispatch" | "agreements"
   | "users" | "security"
   | "marketing" | "communication"
   | "integrations" | "industry" | "custom_fields" | "dashboards" | "billing" | "import_export";
@@ -94,6 +95,7 @@ const CATEGORIES: Category[] = [
       { key: "job_types",        label: "Job Types & Statuses", description: "Job categories and status labels",               icon: Briefcase },
       { key: "work_orders",      label: "Work Orders",          description: "Checklist templates and field instructions",     icon: ClipboardList },
       { key: "photo_categories", label: "Photo Categories",     description: "Categories for job and property photos",         icon: ImageIcon },
+      { key: "calendar_dispatch",label: "Calendar / Dispatch",  description: "Default view, hours, service blocks, and boards", icon: CalendarClock },
       { key: "agreements",       label: "Agreements",           description: "Service plan templates and renewal billing",     icon: FileText, phase: "Phase 4" },
     ],
   },
@@ -729,6 +731,7 @@ export default function SettingsPage() {
       case "pipelines":          return <PipelinesSection />;
       case "job_types":          return <JobConfigSection />;
       case "photo_categories":   return <PhotoCategoriesSection />;
+      case "calendar_dispatch":  return <CalendarDispatchSection />;
       case "dashboards":         return <DashboardsSettingsSection />;
       case "custom_fields":      return <CustomFieldsSection />;
       case "work_orders":    return <WorkOrderTemplatesSection />;

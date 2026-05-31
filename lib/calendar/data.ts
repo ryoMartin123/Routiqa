@@ -9,7 +9,15 @@ import { getAllQuotes } from "@/lib/quotes/data";
 import { locations as HIER_LOCATIONS } from "@/lib/hierarchy/data";
 import {
   LAYER_CONFIG, type CalendarItem, type CalendarItemType, type UnscheduledItem,
+  type ItemPriority, type TechStatusKind,
 } from "./types";
+
+// City from an address string ("412 Oak St, Augusta, GA" → "Augusta").
+function cityFromAddress(addr?: string): string | undefined {
+  if (!addr) return undefined;
+  const parts = addr.split(",").map(s => s.trim());
+  return parts.length >= 2 ? parts[1] : undefined;
+}
 
 export interface CalendarScope {
   companyId?: string;
@@ -58,6 +66,9 @@ function jobToItem(job: Job): CalendarItem | null {
     status: cfg?.label ?? job.status,
     color: LAYER_CONFIG.job.color,
     customerName: job.customerName, address: job.propertyAddress,
+    city: cityFromAddress(job.propertyAddress),
+    jobType: job.type.charAt(0).toUpperCase() + job.type.slice(1),
+    priority: job.priority,
   };
 }
 
@@ -158,7 +169,7 @@ export function getCalendarItems(scope: CalendarScope): CalendarItem[] {
   return items.sort((a, b) => a.start.getTime() - b.start.getTime());
 }
 
-// ─── Unscheduled queue ────────────────────────────────────
+// ─── Unscheduled queue (triage) ───────────────────────────
 export function getUnscheduledItems(scope: CalendarScope): UnscheduledItem[] {
   const out: UnscheduledItem[] = [];
 
@@ -168,14 +179,34 @@ export function getUnscheduledItems(scope: CalendarScope): UnscheduledItem[] {
     if (!inScope({ companyId: q.companyId, locationId: q.locationId }, scope)) continue;
     out.push({
       id: `uq-quote-${q.id}`, type: "job", title: q.title,
-      reason: "Approved quote — schedule job",
+      reason: "Approved quote not scheduled",
       companyId: q.companyId, locationId: q.locationId,
       customerName: q.customerName, value: `$${q.total.toLocaleString()}`,
       sourceId: q.id, sourceModule: "quotes", color: LAYER_CONFIG.job.color,
+      priority: "high", durationMinutes: 240, jobType: "Installation",
     });
   }
 
-  // Open "schedule" tasks needing an appointment
+  // Synthetic field-work waiting on dispatch (callbacks / reschedules)
+  const synthetic: UnscheduledItem[] = [
+    {
+      id: "uq-callback-1", type: "job", title: "Callback: AC not cooling",
+      reason: "Needs tech assigned", companyId: "co_hvac", locationId: "loc_augusta",
+      customerName: "Alvarez Residence", city: "Augusta", address: "1840 Peach Orchard Rd, Augusta, GA",
+      sourceId: "7", sourceModule: "jobs", color: LAYER_CONFIG.job.color,
+      priority: "urgent", durationMinutes: 120, jobType: "Repair", preferredDate: "ASAP",
+    },
+    {
+      id: "uq-reschedule-1", type: "job", title: "Reschedule: Water heater install",
+      reason: "Waiting for customer confirmation", companyId: "co_hvac", locationId: "loc_augusta",
+      customerName: "K. Brennan", city: "Augusta", address: "27 Maple Ct, Augusta, GA",
+      sourceId: "3", sourceModule: "jobs", color: LAYER_CONFIG.job.color,
+      priority: "normal", durationMinutes: 120, jobType: "Installation",
+    },
+  ];
+  for (const s of synthetic) if (inScope(s, scope)) out.push(s);
+
+  // Open "schedule"/"call" tasks needing an appointment
   for (const t of ALL_TASKS) {
     if (t.status === "completed") continue;
     if (t.type !== "schedule" && t.type !== "call") continue;
@@ -186,10 +217,12 @@ export function getUnscheduledItems(scope: CalendarScope): UnscheduledItem[] {
       companyId: t.companyId, locationId: t.locationId,
       customerName: t.customerName,
       sourceId: t.id, sourceModule: "tasks", color: LAYER_CONFIG.task.color,
+      priority: t.status === "overdue" ? "urgent" : "normal",
+      durationMinutes: 30, preferredDate: t.dueDate,
     });
   }
 
-  // Agreement visits flagged due (nextVisit) but no concrete scheduled visit yet
+  // Agreement visits due
   for (const a of AGREEMENTS) {
     if (a.status !== "due_soon" && a.status !== "overdue") continue;
     const loc = resolveAgreementLocation(a.location);
@@ -201,10 +234,14 @@ export function getUnscheduledItems(scope: CalendarScope): UnscheduledItem[] {
       companyId: loc.companyId, locationId: loc.locationId,
       customerName: a.customer,
       sourceId: a.id, sourceModule: "agreements", color: LAYER_CONFIG.agreement_visit.color,
+      priority: a.status === "overdue" ? "urgent" : "normal",
+      durationMinutes: 90, preferredDate: a.nextVisit ?? undefined,
     });
   }
 
-  return out;
+  // Priority sort: urgent → high → normal → low
+  const rank: Record<ItemPriority, number> = { urgent: 0, high: 1, normal: 2, low: 3 };
+  return out.sort((x, y) => rank[x.priority] - rank[y.priority]);
 }
 
 // ─── Helpers ──────────────────────────────────────────────
@@ -213,7 +250,46 @@ function initials(name: string): string {
   return (parts.length >= 2 ? parts[0][0] + parts[parts.length - 1][0] : name.slice(0, 2)).toUpperCase();
 }
 
-// Distinct technicians appearing in scheduled items (for dispatch rows + reassign).
+// Distinct technicians appearing in scheduled items (for reassign dropdown).
 export function getTechnicians(items: CalendarItem[]): string[] {
   return Array.from(new Set(items.filter(i => i.assignedTo).map(i => i.assignedTo!))).sort();
+}
+
+// ─── Technician roster (dispatch rows) ────────────────────
+// Mock field-tech roster with daily status. Includes the techs referenced by
+// jobs plus a couple extra to show status variety. Replace with a users query.
+export interface TechRosterEntry { name: string; initials: string; status: TechStatusKind }
+
+export const TECH_ROSTER: TechRosterEntry[] = [
+  { name: "J. Patel",  initials: "JP", status: "on_job" },
+  { name: "M. Cole",   initials: "MC", status: "available" },
+  { name: "D. Nguyen", initials: "DN", status: "on_call" },
+  { name: "T. Brooks", initials: "TB", status: "late_shift" },
+  { name: "R. Avery",  initials: "RA", status: "off_today" },
+];
+
+export function getTechRoster(): TechRosterEntry[] {
+  return TECH_ROSTER;
+}
+
+// ─── Dispatch boards / teams ──────────────────────────────
+// Placeholder concept. In production these are configured per location in
+// Settings → Dispatch Settings (board name, type, dispatcher, techs/crews,
+// job types, location, service area, active). Mock data shows the UI concept.
+export interface DispatchBoardDef {
+  id: string;
+  name: string;
+  dispatcher?: string;
+  techNames: string[];   // empty = all technicians
+}
+
+export const DISPATCH_BOARDS: DispatchBoardDef[] = [
+  { id: "all",        name: "All Boards" ,    techNames: [] },
+  { id: "service",    name: "Service Board",    dispatcher: "Sara",   techNames: ["M. Cole", "T. Brooks"] },
+  { id: "install",    name: "Install Board",    dispatcher: "Kylie",  techNames: ["J. Patel", "D. Nguyen"] },
+  { id: "commercial", name: "Commercial Board", dispatcher: "Ernest", techNames: ["D. Nguyen", "R. Avery"] },
+];
+
+export function getDispatchBoards(): DispatchBoardDef[] {
+  return DISPATCH_BOARDS;
 }

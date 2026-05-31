@@ -152,7 +152,7 @@ function TemplatesTab({ register }: { register: Saver }) {
 
   return (
     <div className="space-y-4">
-      {showAdd && <Form />}
+      {showAdd && Form()}
       <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
         <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
           <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Work Order Templates
@@ -164,7 +164,7 @@ function TemplatesTab({ register }: { register: Saver }) {
           <span>Template</span><span>Linked Job Type</span><span>Priority</span><span>Duration</span><span className="text-center">Active</span><span />
         </div>
         {items.map((t, i) => editingId === t.id ? (
-          <div key={t.id} className="p-4" style={{ borderBottom: i < items.length - 1 ? "1px solid var(--border-subtle)" : "none" }}><Form /></div>
+          <div key={t.id} className="p-4" style={{ borderBottom: i < items.length - 1 ? "1px solid var(--border-subtle)" : "none" }}>{Form()}</div>
         ) : (
           <div key={t.id} className="grid px-4 py-3 items-center hover:bg-[var(--bg-surface-2)] transition-colors"
             style={{ gridTemplateColumns: "2fr 1.5fr 1fr 0.8fr 0.7fr auto", gap: "0.75rem", borderBottom: i < items.length - 1 ? "1px solid var(--border-subtle)" : "none", opacity: t.active ? 1 : 0.5 }}>

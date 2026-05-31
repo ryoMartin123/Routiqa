@@ -222,6 +222,49 @@ body {
   background-color: var(--text-muted);
 }
 
+/* ─── Thin themed horizontal scrollbar (kanban / dispatch boards) ─── */
+.thin-scroll-x {
+  scrollbar-width: thin;                          /* Firefox */
+  scrollbar-color: var(--border) transparent;
+  scroll-behavior: smooth;
+  scroll-snap-type: x proximity;
+}
+.thin-scroll-x::-webkit-scrollbar {
+  height: 8px;
+}
+.thin-scroll-x::-webkit-scrollbar-track {
+  background: transparent;
+  margin: 0 4px;
+}
+.thin-scroll-x::-webkit-scrollbar-thumb {
+  background-color: var(--border);
+  border-radius: 999px;
+}
+.thin-scroll-x:hover::-webkit-scrollbar-thumb {
+  background-color: var(--text-muted);
+}
+/* Columns gently snap into view while scrolling */
+.thin-scroll-x > * > .snap-col { scroll-snap-align: start; }
+
+/* Thin themed vertical scrollbar (per-column card lists) */
+.thin-scroll-y {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+.thin-scroll-y::-webkit-scrollbar {
+  width: 6px;
+}
+.thin-scroll-y::-webkit-scrollbar-track {
+  background: transparent;
+}
+.thin-scroll-y::-webkit-scrollbar-thumb {
+  background-color: var(--border);
+  border-radius: 999px;
+}
+.thin-scroll-y:hover::-webkit-scrollbar-thumb {
+  background-color: var(--text-muted);
+}
+
 /* ─── Google Places Autocomplete dropdown — themed & de-branded ─── */
 .pac-container {
   margin-top: 6px;

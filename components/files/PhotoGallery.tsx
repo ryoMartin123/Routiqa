@@ -250,31 +250,8 @@ export default function PhotoGallery({ recordLevel, scope = {}, accountName, upl
             <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search files, accounts, jobs, tags…"
               className="bg-transparent text-sm outline-none w-60" style={{ color: "var(--text-primary)" }} />
           </div>
-        </div>
 
-        <div className="flex items-center gap-2">
-          {/* View mode toggle (global only) */}
-          {isGlobal && (
-            <div className="flex items-center rounded-lg overflow-hidden" style={{ border: "1px solid var(--border)" }}>
-              {([
-                { key: "grid",          icon: LayoutGrid, title: "Grid" },
-                { key: "list",          icon: ListIcon,   title: "List" },
-                { key: "group_account", icon: Users,      title: "Group by Account" },
-                { key: "group_job",     icon: Briefcase,  title: "Group by Job / Project" },
-              ] as const).map(v => {
-                const active = view === v.key;
-                return (
-                  <button key={v.key} onClick={() => setView(v.key)} title={v.title}
-                    className="px-2.5 py-1.5 transition-colors"
-                    style={{ backgroundColor: active ? "#4f46e5" : "var(--bg-surface)", color: active ? "#fff" : "var(--text-muted)" }}>
-                    <v.icon className="w-3.5 h-3.5" />
-                  </button>
-                );
-              })}
-            </div>
-          )}
-
-          {/* Filters button + popover (global only) */}
+          {/* Filters button + popover (global only) — sits next to search */}
           {isGlobal && (
             <div className="relative" ref={filtersRef}>
               <button onClick={() => setFiltersOpen(o => !o)}
@@ -294,7 +271,7 @@ export default function PhotoGallery({ recordLevel, scope = {}, accountName, upl
               </button>
 
               {filtersOpen && (
-                <div className="absolute right-0 top-full mt-2 z-50 rounded-xl p-4 w-80"
+                <div className="absolute left-0 top-full mt-2 z-50 rounded-xl p-4 w-80"
                   style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "0 12px 32px rgba(0,0,0,0.18)" }}>
                   <div className="flex items-center justify-between mb-3">
                     <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Filters</p>
@@ -346,6 +323,29 @@ export default function PhotoGallery({ recordLevel, scope = {}, accountName, upl
                   </div>
                 </div>
               )}
+            </div>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2">
+          {/* View mode toggle (global only) */}
+          {isGlobal && (
+            <div className="flex items-center rounded-lg overflow-hidden" style={{ border: "1px solid var(--border)" }}>
+              {([
+                { key: "grid",          icon: LayoutGrid, title: "Grid" },
+                { key: "list",          icon: ListIcon,   title: "List" },
+                { key: "group_account", icon: Users,      title: "Group by Account" },
+                { key: "group_job",     icon: Briefcase,  title: "Group by Job / Project" },
+              ] as const).map(v => {
+                const active = view === v.key;
+                return (
+                  <button key={v.key} onClick={() => setView(v.key)} title={v.title}
+                    className="px-2.5 py-1.5 transition-colors"
+                    style={{ backgroundColor: active ? "#4f46e5" : "var(--bg-surface)", color: active ? "#fff" : "var(--text-muted)" }}>
+                    <v.icon className="w-3.5 h-3.5" />
+                  </button>
+                );
+              })}
             </div>
           )}
 
