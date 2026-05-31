@@ -1,28 +1,58 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import {
-  Image as ImageIcon, FileText, Film, File as FileIcon, Upload, X,
-  Search, Filter, Calendar, User as UserIcon,
+  Image as ImageIcon, FileText, Film, File as FileIcon, Upload, X, Search,
+  LayoutGrid, List as ListIcon, Users, Briefcase, Download, Pencil, Trash2,
+  Tag, SlidersHorizontal,
 } from "lucide-react";
-import { getFiles, getUploaders, addFile } from "@/lib/files/data";
-import type { PhotoFile, FileScope, FileType } from "@/lib/files/types";
+import Select from "@/components/ui/Select";
+import { useHierarchy } from "@/components/providers/HierarchyProvider";
+import {
+  getFiles, getUploaders, getFileAccounts, getFileLocations, addFile,
+  fileLinkKind, fileHasLink, LINK_BADGE,
+} from "@/lib/files/data";
+import type { PhotoFile, FileScope, FileType, FileLinkKind } from "@/lib/files/types";
 import { getPhotoCategories } from "@/lib/photo-categories/data";
+import { locations as HIER_LOCATIONS } from "@/lib/hierarchy/data";
+import { getJob } from "@/lib/jobs/data";
+import { getProject } from "@/lib/projects/data";
 
 type RecordLevel = "account" | "property" | "job" | "project" | "work_order" | "global";
+type ViewMode = "grid" | "list" | "group_account" | "group_job";
 
 interface Props {
   recordLevel: RecordLevel;
-  scope?:       FileScope;     // the record's IDs (account/property/job/etc.)
+  scope?:       FileScope;
   accountName?: string;
-  uploaderName?: string;       // current user, for mock uploads
+  uploaderName?: string;
+  // When the page renders its own Upload button in the header (global page),
+  // it hides the toolbar button and triggers uploads via uploadSignal.
+  externalUpload?: boolean;
+  uploadSignal?:   number;
 }
 
 const FILE_ICON: Record<FileType, typeof ImageIcon> = {
   image: ImageIcon, pdf: FileText, document: FileText, video: Film, other: FileIcon,
 };
 
-// ─── Scope toggle options ─────────────────────────────────
+const LOCATION_NAME = new Map(HIER_LOCATIONS.map(l => [l.id, l.name]));
+
+const LINK_CHIP_LABEL: Record<string, string> = {
+  job: "Job Photos", work_order: "Work Order Photos", project: "Project Files",
+  property: "Property Files", agreement: "Agreement Documents", quote: "Quote Attachments",
+  invoice: "Invoice Attachments", account: "Account-only Files",
+};
+
+const QUICK_TABS = [
+  { key: "all",       label: "All"             },
+  { key: "photos",    label: "Photos"          },
+  { key: "documents", label: "Documents"       },
+  { key: "required",  label: "Required Photos" },
+  { key: "recent",    label: "Recent"          },
+] as const;
+
+// ─── Scope toggle options (record-level embedded mode) ────
 function buildScopeOptions(level: RecordLevel, scope: FileScope): { key: string; label: string; scope: FileScope }[] {
   const out: { key: string; label: string; scope: FileScope }[] = [];
   if (level === "job"        && scope.jobId)        out.push({ key: "record", label: "This Job", scope: { jobId: scope.jobId } });
@@ -35,56 +65,170 @@ function buildScopeOptions(level: RecordLevel, scope: FileScope): { key: string;
   return out;
 }
 
-export default function PhotoGallery({ recordLevel, scope = {}, accountName, uploaderName = "Marcus Reyes" }: Props) {
-  const categories = useMemo(() => getPhotoCategories().filter(c => c.active), []);
-  const catByKey = useMemo(() => new Map(categories.map(c => [c.key, c])), [categories]);
-  const catLabel = (key: string) => catByKey.get(key)?.name ?? key;
-  const catColor = (key: string) => catByKey.get(key)?.color ?? "#6b7280";
+// Linked-record chips for the detail drawer (best-effort names).
+function linkedRecords(f: PhotoFile): { label: string; value: string }[] {
+  const out: { label: string; value: string }[] = [];
+  if (f.accountName)  out.push({ label: "Account", value: f.accountName });
+  if (f.propertyId)   out.push({ label: "Property", value: f.propertyId });
+  if (f.jobId)        out.push({ label: "Job", value: getJob(f.jobId)?.title ?? f.jobId });
+  if (f.projectId)    out.push({ label: "Project", value: getProject(f.projectId)?.name ?? f.projectId });
+  if (f.workOrderId)  out.push({ label: "Work Order", value: f.workOrderId });
+  if (f.agreementId)  out.push({ label: "Agreement", value: f.agreementId });
+  if (f.quoteId)      out.push({ label: "Quote", value: f.quoteId });
+  if (f.invoiceId)    out.push({ label: "Invoice", value: f.invoiceId });
+  if (f.equipmentId)  out.push({ label: "Equipment", value: f.equipmentId });
+  return out;
+}
 
-  const isGlobal = recordLevel === "global";
+export default function PhotoGallery({ recordLevel, scope = {}, accountName, uploaderName = "Marcus Reyes", externalUpload = false, uploadSignal = 0 }: Props) {
+  const categories = useMemo(() => getPhotoCategories().filter(c => c.active), []);
+  const catByKey   = useMemo(() => new Map(categories.map(c => [c.key, c])), [categories]);
+  const catLabel   = (key: string) => catByKey.get(key)?.name ?? key;
+  const catColor   = (key: string) => catByKey.get(key)?.color ?? "#6b7280";
+
+  const isGlobal     = recordLevel === "global";
   const scopeOptions = useMemo(() => buildScopeOptions(recordLevel, scope), [recordLevel, scope]);
 
-  // Active scope: record-level → toggle between record/property/account; global → {}.
   const [activeScopeKey, setActiveScopeKey] = useState(scopeOptions[0]?.key ?? "account");
   const activeScope = isGlobal ? {} : (scopeOptions.find(s => s.key === activeScopeKey)?.scope ?? {});
 
   // Filters
-  const [search, setSearch]   = useState("");
-  const [catFilter, setCat]   = useState("all");
-  const [typeFilter, setType] = useState<"all" | FileType>("all");
-  const [uploader, setUploader] = useState("all");
+  const [search, setSearch]       = useState("");
+  const [catFilter, setCat]       = useState("all");
+  const [typeFilter, setType]     = useState<"all" | FileType>("all");
+  const [uploader, setUploader]   = useState("all");
+  const [accountFilter, setAccount] = useState("all");
+  const [linkFilter, setLink]     = useState<"all" | FileLinkKind>("all");
+  const [locationFilter, setLoc]  = useState("all");
+  const [dateRange, setDateRange] = useState("all");
+  const [view, setView]           = useState<ViewMode>("grid");
+  const [quickTab, setQuickTab]   = useState<"all" | "photos" | "documents" | "required" | "recent">("all");
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const filtersRef = useRef<HTMLDivElement>(null);
 
-  const [files, setFiles] = useState<PhotoFile[]>([]);
+  const { effectiveCompanyId, effectiveLocationId } = useHierarchy();
+
+  const [files, setFiles]         = useState<PhotoFile[]>([]);
   const [showUpload, setShowUpload] = useState(false);
+  const [selected, setSelected]   = useState<PhotoFile | null>(null);
 
-  useEffect(() => { setFiles(getFiles(activeScope)); }, [activeScopeKey, activeScope.accountId, activeScope.jobId, activeScope.projectId, activeScope.propertyId, activeScope.workOrderId]);
+  // Open the upload modal when the page-level Upload button fires a new signal.
+  useEffect(() => {
+    if (uploadSignal > 0) setShowUpload(true);
+  }, [uploadSignal]);
 
-  const displayed = files
-    .filter(f => catFilter === "all" || f.categoryKey === catFilter)
+  // Close the filters popover on outside click
+  useEffect(() => {
+    if (!filtersOpen) return;
+    const onDown = (e: MouseEvent) => {
+      if (filtersRef.current && !filtersRef.current.contains(e.target as Node)) setFiltersOpen(false);
+    };
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, [filtersOpen]);
+
+  useEffect(() => { setFiles(getFiles(activeScope)); },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [activeScopeKey, activeScope.accountId, activeScope.jobId, activeScope.projectId, activeScope.propertyId, activeScope.workOrderId]);
+
+  const accounts  = useMemo(() => getFileAccounts(), []);
+  const uploaders = useMemo(() => getUploaders(), []);
+  const locs      = useMemo(() => getFileLocations(), []);
+
+  const now = new Date();
+  function withinRange(f: PhotoFile): boolean {
+    if (dateRange === "all") return true;
+    const d = new Date(f.uploadedAt);
+    const days = (now.getTime() - d.getTime()) / 86_400_000;
+    if (dateRange === "7")    return days <= 7;
+    if (dateRange === "30")   return days <= 30;
+    if (dateRange === "year") return d.getFullYear() === now.getFullYear();
+    return true;
+  }
+
+  // Quick-tab constraint (global only)
+  function matchesQuickTab(f: PhotoFile): boolean {
+    if (!isGlobal || quickTab === "all") return true;
+    if (quickTab === "photos")    return f.fileType === "image";
+    if (quickTab === "documents") return f.fileType === "pdf" || f.fileType === "document";
+    if (quickTab === "required")  return f.fileType === "image" && (!!f.jobId || !!f.workOrderId);
+    if (quickTab === "recent")    { const days = (now.getTime() - new Date(f.uploadedAt).getTime()) / 86_400_000; return days <= 30; }
+    return true;
+  }
+
+  const displayed = useMemo(() => files
+    // Respect the hierarchy context selector (global view)
+    .filter(f => !isGlobal || !effectiveCompanyId  || f.companyId  === effectiveCompanyId)
+    .filter(f => !isGlobal || !effectiveLocationId || f.locationId === effectiveLocationId)
+    .filter(matchesQuickTab)
+    .filter(f => catFilter === "all"  || f.categoryKey === catFilter)
     .filter(f => typeFilter === "all" || f.fileType === typeFilter)
-    .filter(f => uploader === "all" || f.uploadedBy === uploader)
+    .filter(f => uploader === "all"   || f.uploadedBy === uploader)
+    .filter(f => !isGlobal || accountFilter === "all"  || f.accountId === accountFilter)
+    .filter(f => !isGlobal || linkFilter === "all"     || fileHasLink(f, linkFilter))
+    .filter(f => !isGlobal || locationFilter === "all" || f.locationId === locationFilter)
+    .filter(f => !isGlobal || withinRange(f))
     .filter(f => {
       if (!search) return true;
       const q = search.toLowerCase();
-      return f.fileName.toLowerCase().includes(q) || (f.notes ?? "").toLowerCase().includes(q) || f.tags.some(t => t.toLowerCase().includes(q));
-    });
+      return f.fileName.toLowerCase().includes(q)
+        || (f.notes ?? "").toLowerCase().includes(q)
+        || (f.accountName ?? "").toLowerCase().includes(q)
+        || f.tags.some(t => t.toLowerCase().includes(q));
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [files, quickTab, catFilter, typeFilter, uploader, accountFilter, linkFilter, locationFilter, dateRange, search, isGlobal, effectiveCompanyId, effectiveLocationId]);
 
-  const uploaders = useMemo(() => getUploaders(), []);
+  // ── Active filter chips (advanced filters only) ──
+  const accountName_ = (id: string) => accounts.find(a => a.id === id)?.name ?? id;
+  const dateLabel    = (v: string) => ({ "7": "Last 7 days", "30": "Last 30 days", year: "This year" } as Record<string, string>)[v] ?? v;
+  const linkLabel    = (v: string) => LINK_CHIP_LABEL[v] ?? v;
+  const activeChips: { label: string; clear: () => void }[] = [];
+  if (isGlobal && accountFilter !== "all")  activeChips.push({ label: accountName_(accountFilter), clear: () => setAccount("all") });
+  if (catFilter !== "all")                  activeChips.push({ label: catLabel(catFilter),         clear: () => setCat("all") });
+  if (typeFilter !== "all")                 activeChips.push({ label: `Type: ${typeFilter}`,        clear: () => setType("all") });
+  if (isGlobal && linkFilter !== "all")     activeChips.push({ label: linkLabel(linkFilter),        clear: () => setLink("all") });
+  if (isGlobal && uploader !== "all")       activeChips.push({ label: uploader,                     clear: () => setUploader("all") });
+  if (isGlobal && locationFilter !== "all") activeChips.push({ label: LOCATION_NAME.get(locationFilter) ?? locationFilter, clear: () => setLoc("all") });
+  if (isGlobal && dateRange !== "all")      activeChips.push({ label: dateLabel(dateRange),         clear: () => setDateRange("all") });
+
+  function clearAllFilters() {
+    setAccount("all"); setCat("all"); setType("all"); setLink("all");
+    setUploader("all"); setLoc("all"); setDateRange("all");
+  }
 
   function handleUpload(fileName: string, fileType: FileType, categoryKey: string, notes: string) {
-    // Auto-fill the scope chain from the record we're mounted on.
     const uploadScope: FileScope = isGlobal ? { accountId: scope.accountId } : scope;
     addFile({ scope: uploadScope, fileName, fileType, categoryKey, uploadedBy: uploaderName, notes, accountName });
     setFiles(getFiles(activeScope));
     setShowUpload(false);
   }
 
+  // ── Grouping for group views ──
+  const groups = useMemo(() => {
+    if (view !== "group_account" && view !== "group_job") return null;
+    const map = new Map<string, { title: string; files: PhotoFile[] }>();
+    for (const f of displayed) {
+      let key: string, title: string;
+      if (view === "group_account") {
+        key = f.accountId; title = f.accountName ?? f.accountId;
+      } else {
+        if (f.jobId)        { key = `job:${f.jobId}`; title = getJob(f.jobId)?.title ?? `Job ${f.jobId}`; }
+        else if (f.projectId) { key = `proj:${f.projectId}`; title = getProject(f.projectId)?.name ?? `Project ${f.projectId}`; }
+        else { key = "none"; title = "Not linked to a job or project"; }
+      }
+      if (!map.has(key)) map.set(key, { title, files: [] });
+      map.get(key)!.files.push(f);
+    }
+    return Array.from(map.values()).sort((a, b) => a.title.localeCompare(b.title));
+  }, [view, displayed]);
+
   return (
     <div className="space-y-4">
-      {/* Toolbar */}
+      {/* ── Toolbar: search + view + filters + upload ── */}
       <div className="flex flex-wrap items-center gap-2 justify-between">
         <div className="flex flex-wrap items-center gap-2">
-          {/* Scope toggle (record mode) */}
+          {/* Scope toggle (embedded record mode) */}
           {!isGlobal && scopeOptions.length > 1 && (
             <div className="flex items-center rounded-lg overflow-hidden" style={{ border: "1px solid var(--border)" }}>
               {scopeOptions.map(opt => {
@@ -100,69 +244,199 @@ export default function PhotoGallery({ recordLevel, scope = {}, accountName, upl
             </div>
           )}
 
-          {/* Search */}
-          <div className="flex items-center gap-2 rounded-lg px-3 py-1.5" style={{ backgroundColor: "var(--bg-input)" }}>
-            <Search className="w-3.5 h-3.5 shrink-0" style={{ color: "var(--text-muted)" }} />
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search files…"
-              className="bg-transparent text-sm outline-none w-36" style={{ color: "var(--text-primary)" }} />
+          {/* Search — primary entry point */}
+          <div className="flex items-center gap-2 rounded-lg px-3 py-2" style={{ backgroundColor: "var(--bg-input)" }}>
+            <Search className="w-4 h-4 shrink-0" style={{ color: "var(--text-muted)" }} />
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search files, accounts, jobs, tags…"
+              className="bg-transparent text-sm outline-none w-60" style={{ color: "var(--text-primary)" }} />
           </div>
         </div>
 
-        <button onClick={() => setShowUpload(true)}
-          className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-3 py-2 rounded-lg transition-colors">
-          <Upload className="w-3.5 h-3.5" /> Upload
-        </button>
+        <div className="flex items-center gap-2">
+          {/* View mode toggle (global only) */}
+          {isGlobal && (
+            <div className="flex items-center rounded-lg overflow-hidden" style={{ border: "1px solid var(--border)" }}>
+              {([
+                { key: "grid",          icon: LayoutGrid, title: "Grid" },
+                { key: "list",          icon: ListIcon,   title: "List" },
+                { key: "group_account", icon: Users,      title: "Group by Account" },
+                { key: "group_job",     icon: Briefcase,  title: "Group by Job / Project" },
+              ] as const).map(v => {
+                const active = view === v.key;
+                return (
+                  <button key={v.key} onClick={() => setView(v.key)} title={v.title}
+                    className="px-2.5 py-1.5 transition-colors"
+                    style={{ backgroundColor: active ? "#4f46e5" : "var(--bg-surface)", color: active ? "#fff" : "var(--text-muted)" }}>
+                    <v.icon className="w-3.5 h-3.5" />
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Filters button + popover (global only) */}
+          {isGlobal && (
+            <div className="relative" ref={filtersRef}>
+              <button onClick={() => setFiltersOpen(o => !o)}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm transition-colors"
+                style={{
+                  border: `1px solid ${activeChips.length > 0 || filtersOpen ? "var(--accent-soft-border)" : "var(--border)"}`,
+                  backgroundColor: activeChips.length > 0 ? "var(--accent-soft-bg)" : "var(--bg-surface)",
+                  color: activeChips.length > 0 ? "var(--accent-text)" : "var(--text-secondary)",
+                }}>
+                <SlidersHorizontal className="w-3.5 h-3.5" /> Filters
+                {activeChips.length > 0 && (
+                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full"
+                    style={{ backgroundColor: "var(--accent-soft-2-bg)", color: "var(--accent-text)" }}>
+                    {activeChips.length}
+                  </span>
+                )}
+              </button>
+
+              {filtersOpen && (
+                <div className="absolute right-0 top-full mt-2 z-50 rounded-xl p-4 w-80"
+                  style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "0 12px 32px rgba(0,0,0,0.18)" }}>
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Filters</p>
+                    {activeChips.length > 0 && (
+                      <button onClick={clearAllFilters} className="text-xs" style={{ color: "var(--accent-text)" }}>Clear all</button>
+                    )}
+                  </div>
+                  <div className="space-y-2.5">
+                    <FilterField label="Account / Customer">
+                      <Select size="sm" value={accountFilter} onChange={setAccount}
+                        options={[{ value: "all", label: "All Accounts" }, ...accounts.map(a => ({ value: a.id, label: a.name }))]} />
+                    </FilterField>
+                    <FilterField label="Linked Record">
+                      <Select size="sm" value={linkFilter} onChange={v => setLink(v as "all" | FileLinkKind)}
+                        options={[
+                          { value: "all", label: "All Linked Records" },
+                          { value: "job", label: "Job Photos" },
+                          { value: "work_order", label: "Work Order Photos" },
+                          { value: "project", label: "Project Files" },
+                          { value: "property", label: "Property Files" },
+                          { value: "agreement", label: "Agreement Documents" },
+                          { value: "quote", label: "Quote Attachments" },
+                          { value: "invoice", label: "Invoice Attachments" },
+                          { value: "account", label: "Account-only Files" },
+                        ]} />
+                    </FilterField>
+                    <FilterField label="Category">
+                      <Select size="sm" value={catFilter} onChange={setCat}
+                        options={[{ value: "all", label: "All Categories" }, ...categories.map(c => ({ value: c.key, label: c.name }))]} />
+                    </FilterField>
+                    <FilterField label="File Type">
+                      <Select size="sm" value={typeFilter} onChange={v => setType(v as "all" | FileType)}
+                        options={[{ value: "all", label: "All Types" }, { value: "image", label: "Images" }, { value: "pdf", label: "PDFs" }, { value: "document", label: "Documents" }, { value: "video", label: "Video" }, { value: "other", label: "Other" }]} />
+                    </FilterField>
+                    <FilterField label="Uploaded By">
+                      <Select size="sm" value={uploader} onChange={setUploader}
+                        options={[{ value: "all", label: "All Uploaders" }, ...uploaders.map(u => ({ value: u, label: u }))]} />
+                    </FilterField>
+                    {locs.length > 1 && (
+                      <FilterField label="Location">
+                        <Select size="sm" value={locationFilter} onChange={setLoc}
+                          options={[{ value: "all", label: "All Locations" }, ...locs.map(l => ({ value: l, label: LOCATION_NAME.get(l) ?? l }))]} />
+                      </FilterField>
+                    )}
+                    <FilterField label="Date Range">
+                      <Select size="sm" value={dateRange} onChange={setDateRange}
+                        options={[{ value: "all", label: "Any Date" }, { value: "7", label: "Last 7 days" }, { value: "30", label: "Last 30 days" }, { value: "year", label: "This year" }]} />
+                    </FilterField>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Toolbar Upload button — hidden when the page renders its own in the header */}
+          {!externalUpload && (
+            <button onClick={() => setShowUpload(true)}
+              className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-3 py-2 rounded-lg transition-colors">
+              <Upload className="w-3.5 h-3.5" /> Upload
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* Filter chips */}
-      <div className="flex flex-wrap items-center gap-2">
-        <FilterSelect icon={Filter} value={catFilter} onChange={setCat}
-          options={[{ value: "all", label: "All Categories" }, ...categories.map(c => ({ value: c.key, label: c.name }))]} />
-        <FilterSelect icon={FileIcon} value={typeFilter} onChange={v => setType(v as "all" | FileType)}
-          options={[{ value: "all", label: "All Types" }, { value: "image", label: "Images" }, { value: "pdf", label: "PDFs" }, { value: "document", label: "Documents" }, { value: "video", label: "Video" }, { value: "other", label: "Other" }]} />
-        {isGlobal && (
-          <FilterSelect icon={UserIcon} value={uploader} onChange={setUploader}
-            options={[{ value: "all", label: "All Uploaders" }, ...uploaders.map(u => ({ value: u, label: u }))]} />
-        )}
-        <span className="text-xs ml-auto" style={{ color: "var(--text-muted)" }}>{displayed.length} file{displayed.length === 1 ? "" : "s"}</span>
-      </div>
+      {/* ── Quick tabs + count (global only) ── */}
+      {isGlobal && (
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <div className="flex items-center gap-0.5 flex-wrap">
+            {QUICK_TABS.map(t => {
+              const active = quickTab === t.key;
+              return (
+                <button key={t.key} onClick={() => setQuickTab(t.key)}
+                  className="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
+                  style={{
+                    backgroundColor: active ? "var(--accent-soft-bg)" : "transparent",
+                    color: active ? "var(--accent-text)" : "var(--text-muted)",
+                    border: `1px solid ${active ? "var(--accent-soft-border)" : "transparent"}`,
+                  }}>
+                  {t.label}
+                </button>
+              );
+            })}
+          </div>
+          <span className="text-xs" style={{ color: "var(--text-muted)" }}>
+            {displayed.length} file{displayed.length === 1 ? "" : "s"}
+          </span>
+        </div>
+      )}
 
-      {/* Grid */}
+      {/* ── Active filter chips ── */}
+      {activeChips.length > 0 && (
+        <div className="flex items-center flex-wrap gap-2">
+          {activeChips.map((chip, i) => (
+            <button key={i} onClick={chip.clear}
+              className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full transition-colors"
+              style={{ backgroundColor: "var(--bg-input)", color: "var(--text-secondary)" }}>
+              {chip.label}
+              <X className="w-3 h-3" style={{ color: "var(--text-muted)" }} />
+            </button>
+          ))}
+          <button onClick={clearAllFilters} className="text-xs font-medium px-2 py-1" style={{ color: "var(--accent-text)" }}>
+            Clear All
+          </button>
+        </div>
+      )}
+
+      {/* Count for embedded record mode (no quick tabs there) */}
+      {!isGlobal && (
+        <div className="flex justify-end">
+          <span className="text-xs" style={{ color: "var(--text-muted)" }}>
+            {displayed.length} file{displayed.length === 1 ? "" : "s"}
+          </span>
+        </div>
+      )}
+
+      {/* ── Content ── */}
       {displayed.length === 0 ? (
         <div className="rounded-xl py-16 text-center" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>
           <ImageIcon className="w-8 h-8 mx-auto mb-2 opacity-20" style={{ color: "var(--text-muted)" }} />
-          <p className="text-sm" style={{ color: "var(--text-muted)" }}>No files match.</p>
+          <p className="text-sm" style={{ color: "var(--text-muted)" }}>No files match these filters.</p>
         </div>
-      ) : (
-        <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))" }}>
-          {displayed.map(f => {
-            const Icon = FILE_ICON[f.fileType];
-            const color = catColor(f.categoryKey);
-            return (
-              <div key={f.id} className="rounded-xl overflow-hidden group"
-                style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
-                {/* Thumbnail */}
-                <div className="aspect-[4/3] flex items-center justify-center relative"
-                  style={{ background: f.fileType === "image" ? `linear-gradient(135deg, ${color}22, ${color}44)` : "var(--bg-surface-2)" }}>
-                  <Icon className="w-8 h-8" style={{ color: f.fileType === "image" ? color : "var(--text-muted)" }} />
-                  <span className="absolute top-2 left-2 text-[9px] font-semibold px-1.5 py-0.5 rounded-full"
-                    style={{ backgroundColor: color + "33", color }}>
-                    {catLabel(f.categoryKey)}
-                  </span>
-                </div>
-                {/* Meta */}
-                <div className="p-2.5">
-                  <p className="text-xs font-medium truncate" style={{ color: "var(--text-primary)" }}>{f.fileName}</p>
-                  {f.notes && <p className="text-[10px] truncate mt-0.5" style={{ color: "var(--text-muted)" }}>{f.notes}</p>}
-                  <div className="flex items-center justify-between mt-1.5">
-                    <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>{f.uploadedBy}</span>
-                    <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>{f.displayDate}</span>
-                  </div>
-                </div>
+      ) : groups ? (
+        <div className="space-y-5">
+          {groups.map(g => (
+            <div key={g.title}>
+              <div className="flex items-center gap-2 mb-2">
+                <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{g.title}</p>
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>{g.files.length}</span>
               </div>
-            );
-          })}
+              <FileGrid files={g.files} catLabel={catLabel} catColor={catColor} onOpen={setSelected} />
+            </div>
+          ))}
         </div>
+      ) : view === "list" ? (
+        <FileList files={displayed} catLabel={catLabel} catColor={catColor} onOpen={setSelected} showAccount={isGlobal} />
+      ) : (
+        <FileGrid files={displayed} catLabel={catLabel} catColor={catColor} onOpen={setSelected} />
+      )}
+
+      {/* ── Detail drawer ── */}
+      {selected && (
+        <FileDrawer file={selected} catLabel={catLabel} catColor={catColor} onClose={() => setSelected(null)} />
       )}
 
       {showUpload && (
@@ -173,22 +447,202 @@ export default function PhotoGallery({ recordLevel, scope = {}, accountName, upl
   );
 }
 
-// ─── Filter select ────────────────────────────────────────
-function FilterSelect({ icon: Icon, value, onChange, options }: {
-  icon: typeof Filter; value: string; onChange: (v: string) => void; options: { value: string; label: string }[];
+// ─── Related-record badge ─────────────────────────────────
+function LinkBadge({ file }: { file: PhotoFile }) {
+  const kind = fileLinkKind(file);
+  const b = LINK_BADGE[kind];
+  return (
+    <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full whitespace-nowrap"
+      style={{ backgroundColor: b.color + "22", color: b.color }}>
+      {b.label}
+    </span>
+  );
+}
+
+// ─── Grid view ────────────────────────────────────────────
+function FileGrid({ files, catLabel, catColor, onOpen }: {
+  files: PhotoFile[]; catLabel: (k: string) => string; catColor: (k: string) => string; onOpen: (f: PhotoFile) => void;
 }) {
   return (
-    <div className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface)" }}>
-      <Icon className="w-3 h-3 shrink-0" style={{ color: "var(--text-muted)" }} />
-      <select value={value} onChange={e => onChange(e.target.value)}
-        className="bg-transparent text-xs outline-none" style={{ color: "var(--text-secondary)" }}>
-        {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-      </select>
+    <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(190px, 1fr))" }}>
+      {files.map(f => {
+        const Icon = FILE_ICON[f.fileType];
+        const color = catColor(f.categoryKey);
+        return (
+          <button key={f.id} onClick={() => onOpen(f)} className="text-left rounded-xl overflow-hidden group transition-shadow hover:shadow-md"
+            style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+            <div className="aspect-[4/3] flex items-center justify-center relative"
+              style={{ background: f.fileType === "image" ? `linear-gradient(135deg, ${color}22, ${color}44)` : "var(--bg-surface-2)" }}>
+              <Icon className="w-8 h-8" style={{ color: f.fileType === "image" ? color : "var(--text-muted)" }} />
+              <span className="absolute top-2 left-2 text-[9px] font-semibold px-1.5 py-0.5 rounded-full"
+                style={{ backgroundColor: color + "33", color }}>
+                {catLabel(f.categoryKey)}
+              </span>
+            </div>
+            <div className="p-2.5">
+              <p className="text-xs font-medium truncate" style={{ color: "var(--text-primary)" }}>{f.fileName}</p>
+              {f.accountName && <p className="text-[10px] truncate mt-0.5" style={{ color: "var(--text-secondary)" }}>{f.accountName}</p>}
+              <div className="mt-1.5"><LinkBadge file={f} /></div>
+              <div className="flex items-center justify-between mt-1.5">
+                <span className="text-[10px] truncate" style={{ color: "var(--text-muted)" }}>{f.uploadedBy}</span>
+                <span className="text-[10px] shrink-0" style={{ color: "var(--text-muted)" }}>{f.displayDate}</span>
+              </div>
+            </div>
+          </button>
+        );
+      })}
     </div>
   );
 }
 
-// ─── Mock upload modal ────────────────────────────────────
+// ─── List view ────────────────────────────────────────────
+function FileList({ files, catLabel, catColor, onOpen, showAccount }: {
+  files: PhotoFile[]; catLabel: (k: string) => string; catColor: (k: string) => string; onOpen: (f: PhotoFile) => void; showAccount: boolean;
+}) {
+  return (
+    <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+      <div className="grid px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider"
+        style={{ gridTemplateColumns: showAccount ? "2.2fr 1.4fr 1.4fr 1fr 1fr" : "2.4fr 1.4fr 1fr 1fr", color: "var(--text-muted)", borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+        <span>File</span>{showAccount && <span>Account</span>}<span>Linked To</span><span>Uploaded By</span><span>Date</span>
+      </div>
+      {files.map((f, i) => {
+        const Icon = FILE_ICON[f.fileType];
+        const color = catColor(f.categoryKey);
+        return (
+          <button key={f.id} onClick={() => onOpen(f)}
+            className="w-full grid px-4 py-2.5 items-center text-left hover:bg-[var(--bg-surface-2)] transition-colors"
+            style={{ gridTemplateColumns: showAccount ? "2.2fr 1.4fr 1.4fr 1fr 1fr" : "2.4fr 1.4fr 1fr 1fr", borderBottom: i < files.length - 1 ? "1px solid var(--border-subtle)" : "none" }}>
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: color + "22" }}>
+                <Icon className="w-3.5 h-3.5" style={{ color }} />
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{f.fileName}</p>
+                <span className="text-[10px]" style={{ color }}>{catLabel(f.categoryKey)}</span>
+              </div>
+            </div>
+            {showAccount && <span className="text-sm truncate" style={{ color: "var(--text-secondary)" }}>{f.accountName ?? "—"}</span>}
+            <div><LinkBadge file={f} /></div>
+            <span className="text-sm truncate" style={{ color: "var(--text-secondary)" }}>{f.uploadedBy}</span>
+            <span className="text-sm" style={{ color: "var(--text-muted)" }}>{f.displayDate}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─── Detail drawer ────────────────────────────────────────
+function FileDrawer({ file, catLabel, catColor, onClose }: {
+  file: PhotoFile; catLabel: (k: string) => string; catColor: (k: string) => string; onClose: () => void;
+}) {
+  const Icon = FILE_ICON[file.fileType];
+  const color = catColor(file.categoryKey);
+  const links = linkedRecords(file);
+
+  return (
+    <>
+      <div className="fixed inset-0 z-40 bg-black/40" onClick={onClose} />
+      <div className="fixed inset-y-0 right-0 z-50 flex flex-col w-[440px] max-w-full"
+        style={{ backgroundColor: "var(--bg-surface)", borderLeft: "1px solid var(--border-subtle)", boxShadow: "-4px 0 24px rgba(0,0,0,0.18)" }}>
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+          <p className="text-sm font-semibold truncate" style={{ color: "var(--text-primary)" }}>File Details</p>
+          <button onClick={onClose} style={{ color: "var(--text-muted)" }}><X className="w-4 h-4" /></button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto">
+          {/* Preview */}
+          <div className="aspect-[16/10] flex items-center justify-center"
+            style={{ background: file.fileType === "image" ? `linear-gradient(135deg, ${color}22, ${color}44)` : "var(--bg-surface-2)" }}>
+            <Icon className="w-14 h-14" style={{ color: file.fileType === "image" ? color : "var(--text-muted)" }} />
+          </div>
+
+          <div className="p-5 space-y-4">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: color + "22", color }}>{catLabel(file.categoryKey)}</span>
+                <LinkBadge file={file} />
+              </div>
+              <p className="text-base font-semibold break-words" style={{ color: "var(--text-primary)" }}>{file.fileName}</p>
+            </div>
+
+            {/* Linked records */}
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-widest mb-2" style={{ color: "var(--text-muted)" }}>Linked Records</p>
+              <div className="space-y-1.5">
+                {links.map(l => (
+                  <div key={l.label} className="flex items-center justify-between gap-3">
+                    <span className="text-xs" style={{ color: "var(--text-muted)" }}>{l.label}</span>
+                    <span className="text-sm font-medium text-right truncate" style={{ color: "var(--text-primary)" }}>{l.value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Meta */}
+            <div className="pt-3 space-y-1.5" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+              <div className="flex items-center justify-between"><span className="text-xs" style={{ color: "var(--text-muted)" }}>Uploaded by</span><span className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{file.uploadedBy}</span></div>
+              <div className="flex items-center justify-between"><span className="text-xs" style={{ color: "var(--text-muted)" }}>Date</span><span className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{file.displayDate}</span></div>
+              <div className="flex items-center justify-between"><span className="text-xs" style={{ color: "var(--text-muted)" }}>Location</span><span className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{LOCATION_NAME.get(file.locationId) ?? file.locationId}</span></div>
+            </div>
+
+            {/* Notes */}
+            {file.notes && (
+              <div className="pt-3" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+                <p className="text-[10px] font-semibold uppercase tracking-widest mb-1" style={{ color: "var(--text-muted)" }}>Notes</p>
+                <p className="text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>{file.notes}</p>
+              </div>
+            )}
+
+            {/* Tags */}
+            {file.tags.length > 0 && (
+              <div className="pt-3" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+                <p className="text-[10px] font-semibold uppercase tracking-widest mb-2" style={{ color: "var(--text-muted)" }}>Tags</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {file.tags.map(t => (
+                    <span key={t} className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-1 rounded-full" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-secondary)" }}>
+                      <Tag className="w-2.5 h-2.5" /> {t}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="px-5 py-4 flex items-center gap-2 shrink-0" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+          <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors"
+            style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>
+            <Pencil className="w-3.5 h-3.5" /> Edit
+          </button>
+          <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-white transition-colors" style={{ backgroundColor: "#4f46e5" }}>
+            <Download className="w-3.5 h-3.5" /> Download
+          </button>
+          <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm ml-auto transition-colors"
+            style={{ border: "1px solid #fecaca", color: "#dc2626" }}>
+            <Trash2 className="w-3.5 h-3.5" /> Delete
+          </button>
+        </div>
+      </div>
+    </>
+  );
+}
+
+// ─── Filter field (label + control, used in the Filters popover) ──
+function FilterField({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <label className="block text-[10px] font-semibold uppercase tracking-wider mb-1" style={{ color: "var(--text-muted)" }}>
+        {label}
+      </label>
+      {children}
+    </div>
+  );
+}
+
+// ─── Upload modal (styled dropdowns) ──────────────────────
 function UploadModal({ categories, onClose, onUpload }: {
   categories: { key: string; name: string }[];
   onClose: () => void;
@@ -208,7 +662,6 @@ function UploadModal({ categories, onClose, onUpload }: {
           <button onClick={onClose} style={{ color: "var(--text-muted)" }}><X className="w-4 h-4" /></button>
         </div>
         <div className="p-5 space-y-3">
-          {/* Drop zone (mock) */}
           <div className="rounded-xl py-8 text-center" style={{ border: "2px dashed var(--border)", backgroundColor: "var(--bg-surface-2)" }}>
             <Upload className="w-6 h-6 mx-auto mb-1.5" style={{ color: "var(--text-muted)" }} />
             <p className="text-xs" style={{ color: "var(--text-muted)" }}>Drag &amp; drop or enter a file name below</p>
@@ -221,18 +674,13 @@ function UploadModal({ categories, onClose, onUpload }: {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-medium mb-1" style={{ color: "var(--text-secondary)" }}>Category</label>
-              <select value={categoryKey} onChange={e => setCategoryKey(e.target.value)}
-                className="w-full rounded-lg px-3 py-2 text-sm outline-none" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface)", color: "var(--text-primary)" }}>
-                {categories.map(c => <option key={c.key} value={c.key}>{c.name}</option>)}
-              </select>
+              <Select size="sm" value={categoryKey} onChange={setCategoryKey}
+                options={categories.map(c => ({ value: c.key, label: c.name }))} />
             </div>
             <div>
               <label className="block text-xs font-medium mb-1" style={{ color: "var(--text-secondary)" }}>File Type</label>
-              <select value={fileType} onChange={e => setFileType(e.target.value as FileType)}
-                className="w-full rounded-lg px-3 py-2 text-sm outline-none" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface)", color: "var(--text-primary)" }}>
-                <option value="image">Image</option><option value="pdf">PDF</option>
-                <option value="document">Document</option><option value="video">Video</option><option value="other">Other</option>
-              </select>
+              <Select size="sm" value={fileType} onChange={v => setFileType(v as FileType)}
+                options={[{ value: "image", label: "Image" }, { value: "pdf", label: "PDF" }, { value: "document", label: "Document" }, { value: "video", label: "Video" }, { value: "other", label: "Other" }]} />
             </div>
           </div>
           <div>

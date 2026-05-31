@@ -11,6 +11,7 @@ import {
   AGREEMENTS, TEMPLATES, AGREEMENT_STATS, formatValue,
   type AgreementStatus, type CustomerAgreement, type AgreementTemplate,
 } from "@/lib/agreements/data";
+import ModuleSummaryCards from "@/components/shared/ModuleSummaryCards";
 
 // ─── Status config ────────────────────────────────────────
 const STATUS: Record<AgreementStatus, { label: string; bg: string; color: string }> = {
@@ -33,50 +34,6 @@ const TABS = [
 ];
 
 type SortField = "customer" | "type" | "status" | "renewalDate" | "annualValue" | "assignedTo";
-
-// ─── Summary card ─────────────────────────────────────────
-function SummaryCard({
-  icon: Icon,
-  label,
-  value,
-  sub,
-  iconColor,
-}: {
-  icon: typeof FileText;
-  label: string;
-  value: string;
-  sub: string;
-  iconColor: string;
-}) {
-  return (
-    <div
-      className="rounded-xl p-4 flex items-start gap-3"
-      style={{
-        backgroundColor: "var(--bg-surface)",
-        border: "1px solid var(--border-subtle)",
-        boxShadow: "var(--shadow-card)",
-      }}
-    >
-      <div
-        className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5"
-        style={{ backgroundColor: "var(--bg-input)" }}
-      >
-        <Icon className="w-4 h-4" style={{ color: iconColor }} />
-      </div>
-      <div>
-        <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>
-          {label}
-        </p>
-        <p className="text-xl font-bold mt-0.5" style={{ color: "var(--text-primary)" }}>
-          {value}
-        </p>
-        <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>
-          {sub}
-        </p>
-      </div>
-    </div>
-  );
-}
 
 // ─── Templates view ───────────────────────────────────────
 const TMPL_STATUS: Record<string, { label: string; bg: string; color: string }> = {
@@ -241,36 +198,15 @@ export default function AgreementsPage() {
       </div>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-4 gap-4">
-        <SummaryCard
-          icon={FileText}
-          label="Active Agreements"
-          value={String(AGREEMENT_STATS.active)}
-          sub="Running or visits due"
-          iconColor="#4f46e5"
-        />
-        <SummaryCard
-          icon={CalendarCheck}
-          label="Visits Due This Month"
-          value={String(AGREEMENT_STATS.visitsDueMonth)}
-          sub="June 2026"
-          iconColor="#10b981"
-        />
-        <SummaryCard
-          icon={RefreshCw}
-          label="Renewals Due Soon"
-          value={String(AGREEMENT_STATS.renewalsDueSoon)}
-          sub="Within 60 days"
-          iconColor="#f59e0b"
-        />
-        <SummaryCard
-          icon={DollarSign}
-          label="Agreement Revenue"
-          value={revenueDisplay}
-          sub={`${AGREEMENTS.length} agreements`}
-          iconColor="#10b981"
-        />
-      </div>
+      <ModuleSummaryCards
+        moduleKey="agreements"
+        cards={[
+          { icon: FileText,      label: "Active Agreements",     value: String(AGREEMENT_STATS.active),          sub: "Running or visits due", iconColor: "#4f46e5" },
+          { icon: CalendarCheck, label: "Visits Due This Month", value: String(AGREEMENT_STATS.visitsDueMonth),  sub: "June 2026",             iconColor: "#10b981" },
+          { icon: RefreshCw,     label: "Renewals Due Soon",     value: String(AGREEMENT_STATS.renewalsDueSoon), sub: "Within 60 days",        iconColor: "#f59e0b" },
+          { icon: DollarSign,    label: "Agreement Revenue",     value: revenueDisplay,                          sub: `${AGREEMENTS.length} agreements`, iconColor: "#10b981" },
+        ]}
+      />
 
       {/* Table card */}
       <div

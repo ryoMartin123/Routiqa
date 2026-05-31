@@ -2,9 +2,13 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ClipboardList, Plus, Search, SlidersHorizontal } from "lucide-react";
+import { ClipboardList, Plus, Search, SlidersHorizontal, CalendarClock, ImageOff, CheckCircle2 } from "lucide-react";
 import { ALL_JOBS, WORK_ORDERS, JOB_STATUS_CONFIG, type WorkOrderStatus } from "@/lib/jobs/data";
+import { getFiles } from "@/lib/files/data";
 import { useHierarchy } from "@/components/providers/HierarchyProvider";
+import ModuleSummaryCards, { type SummaryCard } from "@/components/shared/ModuleSummaryCards";
+
+const TODAY = "May 30, 2026";
 
 const WO_STATUS_CONFIG: Record<WorkOrderStatus, { label: string; bg: string; color: string }> = {
   pending:     { label: "Pending",     bg: "var(--bg-input)", color: "var(--text-muted)"  },
@@ -51,6 +55,15 @@ export default function WorkOrdersPage() {
       ? contextFiltered.length
       : contextFiltered.filter(({ wo }) => wo.status === key).length;
 
+  // Summary metrics — respect the active context
+  const woMissingPhotos = (woId: string) => getFiles({ workOrderId: woId }).every(f => f.fileType !== "image");
+  const summaryCards: SummaryCard[] = [
+    { icon: ClipboardList, label: "Open Work Orders",      value: String(contextFiltered.filter(({ wo }) => wo.status !== "completed").length),                            sub: "Pending + in progress", iconColor: "#4f46e5" },
+    { icon: CalendarClock, label: "Assigned Today",        value: String(contextFiltered.filter(({ job }) => job!.scheduledDate === TODAY).length),                         sub: "Scheduled today",       iconColor: "#0891b2" },
+    { icon: ImageOff,      label: "Missing Required Photos",value: String(contextFiltered.filter(({ wo }) => wo.status !== "pending" && woMissingPhotos(wo.id)).length),     sub: "Active without photos", iconColor: "#f59e0b" },
+    { icon: CheckCircle2,  label: "Ready for Review",      value: String(contextFiltered.filter(({ wo }) => wo.status === "completed").length),                             sub: "Awaiting sign-off",     iconColor: "#10b981" },
+  ];
+
   return (
     <div className="p-6">
       {/* Header */}
@@ -71,6 +84,11 @@ export default function WorkOrdersPage() {
         <button className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-3 py-2 rounded-lg transition-colors">
           <Plus className="w-4 h-4" /> New Work Order
         </button>
+      </div>
+
+      {/* Summary cards */}
+      <div className="mb-5">
+        <ModuleSummaryCards cards={summaryCards} moduleKey="work-orders" />
       </div>
 
       <div className="rounded-xl overflow-hidden"

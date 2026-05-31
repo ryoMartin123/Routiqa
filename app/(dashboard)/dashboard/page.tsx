@@ -1,35 +1,15 @@
 "use client";
 
-import "react-grid-layout/css/styles.css";
-import "react-resizable/css/styles.css";
-
 import React, { useState, useMemo } from "react";
+import type { LayoutItem as RGLItem } from "react-grid-layout";
+// The interactive widget grid (react-grid-layout + every widget) lives in its own
+// file for organization, but is imported normally — the grid's drag/resize and
+// container-width measurement need it mounted synchronously with the page.
+import DashboardGrid from "@/components/dashboard/DashboardGrid";
 import {
-  GridLayout,
-  useContainerWidth,
-  verticalCompactor,
-  type LayoutItem as RGLItem,
-} from "react-grid-layout";
-import {
-  Settings2, Save, X, RotateCcw, GripHorizontal, EyeOff,
+  Settings2, Save, X, RotateCcw,
   Plus, Eye, ChevronDown, ChevronUp,
 } from "lucide-react";
-
-import StatsOverview        from "@/components/dashboard/StatsOverview";
-import TodaysJobs           from "@/components/dashboard/TodaysJobs";
-import RecentActivity       from "@/components/dashboard/RecentActivity";
-import UrgentPanel          from "@/components/dashboard/UrgentPanel";
-import RevenueSnapshot      from "@/components/dashboard/RevenueSnapshot";
-import PipelineSnapshot     from "@/components/dashboard/PipelineSnapshot";
-import QuotesFollowUp       from "@/components/dashboard/QuotesFollowUp";
-import OpenWorkOrders       from "@/components/dashboard/OpenWorkOrders";
-import InvoicesDue          from "@/components/dashboard/InvoicesDue";
-import LocationPerformance  from "@/components/dashboard/LocationPerformance";
-import CompanyPerformance   from "@/components/dashboard/CompanyPerformance";
-import LeadsInTerritory     from "@/components/dashboard/LeadsInTerritory";
-import JobsInTerritory      from "@/components/dashboard/JobsInTerritory";
-import AgreementRenewals    from "@/components/dashboard/AgreementRenewals";
-import MissingPhotos        from "@/components/dashboard/MissingPhotos";
 
 import { useHierarchy } from "@/components/providers/HierarchyProvider";
 import {
@@ -42,28 +22,6 @@ import {
 } from "@/lib/dashboard/layouts";
 
 const GREET_DATE = "Friday, May 30";
-
-// ─── Widget renderer ──────────────────────────────────────
-function renderWidget(id: string) {
-  switch (id) {
-    case "stats_overview":          return <StatsOverview />;
-    case "todays_jobs":             return <TodaysJobs />;
-    case "urgent_panel":            return <UrgentPanel />;
-    case "pipeline_snapshot":       return <PipelineSnapshot />;
-    case "quotes_followup":         return <QuotesFollowUp />;
-    case "revenue_snapshot":        return <RevenueSnapshot />;
-    case "recent_activity":         return <RecentActivity />;
-    case "open_work_orders":        return <OpenWorkOrders />;
-    case "invoices_due":            return <InvoicesDue />;
-    case "location_performance":    return <LocationPerformance />;
-    case "company_performance":     return <CompanyPerformance />;
-    case "leads_in_territory":      return <LeadsInTerritory />;
-    case "jobs_in_territory":       return <JobsInTerritory />;
-    case "agreement_renewals":      return <AgreementRenewals />;
-    case "missing_required_photos": return <MissingPhotos />;
-    default: return null;
-  }
-}
 
 // ─── Context badge ────────────────────────────────────────
 const CTX_COLORS: Record<ContextLevel, { bg: string; color: string }> = {
@@ -97,24 +55,24 @@ function CustomizeToolbar({
   return (
     <div className="sticky top-0 z-30 flex flex-wrap items-center justify-between gap-3 px-5 py-3 rounded-xl"
       style={{
-        backgroundColor: "rgba(238,242,255,0.96)",
-        border:          "1.5px solid #a5b4fc",
+        backgroundColor: "var(--accent-soft-bg)",
+        border:          "1.5px solid var(--accent-soft-border)",
         backdropFilter:  "blur(12px)",
         WebkitBackdropFilter: "blur(12px)",
-        boxShadow: "0 4px 24px rgba(79,70,229,0.10)",
+        boxShadow: "var(--shadow-card)",
       }}>
 
       {/* Left — mode indicator */}
       <div className="flex items-center gap-2.5">
         <span className="relative flex h-2 w-2">
           <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75"
-            style={{ backgroundColor: "#4f46e5" }} />
+            style={{ backgroundColor: "var(--accent-icon)" }} />
           <span className="relative inline-flex rounded-full h-2 w-2"
-            style={{ backgroundColor: "#4f46e5" }} />
+            style={{ backgroundColor: "var(--accent-icon)" }} />
         </span>
-        <p className="text-sm font-semibold" style={{ color: "#3730a3" }}>Customize Mode</p>
+        <p className="text-sm font-semibold" style={{ color: "var(--accent-text-strong)" }}>Customize Mode</p>
         <ContextBadge level={contextLevel} />
-        <span className="text-xs hidden xl:block" style={{ color: "#6366f1" }}>
+        <span className="text-xs hidden xl:block" style={{ color: "var(--accent-text)" }}>
           Drag handle to move · drag corner to resize
         </span>
       </div>
@@ -125,9 +83,9 @@ function CustomizeToolbar({
         <button onClick={onToggleAdd}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
           style={{
-            backgroundColor: showAddPanel ? "#4f46e5" : "transparent",
-            border:          `1px solid ${showAddPanel ? "#4f46e5" : "#6366f1"}`,
-            color:            showAddPanel ? "#fff" : "#4f46e5",
+            backgroundColor: showAddPanel ? "var(--accent-text)" : "transparent",
+            border:          `1px solid ${showAddPanel ? "var(--accent-text)" : "var(--accent-soft-border)"}`,
+            color:            showAddPanel ? "#fff" : "var(--accent-text)",
           }}>
           <Plus className="w-3 h-3" />
           Add Widget
@@ -136,11 +94,11 @@ function CustomizeToolbar({
             : <ChevronDown className="w-3 h-3" />}
         </button>
 
-        <div className="w-px h-4" style={{ backgroundColor: "#c7d2fe" }} />
+        <div className="w-px h-4" style={{ backgroundColor: "var(--accent-soft-border)" }} />
 
         <button onClick={onReset}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-colors"
-          style={{ border: "1px solid #c7d2fe", color: "#4f46e5" }}
+          style={{ border: "1px solid var(--accent-soft-border)", color: "var(--accent-text)" }}
           title="Reset to default layout">
           <RotateCcw className="w-3 h-3" /> Reset Default
         </button>
@@ -151,7 +109,7 @@ function CustomizeToolbar({
         </button>
         <button onClick={onSave}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-white transition-colors"
-          style={{ backgroundColor: "#4f46e5" }}>
+          style={{ backgroundColor: "var(--accent-text)" }}>
           <Save className="w-3 h-3" /> Save Layout
         </button>
       </div>
@@ -186,12 +144,12 @@ function AddWidgetsPanel({
 
   return (
     <div className="rounded-xl overflow-hidden"
-      style={{ border: "1.5px solid #c7d2fe", backgroundColor: "var(--bg-surface)", boxShadow: "var(--shadow-card)" }}>
-      <div className="flex items-center gap-2 px-5 py-3" style={{ borderBottom: "1px solid #e0e7ff", backgroundColor: "#f5f3ff" }}>
-        <Plus className="w-4 h-4" style={{ color: "#4f46e5" }} />
-        <p className="text-sm font-semibold" style={{ color: "#3730a3" }}>Add Widgets</p>
+      style={{ border: "1.5px solid var(--accent-soft-border)", backgroundColor: "var(--bg-surface)", boxShadow: "var(--shadow-card)" }}>
+      <div className="flex items-center gap-2 px-5 py-3" style={{ borderBottom: "1px solid var(--accent-soft-border)", backgroundColor: "var(--accent-soft-bg)" }}>
+        <Plus className="w-4 h-4" style={{ color: "var(--accent-text)" }} />
+        <p className="text-sm font-semibold" style={{ color: "var(--accent-text-strong)" }}>Add Widgets</p>
         <ContextBadge level={contextLevel} />
-        <span className="text-xs ml-1" style={{ color: "#6366f1" }}>
+        <span className="text-xs ml-1" style={{ color: "var(--accent-text)" }}>
           — click a widget to add it to your dashboard
         </span>
       </div>
@@ -199,7 +157,7 @@ function AddWidgetsPanel({
         {available.length > 0 ? (
           (Object.entries(grouped) as [WidgetCategory, typeof WIDGET_REGISTRY][]).map(([cat, widgets]) => (
             <div key={cat}>
-              <p className="text-[10px] font-semibold uppercase tracking-widest mb-2" style={{ color: "#6366f1" }}>
+              <p className="text-[10px] font-semibold uppercase tracking-widest mb-2" style={{ color: "var(--accent-text)" }}>
                 {CATEGORY_LABELS[cat]}
               </p>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
@@ -208,14 +166,14 @@ function AddWidgetsPanel({
                     className="flex items-start gap-3 text-left p-3 rounded-xl transition-all hover:shadow-sm group"
                     style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border-subtle)" }}>
                     <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5"
-                      style={{ backgroundColor: "#e0e7ff" }}>
-                      <Eye className="w-3.5 h-3.5" style={{ color: "#4f46e5" }} />
+                      style={{ backgroundColor: "var(--accent-soft-2-bg)" }}>
+                      <Eye className="w-3.5 h-3.5" style={{ color: "var(--accent-text)" }} />
                     </div>
                     <div className="min-w-0">
                       <p className="text-xs font-semibold" style={{ color: "var(--text-primary)" }}>{w.title}</p>
                       <p className="text-[10px] leading-snug mt-0.5" style={{ color: "var(--text-muted)" }}>{w.description}</p>
                       <span className="inline-block mt-1.5 text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded"
-                        style={{ backgroundColor: "#e0e7ff", color: "#4f46e5" }}>
+                        style={{ backgroundColor: "var(--accent-soft-2-bg)", color: "var(--accent-text)" }}>
                         {w.defaultSize === "full" ? "Full width" : w.defaultSize === "wide" ? "Wide (⅔)" : "Narrow (⅓)"}
                       </span>
                     </div>
@@ -276,31 +234,6 @@ export default function DashboardPage() {
   );
 
   const hiddenIds = draft.filter(i => !i.visible).map(i => i.widgetId);
-
-  // Convert to react-grid-layout format
-  const rglLayout: RGLItem[] = useMemo(() =>
-    contextVisible.map(item => {
-      const def  = WIDGET_MAP[item.widgetId];
-      // maxW: full-width widget can still be narrowed to half; narrow widgets cap at 8 cols
-      const maxW = def?.defaultSize === "narrow" ? 8 : 12;
-      return {
-        i:    item.widgetId,
-        x:    item.x,
-        y:    item.y,
-        w:    item.w,
-        h:    item.h,
-        minW: item.minW,
-        minH: item.minH,
-        maxW,
-        maxH: 24,
-      };
-    }),
-    [contextVisible]
-  );
-
-  // Container width measurement
-  const { width, containerRef } = useContainerWidth();
-  const gridWidth = width > 0 ? width : 1280;
 
   function startCustomize() {
     setDraft(layout);
@@ -422,82 +355,12 @@ export default function DashboardPage() {
           )}
         </div>
       ) : (
-        /* The dashboard-grid-editing class gates resize handle visibility via CSS */
-        <div ref={containerRef as React.RefObject<HTMLDivElement>}
-          className={customizing ? "dashboard-grid-editing" : ""}>
-          <GridLayout
-            width={gridWidth}
-            layout={rglLayout}
-            gridConfig={{
-              cols:             12,
-              rowHeight:        50,
-              margin:           [16, 16],
-              containerPadding: [0, 0],
-            }}
-            dragConfig={{
-              enabled: customizing,
-              bounded: true,               // prevent dragging outside grid bounds
-              handle:  ".widget-drag-handle",
-            }}
-            resizeConfig={{
-              enabled: customizing,
-              handles: ["se"],
-            }}
-            compactor={verticalCompactor}  // auto-fill gaps for cleaner layouts
-            onLayoutChange={handleLayoutChange}
-            autoSize
-          >
-            {contextVisible.map(item => (
-              <div key={item.widgetId}
-                className={[
-                  "flex flex-col",
-                  customizing ? "dashboard-widget-editing" : "",
-                ].filter(Boolean).join(" ")}
-                style={{
-                  overflow:        "hidden",
-                  borderRadius:    "12px",
-                  backgroundColor: "var(--bg-surface)",
-                  boxShadow:       "var(--shadow-card)",
-                }}
-              >
-                {/* ── Drag handle — customize mode only ── */}
-                {customizing && (
-                  <div
-                    className="widget-drag-handle flex items-center gap-2 px-3 py-1.5 shrink-0 select-none"
-                    style={{
-                      backgroundColor: "#eef2ff",
-                      borderBottom:    "1px solid #c7d2fe",
-                      borderRadius:    "12px 12px 0 0",
-                      cursor:          "grab",
-                      minHeight:       "32px",
-                    }}>
-                    <GripHorizontal className="w-3.5 h-3.5 shrink-0" style={{ color: "#6366f1" }} />
-                    <span className="text-[10px] font-semibold flex-1 truncate" style={{ color: "#4f46e5" }}>
-                      {WIDGET_MAP[item.widgetId]?.title}
-                    </span>
-                    {/* Stop drag from firing when clicking Hide */}
-                    <button
-                      onMouseDown={e => e.stopPropagation()}
-                      onClick={() => hideWidget(item.widgetId)}
-                      className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium transition-colors hover:bg-indigo-200"
-                      style={{ backgroundColor: "#e0e7ff", color: "#4f46e5" }}
-                    >
-                      <EyeOff className="w-2.5 h-2.5" /> Hide
-                    </button>
-                  </div>
-                )}
-
-                {/* ── Widget content — scrollable so nothing is lost ── */}
-                <div
-                  className="flex-1 min-h-0 overflow-y-auto dashboard-widget-content"
-                  style={{ borderRadius: customizing ? "0 0 12px 12px" : "12px" }}
-                >
-                  {renderWidget(item.widgetId)}
-                </div>
-              </div>
-            ))}
-          </GridLayout>
-        </div>
+        <DashboardGrid
+          contextVisible={contextVisible}
+          customizing={customizing}
+          onLayoutChange={handleLayoutChange}
+          onHideWidget={hideWidget}
+        />
       )}
     </div>
   );

@@ -59,13 +59,13 @@ export default function UrgentPanel() {
     <div className="rounded-xl overflow-hidden"
       style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
       <div className="flex items-center justify-between px-4 py-3"
-        style={{ backgroundColor: "#fffbeb", borderBottom: "1px solid #fde68a" }}>
+        style={{ backgroundColor: "var(--warning-soft-bg)", borderBottom: "1px solid var(--warning-soft-border)" }}>
         <div className="flex items-center gap-2">
-          <AlertTriangle className="w-4 h-4" style={{ color: "#d97706" }} />
-          <h2 className="text-sm font-semibold" style={{ color: "#92400e" }}>Urgent</h2>
+          <AlertTriangle className="w-4 h-4" style={{ color: "var(--warning-icon)" }} />
+          <h2 className="text-sm font-semibold" style={{ color: "var(--warning-text)" }}>Urgent</h2>
         </div>
         <span className="text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center"
-          style={{ backgroundColor: "#fde68a", color: "#92400e" }}>
+          style={{ backgroundColor: "var(--warning-soft-border)", color: "var(--warning-text)" }}>
           {items.length}
         </span>
       </div>

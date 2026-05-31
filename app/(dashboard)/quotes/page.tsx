@@ -3,12 +3,20 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Search, Plus, SlidersHorizontal, ChevronUp, ChevronDown, FilePen } from "lucide-react";
+import { Search, Plus, SlidersHorizontal, ChevronUp, ChevronDown, FilePen, Send, AlarmClock, DollarSign } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getAllQuotes, fmt, type QuoteRecord } from "@/lib/quotes/data";
 import { QUOTE_STATUS_STYLE, type QuoteStatus } from "@/lib/quotes/types";
 import CreateDocumentModal from "@/components/quotes/CreateDocumentModal";
 import { useHierarchy } from "@/components/providers/HierarchyProvider";
+import ModuleSummaryCards, { type SummaryCard } from "@/components/shared/ModuleSummaryCards";
+
+function daysUntil(dateStr?: string): number {
+  if (!dateStr) return Infinity;
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return Infinity;
+  return (d.getTime() - Date.now()) / 86_400_000;
+}
 
 const STATUS_TABS: { key: "all" | QuoteStatus; label: string }[] = [
   { key: "all",       label: "All"       },
@@ -82,6 +90,15 @@ export default function QuotesPage() {
   const tabCount = (key: "all" | QuoteStatus) =>
     key === "all" ? contextFiltered.length : contextFiltered.filter(q => q.status === key).length;
 
+  // Summary metrics — respect the active context
+  const openQuotes = contextFiltered.filter(q => q.status === "draft" || q.status === "sent" || q.status === "viewed");
+  const summaryCards: SummaryCard[] = [
+    { icon: FilePen,    label: "Open Quotes",     value: String(openQuotes.length),                                                                  sub: "Draft, sent, viewed",  iconColor: "#4f46e5" },
+    { icon: Send,       label: "Need Follow-Up",  value: String(contextFiltered.filter(q => q.status === "sent" || q.status === "viewed").length),    sub: "Awaiting response",    iconColor: "#f59e0b" },
+    { icon: AlarmClock, label: "Expiring Soon",   value: String(openQuotes.filter(q => { const d = daysUntil(q.expiresAt); return d >= 0 && d <= 30; }).length), sub: "Within 30 days", iconColor: "#dc2626" },
+    { icon: DollarSign, label: "Open Quote Value",value: fmt(openQuotes.reduce((s, q) => s + q.total, 0)),                                            sub: `${openQuotes.length} open quotes`, iconColor: "#10b981" },
+  ];
+
   return (
     <div className="p-6">
       <div className="flex items-start justify-between mb-6">
@@ -101,6 +118,11 @@ export default function QuotesPage() {
           className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-3 py-2 rounded-lg transition-colors">
           <Plus className="w-4 h-4" /> New Quote
         </button>
+      </div>
+
+      {/* Summary cards */}
+      <div className="mb-5">
+        <ModuleSummaryCards cards={summaryCards} moduleKey="quotes" />
       </div>
 
       <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>

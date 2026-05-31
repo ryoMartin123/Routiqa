@@ -2,14 +2,22 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Search, Plus, SlidersHorizontal, ChevronUp, ChevronDown, FolderKanban } from "lucide-react";
+import { Search, Plus, SlidersHorizontal, ChevronUp, ChevronDown, FolderKanban, Calendar, CalendarClock, Loader, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ALL_JOBS, resolveJobStatus, type Job, type JobType } from "@/lib/jobs/data";
 import { ALL_PROJECTS, PROJECT_STATUS_CONFIG, getProjectProgress, type ProjectStatus } from "@/lib/projects/data";
 import { getJobStatuses } from "@/lib/job-config/data";
 import { useHierarchy } from "@/components/providers/HierarchyProvider";
+import ModuleSummaryCards, { type SummaryCard } from "@/components/shared/ModuleSummaryCards";
 
 const TODAY = "May 30, 2026";
+
+function daysAgo(dateStr?: string): number {
+  if (!dateStr) return Infinity;
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return Infinity;
+  return (Date.now() - d.getTime()) / 86_400_000;
+}
 
 // ─── Filter tabs ──────────────────────────────────────────
 const TABS = [
@@ -98,6 +106,14 @@ export default function JobsPage() {
     .filter(j => !effectiveCompanyId  || j.companyId  === effectiveCompanyId)
     .filter(j => !effectiveLocationId || j.locationId === effectiveLocationId);
 
+  // Summary metrics — respect the active context
+  const summaryCards: SummaryCard[] = [
+    { icon: Calendar,      label: "Today's Jobs",        value: String(contextFiltered.filter(j => j.scheduledDate === TODAY).length),                                  sub: "Scheduled today",   iconColor: "#4f46e5" },
+    { icon: CalendarClock, label: "Scheduled",           value: String(contextFiltered.filter(j => j.status === "scheduled").length),                                   sub: "Upcoming work",     iconColor: "#0891b2" },
+    { icon: Loader,        label: "In Progress",         value: String(contextFiltered.filter(j => j.status === "in_progress" || j.status === "en_route").length),       sub: "Active now",        iconColor: "#f59e0b" },
+    { icon: CheckCircle2,  label: "Completed This Week", value: String(contextFiltered.filter(j => j.status === "completed" && daysAgo(j.completedDate) <= 7).length),    sub: "Last 7 days",       iconColor: "#10b981" },
+  ];
+
   const tabFn = TABS.find(t => t.key === tab)?.fn ?? (() => true);
 
   const displayed = contextFiltered
@@ -136,6 +152,11 @@ export default function JobsPage() {
         <button className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-3 py-2 rounded-lg transition-colors">
           <Plus className="w-4 h-4" /> New Job
         </button>
+      </div>
+
+      {/* Summary cards */}
+      <div className="mb-5">
+        <ModuleSummaryCards cards={summaryCards} moduleKey="jobs" />
       </div>
 
       {/* Table card */}

@@ -33,6 +33,20 @@
   --bubble-in-bg:     #f3f4f6;
   --bubble-in-text:   #111827;
 
+  /* ── Soft accent surfaces (customize mode, highlighted panels) ── */
+  --accent-soft-bg:      #eef2ff;   /* indigo-50 */
+  --accent-soft-border:  #c7d2fe;   /* indigo-200 */
+  --accent-soft-2-bg:    #e0e7ff;   /* indigo-100 — buttons/chips */
+  --accent-text:         #4f46e5;   /* indigo-600 */
+  --accent-text-strong:  #3730a3;   /* indigo-800 */
+  --accent-icon:         #6366f1;   /* indigo-500 */
+
+  /* ── Soft warning surfaces (urgent panels, overdue) ── */
+  --warning-soft-bg:     #fffbeb;   /* amber-50 */
+  --warning-soft-border: #fde68a;   /* amber-200 */
+  --warning-text:        #92400e;   /* amber-800 */
+  --warning-icon:        #d97706;   /* amber-600 */
+
   --shadow-card:      0 1px 3px 0 rgba(0, 0, 0, 0.05);
 }
 
@@ -77,9 +91,31 @@
   --bubble-in-bg:     #292929;
   --bubble-in-text:   #e4e4e4;
 
+  /* ── Soft accent surfaces — muted indigo, easy on the eyes ── */
+  --accent-soft-bg:      #20203a;   /* deep indigo-tinted charcoal */
+  --accent-soft-border:  #383663;   /* low-contrast indigo edge */
+  --accent-soft-2-bg:    #2c2a4d;   /* slightly lifted indigo */
+  --accent-text:         #a5b4fc;   /* indigo-300 — legible, not glaring */
+  --accent-text-strong:  #c7d2fe;   /* indigo-200 — headings */
+  --accent-icon:         #8b8fd9;   /* desaturated indigo */
+
+  /* ── Soft warning surfaces — cooler, softer amber ── */
+  --warning-soft-bg:     #2a2415;   /* warm charcoal, low glare */
+  --warning-soft-border: #4a3d20;   /* muted amber edge */
+  --warning-text:        #d8b566;   /* soft legible amber */
+  --warning-icon:        #cca54e;   /* muted amber */
+
   /* ── Shadows ── */
   --shadow-card:      0 2px 6px 0 rgba(0, 0, 0, 0.55),
                       0 0 0 1px rgba(255, 255, 255, 0.03);
+}
+
+/* In dark mode, the soft accent/warning surfaces are already muted —
+ * exclude them from the global badge desaturation filter so they keep
+ * their intended tone. */
+[data-theme="dark"] span[style*="--accent"],
+[data-theme="dark"] span[style*="--warning"] {
+  filter: none;
 }
 
 /* ─── Dark mode: desaturate inline-colored badges & pills ─────────

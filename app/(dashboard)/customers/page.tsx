@@ -2,12 +2,15 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Search, Plus, SlidersHorizontal, ChevronUp, ChevronDown } from "lucide-react";
+import { Search, Plus, SlidersHorizontal, ChevronUp, ChevronDown, Users, UserPlus, TrendingUp, Building2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { type Customer, type AccountType, type CustomerType, type CustomerStatus } from "@/lib/customers/data";
 import { useHierarchy } from "@/components/providers/HierarchyProvider";
 import { useCustomers } from "@/components/providers/CustomerProvider";
 import NewCustomerModal from "@/components/customers/NewCustomerModal";
+import ModuleSummaryCards, { type SummaryCard } from "@/components/shared/ModuleSummaryCards";
+
+const THIS_MONTH = new Date().toLocaleDateString("en-US", { month: "short", year: "numeric" });
 
 // ─── Filter tabs ──────────────────────────────────────────
 const TABS = [
@@ -58,6 +61,20 @@ export default function CustomersPage() {
     .filter(c => !effectiveCompanyId    || c.companyId    === effectiveCompanyId)
     .filter(c => !effectiveLocationId   || c.locationId   === effectiveLocationId)
     .filter(c => !effectiveServiceAreaId || c.serviceAreaId === effectiveServiceAreaId);
+
+  // Summary metrics — respect the active context (computed from contextFiltered)
+  const totalCustomers = contextFiltered.filter(c => c.status === "Customer").length;
+  const newThisMonth   = contextFiltered.filter(c => c.since === THIS_MONTH).length;
+  const activeLeads    = contextFiltered.filter(c => c.status === "Prospect").length;
+  const commercial     = contextFiltered.filter(c => c.accountType !== "residential").length;
+  const residential    = contextFiltered.filter(c => c.accountType === "residential").length;
+
+  const summaryCards: SummaryCard[] = [
+    { icon: Users,      label: "Total Customers", value: String(totalCustomers), sub: "Active accounts",            iconColor: "#4f46e5" },
+    { icon: UserPlus,   label: "New This Month",  value: String(newThisMonth),   sub: THIS_MONTH,                   iconColor: "#10b981" },
+    { icon: TrendingUp, label: "Active Leads",    value: String(activeLeads),    sub: "In pipeline",                iconColor: "#f59e0b" },
+    { icon: Building2,  label: "Comm / Res Split",value: `${commercial} / ${residential}`, sub: "Commercial / Residential", iconColor: "#0891b2" },
+  ];
 
   const tabFn = TABS.find((t) => t.key === tab)?.fn ?? (() => true);
 
@@ -120,6 +137,11 @@ export default function CustomersPage() {
           <Plus className="w-4 h-4" />
           New Customer
         </button>
+      </div>
+
+      {/* Summary cards */}
+      <div className="mb-5">
+        <ModuleSummaryCards cards={summaryCards} moduleKey="customers" />
       </div>
 
       {/* Table card */}

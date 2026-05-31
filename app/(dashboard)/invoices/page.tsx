@@ -3,12 +3,26 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Search, Plus, SlidersHorizontal, ChevronUp, ChevronDown, Receipt } from "lucide-react";
+import { Search, Plus, SlidersHorizontal, ChevronUp, ChevronDown, Receipt, AlertTriangle, CalendarClock, CheckCircle2, DollarSign } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getAllInvoices, fmt, type InvoiceRecord } from "@/lib/quotes/data";
 import { INVOICE_STATUS_STYLE, type InvoiceStatus } from "@/lib/quotes/types";
 import CreateDocumentModal from "@/components/quotes/CreateDocumentModal";
 import { useHierarchy } from "@/components/providers/HierarchyProvider";
+import ModuleSummaryCards, { type SummaryCard } from "@/components/shared/ModuleSummaryCards";
+
+const NOW = new Date();
+function daysUntil(dateStr?: string): number {
+  if (!dateStr) return Infinity;
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return Infinity;
+  return (d.getTime() - NOW.getTime()) / 86_400_000;
+}
+function isThisMonth(dateStr?: string): boolean {
+  if (!dateStr) return false;
+  const d = new Date(dateStr);
+  return !isNaN(d.getTime()) && d.getMonth() === NOW.getMonth() && d.getFullYear() === NOW.getFullYear();
+}
 
 const STATUS_TABS: { key: "all" | InvoiceStatus; label: string }[] = [
   { key: "all",            label: "All"            },
@@ -88,6 +102,17 @@ export default function InvoicesPage() {
     .filter(i => i.status !== "paid" && i.status !== "void" && i.status !== "canceled")
     .reduce((sum, i) => sum + i.balanceDue, 0);
 
+  // Summary metrics — respect the active context
+  const pastDueTotal = contextFiltered.filter(i => i.status === "past_due").reduce((s, i) => s + i.balanceDue, 0);
+  const dueThisWeek  = contextFiltered.filter(i => i.balanceDue > 0 && daysUntil(i.dueDate) >= 0 && daysUntil(i.dueDate) <= 7);
+  const paidThisMonth = contextFiltered.filter(i => i.status === "paid" && isThisMonth(i.paidAt));
+  const summaryCards: SummaryCard[] = [
+    { icon: DollarSign,    label: "Outstanding Balance", value: fmt(totalOutstanding),                                              sub: `${contextFiltered.filter(i => i.balanceDue > 0).length} open invoices`, iconColor: "#4f46e5" },
+    { icon: AlertTriangle, label: "Past Due",            value: fmt(pastDueTotal),                                                  sub: `${contextFiltered.filter(i => i.status === "past_due").length} invoices`, iconColor: "#dc2626" },
+    { icon: CalendarClock, label: "Due This Week",       value: fmt(dueThisWeek.reduce((s, i) => s + i.balanceDue, 0)),              sub: `${dueThisWeek.length} invoices`, iconColor: "#f59e0b" },
+    { icon: CheckCircle2,  label: "Paid This Month",     value: fmt(paidThisMonth.reduce((s, i) => s + i.total, 0)),                 sub: `${paidThisMonth.length} payments`, iconColor: "#10b981" },
+  ];
+
   return (
     <div className="p-6">
       <div className="flex items-start justify-between mb-6">
@@ -108,6 +133,11 @@ export default function InvoicesPage() {
         <button className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-3 py-2 rounded-lg transition-colors">
           <Plus className="w-4 h-4" /> New Invoice
         </button>
+      </div>
+
+      {/* Summary cards */}
+      <div className="mb-5">
+        <ModuleSummaryCards cards={summaryCards} moduleKey="invoices" />
       </div>
 
       <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>

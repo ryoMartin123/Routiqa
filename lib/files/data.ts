@@ -2,9 +2,9 @@
 // Replace with Supabase: photos_files table + Storage signed URLs.
 // Files are stored ONCE; getFiles() matches by any combination of linked IDs.
 
-import type { PhotoFile, FileScope, FileType } from "./types";
+import type { PhotoFile, FileScope, FileType, FileLinkKind } from "./types";
 
-const STORAGE_KEY = "crm-photos-files";
+const STORAGE_KEY = "crm-photos-files-v2";
 
 // ─── Seed data ────────────────────────────────────────────
 // Linked to real customer ids (1,2,4,7,8), properties (p1-1, p8-1…), jobs (j1,j2…).
@@ -93,6 +93,27 @@ const SEED: PhotoFile[] = [
     storagePath: "acct/8/property-summary-may.pdf", tags: ["report", "monthly"],
     notes: "Monthly property summary", uploadedBy: "Sara (CSR)", uploadedAt: "2026-05-31", displayDate: "May 31, 2026", accountName: "ABC Property Group",
   },
+  {
+    id: "f13", organizationId: "org_northstar", companyId: "co_hvac", locationId: "loc_augusta", serviceAreaId: "sa_augusta",
+    accountId: "1", agreementId: "1",
+    categoryKey: "documents", fileName: "hvac-agreement-signed.pdf", fileType: "pdf",
+    storagePath: "acct/1/agreement/1/hvac-agreement-signed.pdf", tags: ["agreement", "signed"],
+    notes: "Signed maintenance agreement", uploadedBy: "Sara (CSR)", uploadedAt: "2022-01-15", displayDate: "Jan 15, 2022", accountName: "Sarah Mitchell",
+  },
+  {
+    id: "f14", organizationId: "org_northstar", companyId: "co_roofing", locationId: "loc_columbia", serviceAreaId: "sa_columbia",
+    accountId: "2", projectId: "p2", quoteId: "q-2001",
+    categoryKey: "documents", fileName: "roof-replacement-quote.pdf", fileType: "pdf",
+    storagePath: "acct/2/quote/q-2001/roof-replacement-quote.pdf", tags: ["quote", "roofing"],
+    notes: "Full roof replacement estimate", uploadedBy: "D. Nguyen", uploadedAt: "2026-03-20", displayDate: "Mar 20, 2026", accountName: "Hammond LLC",
+  },
+  {
+    id: "f15", organizationId: "org_northstar", companyId: "co_hvac", locationId: "loc_augusta", serviceAreaId: "sa_augusta",
+    accountId: "2", invoiceId: "inv-1042",
+    categoryKey: "documents", fileName: "invoice-1042.pdf", fileType: "pdf",
+    storagePath: "acct/2/invoice/inv-1042/invoice-1042.pdf", tags: ["invoice", "billing"],
+    notes: "Emergency HVAC repair invoice", uploadedBy: "Sara (CSR)", uploadedAt: "2026-03-12", displayDate: "Mar 12, 2026", accountName: "Hammond LLC",
+  },
 ];
 
 // ─── Runtime store ────────────────────────────────────────
@@ -124,6 +145,8 @@ export function getFiles(scope: FileScope = {}): PhotoFile[] {
       (!scope.projectId   || f.projectId   === scope.projectId)   &&
       (!scope.workOrderId || f.workOrderId === scope.workOrderId) &&
       (!scope.agreementId || f.agreementId === scope.agreementId) &&
+      (!scope.quoteId     || f.quoteId     === scope.quoteId)     &&
+      (!scope.invoiceId   || f.invoiceId   === scope.invoiceId)   &&
       (!scope.equipmentId || f.equipmentId === scope.equipmentId)
     )
     .sort((a, b) => b.uploadedAt.localeCompare(a.uploadedAt));
@@ -132,6 +155,59 @@ export function getFiles(scope: FileScope = {}): PhotoFile[] {
 // Distinct uploaders (for the filter dropdown).
 export function getUploaders(): string[] {
   return Array.from(new Set(init().map(f => f.uploadedBy))).sort();
+}
+
+// Distinct accounts present in the library (for the account filter).
+export function getFileAccounts(): { id: string; name: string }[] {
+  const map = new Map<string, string>();
+  for (const f of init()) {
+    if (f.accountId) map.set(f.accountId, f.accountName ?? f.accountId);
+  }
+  return Array.from(map, ([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name));
+}
+
+// Distinct locations present in the library (for the location filter).
+export function getFileLocations(): string[] {
+  return Array.from(new Set(init().map(f => f.locationId))).filter(Boolean).sort();
+}
+
+// The most specific linked record a file belongs to → drives the badge.
+// Order matters: a work-order photo is more specific than a job photo, etc.
+export function fileLinkKind(f: PhotoFile): FileLinkKind {
+  if (f.workOrderId) return "work_order";
+  if (f.jobId)       return "job";
+  if (f.projectId)   return "project";
+  if (f.agreementId) return "agreement";
+  if (f.quoteId)     return "quote";
+  if (f.invoiceId)   return "invoice";
+  if (f.propertyId)  return "property";
+  return "account";
+}
+
+// Badge label + accent color per link kind.
+export const LINK_BADGE: Record<FileLinkKind, { label: string; color: string }> = {
+  work_order: { label: "Work Order Photo",   color: "#0891b2" },
+  job:        { label: "Job Photo",          color: "#4f46e5" },
+  project:    { label: "Project File",       color: "#7c3aed" },
+  agreement:  { label: "Agreement Document", color: "#059669" },
+  quote:      { label: "Quote Attachment",   color: "#d97706" },
+  invoice:    { label: "Invoice Attachment", color: "#dc2626" },
+  property:   { label: "Property File",      color: "#0d9488" },
+  account:    { label: "Account File",       color: "#6b7280" },
+};
+
+// Does a file carry the given link kind at all (for the "Linked to" filter)?
+export function fileHasLink(f: PhotoFile, kind: FileLinkKind): boolean {
+  switch (kind) {
+    case "work_order": return !!f.workOrderId;
+    case "job":        return !!f.jobId;
+    case "project":    return !!f.projectId;
+    case "agreement":  return !!f.agreementId;
+    case "quote":      return !!f.quoteId;
+    case "invoice":    return !!f.invoiceId;
+    case "property":   return !!f.propertyId;
+    case "account":    return fileLinkKind(f) === "account"; // account-only
+  }
 }
 
 // ─── Mock upload — auto-fills the scope chain ─────────────

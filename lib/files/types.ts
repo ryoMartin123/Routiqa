@@ -13,13 +13,15 @@ export interface PhotoFile {
   // Master owner
   accountId:      string;
 
-  // Optional context links
+  // Optional context links — the same file surfaces in any linked record's view
   propertyId?:    string;
   leadId?:        string;
   jobId?:         string;
   projectId?:     string;
   workOrderId?:   string;
   agreementId?:   string;
+  quoteId?:       string;
+  invoiceId?:     string;
   equipmentId?:   string;
 
   categoryKey:    string;   // links to a photo category (Settings → Photo Categories)
@@ -46,5 +48,12 @@ export interface FileScope {
   projectId?:   string;
   workOrderId?: string;
   agreementId?: string;
+  quoteId?:     string;
+  invoiceId?:   string;
   equipmentId?: string;
 }
+
+// The related-record badge a file shows, derived from its most specific link.
+export type FileLinkKind =
+  | "work_order" | "job" | "project" | "agreement"
+  | "quote" | "invoice" | "property" | "account";

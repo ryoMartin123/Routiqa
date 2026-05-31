@@ -11,13 +11,21 @@ import {
 } from "lucide-react";
 import { useTheme } from "@/components/providers/ThemeProvider";
 import { useHierarchy } from "@/components/providers/HierarchyProvider";
-import CustomFieldsSection      from "@/components/settings/CustomFieldsSection";
-import DashboardsSettingsSection from "@/components/settings/DashboardsSettingsSection";
-import PipelinesSection         from "@/components/settings/PipelinesSection";
-import JobConfigSection         from "@/components/settings/JobConfigSection";
-import WorkOrderTemplatesSection from "@/components/settings/WorkOrderTemplatesSection";
-import PhotoCategoriesSection    from "@/components/settings/PhotoCategoriesSection";
-import IndustryDefaultsSection   from "@/components/settings/IndustryDefaultsSection";
+import dynamic from "next/dynamic";
+
+// Heavy admin sections are lazy-loaded: only one renders at a time (see
+// renderSection), so each is split into its own chunk that loads on demand.
+// This keeps the initial /settings bundle small and the route fast to open.
+const SectionLoading = () => (
+  <div className="p-6 text-sm" style={{ color: "var(--text-muted)" }}>Loading…</div>
+);
+const CustomFieldsSection       = dynamic(() => import("@/components/settings/CustomFieldsSection"),       { loading: SectionLoading, ssr: false });
+const DashboardsSettingsSection = dynamic(() => import("@/components/settings/DashboardsSettingsSection"), { loading: SectionLoading, ssr: false });
+const PipelinesSection          = dynamic(() => import("@/components/settings/PipelinesSection"),          { loading: SectionLoading, ssr: false });
+const JobConfigSection          = dynamic(() => import("@/components/settings/JobConfigSection"),          { loading: SectionLoading, ssr: false });
+const WorkOrderTemplatesSection = dynamic(() => import("@/components/settings/WorkOrderTemplatesSection"), { loading: SectionLoading, ssr: false });
+const PhotoCategoriesSection    = dynamic(() => import("@/components/settings/PhotoCategoriesSection"),    { loading: SectionLoading, ssr: false });
+const IndustryDefaultsSection   = dynamic(() => import("@/components/settings/IndustryDefaultsSection"),   { loading: SectionLoading, ssr: false });
 import { companies, locations, serviceAreas } from "@/lib/hierarchy/data";
 import type { HierarchyMode } from "@/lib/hierarchy/types";
 
