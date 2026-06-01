@@ -29,9 +29,9 @@ export default function PipelineSnapshot() {
   const maxCount = Math.max(...counts.map(c => c.count), 1);
 
   return (
-    <div className="rounded-xl p-4"
+    <div className="rounded-xl p-4 h-full min-h-0 flex flex-col"
       style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between mb-3 shrink-0">
         <div>
           <h2 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Pipeline</h2>
           <p className="text-[10px] mt-0.5" style={{ color: "var(--text-muted)" }}>{active.length} active · {won} won</p>
@@ -41,7 +41,7 @@ export default function PipelineSnapshot() {
         </Link>
       </div>
 
-      <div className="space-y-2">
+      <div className="flex-1 min-h-0 overflow-y-auto dashboard-widget-content space-y-2">
         {counts.map(({ stage, config, count }) => (
           <div key={stage} className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: config.color }} />

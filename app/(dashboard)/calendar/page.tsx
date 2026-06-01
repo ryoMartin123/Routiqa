@@ -1,7 +1,4 @@
-import { redirect } from "next/navigation";
-
-// The Calendar module was renamed to Dispatching. This stub preserves the old
-// /calendar URL (bookmarks, existing tabs) by redirecting to the new route.
-export default function CalendarRedirect() {
-  redirect("/dispatching");
-}
+// The Calendar and Dispatching nav items share one module. This route renders
+// the same page as /dispatching, which detects the /calendar path and defaults
+// to the month calendar view (the board defaults to the dispatch view).
+export { default } from "../dispatching/page";

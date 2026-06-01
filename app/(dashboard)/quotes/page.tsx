@@ -7,10 +7,11 @@ import { Search, Plus, SlidersHorizontal, ChevronUp, ChevronDown, FilePen, Send,
 import { cn } from "@/lib/utils";
 import { getAllQuotes, fmt, type QuoteRecord } from "@/lib/quotes/data";
 import { QUOTE_STATUS_STYLE, type QuoteStatus } from "@/lib/quotes/types";
-import CreateDocumentModal from "@/components/quotes/CreateDocumentModal";
+import QuoteWizard from "@/components/quotes/QuoteWizard";
 import { useHierarchy } from "@/components/providers/HierarchyProvider";
 import ModuleSummaryCards, { type SummaryCard } from "@/components/shared/ModuleSummaryCards";
 import ModuleViewToggle, { type ModuleView } from "@/components/shared/ModuleViewToggle";
+import StatusTabs from "@/components/shared/StatusTabs";
 
 function daysUntil(dateStr?: string): number {
   if (!dateStr) return Infinity;
@@ -31,6 +32,10 @@ const STATUS_TABS: { key: "all" | QuoteStatus; label: string }[] = [
 ];
 
 type SortField = "quoteNumber" | "customerName" | "status" | "total" | "createdAt";
+
+// Full column layout (Quote# · Customer · Property · Related · Status · Total · Assigned · Location · Created · Expires)
+const GRID_COLS = "110px 1.7fr 1.4fr 1.4fr 100px 110px 1fr 1fr 110px 110px";
+const GRID_MIN_WIDTH = "1240px";
 
 const LINKED_TYPE_STYLE: Record<string, { bg: string; color: string }> = {
   lead:      { bg: "#fef3c7", color: "#92400e" },
@@ -134,27 +139,10 @@ export default function QuotesPage() {
       {moduleView === "list" && (
       <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
         {/* Tabs + search */}
-        <div className="flex items-center justify-between px-4" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
-          <div className="flex items-center gap-0.5 overflow-x-auto">
-            {STATUS_TABS.map(t => {
-              const count  = tabCount(t.key);
-              const active = tab === t.key;
-              if (t.key !== "all" && count === 0) return null;
-              return (
-                <button key={t.key} onClick={() => setTab(t.key)}
-                  className="relative flex items-center gap-1.5 px-3 py-3 text-sm font-medium transition-colors whitespace-nowrap shrink-0"
-                  style={{ color: active ? "#4f46e5" : "var(--text-muted)" }}>
-                  {t.label}
-                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full"
-                    style={{ backgroundColor: active ? "#e0e7ff" : "var(--bg-input)", color: active ? "#4f46e5" : "var(--text-muted)" }}>
-                    {count}
-                  </span>
-                  {active && <span className="absolute bottom-0 left-0 right-0 h-0.5 rounded-t bg-indigo-600" />}
-                </button>
-              );
-            })}
-          </div>
-          <div className="flex items-center gap-2 py-2 shrink-0">
+        <div className="flex items-center justify-between flex-wrap gap-2 px-4 py-3" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+          <StatusTabs active={tab} onChange={k => setTab(k as "all" | QuoteStatus)}
+            tabs={STATUS_TABS.filter(t => t.key === "all" || tabCount(t.key) > 0).map(t => ({ key: t.key, label: t.label, count: tabCount(t.key) }))} />
+          <div className="flex items-center gap-2 shrink-0">
             <div className="flex items-center gap-2 rounded-lg px-3 py-1.5" style={{ backgroundColor: "var(--bg-input)" }}>
               <Search className="w-3.5 h-3.5 shrink-0" style={{ color: "var(--text-muted)" }} />
               <input type="text" placeholder="Search quotes..." value={search} onChange={e => setSearch(e.target.value)}
@@ -167,65 +155,80 @@ export default function QuotesPage() {
           </div>
         </div>
 
-        {/* Column headers */}
-        <div className="grid px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider select-none"
-          style={{ gridTemplateColumns: "1fr 2fr 2fr 1.2fr 1fr 1fr", color: "var(--text-muted)", borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
-          {([
-            { label: "Quote #",   field: "quoteNumber"   },
-            { label: "Title",     field: null            },
-            { label: "Linked To", field: null            },
-            { label: "Status",    field: "status"        },
-            { label: "Total",     field: "total"         },
-            { label: "Expires",   field: null            },
-          ] as const).map(({ label, field }) => (
-            <button key={label} onClick={() => field && handleSort(field as SortField)}
-              className={cn("flex items-center gap-1 text-left", field ? "cursor-pointer hover:opacity-80" : "cursor-default")}
-              style={{ color: sortField === field ? "#4f46e5" : "var(--text-muted)" }}>
-              {label}{field && <SortIcon field={field as SortField} />}
-            </button>
-          ))}
-        </div>
-
-        {/* Rows */}
-        <div>
-          {displayed.length === 0 ? (
-            <div className="py-16 text-center">
-              <p className="text-sm" style={{ color: "var(--text-muted)" }}>No quotes match the current filter.</p>
+        {/* Table — horizontal scroll so all columns stay visible on narrow screens */}
+        <div className="overflow-x-auto thin-scroll-x">
+          <div style={{ minWidth: GRID_MIN_WIDTH }}>
+            {/* Column headers */}
+            <div className="grid px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider select-none"
+              style={{ gridTemplateColumns: GRID_COLS, color: "var(--text-muted)", borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+              {([
+                { label: "Quote #",            field: "quoteNumber"  },
+                { label: "Customer / Account", field: "customerName" },
+                { label: "Property",           field: null           },
+                { label: "Related To",         field: null           },
+                { label: "Status",             field: "status"       },
+                { label: "Total",              field: "total"        },
+                { label: "Assigned To",        field: null           },
+                { label: "Location",           field: null           },
+                { label: "Created",            field: "createdAt"    },
+                { label: "Expires",            field: null           },
+              ] as const).map(({ label, field }) => (
+                <button key={label} onClick={() => field && handleSort(field as SortField)}
+                  className={cn("flex items-center gap-1 text-left", field ? "cursor-pointer hover:opacity-80" : "cursor-default")}
+                  style={{ color: sortField === field ? "#4f46e5" : "var(--text-muted)" }}>
+                  {label}{field && <SortIcon field={field as SortField} />}
+                </button>
+              ))}
             </div>
-          ) : displayed.map((q, i) => {
-            const s = QUOTE_STATUS_STYLE[q.status];
-            const lt = q.linkedType ? LINKED_TYPE_STYLE[q.linkedType] : null;
-            return (
-              <Link key={q.id} href={`/quotes/${q.id}`}
-                className="grid px-4 py-3 items-center hover:bg-[var(--bg-surface-2)] transition-colors"
-                style={{ gridTemplateColumns: "1fr 2fr 2fr 1.2fr 1fr 1fr", borderBottom: i < displayed.length - 1 ? "1px solid var(--border-subtle)" : "none", textDecoration: "none" }}>
-                <span className="text-sm font-mono font-medium" style={{ color: "var(--text-primary)" }}>{q.quoteNumber}</span>
-                <div className="min-w-0">
-                  <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{q.title}</p>
-                  <div className="flex items-center gap-1.5 mt-0.5">
-                    <div className="w-4 h-4 rounded-full bg-indigo-100 flex items-center justify-center text-[8px] font-bold text-indigo-600 shrink-0">{q.customerInitials}</div>
-                    <p className="text-[10px] truncate" style={{ color: "var(--text-muted)" }}>{q.customerName}</p>
-                  </div>
+
+            {/* Rows */}
+            <div>
+              {displayed.length === 0 ? (
+                <div className="py-16 text-center">
+                  <p className="text-sm" style={{ color: "var(--text-muted)" }}>No quotes match the current filter.</p>
                 </div>
-                <div>
-                  {q.linkedLabel && lt ? (
-                    <span className="inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full"
-                      style={{ backgroundColor: lt.bg, color: lt.color }}>
-                      {q.linkedLabel}
-                    </span>
-                  ) : <span style={{ color: "var(--text-muted)" }}>—</span>}
-                </div>
-                <span className="inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full"
-                  style={{ backgroundColor: s.bg, color: s.color }}>{s.label}</span>
-                <span className="text-sm font-semibold" style={{ color: q.total > 0 ? "var(--text-primary)" : "var(--text-muted)" }}>
-                  {q.total > 0 ? fmt(q.total) : "TBD"}
-                </span>
-                <span className="text-sm" style={{ color: q.expiresAt ? "var(--text-secondary)" : "var(--text-muted)" }}>
-                  {q.expiresAt ?? "—"}
-                </span>
-              </Link>
-            );
-          })}
+              ) : displayed.map((q, i) => {
+                const s = QUOTE_STATUS_STYLE[q.status];
+                const lt = q.linkedType ? LINKED_TYPE_STYLE[q.linkedType] : null;
+                return (
+                  <Link key={q.id} href={`/quotes/${q.id}`}
+                    className="grid px-4 py-3 items-center hover:bg-[var(--bg-surface-2)] transition-colors"
+                    style={{ gridTemplateColumns: GRID_COLS, borderBottom: i < displayed.length - 1 ? "1px solid var(--border-subtle)" : "none", textDecoration: "none" }}>
+                    {/* Quote # */}
+                    <span className="text-sm font-mono font-medium truncate" style={{ color: "var(--text-primary)" }}>{q.quoteNumber}</span>
+                    {/* Customer / Account (+ title) */}
+                    <div className="min-w-0 pr-2">
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-4 h-4 rounded-full bg-indigo-100 flex items-center justify-center text-[8px] font-bold text-indigo-600 shrink-0">{q.customerInitials}</div>
+                        <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{q.customerName}</p>
+                      </div>
+                      <p className="text-[10px] truncate mt-0.5" style={{ color: "var(--text-muted)" }}>{q.title}</p>
+                    </div>
+                    {/* Property */}
+                    <span className="text-xs truncate pr-2" style={{ color: q.propertyLabel ? "var(--text-secondary)" : "var(--text-muted)" }}>{q.propertyLabel ?? "—"}</span>
+                    {/* Related To */}
+                    <div className="pr-2 min-w-0">
+                      {q.linkedLabel && lt ? (
+                        <span className="inline-block max-w-full truncate text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: lt.bg, color: lt.color }}>{q.linkedLabel}</span>
+                      ) : <span style={{ color: "var(--text-muted)" }}>—</span>}
+                    </div>
+                    {/* Status */}
+                    <span className="inline-block w-fit text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: s.bg, color: s.color }}>{s.label}</span>
+                    {/* Total */}
+                    <span className="text-sm font-semibold" style={{ color: q.total > 0 ? "var(--text-primary)" : "var(--text-muted)" }}>{q.total > 0 ? fmt(q.total) : "TBD"}</span>
+                    {/* Assigned To */}
+                    <span className="text-xs truncate pr-2" style={{ color: "var(--text-secondary)" }}>{q.assignedTo ?? q.createdBy}</span>
+                    {/* Location */}
+                    <span className="text-xs truncate pr-2" style={{ color: "var(--text-secondary)" }}>{q.locationName}</span>
+                    {/* Created */}
+                    <span className="text-xs" style={{ color: "var(--text-secondary)" }}>{q.createdAt}</span>
+                    {/* Expires */}
+                    <span className="text-xs" style={{ color: q.expiresAt ? "var(--text-secondary)" : "var(--text-muted)" }}>{q.expiresAt ?? "—"}</span>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
         </div>
 
         {/* Footer */}
@@ -241,7 +244,7 @@ export default function QuotesPage() {
       )}
 
       {showCreate && (
-        <CreateDocumentModal kind="quote"
+        <QuoteWizard
           onClose={() => setShowCreate(false)}
           onCreated={(id) => { setShowCreate(false); router.push(`/quotes/${id}`); }} />
       )}

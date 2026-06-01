@@ -10,6 +10,7 @@ import { getJobStatuses } from "@/lib/job-config/data";
 import { useHierarchy } from "@/components/providers/HierarchyProvider";
 import ModuleSummaryCards, { type SummaryCard } from "@/components/shared/ModuleSummaryCards";
 import ModuleViewToggle, { type ModuleView } from "@/components/shared/ModuleViewToggle";
+import StatusTabs from "@/components/shared/StatusTabs";
 
 const TODAY = "May 30, 2026";
 
@@ -169,26 +170,17 @@ export default function JobsPage() {
       {moduleView === "list" && (
       <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
         {/* Tabs + search */}
-        <div className="flex items-center justify-between px-4" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
-          <div className="flex items-center gap-0.5">
-            {TABS.map(t => {
-              const count = t.key === "projects" ? ALL_PROJECTS.filter(p => (!effectiveCompanyId || p.companyId === effectiveCompanyId) && (!effectiveLocationId || p.locationId === effectiveLocationId)).length : contextFiltered.filter(t.fn).length;
-              const active = tab === t.key;
-              return (
-                <button key={t.key} onClick={() => setTab(t.key)}
-                  className="relative flex items-center gap-1.5 px-3 py-3 text-sm font-medium transition-colors"
-                  style={{ color: active ? "#4f46e5" : "var(--text-muted)" }}
-                >
-                  {t.key === "projects" && <FolderKanban className="w-3.5 h-3.5" />}
-                  {t.label}
-                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: active ? "#e0e7ff" : "var(--bg-input)", color: active ? "#4f46e5" : "var(--text-muted)" }}>{count}</span>
-                  {active && <span className="absolute bottom-0 left-0 right-0 h-0.5 rounded-t bg-indigo-600" />}
-                </button>
-              );
-            })}
-          </div>
+        <div className="flex items-center justify-between flex-wrap gap-2 px-4 py-3" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+          <StatusTabs active={tab} onChange={k => setTab(k as typeof tab)}
+            tabs={TABS.map(t => ({
+              key: t.key, label: t.label,
+              icon: t.key === "projects" ? FolderKanban : undefined,
+              count: t.key === "projects"
+                ? ALL_PROJECTS.filter(p => (!effectiveCompanyId || p.companyId === effectiveCompanyId) && (!effectiveLocationId || p.locationId === effectiveLocationId)).length
+                : contextFiltered.filter(t.fn).length,
+            }))} />
           {!isProjects && (
-            <div className="flex items-center gap-2 py-2">
+            <div className="flex items-center gap-2">
               <div className="flex items-center gap-2 rounded-lg px-3 py-1.5" style={{ backgroundColor: "var(--bg-input)" }}>
                 <Search className="w-3.5 h-3.5 shrink-0" style={{ color: "var(--text-muted)" }} />
                 <input type="text" placeholder="Search jobs..." value={search} onChange={e => setSearch(e.target.value)}

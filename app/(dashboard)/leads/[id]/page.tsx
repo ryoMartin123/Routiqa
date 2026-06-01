@@ -18,6 +18,9 @@ import { EVENT_FILTER_MAP } from "@/lib/activity/types";
 import UiSelect from "@/components/ui/Select";
 import { companies, locations, serviceAreas } from "@/lib/hierarchy/data";
 import { getCustomer } from "@/lib/customers/data";
+import { getQuotesForLead, fmt as fmtCurrency } from "@/lib/quotes/data";
+import { QUOTE_STATUS_STYLE } from "@/lib/quotes/types";
+import QuoteWizard from "@/components/quotes/QuoteWizard";
 
 const TABS = ["Overview", "Activity", "Quotes", "Tasks", "Notes", "Photos & Files", "Communication", "Convert"];
 
@@ -562,6 +565,48 @@ function LeadActivityTab({ id }: { id: string }) {
   );
 }
 
+// ─── Quotes tab ───────────────────────────────────────────
+function LeadQuotesTab({ id }: { id: string }) {
+  const [wizard, setWizard] = useState(false);
+  const [, forceRefresh] = useState(0);
+  const lead = getLead(id);
+  const quotes = getQuotesForLead(id);
+
+  return (
+    <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+      {wizard && (
+        <QuoteWizard preset={{ customerId: lead?.accountId, leadId: id, lockCustomer: Boolean(lead?.accountId) }}
+          onClose={() => setWizard(false)}
+          onCreated={() => { setWizard(false); forceRefresh(n => n + 1); }} />
+      )}
+      <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+        <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Quotes ({quotes.length})</p>
+        <button onClick={() => setWizard(true)} className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg"
+          style={{ backgroundColor: "#4f46e5", color: "#fff" }}>
+          <Plus className="w-3.5 h-3.5" /> New Quote
+        </button>
+      </div>
+      {quotes.length === 0 ? (
+        <div className="px-4 py-10 text-center"><p className="text-sm" style={{ color: "var(--text-muted)" }}>No quotes for this lead yet.</p></div>
+      ) : quotes.map((q, i) => {
+        const s = QUOTE_STATUS_STYLE[q.status];
+        return (
+          <Link key={q.id} href={`/quotes/${q.id}`}
+            className="flex items-center gap-4 px-4 py-3 hover:bg-[var(--bg-surface-2)] transition-colors"
+            style={{ borderBottom: i < quotes.length - 1 ? "1px solid var(--border-subtle)" : "none", textDecoration: "none" }}>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-mono font-medium" style={{ color: "var(--text-primary)" }}>{q.quoteNumber}</p>
+              <p className="text-xs mt-0.5 truncate" style={{ color: "var(--text-muted)" }}>{q.title}</p>
+            </div>
+            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0" style={{ backgroundColor: s.bg, color: s.color }}>{s.label}</span>
+            <span className="text-sm font-semibold shrink-0" style={{ color: "var(--text-primary)" }}>{q.total > 0 ? fmtCurrency(q.total) : "TBD"}</span>
+          </Link>
+        );
+      })}
+    </div>
+  );
+}
+
 // ─── Stub tab ─────────────────────────────────────────────
 function StubTab({ label, phase }: { label: string; phase: string }) {
   return (
@@ -662,7 +707,7 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
       <div className="flex-1 overflow-y-auto p-6" style={{ backgroundColor: "var(--bg-page)" }}>
         {tab === "Overview"       && <OverviewTab id={id} />}
         {tab === "Activity"       && <LeadActivityTab id={id} />}
-        {tab === "Quotes"         && <StubTab label="Quotes" phase="Phase 2" />}
+        {tab === "Quotes"         && <LeadQuotesTab id={id} />}
         {tab === "Tasks"          && <TasksTab id={id} />}
         {tab === "Notes"          && <NotesTab id={id} />}
         {tab === "Photos & Files" && <StubTab label="Photos & Files" phase="Phase 3" />}

@@ -225,9 +225,51 @@ export default function PhotoGallery({ recordLevel, scope = {}, accountName, upl
 
   return (
     <div className="space-y-4">
-      {/* ── Toolbar: search + view + filters + upload ── */}
+      {/* ── Toolbar: tabs + views (left) · search + filter (right) ── */}
       <div className="flex flex-wrap items-center gap-2 justify-between">
+        {/* Left: quick tabs + view selector */}
         <div className="flex flex-wrap items-center gap-2">
+          {/* Quick tabs (global) */}
+          {isGlobal && (
+            <div className="flex items-center gap-0.5 flex-wrap">
+              {QUICK_TABS.map(t => {
+                const active = quickTab === t.key;
+                return (
+                  <button key={t.key} onClick={() => setQuickTab(t.key)}
+                    className="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
+                    style={{
+                      backgroundColor: active ? "var(--accent-soft-bg)" : "transparent",
+                      color: active ? "var(--accent-text)" : "var(--text-muted)",
+                      border: `1px solid ${active ? "var(--accent-soft-border)" : "transparent"}`,
+                    }}>
+                    {t.label}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {/* View selector — part of the tabs (global) */}
+          {isGlobal && (
+            <div className="flex items-center rounded-lg overflow-hidden" style={{ border: "1px solid var(--border)" }}>
+              {([
+                { key: "grid",          icon: LayoutGrid, title: "Grid" },
+                { key: "list",          icon: ListIcon,   title: "List" },
+                { key: "group_account", icon: Users,      title: "Group by Account" },
+                { key: "group_job",     icon: Briefcase,  title: "Group by Job / Project" },
+              ] as const).map(v => {
+                const active = view === v.key;
+                return (
+                  <button key={v.key} onClick={() => setView(v.key)} title={v.title}
+                    className="px-2.5 py-1.5 transition-colors"
+                    style={{ backgroundColor: active ? "#4f46e5" : "var(--bg-surface)", color: active ? "#fff" : "var(--text-muted)" }}>
+                    <v.icon className="w-3.5 h-3.5" />
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
           {/* Scope toggle (embedded record mode) */}
           {!isGlobal && scopeOptions.length > 1 && (
             <div className="flex items-center rounded-lg overflow-hidden" style={{ border: "1px solid var(--border)" }}>
@@ -243,15 +285,18 @@ export default function PhotoGallery({ recordLevel, scope = {}, accountName, upl
               })}
             </div>
           )}
+        </div>
 
-          {/* Search — primary entry point */}
+        {/* Right: search + filter + count + upload */}
+        <div className="flex items-center gap-2">
+          {/* Search */}
           <div className="flex items-center gap-2 rounded-lg px-3 py-2" style={{ backgroundColor: "var(--bg-input)" }}>
             <Search className="w-4 h-4 shrink-0" style={{ color: "var(--text-muted)" }} />
             <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search files, accounts, jobs, tags…"
-              className="bg-transparent text-sm outline-none w-60" style={{ color: "var(--text-primary)" }} />
+              className="bg-transparent text-sm outline-none w-52" style={{ color: "var(--text-primary)" }} />
           </div>
 
-          {/* Filters button + popover (global only) — sits next to search */}
+          {/* Filters button + popover (global only) */}
           {isGlobal && (
             <div className="relative" ref={filtersRef}>
               <button onClick={() => setFiltersOpen(o => !o)}
@@ -271,7 +316,7 @@ export default function PhotoGallery({ recordLevel, scope = {}, accountName, upl
               </button>
 
               {filtersOpen && (
-                <div className="absolute left-0 top-full mt-2 z-50 rounded-xl p-4 w-80"
+                <div className="absolute right-0 top-full mt-2 z-50 rounded-xl p-4 w-80"
                   style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "0 12px 32px rgba(0,0,0,0.18)" }}>
                   <div className="flex items-center justify-between mb-3">
                     <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Filters</p>
@@ -325,29 +370,11 @@ export default function PhotoGallery({ recordLevel, scope = {}, accountName, upl
               )}
             </div>
           )}
-        </div>
 
-        <div className="flex items-center gap-2">
-          {/* View mode toggle (global only) */}
-          {isGlobal && (
-            <div className="flex items-center rounded-lg overflow-hidden" style={{ border: "1px solid var(--border)" }}>
-              {([
-                { key: "grid",          icon: LayoutGrid, title: "Grid" },
-                { key: "list",          icon: ListIcon,   title: "List" },
-                { key: "group_account", icon: Users,      title: "Group by Account" },
-                { key: "group_job",     icon: Briefcase,  title: "Group by Job / Project" },
-              ] as const).map(v => {
-                const active = view === v.key;
-                return (
-                  <button key={v.key} onClick={() => setView(v.key)} title={v.title}
-                    className="px-2.5 py-1.5 transition-colors"
-                    style={{ backgroundColor: active ? "#4f46e5" : "var(--bg-surface)", color: active ? "#fff" : "var(--text-muted)" }}>
-                    <v.icon className="w-3.5 h-3.5" />
-                  </button>
-                );
-              })}
-            </div>
-          )}
+          {/* File count */}
+          <span className="text-xs whitespace-nowrap" style={{ color: "var(--text-muted)" }}>
+            {displayed.length} file{displayed.length === 1 ? "" : "s"}
+          </span>
 
           {/* Toolbar Upload button — hidden when the page renders its own in the header */}
           {!externalUpload && (
@@ -358,31 +385,6 @@ export default function PhotoGallery({ recordLevel, scope = {}, accountName, upl
           )}
         </div>
       </div>
-
-      {/* ── Quick tabs + count (global only) ── */}
-      {isGlobal && (
-        <div className="flex items-center justify-between flex-wrap gap-2">
-          <div className="flex items-center gap-0.5 flex-wrap">
-            {QUICK_TABS.map(t => {
-              const active = quickTab === t.key;
-              return (
-                <button key={t.key} onClick={() => setQuickTab(t.key)}
-                  className="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
-                  style={{
-                    backgroundColor: active ? "var(--accent-soft-bg)" : "transparent",
-                    color: active ? "var(--accent-text)" : "var(--text-muted)",
-                    border: `1px solid ${active ? "var(--accent-soft-border)" : "transparent"}`,
-                  }}>
-                  {t.label}
-                </button>
-              );
-            })}
-          </div>
-          <span className="text-xs" style={{ color: "var(--text-muted)" }}>
-            {displayed.length} file{displayed.length === 1 ? "" : "s"}
-          </span>
-        </div>
-      )}
 
       {/* ── Active filter chips ── */}
       {activeChips.length > 0 && (
@@ -398,15 +400,6 @@ export default function PhotoGallery({ recordLevel, scope = {}, accountName, upl
           <button onClick={clearAllFilters} className="text-xs font-medium px-2 py-1" style={{ color: "var(--accent-text)" }}>
             Clear All
           </button>
-        </div>
-      )}
-
-      {/* Count for embedded record mode (no quick tabs there) */}
-      {!isGlobal && (
-        <div className="flex justify-end">
-          <span className="text-xs" style={{ color: "var(--text-muted)" }}>
-            {displayed.length} file{displayed.length === 1 ? "" : "s"}
-          </span>
         </div>
       )}
 

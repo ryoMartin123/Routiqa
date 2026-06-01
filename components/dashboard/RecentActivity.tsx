@@ -50,16 +50,16 @@ export default function RecentActivity() {
   const events = getAllActivityEvents().slice(0, 8);
 
   return (
-    <div className="rounded-xl overflow-hidden"
+    <div className="rounded-xl overflow-hidden h-full min-h-0 flex flex-col"
       style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
-      <div className="flex items-center justify-between px-5 py-4"
+      <div className="flex items-center justify-between px-5 py-4 shrink-0"
         style={{ borderBottom: "1px solid var(--border-subtle)" }}>
         <h2 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Recent Activity</h2>
         <Link href="/customers" className="flex items-center gap-1 text-xs font-medium text-indigo-600 hover:text-indigo-700">
           View all <ExternalLink className="w-3 h-3" />
         </Link>
       </div>
-      <div>
+      <div className="flex-1 min-h-0 overflow-y-auto dashboard-widget-content">
         {events.map((event, i) => {
           const color = EVENT_COLORS[event.eventType] ?? "#6b7280";
           return (

@@ -8,6 +8,7 @@ import {
   TrendingUp, Briefcase, ClipboardList, Image as ImageIcon,
   FileText, ChevronRight, Plus, Pencil, LayoutDashboard,
   Settings2, ArrowLeft, CalendarClock,
+  Package, Tag, Percent, FileStack, FilePen,
 } from "lucide-react";
 import { useTheme } from "@/components/providers/ThemeProvider";
 import { useHierarchy } from "@/components/providers/HierarchyProvider";
@@ -27,6 +28,11 @@ const WorkOrderTemplatesSection = dynamic(() => import("@/components/settings/Wo
 const PhotoCategoriesSection    = dynamic(() => import("@/components/settings/PhotoCategoriesSection"),    { loading: SectionLoading, ssr: false });
 const IndustryDefaultsSection   = dynamic(() => import("@/components/settings/IndustryDefaultsSection"),   { loading: SectionLoading, ssr: false });
 const CalendarDispatchSection   = dynamic(() => import("@/components/settings/CalendarDispatchSection"),   { loading: SectionLoading, ssr: false });
+const ItemsCategoriesSection    = dynamic(() => import("@/components/settings/ItemsCategoriesSection"),    { loading: SectionLoading, ssr: false });
+const QuoteSettingsSection      = dynamic(() => import("@/components/settings/QuoteSettingsSection"),      { loading: SectionLoading, ssr: false });
+const QuoteTemplatesSection     = dynamic(() => import("@/components/settings/QuoteTemplatesSection"),     { loading: SectionLoading, ssr: false });
+const TermsConditionsSection    = dynamic(() => import("@/components/settings/TermsConditionsSection"),    { loading: SectionLoading, ssr: false });
+const TaxesFeesSection          = dynamic(() => import("@/components/settings/TaxesFeesSection"),          { loading: SectionLoading, ssr: false });
 import { companies, locations, serviceAreas } from "@/lib/hierarchy/data";
 import type { HierarchyMode } from "@/lib/hierarchy/types";
 
@@ -35,12 +41,13 @@ type SectionKey =
   | "appearance" | "business_structure"
   | "organization" | "companies" | "locations" | "service_areas"
   | "pipelines" | "job_types" | "work_orders" | "photo_categories" | "calendar_dispatch" | "agreements"
+  | "items_categories" | "quote_settings" | "quote_templates" | "terms_conditions" | "taxes_fees"
   | "users" | "security"
   | "marketing" | "communication"
   | "integrations" | "industry" | "custom_fields" | "dashboards" | "billing" | "import_export";
 
 type CategoryKey =
-  | "general" | "organization" | "operations"
+  | "general" | "organization" | "operations" | "sales_catalog"
   | "customization" | "users_security" | "communication" | "system";
 
 // View modes — drives what the right panel renders
@@ -97,6 +104,18 @@ const CATEGORIES: Category[] = [
       { key: "photo_categories", label: "Photo Categories",     description: "Categories for job and property photos",         icon: ImageIcon },
       { key: "calendar_dispatch",label: "Calendar / Dispatch",  description: "Default view, hours, service blocks, and boards", icon: CalendarClock },
       { key: "agreements",       label: "Agreements",           description: "Service plan templates and renewal billing",     icon: FileText, phase: "Phase 4" },
+    ],
+  },
+  {
+    key: "sales_catalog", label: "Sales & Catalog",
+    description: "Items, quote behavior, templates, terms, and taxes",
+    icon: Package,
+    items: [
+      { key: "items_categories", label: "Items & Categories", description: "Catalog item types, categories, and item defaults", icon: Tag },
+      { key: "quote_settings",   label: "Quote Settings",     description: "Numbering, expiration, and quote workflow rules",   icon: FilePen },
+      { key: "quote_templates",  label: "Quote Templates",    description: "Default quote structures and section toggles",      icon: FileStack },
+      { key: "terms_conditions", label: "Terms & Conditions", description: "Reusable terms blocks for quotes and invoices",     icon: FileText },
+      { key: "taxes_fees",       label: "Taxes & Fees",       description: "Default tax rate, taxable types, and fees",         icon: Percent },
     ],
   },
   {
@@ -732,6 +751,11 @@ export default function SettingsPage() {
       case "job_types":          return <JobConfigSection />;
       case "photo_categories":   return <PhotoCategoriesSection />;
       case "calendar_dispatch":  return <CalendarDispatchSection />;
+      case "items_categories":   return <ItemsCategoriesSection />;
+      case "quote_settings":     return <QuoteSettingsSection />;
+      case "quote_templates":    return <QuoteTemplatesSection />;
+      case "terms_conditions":   return <TermsConditionsSection />;
+      case "taxes_fees":         return <TaxesFeesSection />;
       case "dashboards":         return <DashboardsSettingsSection />;
       case "custom_fields":      return <CustomFieldsSection />;
       case "work_orders":    return <WorkOrderTemplatesSection />;

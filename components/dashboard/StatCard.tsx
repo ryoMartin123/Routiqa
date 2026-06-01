@@ -14,7 +14,7 @@ interface StatCardProps {
 export default function StatCard({ label, value, subtext, icon, href, urgent }: StatCardProps) {
   const inner = (
     <div
-      className="rounded-xl p-4 transition-colors"
+      className="rounded-xl p-4 transition-colors h-full"
       style={{
         backgroundColor: "var(--bg-surface)",
         border: urgent ? "1px solid #fecaca" : "1px solid var(--border-subtle)",
@@ -39,7 +39,7 @@ export default function StatCard({ label, value, subtext, icon, href, urgent }: 
   );
 
   if (href) {
-    return <Link href={href} style={{ textDecoration: "none" }}>{inner}</Link>;
+    return <Link href={href} className="block h-full" style={{ textDecoration: "none" }}>{inner}</Link>;
   }
   return inner;
 }

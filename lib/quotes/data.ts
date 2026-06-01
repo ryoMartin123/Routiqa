@@ -7,6 +7,10 @@
 //     .eq('organization_id', orgId).order('created_at', { ascending: false })
 
 import type { Quote, Invoice, QuoteStatus, InvoiceStatus, LineItemCategory } from "./types";
+import { QUOTE_STATUS_STYLE } from "./types";
+
+const STATUS_LABEL: Record<QuoteStatus, string> =
+  Object.fromEntries(Object.entries(QUOTE_STATUS_STYLE).map(([k, v]) => [k, v.label])) as Record<QuoteStatus, string>;
 
 // ─── Line items ───────────────────────────────────────────
 export interface LineItem {
@@ -22,14 +26,32 @@ export interface LineItem {
   notes?: string;
 }
 
+// ─── Activity log (per quote) ─────────────────────────────
+export type QuoteActivityKind =
+  | "created" | "duplicated" | "status" | "sent" | "approved"
+  | "rejected" | "converted" | "note" | "edited";
+
+export interface QuoteActivity {
+  id: string;
+  at: string;          // display date/time
+  actor: string;
+  kind: QuoteActivityKind;
+  message: string;
+}
+
 // ─── Extended record types ────────────────────────────────
 export interface QuoteRecord extends Quote {
   lineItems: LineItem[];
   internalNotes?: string;
+  customerNotes?: string;          // customer-facing notes shown on the quote
+  templateKey?: string;            // template the quote was created from
+  assignedTo?: string;             // salesperson (falls back to createdBy)
+  activity?: QuoteActivity[];      // status/notes history
   // Denormalized for list display
   customerName: string;
   customerInitials: string;
   locationName: string;
+  propertyLabel?: string;          // denormalized property for list/detail
   // Linked record display
   linkedLabel?: string;
   linkedType?: "lead" | "job" | "project" | "agreement";
@@ -335,9 +357,11 @@ export const ALL_INVOICES: InvoiceRecord[] = [
 // ─── Runtime store (seed + records created in-session) ────
 const Q_KEY = "crm-extra-quotes";
 const I_KEY = "crm-extra-invoices";
+const QO_KEY = "crm-quote-overrides";   // per-quote field overrides (status, notes, activity…)
 
 let _extraQuotes:   QuoteRecord[] | null = null;
 let _extraInvoices: InvoiceRecord[] | null = null;
+let _quoteOverrides: Record<string, Partial<QuoteRecord>> | null = null;
 
 function extraQuotes(): QuoteRecord[] {
   if (_extraQuotes) return _extraQuotes;
@@ -354,11 +378,117 @@ function extraInvoices(): InvoiceRecord[] {
   return _extraInvoices!;
 }
 
-export function getAllQuotes(): QuoteRecord[]   { return [...extraQuotes(), ...ALL_QUOTES]; }
+// Overrides let us persist edits (status changes, notes, activity) to *seed*
+// quotes without mutating the constant array — every page reads them back so a
+// single quote stays consistent everywhere it surfaces.
+function quoteOverrides(): Record<string, Partial<QuoteRecord>> {
+  if (_quoteOverrides) return _quoteOverrides;
+  if (typeof window === "undefined") return {};
+  try { const r = localStorage.getItem(QO_KEY); _quoteOverrides = r ? JSON.parse(r) : {}; }
+  catch { _quoteOverrides = {}; }
+  return _quoteOverrides!;
+}
+function saveOverride(id: string, patch: Partial<QuoteRecord>) {
+  const all = { ...quoteOverrides() };
+  all[id] = { ...all[id], ...patch };
+  _quoteOverrides = all;
+  try { localStorage.setItem(QO_KEY, JSON.stringify(all)); } catch { /* ignore */ }
+}
+function applyOverride(q: QuoteRecord): QuoteRecord {
+  const o = quoteOverrides()[q.id];
+  return o ? { ...q, ...o } : q;
+}
+
+export function getAllQuotes(): QuoteRecord[]   { return [...extraQuotes(), ...ALL_QUOTES].map(applyOverride); }
 export function getAllInvoices(): InvoiceRecord[] { return [...extraInvoices(), ...ALL_INVOICES]; }
+
+// ─── Activity helpers ─────────────────────────────────────
+function nowStamp(): string {
+  return new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+function newActivity(kind: QuoteActivityKind, message: string, actor = "Marcus Reyes"): QuoteActivity {
+  return { id: `qa-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`, at: nowStamp(), actor, kind, message };
+}
+
+// Activity for a quote, synthesizing a baseline "created" entry for seed quotes.
+export function getQuoteActivity(q: QuoteRecord): QuoteActivity[] {
+  if (q.activity && q.activity.length) return q.activity;
+  return [{ id: `qa-seed-${q.id}`, at: q.createdAt, actor: q.createdBy, kind: "created", message: `Quote ${q.quoteNumber} created` }];
+}
+
+function persistEdit(id: string, patch: Partial<QuoteRecord>, activityEntry?: QuoteActivity) {
+  const current = getQuote(id);
+  if (!current) return;
+  const nextActivity = activityEntry ? [...getQuoteActivity(current), activityEntry] : current.activity;
+  // Seed quotes persist via overrides; session-created quotes mutate in place.
+  const isExtra = extraQuotes().some(q => q.id === id);
+  if (isExtra) {
+    _extraQuotes = extraQuotes().map(q => q.id === id ? { ...q, ...patch, activity: nextActivity, updatedAt: nowStamp() } : q);
+    try { localStorage.setItem(Q_KEY, JSON.stringify(_extraQuotes)); } catch { /* ignore */ }
+  } else {
+    saveOverride(id, { ...patch, activity: nextActivity, updatedAt: nowStamp() });
+  }
+}
+
+const STATUS_VERB: Partial<Record<QuoteStatus, QuoteActivityKind>> = {
+  sent: "sent", approved: "approved", rejected: "rejected", converted: "converted",
+};
+
+// Update status (+ append matching activity). Used by Mark Sent/Approved/etc.
+export function updateQuoteStatus(id: string, status: QuoteStatus, actor = "Marcus Reyes"): QuoteRecord | undefined {
+  const q = getQuote(id);
+  if (!q) return;
+  const patch: Partial<QuoteRecord> = { status };
+  if (status === "approved") patch.approvedAt = nowStamp();
+  const kind = STATUS_VERB[status] ?? "status";
+  const label = STATUS_LABEL[status];
+  persistEdit(id, patch, newActivity(kind, `Marked ${label}`, actor));
+  return getQuote(id);
+}
+
+export function setQuoteNotes(id: string, notes: { internalNotes?: string; customerNotes?: string }, actor = "Marcus Reyes"): void {
+  persistEdit(id, notes, newActivity("note", "Notes updated", actor));
+}
+
+// Convert to a job/project. Foundation only: marks the quote converted, links a
+// placeholder id, and logs activity. Real job/project creation lands later.
+export function convertQuoteToJob(id: string, actor = "Marcus Reyes"): QuoteRecord | undefined {
+  const q = getQuote(id);
+  if (!q) return;
+  persistEdit(id, { status: "converted" }, newActivity("converted", `Converted to a job from ${q.quoteNumber}`, actor));
+  return getQuote(id);
+}
+export function convertQuoteToProject(id: string, actor = "Marcus Reyes"): QuoteRecord | undefined {
+  const q = getQuote(id);
+  if (!q) return;
+  persistEdit(id, { status: "converted" }, newActivity("converted", `Converted to a project from ${q.quoteNumber}`, actor));
+  return getQuote(id);
+}
+
+// Duplicate a quote into a fresh draft (new number, cleared status/approval).
+export function duplicateQuote(id: string): QuoteRecord | undefined {
+  const src = getQuote(id);
+  if (!src) return;
+  const all = getAllQuotes();
+  const copy: QuoteRecord = {
+    ...src,
+    id: `q-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`,
+    quoteNumber: nextNumber("Q", all),
+    title: `${src.title} (Copy)`,
+    status: "draft",
+    approvedAt: undefined,
+    createdAt: nowStamp(), updatedAt: nowStamp(),
+    lineItems: src.lineItems.map((li, i) => ({ ...li, id: `li-dup-${Date.now()}-${i}` })),
+    activity: [newActivity("duplicated", `Duplicated from ${src.quoteNumber}`)],
+  };
+  _extraQuotes = [copy, ...extraQuotes()];
+  try { localStorage.setItem(Q_KEY, JSON.stringify(_extraQuotes)); } catch { /* ignore */ }
+  return copy;
+}
 
 // ─── Lookup helpers ───────────────────────────────────────
 export function getQuote(id: string): QuoteRecord | undefined   { return getAllQuotes().find(q => q.id === id); }
+export { QUOTE_TEMPLATES, getQuoteTemplate } from "./templates";
 export function getInvoice(id: string): InvoiceRecord | undefined { return getAllInvoices().find(i => i.id === id); }
 
 export function getQuotesForCustomer(customerId: string): QuoteRecord[] {
@@ -401,26 +531,47 @@ function nextNumber(prefix: string, existing: { quoteNumber?: string; invoiceNum
 export interface NewQuoteInput {
   customerId: string; customerName: string; customerInitials: string; locationName: string;
   title: string; lineItems: LineItem[]; taxRate?: number; expiresAt?: string;
+  // Hierarchy (derived from the customer by the caller; defaults applied if absent)
+  companyId?: string; locationId?: string; serviceAreaId?: string;
+  // Context links
   leadId?: string; jobId?: string; projectId?: string; agreementId?: string; propertyId?: string;
+  propertyLabel?: string;
   linkedLabel?: string; linkedType?: QuoteRecord["linkedType"]; linkedId?: string;
+  // Metadata
+  templateKey?: string; assignedTo?: string; customerNotes?: string; internalNotes?: string;
+  // Create as sent rather than draft (logs a "sent" activity entry)
+  markSent?: boolean;
 }
 
 export function createQuote(input: NewQuoteInput): QuoteRecord {
   const totals = computeTotals(input.lineItems, input.taxRate ?? 0);
   const all = getAllQuotes();
+  const id = `q-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`;
+  const number = nextNumber("Q", all);
+  const status: QuoteStatus = input.markSent ? "sent" : "draft";
+  const activity: QuoteActivity[] = [newActivity("created", `Quote ${number} created`)];
+  if (input.markSent) activity.push(newActivity("sent", "Marked Sent"));
+
   const q: QuoteRecord = {
-    id: `q-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`,
-    organizationId: "org_northstar", companyId: "co_hvac", locationId: "loc_augusta",
+    id,
+    organizationId: "org_northstar",
+    companyId: input.companyId ?? "co_hvac",
+    locationId: input.locationId ?? "loc_augusta",
+    serviceAreaId: input.serviceAreaId,
     customerId: input.customerId,
     propertyId: input.propertyId, leadId: input.leadId, jobId: input.jobId,
     projectId: input.projectId, agreementId: input.agreementId,
-    quoteNumber: nextNumber("Q", all), title: input.title, status: "draft",
+    quoteNumber: number, title: input.title, status,
     ...totals, expiresAt: input.expiresAt,
+    assignedUserId: undefined,
     createdBy: "Marcus Reyes",
-    createdAt: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
-    updatedAt: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+    createdAt: nowStamp(), updatedAt: nowStamp(),
     lineItems: input.lineItems,
     customerName: input.customerName, customerInitials: input.customerInitials, locationName: input.locationName,
+    propertyLabel: input.propertyLabel,
+    templateKey: input.templateKey, assignedTo: input.assignedTo ?? "Marcus Reyes",
+    customerNotes: input.customerNotes, internalNotes: input.internalNotes,
+    activity,
     linkedLabel: input.linkedLabel, linkedType: input.linkedType, linkedId: input.linkedId,
   };
   _extraQuotes = [q, ...extraQuotes()];

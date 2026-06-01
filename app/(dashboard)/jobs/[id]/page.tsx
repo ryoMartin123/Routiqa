@@ -2,7 +2,7 @@
 
 import React, { use, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Pencil, CheckCircle, Circle, ChevronRight, Phone, MapPin, User, Clock, Calendar, DollarSign, Briefcase, AlertTriangle, Camera, ListChecks } from "lucide-react";
+import { ArrowLeft, Pencil, CheckCircle, Circle, ChevronRight, Phone, MapPin, User, Clock, Calendar, DollarSign, Briefcase, AlertTriangle, Camera, ListChecks, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getJob, getWorkOrder, getJobNotes, resolveJobStatus, type JobNoteType } from "@/lib/jobs/data";
 import { getJobStatuses } from "@/lib/job-config/data";
@@ -15,6 +15,7 @@ import { getCustomer } from "@/lib/customers/data";
 import { getQuotesForJob, getInvoicesForJob, fmt } from "@/lib/quotes/data";
 import { QUOTE_STATUS_STYLE, INVOICE_STATUS_STYLE } from "@/lib/quotes/types";
 import PhotoGallery from "@/components/files/PhotoGallery";
+import QuoteWizard from "@/components/quotes/QuoteWizard";
 
 const TABS = ["Overview", "Work Order", "Checklist", "Photos & Files", "Notes", "Customer", "Invoice / Estimate", "History"];
 
@@ -462,14 +463,23 @@ function StubTab({ label }: { label: string }) {
 
 // ─── Job financials tab ───────────────────────────────────
 function JobFinancialsTab({ jobId }: { jobId: string }) {
+  const [wizard, setWizard] = useState(false);
+  const [, forceRefresh] = useState(0);
+  const job      = getJob(jobId);
   const quotes   = getQuotesForJob(jobId);
   const invoices = getInvoicesForJob(jobId);
 
-  function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  function Section({ title, onNew, children }: { title: string; onNew?: () => void; children: React.ReactNode }) {
     return (
       <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
-        <div className="px-4 py-3" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+        <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
           <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{title}</p>
+          {onNew && (
+            <button onClick={onNew} className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg"
+              style={{ backgroundColor: "#4f46e5", color: "#fff" }}>
+              <Plus className="w-3.5 h-3.5" /> New Quote
+            </button>
+          )}
         </div>
         {children}
       </div>
@@ -478,7 +488,12 @@ function JobFinancialsTab({ jobId }: { jobId: string }) {
 
   return (
     <div className="space-y-6 max-w-3xl">
-      <Section title={`Quotes (${quotes.length})`}>
+      {wizard && job && (
+        <QuoteWizard preset={{ customerId: job.accountId, jobId, lockCustomer: true }}
+          onClose={() => setWizard(false)}
+          onCreated={() => { setWizard(false); forceRefresh(n => n + 1); }} />
+      )}
+      <Section title={`Quotes (${quotes.length})`} onNew={() => setWizard(true)}>
         {quotes.length === 0 ? (
           <div className="px-4 py-8 text-center"><p className="text-sm" style={{ color: "var(--text-muted)" }}>No quotes for this job</p></div>
         ) : quotes.map((q, i) => {

@@ -49,16 +49,16 @@ export default function UrgentPanel() {
   ];
 
   if (items.length === 0) return (
-    <div className="rounded-xl p-4"
+    <div className="rounded-xl p-4 h-full min-h-0 flex flex-col items-center justify-center"
       style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
       <p className="text-sm text-center py-4" style={{ color: "var(--text-muted)" }}>Nothing urgent right now.</p>
     </div>
   );
 
   return (
-    <div className="rounded-xl overflow-hidden"
+    <div className="rounded-xl overflow-hidden h-full min-h-0 flex flex-col"
       style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
-      <div className="flex items-center justify-between px-4 py-3"
+      <div className="flex items-center justify-between px-4 py-3 shrink-0"
         style={{ backgroundColor: "var(--warning-soft-bg)", borderBottom: "1px solid var(--warning-soft-border)" }}>
         <div className="flex items-center gap-2">
           <AlertTriangle className="w-4 h-4" style={{ color: "var(--warning-icon)" }} />
@@ -69,7 +69,7 @@ export default function UrgentPanel() {
           {items.length}
         </span>
       </div>
-      <div>
+      <div className="flex-1 min-h-0 overflow-y-auto dashboard-widget-content">
         {items.map((item, i) => (
           <Link key={i} href={item.href}
             className="flex items-start gap-3 px-4 py-3 hover:bg-[var(--bg-surface-2)] transition-colors"

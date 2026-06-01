@@ -19,9 +19,9 @@ export default function JobsInTerritory() {
     .slice(0, 5);
 
   return (
-    <div className="rounded-xl overflow-hidden"
+    <div className="rounded-xl overflow-hidden h-full min-h-0 flex flex-col"
       style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
-      <div className="flex items-center gap-2 px-5 py-4"
+      <div className="flex items-center gap-2 px-5 py-4 shrink-0"
         style={{ borderBottom: "1px solid var(--border-subtle)" }}>
         <Briefcase className="w-4 h-4" style={{ color: "#4f46e5" }} />
         <div>
@@ -31,11 +31,11 @@ export default function JobsInTerritory() {
       </div>
 
       {jobs.length === 0 ? (
-        <div className="px-5 py-8 text-center">
+        <div className="flex-1 min-h-0 flex items-center justify-center px-5 py-8 text-center">
           <p className="text-sm" style={{ color: "var(--text-muted)" }}>No jobs scheduled today in this territory.</p>
         </div>
       ) : (
-        <div>
+        <div className="flex-1 min-h-0 overflow-y-auto dashboard-widget-content">
           {jobs.map((job, i) => {
             const s = JOB_STATUS_CONFIG[job.status];
             return (

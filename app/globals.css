@@ -196,6 +196,7 @@ body {
 .dashboard-widget-editing {
   outline: 2px dashed rgba(99, 102, 241, 0.35);
   outline-offset: 0;
+  border-radius: 12px;
   transition: outline-color 0.15s ease, box-shadow 0.15s ease;
 }
 .dashboard-widget-editing:hover {
@@ -203,19 +204,13 @@ body {
   box-shadow: 0 0 0 3px rgba(99,102,241,0.08);
 }
 
-/* ── Widget content — thin scrollbar when content overflows ──────── */
+/* ── Widget body — thin themed scrollbar when content overflows ──────
+   Every widget fills its grid cell (root is h-full); the scrolling body
+   carries this class so a scrollbar only appears once content exceeds the
+   available height (i.e. when the user shrinks the widget). ──────────── */
 .dashboard-widget-content {
   scrollbar-width: thin;
   scrollbar-color: var(--border) transparent;
-}
-.dashboard-widget-fit-frame {
-  min-height: 100%;
-  display: flex;
-  flex-direction: column;
-}
-.dashboard-widget-fit-frame > * {
-  flex: 1 0 auto;
-  min-height: 100%;
 }
 .dashboard-widget-content::-webkit-scrollbar {
   width: 4px;
@@ -271,6 +266,32 @@ body {
   border-radius: 999px;
 }
 .thin-scroll-y:hover::-webkit-scrollbar-thumb {
+  background-color: var(--text-muted);
+}
+
+/* ─── Global subtle scrollbars ────────────────────────────────────
+   Replaces the bright OS scrollbar across the whole app (sidebar, main
+   content, drawers) with a slim, themed pill that fades into the surface in
+   both light and dark mode. Components with their own .thin-scroll-* classes
+   keep their custom styling (higher specificity than the * rule below). */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background-color: var(--border);
+  border-radius: 999px;
+  border: 3px solid transparent;   /* inset so the visible thumb stays slim */
+  background-clip: content-box;
+}
+*::-webkit-scrollbar-thumb:hover {
   background-color: var(--text-muted);
 }
 

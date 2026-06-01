@@ -27,9 +27,9 @@ export default function InvoicesDue() {
     .reduce((s, i) => s + i.balanceDue, 0);
 
   return (
-    <div className="rounded-xl overflow-hidden"
+    <div className="rounded-xl overflow-hidden h-full min-h-0 flex flex-col"
       style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
-      <div className="flex items-center justify-between px-5 py-4"
+      <div className="flex items-center justify-between px-5 py-4 shrink-0"
         style={{ borderBottom: "1px solid var(--border-subtle)" }}>
         <div className="flex items-center gap-2">
           <Receipt className="w-4 h-4" style={{ color: "#4f46e5" }} />
@@ -47,11 +47,11 @@ export default function InvoicesDue() {
       </div>
 
       {invoices.length === 0 ? (
-        <div className="px-5 py-8 text-center">
+        <div className="flex-1 min-h-0 flex items-center justify-center px-5 py-8 text-center">
           <p className="text-sm" style={{ color: "var(--text-muted)" }}>All invoices are paid up.</p>
         </div>
       ) : (
-        <div>
+        <div className="flex-1 min-h-0 overflow-y-auto dashboard-widget-content">
           {invoices.map((inv, i) => {
             const s = INVOICE_STATUS_STYLE[inv.status];
             const isOverdue = inv.status === "past_due";

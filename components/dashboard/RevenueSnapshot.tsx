@@ -42,20 +42,20 @@ export default function RevenueSnapshot() {
     : 0;
 
   return (
-    <div className="rounded-xl p-4"
+    <div className="rounded-xl p-4 h-full min-h-0 flex flex-col overflow-y-auto dashboard-widget-content"
       style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
-      <div className="flex items-center justify-between mb-1">
+      <div className="flex items-center justify-between mb-1 shrink-0">
         <h2 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Revenue</h2>
         <Link href="/invoices" className="text-xs font-medium text-indigo-600 hover:text-indigo-700">
           Invoices →
         </Link>
       </div>
-      <p className="text-2xl font-bold" style={{ color: "var(--text-primary)" }}>
+      <p className="text-2xl font-bold shrink-0" style={{ color: "var(--text-primary)" }}>
         {fmt(mtd)}
       </p>
-      <p className="text-xs" style={{ color: "var(--text-muted)" }}>May month-to-date</p>
+      <p className="text-xs shrink-0" style={{ color: "var(--text-muted)" }}>May month-to-date</p>
 
-      <div className="flex items-end gap-1.5 mt-4" style={{ height: "72px" }}>
+      <div className="flex items-end gap-1.5 mt-4 flex-1 min-h-[64px]">
         {chartData.map((d, i) => (
           <div key={i} className="flex-1 flex flex-col items-center gap-1 h-full justify-end">
             <div className="w-full rounded-t-sm transition-all"
@@ -69,7 +69,7 @@ export default function RevenueSnapshot() {
         ))}
       </div>
 
-      <div className="grid grid-cols-2 gap-2 mt-3 pt-3"
+      <div className="grid grid-cols-2 gap-2 mt-3 pt-3 shrink-0"
         style={{ borderTop: "1px solid var(--border-subtle)" }}>
         <div>
           <p className="text-[10px] uppercase tracking-wider font-semibold" style={{ color: "var(--text-muted)" }}>Outstanding</p>

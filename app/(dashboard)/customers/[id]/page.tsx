@@ -23,6 +23,7 @@ import { formatPhone, validatePhone, validateEmail } from "@/lib/utils/validatio
 import { AGREEMENTS } from "@/lib/agreements/data";
 import { QUOTE_STATUS_STYLE, INVOICE_STATUS_STYLE } from "@/lib/quotes/types";
 import { getQuotesForCustomer, getInvoicesForCustomer, fmt as fmtCurrency } from "@/lib/quotes/data";
+import QuoteWizard from "@/components/quotes/QuoteWizard";
 import { AddressAutocomplete, EMPTY_ADDRESS, type ParsedAddress } from "@/components/address/AddressAutocomplete";
 import UiSelect from "@/components/ui/Select";
 import PhotoGallery from "@/components/files/PhotoGallery";
@@ -1158,16 +1159,19 @@ function BillingSection({
 }
 
 function BillingTab({ id }: { id: string }) {
+  const [wizard, setWizard] = useState(false);
+  const [, forceRefresh] = useState(0);
   const quotes   = getQuotesForCustomer(id);
   const invoices = getInvoicesForCustomer(id);
   const outstanding = invoices.filter(i => i.balanceDue > 0).reduce((s, i) => s + i.balanceDue, 0);
 
-  function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  function Section({ title, onNew, children }: { title: string; onNew?: () => void; children: React.ReactNode }) {
     return (
       <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
         <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
           <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{title}</p>
-          <button className="flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-lg"
+          <button onClick={onNew} disabled={!onNew}
+            className="flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-lg disabled:opacity-40"
             style={{ backgroundColor: "#4f46e5", color: "#fff" }}>
             <Plus className="w-3.5 h-3.5" /> New
           </button>
@@ -1179,6 +1183,11 @@ function BillingTab({ id }: { id: string }) {
 
   return (
     <div className="space-y-6">
+      {wizard && (
+        <QuoteWizard preset={{ customerId: id, lockCustomer: true }}
+          onClose={() => setWizard(false)}
+          onCreated={() => { setWizard(false); forceRefresh(n => n + 1); }} />
+      )}
       {outstanding > 0 && (
         <div className="rounded-xl px-4 py-3 flex items-center gap-3"
           style={{ backgroundColor: "#fef3c7", border: "1px solid #fde68a" }}>
@@ -1190,7 +1199,7 @@ function BillingTab({ id }: { id: string }) {
       )}
 
       {/* Quotes */}
-      <Section title={`Quotes (${quotes.length})`}>
+      <Section title={`Quotes (${quotes.length})`} onNew={() => setWizard(true)}>
         {quotes.length === 0 ? (
           <div className="px-4 py-8 text-center"><p className="text-sm" style={{ color: "var(--text-muted)" }}>No quotes yet</p></div>
         ) : (

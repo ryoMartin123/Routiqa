@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useEffect, useRef } from "react";
+import { usePathname } from "next/navigation";
 import {
   Inbox, Search, SlidersHorizontal, Layers, Eye, EyeOff,
   ChevronLeft, ChevronRight, ChevronUp, ChevronDown, LayoutGrid, LayoutList, CalendarDays, CalendarRange, CalendarClock,
@@ -36,6 +37,10 @@ function hourLabel(h: number): string { return `${h > 12 ? h - 12 : h}${h >= 12 
 export default function CalendarPage() {
   const { effectiveCompanyId, effectiveLocationId, effectiveServiceAreaId } = useHierarchy();
   const scope: CalendarScope = { companyId: effectiveCompanyId, locationId: effectiveLocationId, serviceAreaId: effectiveServiceAreaId };
+  // The same module serves two routes: /dispatching (board) and /calendar
+  // (month calendar). The route decides the default landing view.
+  const pathname = usePathname();
+  const isCalendarRoute = pathname === "/calendar";
 
   const [view, setView]           = useState<CalendarView>("dispatch");
   const [dispatchMode, setMode]   = useState<DispatchMode>("hourly");
@@ -51,14 +56,15 @@ export default function CalendarPage() {
   useEffect(() => {
     const cfg = resolveDispatchSettings(effectiveCompanyId, effectiveLocationId);
     setSettings(cfg);
-    setView(cfg.defaultView);
+    // /calendar lands on the month view; /dispatching uses the configured default.
+    setView(isCalendarRoute ? "month" : cfg.defaultView);
     setMode(cfg.defaultDispatchMode);
     setHidden(new Set<CalendarItemType>(
       cfg.layers.filter(l => !l.enabled || !l.visibleByDefault).map(l => l.type),
     ));
     setBoards(getBoardsForContext(effectiveCompanyId, effectiveLocationId));
     setBoardId("all");
-  }, [effectiveCompanyId, effectiveLocationId]);
+  }, [effectiveCompanyId, effectiveLocationId, isCalendarRoute]);
   // Per-item edits made on the board: reassignment, moved time, resized duration.
   const [edits, setEdits]         = useState<Record<string, { start?: Date; durationMinutes?: number; assignedTo?: string }>>({});
   const [boardId, setBoardId]     = useState("all");
@@ -393,17 +399,24 @@ function DispatchBoard({ focus, mode, items, roster, dayStart, dayEnd, increment
     if (!track || !blockEl) return;
     const base = startMinOf(item); const dur0 = item.durationMinutes;
     const grab = commitFromX(e.clientX, track) - base;
-    let moved = false; let curStart = base; let curDur = dur0; let curTech = item.assignedTo ?? "";
+    const startX = e.clientX, startY = e.clientY;     // for click-vs-drag detection
+    const originTech = item.assignedTo ?? "";
+    let moved = false; let curStart = base; let curDur = dur0; let curTech = originTech;
     document.body.style.userSelect = "none";
     if (kind === "move") blockEl.style.pointerEvents = "none"; // so elementFromPoint sees the row below
     const onMove = (ev: MouseEvent) => {
       const mm = commitFromX(ev.clientX, track);
-      if (Math.abs(mm - (base + grab)) > 2) moved = true;
+      // Treat it as a drag once the cursor travels past a small threshold in
+      // EITHER axis — a near-vertical drag to another tech's row barely changes
+      // X, so an X-only test would misread it as a click and open the drawer.
+      if (Math.abs(ev.clientX - startX) > 4 || Math.abs(ev.clientY - startY) > 4) moved = true;
       if (kind === "move") {
         curStart = clamp(snap(mm - grab), 0, totalMin - dur0); curDur = dur0;
         const overTrack = (document.elementFromPoint(ev.clientX, ev.clientY) as HTMLElement | null)?.closest("[data-track]") as HTMLElement | null;
         if (overTrack?.dataset.tech) curTech = overTrack.dataset.tech;
       } else { curDur = clamp(snap(mm - base), 30, totalMin - base); curStart = base; }
+      // Reassigning to a different tech is always a move, never a click.
+      if (curTech !== originTech) moved = true;
       setPreview({ id: item.id, startMin: curStart, durationMinutes: curDur, tech: curTech });
     };
     const onUp = () => {

@@ -168,7 +168,8 @@ function PipelineView({ leads, openStages, resolve, tab, onMoveStage }: {
   // Vertical mouse wheel pans horizontally; thin themed scrollbar; columns snap.
   return (
     <div
-      className="overflow-x-auto pb-4 thin-scroll-x"
+      className="overflow-x-auto thin-scroll-x"
+      style={{ height: "calc(100vh - 250px)" }}
       ref={el => {
         if (!el) return;
         const onWheel = (e: WheelEvent) => {
@@ -180,14 +181,14 @@ function PipelineView({ leads, openStages, resolve, tab, onMoveStage }: {
         return () => el.removeEventListener("wheel", onWheel);
       }}
     >
-      <div className="flex gap-5 min-w-max pb-2">
+      <div className="flex gap-5 min-w-max h-full pb-2">
         {openStages.map(stage => {
           const cards = leads.filter(l => l.stage === stage.key);
           const total = cards.reduce((s, l) => s + parseLeadValue(l), 0);
           return (
             <div key={stage.key}
-              className="shrink-0 snap-col flex flex-col rounded-xl transition-colors"
-              style={{ width: "296px", maxHeight: "calc(100vh - 360px)", backgroundColor: dropStage === stage.key ? "var(--accent-soft-bg)" : undefined, outline: dropStage === stage.key ? "1px dashed var(--accent-soft-border)" : undefined }}
+              className="shrink-0 snap-col flex flex-col rounded-xl transition-colors h-full min-h-0"
+              style={{ width: "296px", backgroundColor: dropStage === stage.key ? "var(--accent-soft-bg)" : undefined, outline: dropStage === stage.key ? "1px dashed var(--accent-soft-border)" : undefined }}
               onDragOver={e => { e.preventDefault(); if (dropStage !== stage.key) setDropStage(stage.key); }}
               onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setDropStage(null); }}
               onDrop={e => { e.preventDefault(); setDropStage(null); const id = e.dataTransfer.getData("text/plain"); if (id) onMoveStage(id, stage.key); }}>
@@ -441,78 +442,88 @@ export default function LeadsPage() {
 
       {/* Filter row — search + single Filter button (hidden on Overview) */}
       {view !== "overview" && (
-      <div className="flex items-center flex-wrap gap-2 mb-3">
-        <div className="flex items-center gap-2 rounded-lg px-3 py-1.5" style={{ backgroundColor: "var(--bg-input)" }}>
-          <Search className="w-3.5 h-3.5 shrink-0" style={{ color: "var(--text-muted)" }} />
-          <input type="text" placeholder="Search leads..." value={search} onChange={e => setSearch(e.target.value)}
-            className="bg-transparent text-sm outline-none w-48" style={{ color: "var(--text-primary)" }} />
-        </div>
+      <div className="mb-4 space-y-2">
+        {/* Status tabs (left) + search & filter (right) on one row */}
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <div className="flex items-center gap-0.5 flex-wrap">
+            {tableTabs.map(t => {
+              const count  = filtered.filter(t.fn).length;
+              const active = tab === t.key;
+              return (
+                <button key={t.key} onClick={() => setTab(t.key)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
+                  style={{
+                    backgroundColor: active ? "var(--accent-soft-bg)" : "transparent",
+                    color: active ? "var(--accent-text)" : "var(--text-muted)",
+                    border: `1px solid ${active ? "var(--accent-soft-border)" : "transparent"}`,
+                  }}>
+                  {t.label}
+                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full"
+                    style={{ backgroundColor: active ? "var(--accent-soft-2-bg)" : "var(--bg-input)", color: active ? "var(--accent-text)" : "var(--text-muted)" }}>
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
 
-        <div className="relative" ref={filtersRef}>
-          <button onClick={() => setFiltersOpen(o => !o)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors"
-            style={{ border: `1px solid ${activeFilterCount ? "var(--accent-soft-border)" : "var(--border)"}`, backgroundColor: activeFilterCount ? "var(--accent-soft-bg)" : "var(--bg-surface)", color: activeFilterCount ? "var(--accent-text)" : "var(--text-secondary)" }}>
-            <SlidersHorizontal className="w-3.5 h-3.5" /> Filter
-            {activeFilterCount > 0 && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: "var(--accent-soft-2-bg)", color: "var(--accent-text)" }}>{activeFilterCount}</span>}
-          </button>
-          {filtersOpen && (
-            <div className="absolute left-0 top-full mt-2 z-50 rounded-xl p-4 w-72" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "0 12px 32px rgba(0,0,0,0.18)" }}>
-              <div className="flex items-center justify-between mb-3">
-                <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Filters</p>
-                {activeFilterCount > 0 && <button onClick={() => { setFAssigned("all"); setFSource("all"); setFPriority("all"); setFDate("all"); setFLocation("all"); }} className="text-xs" style={{ color: "var(--accent-text)" }}>Clear all</button>}
-              </div>
-              <div className="space-y-2.5">
-                <LeadFilterField label="Assigned To"><Select size="sm" value={fAssigned} onChange={setFAssigned} options={[{ value: "all", label: "All Assignees" }, ...assignedOpts.map(a => ({ value: a, label: a }))]} /></LeadFilterField>
-                <LeadFilterField label="Lead Source"><Select size="sm" value={fSource} onChange={setFSource} options={[{ value: "all", label: "All Sources" }, ...sourceOpts.map(s => ({ value: s, label: LEAD_SOURCE_LABELS[s] }))]} /></LeadFilterField>
-                <LeadFilterField label="Priority"><Select size="sm" value={fPriority} onChange={setFPriority} options={[{ value: "all", label: "Any Priority" }, { value: "overdue", label: "Overdue" }, { value: "followup", label: "Follow-Up Due" }, { value: "hot", label: "Hot ($5k+)" }]} /></LeadFilterField>
-                <LeadFilterField label="Date Range"><Select size="sm" value={fDate} onChange={setFDate} options={[{ value: "all", label: "Any Date" }, { value: "7", label: "Last 7 days" }, { value: "30", label: "Last 30 days" }, { value: "90", label: "Last 90 days" }]} /></LeadFilterField>
-                {locationOpts.length > 1 && <LeadFilterField label="Location"><Select size="sm" value={fLocation} onChange={setFLocation} options={[{ value: "all", label: "All Locations" }, ...locationOpts.map(l => ({ value: l, label: l }))]} /></LeadFilterField>}
-              </div>
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 rounded-lg px-3 py-1.5" style={{ backgroundColor: "var(--bg-input)" }}>
+              <Search className="w-3.5 h-3.5 shrink-0" style={{ color: "var(--text-muted)" }} />
+              <input type="text" placeholder="Search leads..." value={search} onChange={e => setSearch(e.target.value)}
+                className="bg-transparent text-sm outline-none w-48" style={{ color: "var(--text-primary)" }} />
             </div>
-          )}
+
+            <div className="relative" ref={filtersRef}>
+              <button onClick={() => setFiltersOpen(o => !o)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors"
+                style={{ border: `1px solid ${activeFilterCount ? "var(--accent-soft-border)" : "var(--border)"}`, backgroundColor: activeFilterCount ? "var(--accent-soft-bg)" : "var(--bg-surface)", color: activeFilterCount ? "var(--accent-text)" : "var(--text-secondary)" }}>
+                <SlidersHorizontal className="w-3.5 h-3.5" /> Filter
+                {activeFilterCount > 0 && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: "var(--accent-soft-2-bg)", color: "var(--accent-text)" }}>{activeFilterCount}</span>}
+              </button>
+              {filtersOpen && (
+                <div className="absolute right-0 top-full mt-2 z-50 rounded-xl p-4 w-72" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "0 12px 32px rgba(0,0,0,0.18)" }}>
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Filters</p>
+                    {activeFilterCount > 0 && <button onClick={() => { setFAssigned("all"); setFSource("all"); setFPriority("all"); setFDate("all"); setFLocation("all"); }} className="text-xs" style={{ color: "var(--accent-text)" }}>Clear all</button>}
+                  </div>
+                  <div className="space-y-2.5">
+                    <LeadFilterField label="Assigned To"><Select size="sm" value={fAssigned} onChange={setFAssigned} options={[{ value: "all", label: "All Assignees" }, ...assignedOpts.map(a => ({ value: a, label: a }))]} /></LeadFilterField>
+                    <LeadFilterField label="Lead Source"><Select size="sm" value={fSource} onChange={setFSource} options={[{ value: "all", label: "All Sources" }, ...sourceOpts.map(s => ({ value: s, label: LEAD_SOURCE_LABELS[s] }))]} /></LeadFilterField>
+                    <LeadFilterField label="Priority"><Select size="sm" value={fPriority} onChange={setFPriority} options={[{ value: "all", label: "Any Priority" }, { value: "overdue", label: "Overdue" }, { value: "followup", label: "Follow-Up Due" }, { value: "hot", label: "Hot ($5k+)" }]} /></LeadFilterField>
+                    <LeadFilterField label="Date Range"><Select size="sm" value={fDate} onChange={setFDate} options={[{ value: "all", label: "Any Date" }, { value: "7", label: "Last 7 days" }, { value: "30", label: "Last 30 days" }, { value: "90", label: "Last 90 days" }]} /></LeadFilterField>
+                    {locationOpts.length > 1 && <LeadFilterField label="Location"><Select size="sm" value={fLocation} onChange={setFLocation} options={[{ value: "all", label: "All Locations" }, ...locationOpts.map(l => ({ value: l, label: l }))]} /></LeadFilterField>}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Active filter chips */}
-        {[
-          fAssigned !== "all" && { label: fAssigned, clear: () => setFAssigned("all") },
-          fSource !== "all" && { label: LEAD_SOURCE_LABELS[fSource as LeadSource] ?? fSource, clear: () => setFSource("all") },
-          fPriority !== "all" && { label: { overdue: "Overdue", followup: "Follow-Up Due", hot: "Hot ($5k+)" }[fPriority] ?? fPriority, clear: () => setFPriority("all") },
-          fDate !== "all" && { label: `Last ${fDate} days`, clear: () => setFDate("all") },
-          fLocation !== "all" && { label: fLocation, clear: () => setFLocation("all") },
-        ].filter(Boolean).map((chip, i) => (
-          <button key={i} onClick={(chip as { clear: () => void }).clear}
-            className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full transition-colors"
-            style={{ backgroundColor: "var(--bg-input)", color: "var(--text-secondary)" }}>
-            {(chip as { label: string }).label}
-            <X className="w-3 h-3" style={{ color: "var(--text-muted)" }} />
-          </button>
-        ))}
+        {(() => {
+          const chips = [
+            fAssigned !== "all" && { label: fAssigned, clear: () => setFAssigned("all") },
+            fSource !== "all" && { label: LEAD_SOURCE_LABELS[fSource as LeadSource] ?? fSource, clear: () => setFSource("all") },
+            fPriority !== "all" && { label: { overdue: "Overdue", followup: "Follow-Up Due", hot: "Hot ($5k+)" }[fPriority] ?? fPriority, clear: () => setFPriority("all") },
+            fDate !== "all" && { label: `Last ${fDate} days`, clear: () => setFDate("all") },
+            fLocation !== "all" && { label: fLocation, clear: () => setFLocation("all") },
+          ].filter(Boolean);
+          if (chips.length === 0) return null;
+          return (
+            <div className="flex items-center flex-wrap gap-2">
+              {chips.map((chip, i) => (
+                <button key={i} onClick={(chip as { clear: () => void }).clear}
+                  className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full transition-colors"
+                  style={{ backgroundColor: "var(--bg-input)", color: "var(--text-secondary)" }}>
+                  {(chip as { label: string }).label}
+                  <X className="w-3 h-3" style={{ color: "var(--text-muted)" }} />
+                </button>
+              ))}
+            </div>
+          );
+        })()}
       </div>
-      )}
-
-      {/* Status tabs — Active / Won / Lost / All (below search & filter) */}
-      {view !== "overview" && (
-        <div className="flex items-center gap-0.5 flex-wrap mb-4">
-          {tableTabs.map(t => {
-            const count  = filtered.filter(t.fn).length;
-            const active = tab === t.key;
-            return (
-              <button key={t.key} onClick={() => setTab(t.key)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
-                style={{
-                  backgroundColor: active ? "var(--accent-soft-bg)" : "transparent",
-                  color: active ? "var(--accent-text)" : "var(--text-muted)",
-                  border: `1px solid ${active ? "var(--accent-soft-border)" : "transparent"}`,
-                }}>
-                {t.label}
-                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full"
-                  style={{ backgroundColor: active ? "var(--accent-soft-2-bg)" : "var(--bg-input)", color: active ? "var(--accent-text)" : "var(--text-muted)" }}>
-                  {count}
-                </span>
-              </button>
-            );
-          })}
-        </div>
       )}
 
       {/* ── Views ── */}

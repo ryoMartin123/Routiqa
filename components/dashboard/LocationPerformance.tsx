@@ -32,16 +32,16 @@ export default function LocationPerformance() {
   });
 
   return (
-    <div className="rounded-xl overflow-hidden"
+    <div className="rounded-xl overflow-hidden h-full min-h-0 flex flex-col"
       style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
-      <div className="flex items-center gap-2 px-5 py-4"
+      <div className="flex items-center gap-2 px-5 py-4 shrink-0"
         style={{ borderBottom: "1px solid var(--border-subtle)" }}>
         <MapPin className="w-4 h-4" style={{ color: "#4f46e5" }} />
         <h2 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Location Performance</h2>
       </div>
 
       {/* Column headers */}
-      <div className="grid px-5 py-2 text-[10px] font-semibold uppercase tracking-wider"
+      <div className="grid px-5 py-2 text-[10px] font-semibold uppercase tracking-wider shrink-0"
         style={{ gridTemplateColumns: "2fr 1fr 1fr 1fr", color: "var(--text-muted)", borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
         <span>Location</span>
         <span className="text-right">Active Jobs</span>
@@ -49,30 +49,32 @@ export default function LocationPerformance() {
         <span className="text-right">Outstanding</span>
       </div>
 
-      {stats.map((s, i) => (
-        <div key={s.loc.id}
-          className="grid items-center px-5 py-3 hover:bg-[var(--bg-surface-2)] transition-colors"
-          style={{ gridTemplateColumns: "2fr 1fr 1fr 1fr", borderBottom: i < stats.length - 1 ? "1px solid var(--border-subtle)" : "none" }}>
-          <div>
-            <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{s.loc.name}</p>
-            {!effectiveCompanyId && (
-              <p className="text-[10px]" style={{ color: "var(--text-muted)" }}>{s.co?.name}</p>
-            )}
+      <div className="flex-1 min-h-0 overflow-y-auto dashboard-widget-content">
+        {stats.map((s, i) => (
+          <div key={s.loc.id}
+            className="grid items-center px-5 py-3 hover:bg-[var(--bg-surface-2)] transition-colors"
+            style={{ gridTemplateColumns: "2fr 1fr 1fr 1fr", borderBottom: i < stats.length - 1 ? "1px solid var(--border-subtle)" : "none" }}>
+            <div>
+              <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{s.loc.name}</p>
+              {!effectiveCompanyId && (
+                <p className="text-[10px]" style={{ color: "var(--text-muted)" }}>{s.co?.name}</p>
+              )}
+            </div>
+            <p className="text-sm font-semibold text-right"
+              style={{ color: s.activeJobs > 0 ? "#4f46e5" : "var(--text-muted)" }}>
+              {s.activeJobs}
+            </p>
+            <p className="text-sm font-semibold text-right"
+              style={{ color: s.openLeads > 0 ? "var(--text-primary)" : "var(--text-muted)" }}>
+              {s.openLeads}
+            </p>
+            <p className="text-sm font-semibold text-right"
+              style={{ color: s.outstanding > 0 ? "#d97706" : "#10b981" }}>
+              {s.outstanding > 0 ? fmt(s.outstanding) : "Paid"}
+            </p>
           </div>
-          <p className="text-sm font-semibold text-right"
-            style={{ color: s.activeJobs > 0 ? "#4f46e5" : "var(--text-muted)" }}>
-            {s.activeJobs}
-          </p>
-          <p className="text-sm font-semibold text-right"
-            style={{ color: s.openLeads > 0 ? "var(--text-primary)" : "var(--text-muted)" }}>
-            {s.openLeads}
-          </p>
-          <p className="text-sm font-semibold text-right"
-            style={{ color: s.outstanding > 0 ? "#d97706" : "#10b981" }}>
-            {s.outstanding > 0 ? fmt(s.outstanding) : "Paid"}
-          </p>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
 }

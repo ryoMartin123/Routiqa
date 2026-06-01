@@ -2,10 +2,13 @@
 
 import { use, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Pencil, CheckCircle, Circle, ChevronRight, MapPin, User, Calendar, DollarSign, Clock } from "lucide-react";
+import { ArrowLeft, Pencil, CheckCircle, Circle, ChevronRight, MapPin, User, Calendar, DollarSign, Clock, Plus } from "lucide-react";
 import { getProject, getProjectTasks, getProjectProgress, PROJECT_STATUS_CONFIG, PROJECT_TYPE_LABELS } from "@/lib/projects/data";
 import { getJobsForProject, JOB_STATUS_CONFIG } from "@/lib/jobs/data";
 import { getCustomer } from "@/lib/customers/data";
+import { getQuotesForProject, fmt as fmtCurrency } from "@/lib/quotes/data";
+import { QUOTE_STATUS_STYLE } from "@/lib/quotes/types";
+import QuoteWizard from "@/components/quotes/QuoteWizard";
 import PhotoGallery from "@/components/files/PhotoGallery";
 
 const TABS = ["Overview", "Jobs", "Tasks", "Photos & Files", "Scope", "Estimates", "Invoices", "Notes", "Timeline"];
@@ -212,6 +215,48 @@ function ScopeTab({ projectId }: { projectId: string }) {
 function StubContent({ label }: { label: string }) {
   return <div className="rounded-xl p-10 text-center" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}><p className="text-sm" style={{ color: "var(--text-muted)" }}>{label}</p></div>;
 }
+
+// ─── Estimates (quotes) tab ───────────────────────────────
+function ProjectEstimatesTab({ projectId }: { projectId: string }) {
+  const [wizard, setWizard] = useState(false);
+  const [, forceRefresh] = useState(0);
+  const project = getProject(projectId)!;
+  const quotes  = getQuotesForProject(projectId);
+
+  return (
+    <div className="rounded-xl overflow-hidden max-w-3xl" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+      {wizard && (
+        <QuoteWizard preset={{ customerId: project.accountId, projectId, lockCustomer: true }}
+          onClose={() => setWizard(false)}
+          onCreated={() => { setWizard(false); forceRefresh(n => n + 1); }} />
+      )}
+      <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+        <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Estimates ({quotes.length})</p>
+        <button onClick={() => setWizard(true)} className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg"
+          style={{ backgroundColor: "#4f46e5", color: "#fff" }}>
+          <Plus className="w-3.5 h-3.5" /> New Quote
+        </button>
+      </div>
+      {quotes.length === 0 ? (
+        <div className="px-4 py-10 text-center"><p className="text-sm" style={{ color: "var(--text-muted)" }}>No estimates for this project yet.</p></div>
+      ) : quotes.map((q, i) => {
+        const s = QUOTE_STATUS_STYLE[q.status];
+        return (
+          <Link key={q.id} href={`/quotes/${q.id}`}
+            className="flex items-center gap-4 px-4 py-3 hover:bg-[var(--bg-surface-2)] transition-colors"
+            style={{ borderBottom: i < quotes.length - 1 ? "1px solid var(--border-subtle)" : "none", textDecoration: "none" }}>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-mono font-medium" style={{ color: "var(--text-primary)" }}>{q.quoteNumber}</p>
+              <p className="text-xs mt-0.5 truncate" style={{ color: "var(--text-muted)" }}>{q.title}</p>
+            </div>
+            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0" style={{ backgroundColor: s.bg, color: s.color }}>{s.label}</span>
+            <span className="text-sm font-semibold shrink-0" style={{ color: "var(--text-primary)" }}>{q.total > 0 ? fmtCurrency(q.total) : "TBD"}</span>
+          </Link>
+        );
+      })}
+    </div>
+  );
+}
 function StubTab({ label }: { label: string }) {
   return <div className="rounded-xl p-10 text-center" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}><p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{label}</p><p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>Coming soon</p></div>;
 }
@@ -286,7 +331,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
         {tab === "Tasks"         && <TasksTab    projectId={id} />}
         {tab === "Scope"         && <ScopeTab    projectId={id} />}
         {tab === "Photos & Files"&& <PhotoGallery recordLevel="project" scope={{ accountId: project.accountId, projectId: id }} accountName={project.customerName} />}
-        {tab === "Estimates"     && <StubTab label="Estimates" />}
+        {tab === "Estimates"     && <ProjectEstimatesTab projectId={id} />}
         {tab === "Invoices"      && <StubTab label="Invoices" />}
         {tab === "Notes"         && <StubTab label="Notes" />}
         {tab === "Timeline"      && <StubTab label="Timeline" />}

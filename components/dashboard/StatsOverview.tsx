@@ -35,7 +35,7 @@ export default function StatsOverview() {
   const overdueInvs    = ALL_INVOICES.filter(i => !effectiveCompanyId || i.companyId === effectiveCompanyId).filter(i => i.status === "past_due").length;
 
   return (
-    <div className="grid grid-cols-4 gap-4">
+    <div className="grid grid-cols-4 gap-4 h-full min-h-0">
       <StatCard label="Today's Jobs"  value={todaysJobs.length} subtext={inProgress > 0 ? `${inProgress} in progress` : "None in progress"}   icon={<Briefcase   className="w-4 h-4" />} href="/jobs"     />
       <StatCard label="Open Leads"    value={openLeads.length}  subtext={newLeads > 0 ? `${newLeads} new leads` : "Pipeline healthy"}            icon={<TrendingUp  className="w-4 h-4" />} href="/leads"    />
       <StatCard label="Overdue Tasks" value={overdueTasks}      subtext={`${openTasks} open total`}                                             icon={<CheckSquare className="w-4 h-4" />} href="/tasks"    urgent={overdueTasks > 0} />

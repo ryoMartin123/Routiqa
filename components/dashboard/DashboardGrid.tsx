@@ -121,22 +121,19 @@ export default function DashboardGrid({
         autoSize
       >
         {contextVisible.map(item => (
+          /* Chromeless cell — the widget owns its own card and fills the cell
+             via `h-full`. In customize mode the drag handle floats over the top
+             as an absolute overlay so it never changes the widget's height
+             (no layout shift between view/edit). */
           <div key={item.widgetId}
-            className={[
-              "flex flex-col",
-              customizing ? "dashboard-widget-editing" : "",
-            ].filter(Boolean).join(" ")}
-            style={{
-              overflow:        "hidden",
-              borderRadius:    "12px",
-              backgroundColor: "var(--bg-surface)",
-              boxShadow:       "var(--shadow-card)",
-            }}
+            className={["relative", customizing ? "dashboard-widget-editing" : ""].filter(Boolean).join(" ")}
           >
-            {/* ── Drag handle — customize mode only ── */}
+            {renderWidget(item.widgetId)}
+
+            {/* ── Drag handle overlay — customize mode only ── */}
             {customizing && (
               <div
-                className="widget-drag-handle flex items-center gap-2 px-3 py-1.5 shrink-0 select-none"
+                className="widget-drag-handle absolute top-0 left-0 right-0 z-10 flex items-center gap-2 px-3 py-1.5 select-none"
                 style={{
                   backgroundColor: "var(--accent-soft-bg)",
                   borderBottom:    "1px solid var(--accent-soft-border)",
@@ -159,16 +156,6 @@ export default function DashboardGrid({
                 </button>
               </div>
             )}
-
-            {/* ── Widget content — scrollable so nothing is lost ── */}
-            <div
-              className="flex-1 min-h-0 overflow-y-auto dashboard-widget-content"
-              style={{ borderRadius: customizing ? "0 0 12px 12px" : "12px" }}
-            >
-              <div className="dashboard-widget-fit-frame">
-                {renderWidget(item.widgetId)}
-              </div>
-            </div>
           </div>
         ))}
       </GridLayout>
