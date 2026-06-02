@@ -19,6 +19,7 @@ export default function FilesPage() {
   const { effectiveCompanyId, effectiveLocationId } = useHierarchy();
   const [uploadSignal, setUploadSignal] = useState(0);
   const [moduleView, setModuleView] = useState<ModuleView>("list");
+  const [fileCount, setFileCount] = useState(0);
 
   // Context-filtered file set (respects the selector, like the gallery)
   const files = getFiles({})
@@ -47,8 +48,10 @@ export default function FilesPage() {
       <div className="flex items-center gap-4">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2.5">
-            <Images className="w-5 h-5" style={{ color: "#4f46e5" }} />
             <h1 className="text-2xl font-semibold" style={{ color: "var(--text-primary)" }}>Photos &amp; Files</h1>
+            <span className="text-xs font-medium px-2 py-0.5 rounded-full" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>
+              {fileCount} file{fileCount === 1 ? "" : "s"}
+            </span>
           </div>
           <p className="text-sm mt-0.5" style={{ color: "var(--text-secondary)" }}>
             Global media library — search across accounts, properties, jobs, projects, and more
@@ -66,7 +69,7 @@ export default function FilesPage() {
       {moduleView === "overview" && <ModuleSummaryCards cards={summaryCards} />}
 
       {moduleView === "list" && (
-        <PhotoGallery recordLevel="global" externalUpload uploadSignal={uploadSignal} />
+        <PhotoGallery recordLevel="global" externalUpload uploadSignal={uploadSignal} onCount={setFileCount} />
       )}
     </div>
   );

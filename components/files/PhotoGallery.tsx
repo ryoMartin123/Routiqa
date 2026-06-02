@@ -3,8 +3,7 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import {
   Image as ImageIcon, FileText, Film, File as FileIcon, Upload, X, Search,
-  LayoutGrid, List as ListIcon, Users, Briefcase, Download, Pencil, Trash2,
-  Tag, SlidersHorizontal,
+  Download, Pencil, Trash2, Tag, SlidersHorizontal,
 } from "lucide-react";
 import Select from "@/components/ui/Select";
 import { useHierarchy } from "@/components/providers/HierarchyProvider";
@@ -30,6 +29,9 @@ interface Props {
   // it hides the toolbar button and triggers uploads via uploadSignal.
   externalUpload?: boolean;
   uploadSignal?:   number;
+  // Lets the host page show the live filtered file count (e.g. next to its
+  // heading) instead of the toolbar showing it.
+  onCount?: (n: number) => void;
 }
 
 const FILE_ICON: Record<FileType, typeof ImageIcon> = {
@@ -50,6 +52,14 @@ const QUICK_TABS = [
   { key: "documents", label: "Documents"       },
   { key: "required",  label: "Required Photos" },
   { key: "recent",    label: "Recent"          },
+] as const;
+
+// View / grouping tabs — rendered as text tabs alongside the quick tabs.
+const VIEW_TABS = [
+  { key: "grid",          label: "Grid"    },
+  { key: "list",          label: "List"    },
+  { key: "group_account", label: "Account" },
+  { key: "group_job",     label: "Project" },
 ] as const;
 
 // ─── Scope toggle options (record-level embedded mode) ────
@@ -80,7 +90,7 @@ function linkedRecords(f: PhotoFile): { label: string; value: string }[] {
   return out;
 }
 
-export default function PhotoGallery({ recordLevel, scope = {}, accountName, uploaderName = "Marcus Reyes", externalUpload = false, uploadSignal = 0 }: Props) {
+export default function PhotoGallery({ recordLevel, scope = {}, accountName, uploaderName = "Marcus Reyes", externalUpload = false, uploadSignal = 0, onCount }: Props) {
   const categories = useMemo(() => getPhotoCategories().filter(c => c.active), []);
   const catByKey   = useMemo(() => new Map(categories.map(c => [c.key, c])), [categories]);
   const catLabel   = (key: string) => catByKey.get(key)?.name ?? key;
@@ -179,6 +189,9 @@ export default function PhotoGallery({ recordLevel, scope = {}, accountName, upl
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [files, quickTab, catFilter, typeFilter, uploader, accountFilter, linkFilter, locationFilter, dateRange, search, isGlobal, effectiveCompanyId, effectiveLocationId]);
 
+  // Report the live filtered count up so the host page can show it (e.g. by its heading).
+  useEffect(() => { onCount?.(displayed.length); }, [displayed.length, onCount]);
+
   // ── Active filter chips (advanced filters only) ──
   const accountName_ = (id: string) => accounts.find(a => a.id === id)?.name ?? id;
   const dateLabel    = (v: string) => ({ "7": "Last 7 days", "30": "Last 30 days", year: "This year" } as Record<string, string>)[v] ?? v;
@@ -227,9 +240,8 @@ export default function PhotoGallery({ recordLevel, scope = {}, accountName, upl
     <div className="space-y-4">
       {/* ── Toolbar: tabs + views (left) · search + filter (right) ── */}
       <div className="flex flex-wrap items-center gap-2 justify-between">
-        {/* Left: quick tabs + view selector */}
+        {/* Left: unified tab bar — quick filters · divider · view/grouping */}
         <div className="flex flex-wrap items-center gap-2">
-          {/* Quick tabs (global) */}
           {isGlobal && (
             <div className="flex items-center gap-0.5 flex-wrap">
               {QUICK_TABS.map(t => {
@@ -246,24 +258,21 @@ export default function PhotoGallery({ recordLevel, scope = {}, accountName, upl
                   </button>
                 );
               })}
-            </div>
-          )}
 
-          {/* View selector — part of the tabs (global) */}
-          {isGlobal && (
-            <div className="flex items-center rounded-lg overflow-hidden" style={{ border: "1px solid var(--border)" }}>
-              {([
-                { key: "grid",          icon: LayoutGrid, title: "Grid" },
-                { key: "list",          icon: ListIcon,   title: "List" },
-                { key: "group_account", icon: Users,      title: "Group by Account" },
-                { key: "group_job",     icon: Briefcase,  title: "Group by Job / Project" },
-              ] as const).map(v => {
+              {/* Divider between filter tabs and view tabs */}
+              <span className="w-px h-5 mx-1.5 shrink-0" style={{ backgroundColor: "var(--border)" }} />
+
+              {VIEW_TABS.map(v => {
                 const active = view === v.key;
                 return (
-                  <button key={v.key} onClick={() => setView(v.key)} title={v.title}
-                    className="px-2.5 py-1.5 transition-colors"
-                    style={{ backgroundColor: active ? "#4f46e5" : "var(--bg-surface)", color: active ? "#fff" : "var(--text-muted)" }}>
-                    <v.icon className="w-3.5 h-3.5" />
+                  <button key={v.key} onClick={() => setView(v.key)}
+                    className="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
+                    style={{
+                      backgroundColor: active ? "var(--accent-soft-bg)" : "transparent",
+                      color: active ? "var(--accent-text)" : "var(--text-muted)",
+                      border: `1px solid ${active ? "var(--accent-soft-border)" : "transparent"}`,
+                    }}>
+                    {v.label}
                   </button>
                 );
               })}
@@ -371,10 +380,12 @@ export default function PhotoGallery({ recordLevel, scope = {}, accountName, upl
             </div>
           )}
 
-          {/* File count */}
-          <span className="text-xs whitespace-nowrap" style={{ color: "var(--text-muted)" }}>
-            {displayed.length} file{displayed.length === 1 ? "" : "s"}
-          </span>
+          {/* File count — embedded galleries only; the global page shows it by the heading */}
+          {!isGlobal && (
+            <span className="text-xs whitespace-nowrap" style={{ color: "var(--text-muted)" }}>
+              {displayed.length} file{displayed.length === 1 ? "" : "s"}
+            </span>
+          )}
 
           {/* Toolbar Upload button — hidden when the page renders its own in the header */}
           {!externalUpload && (

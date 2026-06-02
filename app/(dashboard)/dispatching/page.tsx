@@ -19,8 +19,12 @@ import {
 } from "@/lib/calendar/types";
 import {
   resolveDispatchSettings, defaultDispatchSettings, getBoardsForContext, itemMatchesBoard,
+  getVisibleQueueViews,
   type DispatchSettings, type SettingsServiceBlock, type DispatchBoard,
 } from "@/lib/calendar/settings";
+import {
+  matchesQueueView, countForView, defaultQueueViews, type QueueView,
+} from "@/lib/calendar/queueViews";
 
 type CalendarView = "dispatch" | "day" | "week" | "month";
 
@@ -64,6 +68,10 @@ export default function CalendarPage() {
     ));
     setBoards(getBoardsForContext(effectiveCompanyId, effectiveLocationId));
     setBoardId("all");
+    // Load the queue tabs configured in Settings → Calendar / Dispatch.
+    const views = getVisibleQueueViews();
+    setQueueViews(views);
+    setQueueTab(prev => (views.some(v => v.key === prev) ? prev : (views[0]?.key ?? "all")));
   }, [effectiveCompanyId, effectiveLocationId, isCalendarRoute]);
   // Per-item edits made on the board: reassignment, moved time, resized duration.
   const [edits, setEdits]         = useState<Record<string, { start?: Date; durationMinutes?: number; assignedTo?: string }>>({});
@@ -78,8 +86,10 @@ export default function CalendarPage() {
   const [selScheduled, setSelScheduled]     = useState<CalendarItem | null>(null);
   const [selUnscheduled, setSelUnscheduled] = useState<UnscheduledItem | null>(null);
 
-  // Queue triage
-  const [queueTab, setQueueTab]   = useState<"all" | "urgent" | CalendarItemType>("all");
+  // Queue triage — tabs are saved "queue views" resolved from settings, not
+  // hardcoded. `queueTab` holds the active view's key.
+  const [queueViews, setQueueViews] = useState<QueueView[]>(() => defaultQueueViews().filter(v => v.defaultVisible));
+  const [queueTab, setQueueTab]   = useState<string>("all");
   const [queueSearch, setQueueSearch] = useState("");
 
   // Advanced filters
@@ -334,7 +344,7 @@ export default function CalendarPage() {
 
       {/* Unscheduled queue — BELOW the board */}
       <UnscheduledQueue
-        items={unscheduled} tab={queueTab} setTab={setQueueTab}
+        items={unscheduled} views={queueViews} tab={queueTab} setTab={setQueueTab}
         search={queueSearch} setSearch={setQueueSearch} onSelect={setSelUnscheduled}
       />
 
@@ -529,27 +539,20 @@ function DispatchBoard({ focus, mode, items, roster, dayStart, dayEnd, increment
 }
 
 // ─── Unscheduled queue (triage, below board) ──────────────
-function UnscheduledQueue({ items, tab, setTab, search, setSearch, onSelect }: {
+// Tabs are config-driven "queue views" (saved filters) resolved from settings —
+// not a hardcoded list — so admins can add/edit custom tabs.
+function UnscheduledQueue({ items, views, tab, setTab, search, setSearch, onSelect }: {
   items: UnscheduledItem[];
-  tab: "all" | "urgent" | CalendarItemType; setTab: (t: "all" | "urgent" | CalendarItemType) => void;
+  views: QueueView[];
+  tab: string; setTab: (t: string) => void;
   search: string; setSearch: (s: string) => void;
   onSelect: (u: UnscheduledItem) => void;
 }) {
-  const TABS = [
-    { key: "all",                label: "All" },
-    { key: "urgent",             label: "Urgent" },
-    { key: "job",                label: "Jobs" },
-    { key: "agreement_visit",    label: "Agreement Visits" },
-    { key: "sales_appointment",  label: "Sales Appointments" },
-    { key: "task",               label: "Tasks" },
-    { key: "project_milestone",  label: "Project Milestones" },
-  ] as const;
+  const activeView = views.find(v => v.key === tab) ?? views[0];
 
   const filtered = items
-    .filter(u => tab === "all" ? true : tab === "urgent" ? u.priority === "urgent" : u.type === tab)
+    .filter(u => activeView ? matchesQueueView(u, activeView) : true)
     .filter(u => { if (!search) return true; const q = search.toLowerCase(); return u.title.toLowerCase().includes(q) || (u.customerName ?? "").toLowerCase().includes(q) || u.reason.toLowerCase().includes(q); });
-
-  const count = (key: string) => key === "all" ? items.length : key === "urgent" ? items.filter(u => u.priority === "urgent").length : items.filter(u => u.type === key).length;
 
   const [collapsed, setCollapsed] = useState(false);
   const [layout, setLayout] = useState<"cards" | "list">("cards");
@@ -595,16 +598,18 @@ function UnscheduledQueue({ items, tab, setTab, search, setSearch, onSelect }: {
       </div>
       {!collapsed && (
         <>
-          {/* Triage tabs */}
+          {/* Triage tabs — one per configured queue view */}
           <div className="flex items-center gap-0.5 px-3 py-2 flex-wrap" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
-            {TABS.map(t => {
-              const active = tab === t.key; const c = count(t.key);
-              if (c === 0 && t.key !== "all") return null;
+            {views.map(v => {
+              const active = (activeView?.key ?? tab) === v.key; const c = countForView(items, v);
+              // Configured views are curated in Settings (active + "Show as tab"),
+              // so always render them — even at 0 — rather than auto-hiding empties.
               return (
-                <button key={t.key} onClick={() => setTab(t.key)}
+                <button key={v.key} onClick={() => setTab(v.key)}
                   className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-colors"
                   style={{ backgroundColor: active ? "var(--accent-soft-bg)" : "transparent", color: active ? "var(--accent-text)" : "var(--text-muted)", border: `1px solid ${active ? "var(--accent-soft-border)" : "transparent"}` }}>
-                  {t.label}<span className="text-[10px] font-bold px-1 py-0.5 rounded-full" style={{ backgroundColor: active ? "var(--accent-soft-2-bg)" : "var(--bg-input)", color: active ? "var(--accent-text)" : "var(--text-muted)" }}>{c}</span>
+                  {v.color && <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: v.color }} />}
+                  {v.name}<span className="text-[10px] font-bold px-1 py-0.5 rounded-full" style={{ backgroundColor: active ? "var(--accent-soft-2-bg)" : "var(--bg-input)", color: active ? "var(--accent-text)" : "var(--text-muted)" }}>{c}</span>
                 </button>
               );
             })}

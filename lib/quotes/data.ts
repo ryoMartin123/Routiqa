@@ -56,6 +56,9 @@ export interface QuoteRecord extends Quote {
   linkedLabel?: string;
   linkedType?: "lead" | "job" | "project" | "agreement";
   linkedId?: string;
+  // Lifecycle flags — hidden from active lists (kept for audit, not hard-removed).
+  archived?: boolean;
+  deleted?: boolean;
 }
 
 export interface InvoiceRecord extends Invoice {
@@ -399,7 +402,8 @@ function applyOverride(q: QuoteRecord): QuoteRecord {
   return o ? { ...q, ...o } : q;
 }
 
-export function getAllQuotes(): QuoteRecord[]   { return [...extraQuotes(), ...ALL_QUOTES].map(applyOverride); }
+export function getAllQuotes(): QuoteRecord[]   { return [...extraQuotes(), ...ALL_QUOTES].map(applyOverride).filter(q => !q.archived && !q.deleted); }
+export function getArchivedQuotes(): QuoteRecord[] { return [...extraQuotes(), ...ALL_QUOTES].map(applyOverride).filter(q => q.archived && !q.deleted); }
 export function getAllInvoices(): InvoiceRecord[] { return [...extraInvoices(), ...ALL_INVOICES]; }
 
 // ─── Activity helpers ─────────────────────────────────────
@@ -486,8 +490,63 @@ export function duplicateQuote(id: string): QuoteRecord | undefined {
   return copy;
 }
 
+// Reopen a rejected/expired quote back to an editable draft.
+export function reopenQuote(id: string, actor = "Marcus Reyes"): QuoteRecord | undefined {
+  const q = getQuote(id);
+  if (!q) return;
+  persistEdit(id, { status: "draft", approvedAt: undefined }, newActivity("status", "Reopened as draft", actor));
+  return getQuote(id);
+}
+
+// Resend a sent quote (logs activity; status unchanged).
+export function resendQuote(id: string, actor = "Marcus Reyes"): void {
+  persistEdit(id, {}, newActivity("sent", "Quote re-sent to customer", actor));
+}
+
+// Archive — removes the quote from active lists without hard-deleting it.
+export function archiveQuote(id: string, actor = "Marcus Reyes"): void {
+  persistEdit(id, { archived: true }, newActivity("status", "Quote archived", actor));
+}
+
+// Unarchive — restores an archived quote to the active lists.
+export function unarchiveQuote(id: string, actor = "Marcus Reyes"): void {
+  persistEdit(id, { archived: false }, newActivity("status", "Quote unarchived", actor));
+}
+
+// Delete — session quotes are removed outright; seed quotes get a deleted flag.
+export function deleteQuote(id: string): void {
+  if (extraQuotes().some(q => q.id === id)) {
+    _extraQuotes = extraQuotes().filter(q => q.id !== id);
+    try { localStorage.setItem(Q_KEY, JSON.stringify(_extraQuotes)); } catch { /* ignore */ }
+  } else {
+    saveOverride(id, { deleted: true });
+  }
+}
+
+// Create a draft invoice from an approved quote (Net-30) and log it on the quote.
+export function createInvoiceFromQuote(id: string): InvoiceRecord | undefined {
+  const q = getQuote(id);
+  if (!q) return;
+  const due = new Date(); due.setDate(due.getDate() + 30);
+  const dueDate = due.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  const inv = createInvoice({
+    customerId: q.customerId, customerName: q.customerName, customerInitials: q.customerInitials, locationName: q.locationName,
+    title: q.title, dueDate,
+    lineItems: q.lineItems.filter(li => !li.optional).map((li, i) => ({ ...li, id: `li-inv-${Date.now()}-${i}` })),
+    quoteId: q.id, quoteNumber: q.quoteNumber,
+    jobId: q.jobId, projectId: q.projectId, agreementId: q.agreementId, propertyId: q.propertyId,
+    linkedLabel: `Quote: ${q.quoteNumber}`, linkedType: "quote", linkedId: q.id,
+  });
+  persistEdit(id, {}, newActivity("converted", `Invoice ${inv.invoiceNumber} created from ${q.quoteNumber}`));
+  return inv;
+}
+
 // ─── Lookup helpers ───────────────────────────────────────
-export function getQuote(id: string): QuoteRecord | undefined   { return getAllQuotes().find(q => q.id === id); }
+// Resolves any non-deleted quote (incl. archived) so the detail page still
+// opens an archived quote from the Archived tab; lists use getAllQuotes.
+export function getQuote(id: string): QuoteRecord | undefined {
+  return [...extraQuotes(), ...ALL_QUOTES].map(applyOverride).find(q => q.id === id && !q.deleted);
+}
 export { QUOTE_TEMPLATES, getQuoteTemplate } from "./templates";
 export function getInvoice(id: string): InvoiceRecord | undefined { return getAllInvoices().find(i => i.id === id); }
 

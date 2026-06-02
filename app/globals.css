@@ -344,3 +344,31 @@ body {
 .hdpi.pac-logo:after {
   display: none !important;
 }
+
+/* ─── Printable document (quote / invoice → Save as PDF) ───────────
+   A container that's kept in the DOM but invisible on screen, then is the
+   ONLY thing shown when printing. Used by the quote "Download" action so the
+   browser's print dialog produces a clean, sendable PDF of just the quote. */
+.print-doc {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 794px;            /* ~A4 width @ 96dpi for consistent on-print layout */
+  visibility: hidden;      /* invisible on screen, but laid out for printing */
+  z-index: -1;
+  pointer-events: none;
+}
+@media print {
+  /* Hide the whole app, then reveal only the print document. */
+  body * { visibility: hidden !important; }
+  .print-doc, .print-doc * { visibility: visible !important; }
+  .print-doc {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    z-index: 9999 !important;
+  }
+  /* Trim default page margins so the letterhead sits cleanly. */
+  @page { margin: 16mm; }
+}

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import {
   Plus, Pencil, Trash2, Check, RotateCcw, ChevronUp, ChevronDown,
-  Star, CalendarDays, Clock, LayoutGrid, Users, Layers, Building2, MapPin,
+  Star, CalendarDays, Clock, LayoutGrid, Users, Layers, Building2, MapPin, Inbox,
 } from "lucide-react";
 import UiSelect from "@/components/ui/Select";
 import {
@@ -15,14 +15,28 @@ import {
   type ScopeLevel, type DispatchSection,
   type CalendarViewMode, type HourIncrement, type HourLabelStyle,
 } from "@/lib/calendar/settings";
-import type { DispatchMode } from "@/lib/calendar/types";
+import {
+  SOURCE_TYPE_LABELS, newQueueViewId,
+  type QueueView, type QueueFilters, type QueueSourceType,
+} from "@/lib/calendar/queueViews";
+import type { DispatchMode, ItemPriority } from "@/lib/calendar/types";
 import { companies, locations, serviceAreas } from "@/lib/hierarchy/data";
 
+const PRIORITY_OPTIONS: ItemPriority[] = ["urgent", "high", "normal", "low"];
+const DUE_OPTIONS = [
+  { value: "any", label: "Any time" },
+  { value: "0", label: "Due today" },
+  { value: "7", label: "Due this week" },
+  { value: "30", label: "Due this month" },
+];
+
 const LAYER_SWATCHES = ["#4f46e5", "#0891b2", "#059669", "#f59e0b", "#7c3aed"];
-const TABS: { key: "defaults" | "blocks" | "boards" | "layers"; label: string; icon: typeof Clock }[] = [
+type SectionTab = "defaults" | "blocks" | "boards" | "layers" | "queue";
+const TABS: { key: SectionTab; label: string; icon: typeof Clock }[] = [
   { key: "defaults", label: "Defaults",       icon: CalendarDays },
   { key: "blocks",   label: "Service Blocks",  icon: LayoutGrid },
   { key: "boards",   label: "Dispatch Boards", icon: Users },
+  { key: "queue",    label: "Queue Views",     icon: Inbox },
   { key: "layers",   label: "Calendar Layers", icon: Layers },
 ];
 
@@ -83,7 +97,7 @@ function Segmented<T extends string>({ value, options, onChange, disabled }: {
   );
 }
 
-function ChipMulti({ all, selected, onToggle }: { all: string[]; selected: string[]; onToggle: (v: string) => void }) {
+function ChipMulti({ all, selected, onToggle, labels }: { all: string[]; selected: string[]; onToggle: (v: string) => void; labels?: Record<string, string> }) {
   return (
     <div className="flex flex-wrap gap-1.5">
       {all.map(opt => {
@@ -94,7 +108,7 @@ function ChipMulti({ all, selected, onToggle }: { all: string[]; selected: strin
             style={on
               ? { backgroundColor: "#e0e7ff", color: "#3730a3", border: "1px solid #c7d2fe" }
               : { backgroundColor: "var(--bg-surface-2)", color: "var(--text-muted)", border: "1px solid var(--border-subtle)" }}>
-            {on && <Check className="w-3 h-3 inline mr-1 -mt-0.5" />}{opt}
+            {on && <Check className="w-3 h-3 inline mr-1 -mt-0.5" />}{labels?.[opt] ?? opt}
           </button>
         );
       })}
@@ -124,11 +138,12 @@ export default function CalendarDispatchSection() {
   const [level, setLevel] = useState<ScopeLevel>("org");
   const [companyId, setCompanyId] = useState(companies[0]?.id ?? "");
   const [locationId, setLocationId] = useState(firstLocationOf(companies[0]?.id ?? ""));
-  const [tab, setTab] = useState<"defaults" | "blocks" | "boards" | "layers">("defaults");
+  const [tab, setTab] = useState<SectionTab>("defaults");
   const [dirty, setDirty] = useState(false);
   const [saved, setSaved] = useState(false);
   const [editingBlock, setEditingBlock] = useState<string | null>(null);
   const [editingBoard, setEditingBoard] = useState<string | null>(null);
+  const [editingView, setEditingView] = useState<string | null>(null);
 
   useEffect(() => { setStore(getStore()); }, []);
   if (!store) return <div className="p-6 text-sm" style={{ color: "var(--text-muted)" }}>Loading…</div>;
@@ -182,7 +197,7 @@ export default function CalendarDispatchSection() {
   const layersVal   = scopeCfg.layers ?? parent.layers;
 
   function handleSave() { if (store) saveStore(store); setDirty(false); setSaved(true); setTimeout(() => setSaved(false), 2000); }
-  function handleReset() { setStore(resetStore()); setEditingBlock(null); setEditingBoard(null); setDirty(false); setSaved(false); }
+  function handleReset() { setStore(resetStore()); setEditingBlock(null); setEditingBoard(null); setEditingView(null); setDirty(false); setSaved(false); }
 
   // ── Scope selector handlers ──
   function pickLevel(l: ScopeLevel) {
@@ -267,6 +282,45 @@ export default function CalendarDispatchSection() {
       }
     });
     if (editingBoard === id) setEditingBoard(null);
+  }
+
+  // ── Queue view ops (global for now — not scoped) ──
+  const sortedViews = [...store.queueViews].sort((a, b) => a.order - b.order);
+  function addQueueView() {
+    const id = newQueueViewId();
+    update(next => {
+      const maxOrder = next.queueViews.length ? Math.max(...next.queueViews.map(v => v.order)) : -1;
+      next.queueViews.push({ id, key: id, name: "New View", order: maxOrder + 1, active: true, defaultVisible: true, filters: {} });
+    });
+    setEditingView(id);
+  }
+  function patchQueueView(id: string, patch: Partial<QueueView>) {
+    update(next => { const v = next.queueViews.find(x => x.id === id); if (v) Object.assign(v, patch); });
+  }
+  // Toggle a value in an array-valued filter (sourceTypes / priorities / jobTypes).
+  function toggleQueueFilter(id: string, key: "sourceTypes" | "priorities" | "jobTypes", value: string) {
+    update(next => {
+      const v = next.queueViews.find(x => x.id === id); if (!v) return;
+      const arr = (v.filters[key] as string[] | undefined) ?? [];
+      const nextArr = arr.includes(value) ? arr.filter(x => x !== value) : [...arr, value];
+      v.filters = { ...v.filters, [key]: nextArr.length ? nextArr : undefined };
+    });
+  }
+  function setQueueDue(id: string, days: number | undefined) {
+    update(next => { const v = next.queueViews.find(x => x.id === id); if (v) v.filters = { ...v.filters, dueWithinDays: days }; });
+  }
+  function moveQueueView(id: string, dir: -1 | 1) {
+    update(next => {
+      const sorted = [...next.queueViews].sort((a, b) => a.order - b.order);
+      const idx = sorted.findIndex(v => v.id === id); const swap = idx + dir;
+      if (swap < 0 || swap >= sorted.length) return;
+      const o = sorted[idx].order; sorted[idx].order = sorted[swap].order; sorted[swap].order = o;
+      next.queueViews = sorted;
+    });
+  }
+  function removeQueueView(id: string) {
+    update(next => { next.queueViews = next.queueViews.filter(v => v.id !== id); });
+    if (editingView === id) setEditingView(null);
   }
 
   const scopeNoun = level === "org" ? "the organization" : level === "company" ? "this company" : "this location";
@@ -536,6 +590,38 @@ export default function CalendarDispatchSection() {
           )}
         </SettingsCard>
       )}
+
+      {/* ── QUEUE VIEWS TAB ── */}
+      {tab === "queue" && (
+        <SettingsCard icon={Inbox} title="Unscheduled Queue Views" subtitle="Saved tabs for the Unscheduled Queue. Each view is a filter; admins can add, reorder, hide, or edit them."
+          action={
+            <button onClick={addQueueView} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-white" style={{ backgroundColor: "#4f46e5" }}>
+              <Plus className="w-3.5 h-3.5" /> Add View
+            </button>
+          }>
+          <div className="space-y-2">
+            {sortedViews.map((v, i) => (
+              editingView === v.id ? (
+                <QueueViewEditor key={v.id} view={v}
+                  onPatch={p => patchQueueView(v.id, p)}
+                  onToggleFilter={(f, val) => toggleQueueFilter(v.id, f, val)}
+                  onSetDue={d => setQueueDue(v.id, d)}
+                  onDone={() => setEditingView(null)} />
+              ) : (
+                <QueueViewRow key={v.id} view={v} first={i === 0} last={i === sortedViews.length - 1}
+                  onMove={dir => moveQueueView(v.id, dir)}
+                  onEdit={() => setEditingView(v.id)}
+                  onToggleActive={val => patchQueueView(v.id, { active: val })}
+                  onRemove={() => removeQueueView(v.id)} />
+              )
+            ))}
+            {sortedViews.length === 0 && <p className="text-xs py-2" style={{ color: "var(--text-muted)" }}>No queue views. Add one to create a tab.</p>}
+          </div>
+          <p className="text-[11px] mt-3" style={{ color: "var(--text-muted)" }}>
+            Queue views currently apply across all boards. Board-specific views can be added later.
+          </p>
+        </SettingsCard>
+      )}
     </div>
   );
 }
@@ -660,6 +746,105 @@ function BoardEditor({ board, onPatch, onToggleMember, onDone }: {
             </div>
           </div>
         </div>
+        <button onClick={onDone} className="px-4 py-1.5 rounded-lg text-sm font-medium text-white" style={{ backgroundColor: "#4f46e5" }}>Done</button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Queue view row + editor ──────────────────────────────
+const QV_SWATCHES = ["#4f46e5", "#dc2626", "#059669", "#f59e0b", "#0891b2", "#7c3aed"];
+const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+const PRIORITY_LABELS: Record<string, string> = { urgent: "Urgent", high: "High", normal: "Normal", low: "Low" };
+
+function queueFilterSummary(f: QueueFilters): string {
+  const parts: string[] = [];
+  if (f.sourceTypes?.length) parts.push(f.sourceTypes.map(s => SOURCE_TYPE_LABELS[s]).join(", "));
+  if (f.priorities?.length) parts.push(f.priorities.map(cap).join("/"));
+  if (f.jobTypes?.length) parts.push(f.jobTypes.join(", "));
+  if (f.dueWithinDays != null) parts.push(f.dueWithinDays === 0 ? "Due today" : `Due ≤ ${f.dueWithinDays}d`);
+  return parts.length ? parts.join(" · ") : "All items (no filter)";
+}
+
+function QueueViewRow({ view, first, last, onMove, onEdit, onToggleActive, onRemove }: {
+  view: QueueView; first: boolean; last: boolean;
+  onMove: (dir: -1 | 1) => void; onEdit: () => void; onToggleActive: (v: boolean) => void; onRemove: () => void;
+}) {
+  return (
+    <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg" style={{ border: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)", opacity: view.active ? 1 : 0.55 }}>
+      <div className="flex flex-col">
+        <button onClick={() => onMove(-1)} disabled={first} className="disabled:opacity-20" style={{ color: "var(--text-muted)" }}><ChevronUp className="w-3.5 h-3.5" /></button>
+        <button onClick={() => onMove(1)} disabled={last} className="disabled:opacity-20" style={{ color: "var(--text-muted)" }}><ChevronDown className="w-3.5 h-3.5" /></button>
+      </div>
+      {view.color && <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: view.color }} />}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 flex-wrap">
+          <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{view.name}</p>
+          {view.system && <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: "#e0e7ff", color: "#3730a3" }}>System</span>}
+          {!view.defaultVisible && <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>Hidden</span>}
+        </div>
+        <p className="text-xs truncate" style={{ color: "var(--text-muted)" }}>{queueFilterSummary(view.filters)}</p>
+      </div>
+      <Toggle on={view.active} onChange={onToggleActive} />
+      <button onClick={onEdit} className="p-1.5 rounded-lg hover:bg-[var(--bg-input)]" style={{ color: "var(--text-muted)" }}><Pencil className="w-3.5 h-3.5" /></button>
+      <button onClick={onRemove} disabled={view.system} title={view.system ? "System views can't be deleted" : "Delete view"}
+        className="p-1.5 rounded-lg hover:bg-red-50 disabled:opacity-20 disabled:cursor-not-allowed" style={{ color: "#9ca3af" }}><Trash2 className="w-3.5 h-3.5" /></button>
+    </div>
+  );
+}
+
+function QueueViewEditor({ view, onPatch, onToggleFilter, onSetDue, onDone }: {
+  view: QueueView;
+  onPatch: (p: Partial<QueueView>) => void;
+  onToggleFilter: (field: "sourceTypes" | "priorities" | "jobTypes", value: string) => void;
+  onSetDue: (days: number | undefined) => void;
+  onDone: () => void;
+}) {
+  const sourceKeys = Object.keys(SOURCE_TYPE_LABELS) as QueueSourceType[];
+  return (
+    <div className="rounded-xl p-4 space-y-4" style={{ border: "2px solid #c7d2fe", backgroundColor: "var(--bg-surface)" }}>
+      <div className="grid grid-cols-2 gap-3">
+        <div className="col-span-2">
+          <FieldLabel>View Name</FieldLabel>
+          <input value={view.name} onChange={e => onPatch({ name: e.target.value })}
+            className="w-full rounded-lg px-3 py-2 text-sm outline-none" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface)", color: "var(--text-primary)" }} />
+        </div>
+        <div>
+          <FieldLabel>Tab Color</FieldLabel>
+          <div className="flex items-center gap-1.5 pt-1">
+            <button onClick={() => onPatch({ color: undefined })} title="No color"
+              className="w-5 h-5 rounded-full flex items-center justify-center text-[10px]" style={{ border: "1px solid var(--border)", color: "var(--text-muted)", outline: !view.color ? "2px solid var(--text-primary)" : "none", outlineOffset: "1px" }}>—</button>
+            {QV_SWATCHES.map(c => (
+              <button key={c} onClick={() => onPatch({ color: c })}
+                className="w-5 h-5 rounded-full" style={{ backgroundColor: c, outline: view.color === c ? "2px solid var(--text-primary)" : "none", outlineOffset: "1px" }} />
+            ))}
+          </div>
+        </div>
+        <div className="flex items-end gap-4">
+          <label className="flex items-center gap-2 cursor-pointer pb-2">
+            <Toggle on={view.active} onChange={v => onPatch({ active: v })} />
+            <span className="text-sm" style={{ color: "var(--text-secondary)" }}>Active</span>
+          </label>
+          <label className="flex items-center gap-2 cursor-pointer pb-2">
+            <Toggle on={view.defaultVisible} onChange={v => onPatch({ defaultVisible: v })} />
+            <span className="text-sm" style={{ color: "var(--text-secondary)" }}>Show as tab</span>
+          </label>
+        </div>
+      </div>
+
+      <div><FieldLabel>Source Types</FieldLabel><ChipMulti all={sourceKeys} labels={SOURCE_TYPE_LABELS} selected={view.filters.sourceTypes ?? []} onToggle={v => onToggleFilter("sourceTypes", v)} /></div>
+      <div><FieldLabel>Priority</FieldLabel><ChipMulti all={PRIORITY_OPTIONS} labels={PRIORITY_LABELS} selected={view.filters.priorities ?? []} onToggle={v => onToggleFilter("priorities", v)} /></div>
+      <div><FieldLabel>Job Types</FieldLabel><ChipMulti all={MOCK_JOB_TYPES} selected={view.filters.jobTypes ?? []} onToggle={v => onToggleFilter("jobTypes", v)} /></div>
+      <div className="flex items-center gap-3">
+        <FieldLabel>Due Within</FieldLabel>
+        <div className="-mt-1.5 w-44">
+          <UiSelect value={view.filters.dueWithinDays == null ? "any" : String(view.filters.dueWithinDays)}
+            onChange={val => onSetDue(val === "any" ? undefined : Number(val))} options={DUE_OPTIONS} />
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between pt-1">
+        <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>Empty filters match every queue item.</p>
         <button onClick={onDone} className="px-4 py-1.5 rounded-lg text-sm font-medium text-white" style={{ backgroundColor: "#4f46e5" }}>Done</button>
       </div>
     </div>

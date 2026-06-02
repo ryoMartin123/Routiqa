@@ -3,56 +3,56 @@
 import React, { use, useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Pencil, Eye, Copy, ChevronRight, ChevronDown, FilePen, FileCheck, Briefcase, FolderKanban, TrendingUp, Send, X } from "lucide-react";
+import {
+  ArrowLeft, Pencil, Eye, Copy, ChevronRight, ChevronDown, FilePen, FileCheck,
+  Briefcase, FolderKanban, TrendingUp, Send, X, Download, Printer, Archive, ArchiveRestore,
+  Trash2, RotateCcw, Link2, RefreshCw, XCircle, Clock, Receipt,
+} from "lucide-react";
 import {
   getQuote, fmt, duplicateQuote, updateQuoteStatus, convertQuoteToJob, convertQuoteToProject,
-  setQuoteNotes, getQuoteActivity, type QuoteRecord,
+  setQuoteNotes, getQuoteActivity, reopenQuote, resendQuote, archiveQuote, unarchiveQuote, deleteQuote,
+  createInvoiceFromQuote, type QuoteRecord,
 } from "@/lib/quotes/data";
+import { downloadQuotePdf } from "@/lib/quotes/pdf";
 import { QUOTE_STATUS_STYLE, type QuoteStatus } from "@/lib/quotes/types";
 import { getCustomer } from "@/lib/customers/data";
 import QuotePreview from "@/components/quotes/QuotePreview";
 
 const TABS = ["Details", "Notes", "Activity"];
 
-// ─── Status action buttons per stage ─────────────────────
-function StatusActions({
-  status, onStatus,
-}: {
-  status: QuoteStatus;
-  onStatus: (next: QuoteStatus) => void;
-}) {
-  if (status === "draft") return (
-    <button onClick={() => onStatus("sent")}
-      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
-      style={{ backgroundColor: "#4f46e5", color: "#fff" }}>
-      <Send className="w-3.5 h-3.5" /> Mark as Sent
-    </button>
-  );
-  if (status === "sent" || status === "viewed") return (
-    <>
-      <button onClick={() => onStatus("approved")}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
-        style={{ backgroundColor: "#10b981", color: "#fff" }}>
-        <FileCheck className="w-3.5 h-3.5" /> Mark Approved
-      </button>
-      <button onClick={() => onStatus("rejected")}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors"
-        style={{ border: "1px solid #fecaca", color: "#dc2626" }}>
-        Decline
-      </button>
-    </>
-  );
-  return null;
-}
+// ─── Status-driven action bar ─────────────────────────────
+// Visible buttons = the primary actions for the quote's current status; every
+// other (uncommon / risky) action lives under More, with destructive actions
+// (Archive, Delete) below a divider at the bottom.
+type LucideIcon = typeof Send;
+type MenuEntry = { label: string; icon: LucideIcon; onClick: () => void; danger?: boolean } | "divider";
+type PrimaryBtn = { label: string; icon: LucideIcon; onClick: () => void; color: string };
 
-// ─── More actions menu (Duplicate / Convert / Edit / PDF) ──
-function ActionsMenu({ status, onDuplicate, onConvertJob, onConvertProject }: {
+interface ActionHandlers {
   status: QuoteStatus;
+  onPreview: () => void;
+  onSend: () => void;
+  onApprove: () => void;
+  onReject: () => void;
+  onExpire: () => void;
+  onReopen: () => void;
+  onResend: () => void;
   onDuplicate: () => void;
   onConvertJob: () => void;
   onConvertProject: () => void;
-}) {
+  onCreateInvoice: () => void;
+  onDownloadPdf: () => void;
+  onPrint: () => void;
+  onEdit: () => void;
+  onArchive: () => void;
+  onUnarchive: () => void;
+  onDelete: () => void;
+  archived?: boolean;
+}
+
+function QuoteActionBar(h: ActionHandlers) {
   const [open, setOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!open) return;
@@ -61,36 +61,104 @@ function ActionsMenu({ status, onDuplicate, onConvertJob, onConvertProject }: {
     return () => document.removeEventListener("mousedown", onDown);
   }, [open]);
 
-  const canConvert = status === "approved" || status === "sent" || status === "viewed";
-  const item = "flex items-center gap-2 w-full px-3 py-2 text-sm text-left transition-colors hover:bg-[var(--bg-surface-2)]";
+  function copyLink() {
+    try { navigator.clipboard?.writeText(window.location.href); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch { /* ignore */ }
+  }
+
+  // Reusable menu entries
+  const EDIT: MenuEntry = { label: "Edit", icon: Pencil, onClick: h.onEdit };
+  const DUP:  MenuEntry = { label: "Duplicate", icon: Copy, onClick: h.onDuplicate };
+  const PDF:  MenuEntry = { label: "Download PDF", icon: Download, onClick: h.onDownloadPdf };
+  const PRINT: MenuEntry = { label: "Print", icon: Printer, onClick: h.onPrint };
+  const COPY: MenuEntry = { label: copied ? "Link copied ✓" : "Copy Quote Link", icon: Link2, onClick: copyLink };
+  const ARCH: MenuEntry = h.archived
+    ? { label: "Unarchive", icon: ArchiveRestore, onClick: h.onUnarchive }
+    : { label: "Archive", icon: Archive, onClick: h.onArchive };
+  const DEL:  MenuEntry = { label: "Delete", icon: Trash2, onClick: h.onDelete, danger: true };
+
+  let primary: PrimaryBtn[] = [];
+  let menu: MenuEntry[] = [];
+
+  switch (h.status) {
+    case "draft":
+      primary = [{ label: "Send Quote", icon: Send, onClick: h.onSend, color: "#4f46e5" }];
+      menu = [EDIT, DUP, PDF, PRINT, "divider", ARCH, DEL];
+      break;
+    case "sent":
+    case "viewed":
+      primary = [{ label: "Mark Approved", icon: FileCheck, onClick: h.onApprove, color: "#10b981" }];
+      menu = [
+        EDIT, DUP,
+        { label: "Resend Quote", icon: RefreshCw, onClick: h.onResend },
+        COPY, PDF, PRINT,
+        { label: "Mark Rejected", icon: XCircle, onClick: h.onReject },
+        { label: "Mark Expired", icon: Clock, onClick: h.onExpire },
+        "divider", ARCH,
+      ];
+      break;
+    case "approved":
+      primary = [{ label: "Convert to Job", icon: Briefcase, onClick: h.onConvertJob, color: "#4f46e5" }];
+      menu = [
+        DUP, PDF, PRINT, COPY,
+        { label: "Convert to Project", icon: FolderKanban, onClick: h.onConvertProject },
+        { label: "Create Invoice", icon: Receipt, onClick: h.onCreateInvoice },
+        "divider", ARCH,
+      ];
+      break;
+    case "converted":
+      primary = [];
+      menu = [
+        DUP, PDF, PRINT, COPY,
+        { label: "Create Invoice", icon: Receipt, onClick: h.onCreateInvoice },
+        "divider", ARCH,
+      ];
+      break;
+    case "rejected":
+    case "expired":
+      primary = [{ label: "Duplicate", icon: Copy, onClick: h.onDuplicate, color: "#4f46e5" }];
+      menu = [
+        { label: "Reopen as Draft", icon: RotateCcw, onClick: h.onReopen },
+        PDF, PRINT, "divider", ARCH, DEL,
+      ];
+      break;
+  }
 
   return (
-    <div className="relative" ref={ref}>
-      <button onClick={() => setOpen(o => !o)}
-        className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>
-        More <ChevronDown className="w-3.5 h-3.5" />
+    <div className="flex items-center gap-2">
+      {primary.map(p => (
+        <button key={p.label} onClick={p.onClick}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-white transition-colors hover:opacity-90"
+          style={{ backgroundColor: p.color }}>
+          <p.icon className="w-3.5 h-3.5" /> {p.label}
+        </button>
+      ))}
+      <button onClick={h.onPreview}
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors hover:bg-[var(--bg-surface-2)]"
+        style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>
+        <Eye className="w-3.5 h-3.5" /> Preview
       </button>
-      {open && (
-        <div className="absolute right-0 top-full mt-1 w-52 rounded-xl overflow-hidden z-20 py-1"
-          style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "0 8px 24px rgba(0,0,0,0.16)" }}>
-          <button className={item} style={{ color: "var(--text-primary)" }} onClick={() => { setOpen(false); onDuplicate(); }}>
-            <Copy className="w-3.5 h-3.5" style={{ color: "var(--text-muted)" }} /> Duplicate
-          </button>
-          {canConvert && <>
-            <div className="my-1 h-px" style={{ backgroundColor: "var(--border-subtle)" }} />
-            <button className={item} style={{ color: "var(--text-primary)" }} onClick={() => { setOpen(false); onConvertJob(); }}>
-              <Briefcase className="w-3.5 h-3.5" style={{ color: "var(--text-muted)" }} /> Convert to Job
-            </button>
-            <button className={item} style={{ color: "var(--text-primary)" }} onClick={() => { setOpen(false); onConvertProject(); }}>
-              <FolderKanban className="w-3.5 h-3.5" style={{ color: "var(--text-muted)" }} /> Convert to Project
-            </button>
-          </>}
-          <div className="my-1 h-px" style={{ backgroundColor: "var(--border-subtle)" }} />
-          <button className={item} style={{ color: "var(--text-muted)" }}>
-            <Pencil className="w-3.5 h-3.5" /> Edit
-          </button>
-        </div>
-      )}
+      <div className="relative" ref={ref}>
+        <button onClick={() => setOpen(o => !o)}
+          className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm transition-colors hover:bg-[var(--bg-surface-2)]"
+          style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>
+          More <ChevronDown className="w-3.5 h-3.5" />
+        </button>
+        {open && (
+          <div className="absolute right-0 top-full mt-1 w-56 rounded-xl overflow-hidden z-20 py-1"
+            style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "0 8px 24px rgba(0,0,0,0.16)" }}>
+            {menu.map((m, i) => m === "divider" ? (
+              <div key={`d${i}`} className="my-1 h-px" style={{ backgroundColor: "var(--border-subtle)" }} />
+            ) : (
+              <button key={m.label}
+                onClick={() => { m.onClick(); if (m.label !== "Copy Quote Link") setOpen(false); }}
+                className="flex items-center gap-2 w-full px-3 py-2 text-sm text-left transition-colors hover:bg-[var(--bg-surface-2)]"
+                style={{ color: m.danger ? "#dc2626" : "var(--text-primary)" }}>
+                <m.icon className="w-3.5 h-3.5" style={{ color: m.danger ? "#dc2626" : "var(--text-muted)" }} /> {m.label}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -282,6 +350,37 @@ export default function QuoteDetailPage({ params }: { params: Promise<{ id: stri
   function doDuplicate() { const copy = duplicateQuote(id); if (copy) router.push(`/quotes/${copy.id}`); }
   function doConvertJob() { convertQuoteToJob(id); refresh(); }
   function doConvertProject() { convertQuoteToProject(id); refresh(); }
+  function doReopen() { reopenQuote(id); refresh(); }
+  function doResend() { resendQuote(id); refresh(); }
+  function doArchive() { archiveQuote(id); router.push("/quotes"); }
+  function doUnarchive() { unarchiveQuote(id); refresh(); }
+  function doDelete() {
+    if (!window.confirm(`Delete ${quote!.quoteNumber}? This can't be undone.`)) return;
+    deleteQuote(id); router.push("/quotes");
+  }
+  function doCreateInvoice() { const inv = createInvoiceFromQuote(id); if (inv) router.push(`/invoices/${inv.id}`); }
+
+  // The customer-facing document used by Preview, instant PDF download, and Print.
+  const previewData = {
+    quoteNumber: quote.quoteNumber, title: quote.title, customerName: quote.customerName,
+    propertyLabel: quote.propertyLabel, locationName: quote.locationName, expiresAt: quote.expiresAt,
+    assignedTo: quote.assignedTo ?? quote.createdBy, createdAt: quote.createdAt,
+    lineItems: quote.lineItems, subtotal: quote.subtotal, tax: quote.tax, total: quote.total,
+    customerNotes: quote.customerNotes,
+    stamp: quote.status === "approved" || quote.status === "converted" ? "APPROVED" : undefined,
+  };
+
+  // Instant PDF: builds and saves "<quote-number>.pdf" — no print dialog.
+  function downloadPdf() { downloadQuotePdf(previewData); }
+
+  // Print = open the system print dialog showing only the quote document.
+  function printQuote() {
+    const prevTitle = document.title;
+    document.title = `${quote!.quoteNumber} — ${quote!.customerName}`;
+    const restore = () => { document.title = prevTitle; window.removeEventListener("afterprint", restore); };
+    window.addEventListener("afterprint", restore);
+    window.print();
+  }
 
   return (
     <div className="flex flex-col h-full">
@@ -312,14 +411,28 @@ export default function QuoteDetailPage({ params }: { params: Promise<{ id: stri
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <StatusActions status={quote.status} onStatus={changeStatus} />
-            <button onClick={() => setShowPreview(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm"
-              style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>
-              <Eye className="w-3.5 h-3.5" /> Preview
-            </button>
-            <ActionsMenu status={quote.status} onDuplicate={doDuplicate} onConvertJob={doConvertJob} onConvertProject={doConvertProject} />
+          <div className="shrink-0">
+            <QuoteActionBar
+              status={quote.status}
+              onPreview={() => setShowPreview(true)}
+              onSend={() => changeStatus("sent")}
+              onApprove={() => changeStatus("approved")}
+              onReject={() => changeStatus("rejected")}
+              onExpire={() => changeStatus("expired")}
+              onReopen={doReopen}
+              onResend={doResend}
+              onDuplicate={doDuplicate}
+              onConvertJob={doConvertJob}
+              onConvertProject={doConvertProject}
+              onCreateInvoice={doCreateInvoice}
+              onDownloadPdf={downloadPdf}
+              onPrint={printQuote}
+              onEdit={() => {}}
+              onArchive={doArchive}
+              onUnarchive={doUnarchive}
+              onDelete={doDelete}
+              archived={!!quote.archived}
+            />
           </div>
         </div>
 
@@ -352,16 +465,15 @@ export default function QuoteDetailPage({ params }: { params: Promise<{ id: stri
               <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Quote Preview</p>
               <button onClick={() => setShowPreview(false)} style={{ color: "var(--text-muted)" }}><X className="w-4 h-4" /></button>
             </div>
-            <QuotePreview data={{
-              quoteNumber: quote.quoteNumber, title: quote.title, customerName: quote.customerName,
-              propertyLabel: quote.propertyLabel, locationName: quote.locationName, expiresAt: quote.expiresAt,
-              assignedTo: quote.assignedTo ?? quote.createdBy, createdAt: quote.createdAt,
-              lineItems: quote.lineItems, subtotal: quote.subtotal, tax: quote.tax, total: quote.total,
-              customerNotes: quote.customerNotes,
-            }} />
+            <QuotePreview data={previewData} />
           </div>
         </div>
       )}
+
+      {/* Hidden printable document — the only thing shown when Download triggers print. */}
+      <div className="print-doc" aria-hidden>
+        <QuotePreview data={previewData} />
+      </div>
     </div>
   );
 }

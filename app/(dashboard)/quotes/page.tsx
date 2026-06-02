@@ -5,8 +5,10 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Search, Plus, SlidersHorizontal, ChevronUp, ChevronDown, FilePen, Send, AlarmClock, DollarSign } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { getAllQuotes, fmt, type QuoteRecord } from "@/lib/quotes/data";
+import { getAllQuotes, getArchivedQuotes, fmt, type QuoteRecord } from "@/lib/quotes/data";
 import { QUOTE_STATUS_STYLE, type QuoteStatus } from "@/lib/quotes/types";
+
+type QuoteTab = "all" | "archived" | QuoteStatus;
 import QuoteWizard from "@/components/quotes/QuoteWizard";
 import { useHierarchy } from "@/components/providers/HierarchyProvider";
 import ModuleSummaryCards, { type SummaryCard } from "@/components/shared/ModuleSummaryCards";
@@ -20,7 +22,7 @@ function daysUntil(dateStr?: string): number {
   return (d.getTime() - Date.now()) / 86_400_000;
 }
 
-const STATUS_TABS: { key: "all" | QuoteStatus; label: string }[] = [
+const STATUS_TABS: { key: QuoteTab; label: string }[] = [
   { key: "all",       label: "All"       },
   { key: "draft",     label: "Draft"     },
   { key: "sent",      label: "Sent"      },
@@ -29,6 +31,7 @@ const STATUS_TABS: { key: "all" | QuoteStatus; label: string }[] = [
   { key: "rejected",  label: "Rejected"  },
   { key: "expired",   label: "Expired"   },
   { key: "converted", label: "Converted" },
+  { key: "archived",  label: "Archived"  },
 ];
 
 type SortField = "quoteNumber" | "customerName" | "status" | "total" | "createdAt";
@@ -48,23 +51,30 @@ export default function QuotesPage() {
   const { effectiveCompanyId, effectiveLocationId, effectiveServiceAreaId } = useHierarchy();
 
   const router = useRouter();
-  const [tab, setTab]         = useState<"all" | QuoteStatus>("all");
+  const [tab, setTab]         = useState<QuoteTab>("all");
   const [search, setSearch]   = useState("");
   const [sortField, setSort]  = useState<SortField>("createdAt");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [quotes, setQuotes]   = useState<QuoteRecord[]>([]);
+  const [archived, setArchived] = useState<QuoteRecord[]>([]);
   const [showCreate, setShowCreate] = useState(false);
   const [moduleView, setModuleView] = useState<ModuleView>("list");
 
-  useEffect(() => { setQuotes(getAllQuotes()); }, []);
+  useEffect(() => { setQuotes(getAllQuotes()); setArchived(getArchivedQuotes()); }, []);
 
-  const contextFiltered = quotes
-    .filter(q => !effectiveCompanyId     || q.companyId     === effectiveCompanyId)
-    .filter(q => !effectiveLocationId    || q.locationId    === effectiveLocationId)
-    .filter(q => !effectiveServiceAreaId || q.serviceAreaId === effectiveServiceAreaId);
+  const inContext = (q: QuoteRecord) =>
+    (!effectiveCompanyId     || q.companyId     === effectiveCompanyId) &&
+    (!effectiveLocationId    || q.locationId    === effectiveLocationId) &&
+    (!effectiveServiceAreaId || q.serviceAreaId === effectiveServiceAreaId);
 
-  const displayed = contextFiltered
-    .filter(q => tab === "all" || q.status === tab)
+  const activeCtx   = quotes.filter(inContext);
+  const archivedCtx = archived.filter(inContext);
+  const contextFiltered = activeCtx;   // active set drives header count + summary
+
+  // The Archived tab lists archived quotes (any status); other tabs list active.
+  const base = tab === "archived" ? archivedCtx : activeCtx;
+  const displayed = base
+    .filter(q => tab === "all" || tab === "archived" || q.status === tab)
     .filter(q => {
       if (!search) return true;
       const s = search.toLowerCase();
@@ -94,8 +104,10 @@ export default function QuotesPage() {
       : <ChevronDown className="w-3 h-3" style={{ color: "#4f46e5" }} />;
   }
 
-  const tabCount = (key: "all" | QuoteStatus) =>
-    key === "all" ? contextFiltered.length : contextFiltered.filter(q => q.status === key).length;
+  const tabCount = (key: QuoteTab) =>
+    key === "all" ? activeCtx.length
+    : key === "archived" ? archivedCtx.length
+    : activeCtx.filter(q => q.status === key).length;
 
   // Summary metrics — respect the active context
   const openQuotes = contextFiltered.filter(q => q.status === "draft" || q.status === "sent" || q.status === "viewed");
@@ -111,7 +123,6 @@ export default function QuotesPage() {
       <div className="flex items-center gap-4 mb-6">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2.5">
-            <FilePen className="w-5 h-5" style={{ color: "#4f46e5" }} />
             <h1 className="text-2xl font-semibold" style={{ color: "var(--text-primary)" }}>Quotes</h1>
             <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>
               {contextFiltered.length}
@@ -140,7 +151,7 @@ export default function QuotesPage() {
       <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
         {/* Tabs + search */}
         <div className="flex items-center justify-between flex-wrap gap-2 px-4 py-3" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
-          <StatusTabs active={tab} onChange={k => setTab(k as "all" | QuoteStatus)}
+          <StatusTabs active={tab} onChange={k => setTab(k as QuoteTab)}
             tabs={STATUS_TABS.filter(t => t.key === "all" || tabCount(t.key) > 0).map(t => ({ key: t.key, label: t.label, count: tabCount(t.key) }))} />
           <div className="flex items-center gap-2 shrink-0">
             <div className="flex items-center gap-2 rounded-lg px-3 py-1.5" style={{ backgroundColor: "var(--bg-input)" }}>

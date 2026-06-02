@@ -15,6 +15,7 @@ import {
   SERVICE_BLOCKS, CALENDAR_LAYERS, LAYER_CONFIG, DAY_START_HOUR,
   type CalendarItemType, type DispatchMode,
 } from "./types";
+import { defaultQueueViews, type QueueView } from "./queueViews";
 import { companies, locations } from "@/lib/hierarchy/data";
 
 const STORAGE_KEY = "crm-dispatch-settings";
@@ -83,11 +84,12 @@ export interface ScopedDispatchConfig {
 
 export type DispatchSection = "defaults" | "hourly" | "blocks" | "layers";
 
-// Persisted store: per-scope overrides + a flat board list.
+// Persisted store: per-scope overrides + a flat board list + queue views.
 export interface DispatchStore {
-  version: 2;
+  version: 3;
   scopes: Record<string, ScopedDispatchConfig>;
   boards: DispatchBoard[];
+  queueViews: QueueView[];   // Unscheduled Queue saved tabs/views
 }
 
 export type ScopeLevel = "org" | "company" | "location";
@@ -142,7 +144,7 @@ function defaultBoards(): DispatchBoard[] {
 }
 
 function defaultStore(): DispatchStore {
-  return { version: 2, scopes: {}, boards: defaultBoards() };
+  return { version: 3, scopes: {}, boards: defaultBoards(), queueViews: defaultQueueViews() };
 }
 
 // ─── Persistence + migration ──────────────────────────────
@@ -188,7 +190,7 @@ function migrateV1(parsed: Record<string, unknown>): DispatchStore {
       };
     });
   }
-  return { version: 2, scopes: { org }, boards };
+  return { version: 3, scopes: { org }, boards, queueViews: defaultQueueViews() };
 }
 
 export function getStore(): DispatchStore {
@@ -197,9 +199,26 @@ export function getStore(): DispatchStore {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return defaultStore();
     const parsed = JSON.parse(raw) as Record<string, unknown>;
-    if (parsed.version === 2) {
+    if (parsed.version === 3) {
       const store = parsed as unknown as DispatchStore;
-      return { version: 2, scopes: store.scopes ?? {}, boards: store.boards ?? defaultBoards() };
+      return {
+        version: 3,
+        scopes: store.scopes ?? {},
+        boards: store.boards ?? defaultBoards(),
+        queueViews: store.queueViews?.length ? store.queueViews : defaultQueueViews(),
+      };
+    }
+    if (parsed.version === 2) {
+      // v2 → v3: keep scopes/boards, seed default queue views (and persist).
+      const store = parsed as unknown as DispatchStore;
+      const upgraded: DispatchStore = {
+        version: 3,
+        scopes: store.scopes ?? {},
+        boards: store.boards ?? defaultBoards(),
+        queueViews: defaultQueueViews(),
+      };
+      saveStore(upgraded);
+      return upgraded;
     }
     // Legacy v1 → migrate (and persist the upgrade).
     const migrated = migrateV1(parsed);
@@ -285,6 +304,25 @@ export function itemMatchesBoard(
   // If the board declares neither techs nor job types, treat it as "all".
   if (board.techNames.length === 0 && board.jobTypes.length === 0) return true;
   return techMatch || typeMatch;
+}
+
+// ─── Queue views ──────────────────────────────────────────
+// All saved Unscheduled Queue views, ordered. Inactive views are kept (the
+// Settings editor still lists them) — the board filters to active+visible.
+export function getQueueViews(): QueueView[] {
+  return [...getStore().queueViews].sort((a, b) => a.order - b.order);
+}
+
+// The views the dispatch board should render as tabs: active and visible by
+// default, in order. "All" is guaranteed present even if it was deactivated.
+export function getVisibleQueueViews(): QueueView[] {
+  const all = getQueueViews();
+  const visible = all.filter(v => v.active && v.defaultVisible);
+  if (!visible.some(v => v.key === "all")) {
+    const allView = all.find(v => v.key === "all") ?? defaultQueueViews()[0];
+    return [allView, ...visible];
+  }
+  return visible;
 }
 
 // ─── Helpers ──────────────────────────────────────────────

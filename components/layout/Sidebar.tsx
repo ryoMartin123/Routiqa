@@ -114,8 +114,18 @@ export default function Sidebar() {
     });
   }
 
-  const isItemActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
   const pinnedHrefs = new Set(PINNED.map(p => p.href));
+
+  // `pendingHref` is the route just clicked. App Router only updates `pathname`
+  // once the navigation settles, so without this the *previous* page stays
+  // highlighted during the transition (e.g. Jobs lingers while opening Work
+  // Orders). We optimistically treat the clicked target as active, then clear
+  // it when `pathname` catches up. Back/forward set no pending, so the
+  // highlight tracks the real path with no flicker.
+  const [pendingHref, setPendingHref] = useState<string | null>(null);
+  useEffect(() => { setPendingHref(null); }, [pathname]);
+  const activeHref = pendingHref ?? pathname;
+  const isItemActive = (href: string) => activeHref === href || activeHref.startsWith(href + "/");
 
   // A pinned page lives in two spots (Pinned + its group). `source` remembers
   // which copy was last clicked so the highlight follows where you navigated
@@ -123,6 +133,9 @@ export default function Sidebar() {
   const [source, setSource] = useState<{ href: string; place: string } | null>(null);
   const placeFor = (href: string) =>
     source?.href === href ? source.place : (pinnedHrefs.has(href) ? "pinned" : "group");
+
+  // Record the clicked copy (for the pinned/group highlight) and the optimistic target.
+  const go = (href: string, place: string) => { setSource({ href, place }); setPendingHref(href); };
 
   function NavRow({ item, active, onSelect }: { item: NavItem; active: boolean; onSelect?: () => void }) {
     return (
@@ -171,7 +184,7 @@ export default function Sidebar() {
           {PINNED.map(item => (
             <NavRow key={item.name} item={item}
               active={isItemActive(item.href) && placeFor(item.href) === "pinned"}
-              onSelect={() => setSource({ href: item.href, place: "pinned" })} />
+              onSelect={() => go(item.href, "pinned")} />
           ))}
         </div>
 
@@ -200,7 +213,7 @@ export default function Sidebar() {
                   {group.items.map(item => (
                     <NavRow key={item.name} item={item}
                       active={itemActiveHere(item.href)}
-                      onSelect={() => setSource({ href: item.href, place: group.section })} />
+                      onSelect={() => go(item.href, group.section)} />
                   ))}
                 </div>
               )}
@@ -211,7 +224,7 @@ export default function Sidebar() {
 
       {/* Settings — pinned at the bottom for quick access */}
       <div className="px-2 py-2" style={{ borderTop: "1px solid var(--sidebar-border)" }}>
-        <NavRow item={SETTINGS_ITEM} active={isItemActive(SETTINGS_ITEM.href)} />
+        <NavRow item={SETTINGS_ITEM} active={isItemActive(SETTINGS_ITEM.href)} onSelect={() => go(SETTINGS_ITEM.href, "group")} />
       </div>
 
       {/* User */}

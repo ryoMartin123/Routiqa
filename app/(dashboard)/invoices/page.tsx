@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Search, Plus, SlidersHorizontal, ChevronUp, ChevronDown, Receipt, AlertTriangle, CalendarClock, CheckCircle2, DollarSign } from "lucide-react";
+import { Search, Plus, SlidersHorizontal, ChevronUp, ChevronDown, AlertTriangle, CalendarClock, CheckCircle2, DollarSign } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getAllInvoices, fmt, type InvoiceRecord } from "@/lib/quotes/data";
 import { INVOICE_STATUS_STYLE, type InvoiceStatus } from "@/lib/quotes/types";
@@ -121,7 +121,6 @@ export default function InvoicesPage() {
       <div className="flex items-center gap-4 mb-6">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2.5">
-            <Receipt className="w-5 h-5" style={{ color: "#4f46e5" }} />
             <h1 className="text-2xl font-semibold" style={{ color: "var(--text-primary)" }}>Invoices</h1>
             <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>
               {contextFiltered.length}

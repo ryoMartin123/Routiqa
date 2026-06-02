@@ -74,7 +74,6 @@ export default function TasksPage() {
       <div className="flex items-start justify-between mb-6">
         <div>
           <div className="flex items-center gap-2.5">
-            <CheckSquare className="w-5 h-5" style={{ color: "#4f46e5" }} />
             <h1 className="text-2xl font-semibold" style={{ color: "var(--text-primary)" }}>Tasks</h1>
             <span className="text-xs font-bold px-2 py-0.5 rounded-full"
               style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>

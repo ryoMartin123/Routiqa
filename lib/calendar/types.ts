@@ -60,21 +60,28 @@ export interface CalendarItem {
 export interface UnscheduledItem {
   id: string;
   type: CalendarItemType;
+  // Origin of the queue item — drives the default queue tabs/views. Broader than
+  // `type` (e.g. an approved quote produces a future "job" but queues distinctly).
+  sourceType: import("./queueViews").QueueSourceType;
   title: string;
-  reason: string;            // why it's in the queue
+  reason: string;            // why it's in the queue (reason_unscheduled)
   companyId: string;
   locationId: string;
+  serviceAreaId?: string;
   customerName?: string;
   value?: string;
   sourceId: string;
   sourceModule: CalendarItem["sourceModule"];
   color: string;
   priority: ItemPriority;
+  status?: string;           // source record status (e.g. "needs_scheduling")
   city?: string;
   address?: string;
   durationMinutes: number;
   preferredDate?: string;
+  dueDate?: string;          // due/target date used by date-range queue filters
   jobType?: string;
+  dispatchBoardId?: string;  // optional board affinity for board-specific views
 }
 
 // ─── Priority config ──────────────────────────────────────

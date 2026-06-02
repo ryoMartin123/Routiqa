@@ -73,7 +73,6 @@ export default function WorkOrdersPage() {
       <div className="flex items-center gap-4 mb-6">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2.5">
-            <ClipboardList className="w-5 h-5" style={{ color: "#4f46e5" }} />
             <h1 className="text-2xl font-semibold" style={{ color: "var(--text-primary)" }}>Work Orders</h1>
             <span className="text-xs font-bold px-2 py-0.5 rounded-full"
               style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>

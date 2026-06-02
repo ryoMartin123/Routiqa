@@ -199,23 +199,6 @@ export const AGREEMENTS: CustomerAgreement[] = [
     ],
   },
   {
-    id: "4", templateId: "t5",
-    customer: "ABC Property Group", customerInitials: "AP",
-    type: "Property Maintenance Contract", industry: "Property Maintenance",
-    status: "active", location: "Augusta", assignedTo: "D. Nguyen",
-    startDate: "Nov 1, 2019", renewalDate: "Nov 1, 2026",
-    nextVisit: "Jun 2, 2026",
-    billingFrequency: "Monthly", visitFrequency: "Monthly",
-    annualValue: 2400,
-    services: ["Monthly walkthrough", "Minor repairs included", "Seasonal prep", "24hr emergency line", "Quarterly property report"],
-    notes: "Commercial property group with 3 locations. Priority client. Requires monthly summary email.",
-    visits: [
-      { id: "v1", label: "May Walkthrough", scheduled: "May 5, 2026", status: "completed", tech: "D. Nguyen", completedDate: "May 5, 2026", notes: "Fixed 2 door hinges, reported leak in unit 4." },
-      { id: "v2", label: "Jun Walkthrough", scheduled: "Jun 2, 2026", status: "scheduled", tech: "D. Nguyen" },
-      { id: "v3", label: "Jul Walkthrough", scheduled: "Jul 7, 2026", status: "scheduled", tech: "D. Nguyen" },
-    ],
-  },
-  {
     id: "5", templateId: "t6",
     customer: "Southeast Restoration", customerInitials: "SR",
     type: "Consulting Retainer", industry: "Consulting",

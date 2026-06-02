@@ -18,6 +18,7 @@ export interface QuotePreviewData {
   tax: number;
   total: number;
   customerNotes?: string;
+  stamp?: string;          // e.g. "APPROVED" — diagonal stamp across the document
 }
 
 export default function QuotePreview({ data }: { data: QuotePreviewData }) {
@@ -25,7 +26,18 @@ export default function QuotePreview({ data }: { data: QuotePreviewData }) {
   const optional = data.lineItems.filter(li => li.optional);
 
   return (
-    <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "#ffffff", border: "1px solid var(--border-subtle)", color: "#111827" }}>
+    <div className="rounded-xl overflow-hidden" style={{ position: "relative", backgroundColor: "#ffffff", border: "1px solid var(--border-subtle)", color: "#111827" }}>
+      {/* Status stamp (e.g. APPROVED) */}
+      {data.stamp && (
+        <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none", zIndex: 10 }}>
+          <div style={{
+            transform: "rotate(-22deg)", border: "5px solid #059669", color: "#059669",
+            padding: "6px 26px", borderRadius: "10px", fontSize: "50px", fontWeight: 800,
+            letterSpacing: "0.08em", textTransform: "uppercase", opacity: 0.8,
+            fontFamily: "var(--font-family-sans)", whiteSpace: "nowrap",
+          }}>{data.stamp}</div>
+        </div>
+      )}
       {/* Letterhead */}
       <div className="flex items-start justify-between px-8 py-6" style={{ borderBottom: "2px solid #4f46e5" }}>
         <div>

@@ -178,8 +178,8 @@ export function getUnscheduledItems(scope: CalendarScope): UnscheduledItem[] {
     if (q.status !== "approved") continue;
     if (!inScope({ companyId: q.companyId, locationId: q.locationId }, scope)) continue;
     out.push({
-      id: `uq-quote-${q.id}`, type: "job", title: q.title,
-      reason: "Approved quote not scheduled",
+      id: `uq-quote-${q.id}`, type: "job", sourceType: "approved_quote", title: q.title,
+      reason: "Approved quote not scheduled", status: "approved",
       companyId: q.companyId, locationId: q.locationId,
       customerName: q.customerName, value: `$${q.total.toLocaleString()}`,
       sourceId: q.id, sourceModule: "quotes", color: LAYER_CONFIG.job.color,
@@ -190,15 +190,15 @@ export function getUnscheduledItems(scope: CalendarScope): UnscheduledItem[] {
   // Synthetic field-work waiting on dispatch (callbacks / reschedules)
   const synthetic: UnscheduledItem[] = [
     {
-      id: "uq-callback-1", type: "job", title: "Callback: AC not cooling",
-      reason: "Needs tech assigned", companyId: "co_hvac", locationId: "loc_augusta",
+      id: "uq-callback-1", type: "job", sourceType: "job", title: "Callback: AC not cooling",
+      reason: "Needs tech assigned", status: "needs_scheduling", companyId: "co_hvac", locationId: "loc_augusta",
       customerName: "Alvarez Residence", city: "Augusta", address: "1840 Peach Orchard Rd, Augusta, GA",
       sourceId: "7", sourceModule: "jobs", color: LAYER_CONFIG.job.color,
       priority: "urgent", durationMinutes: 120, jobType: "Repair", preferredDate: "ASAP",
     },
     {
-      id: "uq-reschedule-1", type: "job", title: "Reschedule: Water heater install",
-      reason: "Waiting for customer confirmation", companyId: "co_hvac", locationId: "loc_augusta",
+      id: "uq-reschedule-1", type: "job", sourceType: "job", title: "Reschedule: Water heater install",
+      reason: "Waiting for customer confirmation", status: "waiting_on_customer", companyId: "co_hvac", locationId: "loc_augusta",
       customerName: "K. Brennan", city: "Augusta", address: "27 Maple Ct, Augusta, GA",
       sourceId: "3", sourceModule: "jobs", color: LAYER_CONFIG.job.color,
       priority: "normal", durationMinutes: 120, jobType: "Installation",
@@ -212,13 +212,13 @@ export function getUnscheduledItems(scope: CalendarScope): UnscheduledItem[] {
     if (t.type !== "schedule" && t.type !== "call") continue;
     if (!inScope({ companyId: t.companyId, locationId: t.locationId }, scope)) continue;
     out.push({
-      id: `uq-task-${t.id}`, type: "task", title: t.title,
-      reason: "Follow-up needs scheduling",
+      id: `uq-task-${t.id}`, type: "task", sourceType: "task_follow_up", title: t.title,
+      reason: "Follow-up needs scheduling", status: t.status,
       companyId: t.companyId, locationId: t.locationId,
       customerName: t.customerName,
       sourceId: t.id, sourceModule: "tasks", color: LAYER_CONFIG.task.color,
       priority: t.status === "overdue" ? "urgent" : "normal",
-      durationMinutes: 30, preferredDate: t.dueDate,
+      durationMinutes: 30, preferredDate: t.dueDate, dueDate: t.dueDate,
     });
   }
 
@@ -228,14 +228,14 @@ export function getUnscheduledItems(scope: CalendarScope): UnscheduledItem[] {
     const loc = resolveAgreementLocation(a.location);
     if (!inScope({ companyId: loc.companyId, locationId: loc.locationId }, scope)) continue;
     out.push({
-      id: `uq-agr-${a.id}`, type: "agreement_visit",
+      id: `uq-agr-${a.id}`, type: "agreement_visit", sourceType: "agreement_visit",
       title: `${a.type} — ${a.customer}`,
-      reason: "Agreement visit due",
+      reason: "Agreement visit due", status: a.status,
       companyId: loc.companyId, locationId: loc.locationId,
       customerName: a.customer,
       sourceId: a.id, sourceModule: "agreements", color: LAYER_CONFIG.agreement_visit.color,
       priority: a.status === "overdue" ? "urgent" : "normal",
-      durationMinutes: 90, preferredDate: a.nextVisit ?? undefined,
+      durationMinutes: 90, preferredDate: a.nextVisit ?? undefined, dueDate: a.nextVisit ?? undefined,
     });
   }
 
