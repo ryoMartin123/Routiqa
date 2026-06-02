@@ -185,3 +185,134 @@ export function downloadQuotePdf(data: QuotePdfData): void {
   const safeName = (data.quoteNumber || "Quote").replace(/[^\w.-]+/g, "-");
   doc.save(`${safeName}.pdf`);
 }
+
+// ─── Invoice PDF ──────────────────────────────────────────
+export interface InvoicePdfData {
+  invoiceNumber?: string;
+  title: string;
+  customerName: string;
+  propertyLabel?: string;
+  locationName?: string;
+  dueDate?: string;
+  createdAt?: string;
+  lineItems: LineItem[];
+  subtotal: number;
+  tax: number;
+  total: number;
+  balanceDue: number;
+  paidAt?: string;
+  customerNotes?: string;
+  stamp?: string;          // e.g. "PAID"
+}
+
+function drawStamp(doc: jsPDF, label: string, pageW: number, pageH: number) {
+  const cx = pageW / 2, cy = pageH / 2;
+  const A = (20 * Math.PI) / 180;
+  const cos = Math.cos(A), sin = Math.sin(A);
+  const rot = (dx: number, dy: number): [number, number] => [cx + dx * cos + dy * sin, cy - dx * sin + dy * cos];
+  doc.saveGraphicsState();
+  try {
+    const GState = (doc as unknown as { GState: new (o: { opacity: number }) => unknown }).GState;
+    (doc as unknown as { setGState: (g: unknown) => void }).setGState(new GState({ opacity: 0.82 }));
+  } catch { /* opacity unsupported */ }
+  doc.setTextColor(5, 150, 105); doc.setDrawColor(5, 150, 105);
+  doc.setFont("helvetica", "bold");
+  const F = 52; doc.setFontSize(F);
+  const tw = doc.getTextWidth(label);
+  const hw = tw / 2 + 24, hh = F * 0.72;
+  const c = [rot(-hw, -hh), rot(hw, -hh), rot(hw, hh), rot(-hw, hh)];
+  doc.setLineWidth(4);
+  for (let i = 0; i < 4; i++) { const a = c[i], b = c[(i + 1) % 4]; doc.line(a[0], a[1], b[0], b[1]); }
+  const start = rot(-tw / 2, F * 0.33);
+  doc.text(label, start[0], start[1], { angle: 20 });
+  doc.restoreGraphicsState();
+}
+
+export function downloadInvoicePdf(data: InvoicePdfData): void {
+  const doc = new jsPDF({ unit: "pt", format: "a4" });
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+  const M = 48;
+  let y = 58;
+
+  doc.setFont("helvetica", "bold"); doc.setFontSize(16); doc.setTextColor(...INDIGO);
+  doc.text("Northstar Services", M, y);
+  doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(...GRAY);
+  doc.text(data.locationName ?? "Augusta Branch", M, y + 15);
+  doc.setFont("helvetica", "bold"); doc.setFontSize(12); doc.setTextColor(...DARK);
+  doc.text("INVOICE", pageW - M, y, { align: "right" });
+  if (data.invoiceNumber) {
+    doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(...GRAY);
+    doc.text(data.invoiceNumber, pageW - M, y + 15, { align: "right" });
+  }
+
+  y += 28;
+  doc.setDrawColor(...INDIGO); doc.setLineWidth(1.5); doc.line(M, y, pageW - M, y);
+  y += 24;
+
+  doc.setFont("helvetica", "bold"); doc.setFontSize(8); doc.setTextColor(...MUTED);
+  doc.text("BILL TO", M, y);
+  doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(...DARK);
+  doc.text(data.customerName, M, y + 16);
+  if (data.propertyLabel) {
+    doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(...GRAY);
+    doc.text(data.propertyLabel, M, y + 30);
+  }
+  const metaLines: string[] = [];
+  if (data.createdAt) metaLines.push(`Issued: ${data.createdAt}`);
+  if (data.dueDate)   metaLines.push(`Due: ${data.dueDate}`);
+  doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(...GRAY);
+  metaLines.forEach((line, i) => doc.text(line, pageW - M, y + i * 14, { align: "right" }));
+
+  y += 52;
+  doc.setFont("helvetica", "bold"); doc.setFontSize(12); doc.setTextColor(...DARK);
+  doc.text(data.title || "Invoice", M, y);
+  y += 8;
+
+  const items = data.lineItems.filter(li => !li.optional);
+  autoTable(doc, {
+    startY: y + 6,
+    margin: { left: M, right: M },
+    head: [["Description", "Qty", "Unit", "Amount"]],
+    body: items.map(li => [
+      li.name && li.description && li.name !== li.description ? `${li.name}\n${li.description}` : (li.name || li.description),
+      String(li.quantity), fmt(li.unitPrice), fmt(li.total),
+    ]),
+    styles: { font: "helvetica", fontSize: 9, cellPadding: 6, textColor: DARK, lineColor: [243, 244, 246], lineWidth: 0.5 },
+    headStyles: { fillColor: [249, 250, 251], textColor: GRAY, fontStyle: "bold", fontSize: 8 },
+    columnStyles: { 0: { cellWidth: "auto" }, 1: { halign: "right", cellWidth: 50 }, 2: { halign: "right", cellWidth: 80 }, 3: { halign: "right", cellWidth: 90 } },
+    theme: "grid",
+  });
+
+  let cy = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 18;
+  const labelX = pageW - M - 200;
+  const valX = pageW - M;
+  doc.setFont("helvetica", "normal"); doc.setFontSize(9);
+  doc.setTextColor(...GRAY); doc.text("Subtotal", labelX, cy);
+  doc.setTextColor(...DARK); doc.text(fmt(data.subtotal), valX, cy, { align: "right" });
+  doc.setTextColor(...GRAY); doc.text("Tax", labelX, cy + 15);
+  doc.setTextColor(...DARK); doc.text(fmt(data.tax), valX, cy + 15, { align: "right" });
+  doc.setTextColor(...GRAY); doc.text("Total", labelX, cy + 30);
+  doc.setTextColor(...DARK); doc.text(fmt(data.total), valX, cy + 30, { align: "right" });
+  doc.setDrawColor(...INDIGO); doc.setLineWidth(1); doc.line(labelX, cy + 38, valX, cy + 38);
+  doc.setFont("helvetica", "bold"); doc.setFontSize(11);
+  doc.setTextColor(...DARK); doc.text("Balance Due", labelX, cy + 54);
+  doc.setTextColor(...INDIGO); doc.text(data.balanceDue > 0 ? fmt(data.balanceDue) : "Paid in Full", valX, cy + 54, { align: "right" });
+  cy += 76;
+
+  if (data.customerNotes) {
+    doc.setFont("helvetica", "bold"); doc.setFontSize(8); doc.setTextColor(...MUTED);
+    doc.text("NOTES", M, cy); cy += 13;
+    doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(55, 65, 81);
+    const lines = doc.splitTextToSize(data.customerNotes, pageW - M * 2) as string[];
+    doc.text(lines, M, cy);
+  }
+
+  doc.setFont("helvetica", "normal"); doc.setFontSize(7.5); doc.setTextColor(...MUTED);
+  doc.text("Thank you for your business. Please remit payment by the due date above.", pageW / 2, pageH - 36, { align: "center", maxWidth: pageW - M * 2 });
+
+  if (data.stamp) drawStamp(doc, data.stamp, pageW, pageH);
+
+  const safeName = (data.invoiceNumber || "Invoice").replace(/[^\w.-]+/g, "-");
+  doc.save(`${safeName}.pdf`);
+}

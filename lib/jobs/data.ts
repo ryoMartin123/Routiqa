@@ -235,15 +235,62 @@ export const JOB_NOTES: Record<string, JobNote[]> = {
   ],
 };
 
+// ─── Runtime store (seed + jobs created in-session, e.g. from a quote) ────
+const JOBS_KEY = "crm-extra-jobs";
+let _extraJobs: Job[] | null = null;
+function extraJobs(): Job[] {
+  if (_extraJobs) return _extraJobs;
+  if (typeof window === "undefined") return [];
+  try { const r = localStorage.getItem(JOBS_KEY); _extraJobs = r ? JSON.parse(r) : []; }
+  catch { _extraJobs = []; }
+  return _extraJobs!;
+}
+
+// Session-created jobs only (for hydration-safe merging in client lists).
+export function getSessionJobs(): Job[] { return extraJobs(); }
+// All jobs (seed + session). Server-side returns seed only.
+export function getAllJobs(): Job[] { return [...extraJobs(), ...ALL_JOBS]; }
+
+export interface NewJobInput {
+  companyId: string; locationId: string; serviceAreaId?: string;
+  accountId: string; customerName: string; customerInitials: string; locationName: string;
+  title: string; type?: JobType; priority?: JobPriority;
+  propertyAddress?: string; estimatedAmount?: string; projectId?: string;
+  scheduledDate?: string; scheduledTime?: string; durationMinutes?: number;
+  assignedTo?: string; assignedToInitials?: string;
+}
+
+// Create a job (e.g. converted from a quote). Unscheduled by default — status
+// "new" with no date until dispatched.
+export function createJob(input: NewJobInput): Job {
+  const job: Job = {
+    id: `job-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`,
+    companyId: input.companyId, locationId: input.locationId, serviceAreaId: input.serviceAreaId,
+    projectId: input.projectId, accountId: input.accountId,
+    propertyAddress: input.propertyAddress,
+    title: input.title, type: input.type ?? "installation",
+    status: input.scheduledDate ? "scheduled" : "new",
+    priority: input.priority ?? "normal",
+    scheduledDate: input.scheduledDate ?? "", scheduledTime: input.scheduledTime ?? "",
+    durationMinutes: input.durationMinutes ?? 120,
+    assignedTo: input.assignedTo ?? "", assignedToInitials: input.assignedToInitials ?? "",
+    estimatedAmount: input.estimatedAmount,
+    customerName: input.customerName, customerInitials: input.customerInitials, locationName: input.locationName,
+  };
+  _extraJobs = [job, ...extraJobs()];
+  try { localStorage.setItem(JOBS_KEY, JSON.stringify(_extraJobs)); } catch { /* ignore */ }
+  return job;
+}
+
 // ─── Lookup helpers ───────────────────────────────────────
 export const JOBS_MAP: Record<string, Job> = Object.fromEntries(ALL_JOBS.map(j => [j.id, j]));
 
 export function getJob(id: string): Job | undefined {
-  return JOBS_MAP[id];
+  return JOBS_MAP[id] ?? extraJobs().find(j => j.id === id);
 }
 
 export function getJobsForProject(projectId: string): Job[] {
-  return ALL_JOBS.filter(j => j.projectId === projectId);
+  return getAllJobs().filter(j => j.projectId === projectId);
 }
 
 export function getWorkOrder(jobId: string): WorkOrder | undefined {

@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Search, Plus, SlidersHorizontal, ChevronUp, ChevronDown, PlayCircle, PauseCircle, CheckCircle2, DollarSign } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { ALL_PROJECTS, PROJECT_STATUS_CONFIG, PROJECT_TYPE_LABELS, getProjectProgress, type Project, type ProjectStatus } from "@/lib/projects/data";
+import { ALL_PROJECTS, getSessionProjects, PROJECT_STATUS_CONFIG, PROJECT_TYPE_LABELS, getProjectProgress, type Project, type ProjectStatus } from "@/lib/projects/data";
 import { useHierarchy } from "@/components/providers/HierarchyProvider";
 import ModuleSummaryCards, { type SummaryCard } from "@/components/shared/ModuleSummaryCards";
 import ModuleViewToggle, { type ModuleView } from "@/components/shared/ModuleViewToggle";
@@ -39,7 +39,12 @@ export default function ProjectsPage() {
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [moduleView, setModuleView] = useState<ModuleView>("list");
 
-  const contextFiltered = ALL_PROJECTS
+  // Merge session-created projects (e.g. converted from a quote) after mount.
+  const [extraProjects, setExtraProjects] = useState<Project[]>([]);
+  useEffect(() => { setExtraProjects(getSessionProjects()); }, []);
+  const allProjects = [...extraProjects, ...ALL_PROJECTS];
+
+  const contextFiltered = allProjects
     .filter(p => !effectiveCompanyId  || p.companyId  === effectiveCompanyId)
     .filter(p => !effectiveLocationId || p.locationId === effectiveLocationId);
 

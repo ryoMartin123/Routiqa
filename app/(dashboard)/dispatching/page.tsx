@@ -11,7 +11,7 @@ import CalendarItemDrawer from "@/components/calendar/CalendarItemDrawer";
 import ScheduleConfirmModal, { type ScheduleDraft } from "@/components/calendar/ScheduleConfirmModal";
 import Select from "@/components/ui/Select";
 import {
-  getCalendarItems, getUnscheduledItems, getTechnicians, getTechRoster, type CalendarScope,
+  getCalendarItems, getUnscheduledItems, getUnscheduledJobs, getTechnicians, getTechRoster, type CalendarScope,
 } from "@/lib/calendar/data";
 import {
   LAYER_CONFIG, CALENDAR_LAYERS, PRIORITY_CONFIG, TECH_STATUS_CONFIG, HOUR_PX,
@@ -81,6 +81,12 @@ export default function CalendarPage() {
   const [extra, setExtra]         = useState<CalendarItem[]>([]);
   const [removed, setRemoved]     = useState<Set<string>>(new Set());
   const [confirm, setConfirm]     = useState<{ item: UnscheduledItem; draft: ScheduleDraft } | null>(null);
+
+  // Unscheduled jobs (e.g. converted from a quote) live in the session job store;
+  // load them client-side so they merge into the queue without a hydration gap.
+  const [sessionUnscheduled, setSessionUnscheduled] = useState<UnscheduledItem[]>([]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { setSessionUnscheduled(getUnscheduledJobs(scope)); }, [effectiveCompanyId, effectiveLocationId, effectiveServiceAreaId]);
 
   // Selection (drawer)
   const [selScheduled, setSelScheduled]     = useState<CalendarItem | null>(null);
@@ -163,7 +169,7 @@ export default function CalendarPage() {
 
   // Narrow scheduled items + queue to the selected board (All Boards = no narrowing).
   const boardItems  = activeBoardDef ? items.filter(i => itemMatchesBoard(i, activeBoardDef)) : items;
-  const unscheduled = allUnscheduled
+  const unscheduled = [...allUnscheduled, ...sessionUnscheduled]
     .filter(u => !removed.has(u.id))
     .filter(u => !activeBoardDef || itemMatchesBoard(u, activeBoardDef));
   const jobTypes = useMemo(() => Array.from(new Set(rawItems.map(i => i.jobType).filter(Boolean))) as string[], [rawItems]);

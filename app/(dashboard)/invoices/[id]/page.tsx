@@ -1,11 +1,15 @@
 "use client";
 
-import React, { use, useState } from "react";
+import React, { use, useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { ArrowLeft, Pencil, Download, ChevronRight, Receipt, DollarSign, Briefcase, FolderKanban, FilePen } from "lucide-react";
-import { getInvoice, getQuote, fmt } from "@/lib/quotes/data";
+import { useRouter } from "next/navigation";
+import { ArrowLeft, Pencil, Download, Printer, Eye, ChevronRight, ChevronDown, Receipt, DollarSign, Briefcase, FolderKanban, FilePen, Copy, Ban, X } from "lucide-react";
+import { getInvoice, getQuote, fmt, updateInvoiceStatus, recordPayment, duplicateInvoice, voidInvoice } from "@/lib/quotes/data";
 import { INVOICE_STATUS_STYLE, type InvoiceStatus } from "@/lib/quotes/types";
 import { getCustomer } from "@/lib/customers/data";
+import InvoicePreview from "@/components/quotes/InvoicePreview";
+import InvoiceWizard from "@/components/quotes/InvoiceWizard";
+import { downloadInvoicePdf } from "@/lib/quotes/pdf";
 
 const TABS = ["Details", "Notes", "History"];
 
@@ -210,11 +214,57 @@ function DetailsTab({ id }: { id: string }) {
   );
 }
 
+// ─── Record-payment modal ─────────────────────────────────
+function PaymentModal({ balanceDue, invoiceNumber, onSubmit, onClose }: {
+  balanceDue: number; invoiceNumber: string; onSubmit: (amount: number) => void; onClose: () => void;
+}) {
+  const [amount, setAmount] = useState(String(balanceDue));
+  const val = parseFloat(amount) || 0;
+  return (
+    <div className="fixed inset-0 z-[60] bg-black/40 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="w-full max-w-sm rounded-2xl overflow-hidden" onClick={e => e.stopPropagation()}
+        style={{ backgroundColor: "var(--bg-surface)", boxShadow: "0 16px 48px rgba(0,0,0,0.24)" }}>
+        <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+          <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Record Payment</p>
+          <button onClick={onClose} style={{ color: "var(--text-muted)" }}><X className="w-4 h-4" /></button>
+        </div>
+        <div className="p-5 space-y-3">
+          <p className="text-xs" style={{ color: "var(--text-muted)" }}>Balance due on {invoiceNumber}: <span className="font-semibold" style={{ color: "var(--text-primary)" }}>{fmt(balanceDue)}</span></p>
+          <div>
+            <label className="block text-xs font-medium mb-1" style={{ color: "var(--text-secondary)" }}>Payment amount</label>
+            <input type="number" min={0} step="0.01" value={amount} onChange={e => setAmount(e.target.value)} autoFocus
+              className="w-full rounded-lg px-3 py-2 text-sm outline-none" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface)", color: "var(--text-primary)" }} />
+          </div>
+        </div>
+        <div className="px-5 py-4 flex justify-end gap-2" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+          <button onClick={onClose} className="px-3 py-1.5 rounded-lg text-sm" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>Cancel</button>
+          <button onClick={() => onSubmit(val)} disabled={val <= 0}
+            className="px-4 py-1.5 rounded-lg text-sm font-medium text-white disabled:opacity-40" style={{ backgroundColor: "#10b981" }}>
+            Record {fmt(val)}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Page ─────────────────────────────────────────────────
 export default function InvoiceDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
+  const router = useRouter();
   const [tab, setTab] = useState("Details");
   const [invoice, setInvoice] = useState(() => getInvoice(id));
+  const [showPreview, setShowPreview] = useState(false);
+  const [showEdit, setShowEdit] = useState(false);
+  const [showPay, setShowPay] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onDown = (e: MouseEvent) => { if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false); };
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, [menuOpen]);
 
   if (!invoice) {
     return (
@@ -229,14 +279,33 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
 
   const stageConfig = INVOICE_STATUS_STYLE[invoice.status];
   const isOverdue   = invoice.status === "past_due";
+  const refresh = () => setInvoice(getInvoice(id));
+
+  const previewData = {
+    invoiceNumber: invoice.invoiceNumber, title: invoice.title, customerName: invoice.customerName,
+    locationName: invoice.locationName, dueDate: invoice.dueDate, createdAt: invoice.createdAt,
+    lineItems: invoice.lineItems, subtotal: invoice.subtotal, tax: invoice.tax, total: invoice.total,
+    balanceDue: invoice.balanceDue, paidAt: invoice.paidAt, customerNotes: invoice.customerNotes,
+    stamp: invoice.status === "paid" ? "PAID" : undefined,
+  };
 
   function handleAction(next: InvoiceStatus | "payment") {
-    if (next === "payment") {
-      alert(`Payment recording will be wired when Supabase is connected.\nRecord a payment against ${invoice!.invoiceNumber}.`);
-      return;
-    }
-    setInvoice(i => i ? { ...i, status: next } : i);
+    if (next === "payment") { setShowPay(true); return; }
+    updateInvoiceStatus(id, next); refresh();
   }
+  function submitPayment(amount: number) { recordPayment(id, amount); setShowPay(false); refresh(); }
+  function downloadPdf() { downloadInvoicePdf(previewData); }
+  function printInvoice() {
+    const prev = document.title;
+    document.title = `${invoice!.invoiceNumber} — ${invoice!.customerName}`;
+    const restore = () => { document.title = prev; window.removeEventListener("afterprint", restore); };
+    window.addEventListener("afterprint", restore);
+    window.print();
+  }
+  function doDuplicate() { const copy = duplicateInvoice(id); if (copy) router.push(`/invoices/${copy.id}`); }
+  function doVoid() { if (window.confirm(`Void ${invoice!.invoiceNumber}?`)) { voidInvoice(id); setMenuOpen(false); refresh(); } }
+
+  const menuItem = "flex items-center gap-2 w-full px-3 py-2 text-sm text-left transition-colors hover:bg-[var(--bg-surface-2)]";
 
   return (
     <div className="flex flex-col h-full">
@@ -272,14 +341,42 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <StatusActions status={invoice.status} onAction={handleAction} />
-            <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm"
+            <button onClick={() => setShowPreview(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors hover:bg-[var(--bg-surface-2)]"
               style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>
-              <Pencil className="w-3.5 h-3.5" /> Edit
+              <Eye className="w-3.5 h-3.5" /> Preview
             </button>
-            <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm"
+            <button onClick={downloadPdf} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors hover:bg-[var(--bg-surface-2)]"
               style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>
               <Download className="w-3.5 h-3.5" /> PDF
             </button>
+            <div className="relative" ref={menuRef}>
+              <button onClick={() => setMenuOpen(o => !o)} className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm transition-colors hover:bg-[var(--bg-surface-2)]"
+                style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>
+                More <ChevronDown className="w-3.5 h-3.5" />
+              </button>
+              {menuOpen && (
+                <div className="absolute right-0 top-full mt-1 w-48 rounded-xl overflow-hidden z-20 py-1"
+                  style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "0 8px 24px rgba(0,0,0,0.16)" }}>
+                  <button className={menuItem} style={{ color: "var(--text-primary)" }} onClick={() => { setMenuOpen(false); setShowEdit(true); }}>
+                    <Pencil className="w-3.5 h-3.5" style={{ color: "var(--text-muted)" }} /> Edit
+                  </button>
+                  <button className={menuItem} style={{ color: "var(--text-primary)" }} onClick={() => { setMenuOpen(false); printInvoice(); }}>
+                    <Printer className="w-3.5 h-3.5" style={{ color: "var(--text-muted)" }} /> Print
+                  </button>
+                  <button className={menuItem} style={{ color: "var(--text-primary)" }} onClick={() => { setMenuOpen(false); doDuplicate(); }}>
+                    <Copy className="w-3.5 h-3.5" style={{ color: "var(--text-muted)" }} /> Duplicate
+                  </button>
+                  {invoice.status !== "void" && invoice.status !== "paid" && (
+                    <>
+                      <div className="my-1 h-px" style={{ backgroundColor: "var(--border-subtle)" }} />
+                      <button className={menuItem} style={{ color: "#dc2626" }} onClick={doVoid}>
+                        <Ban className="w-3.5 h-3.5" /> Void invoice
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -307,6 +404,27 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
           </div>
         )}
       </div>
+
+      {/* Preview modal */}
+      {showPreview && (
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={() => setShowPreview(false)}>
+          <div className="w-full max-w-2xl max-h-[92vh] overflow-y-auto rounded-2xl" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-4 py-2 rounded-t-2xl" style={{ backgroundColor: "var(--bg-surface)", borderBottom: "1px solid var(--border-subtle)" }}>
+              <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Invoice Preview</p>
+              <button onClick={() => setShowPreview(false)} style={{ color: "var(--text-muted)" }}><X className="w-4 h-4" /></button>
+            </div>
+            <InvoicePreview data={previewData} />
+          </div>
+        </div>
+      )}
+
+      {/* Hidden printable document */}
+      <div className="print-doc" aria-hidden>
+        <InvoicePreview data={previewData} />
+      </div>
+
+      {showPay && <PaymentModal balanceDue={invoice.balanceDue} invoiceNumber={invoice.invoiceNumber} onSubmit={submitPayment} onClose={() => setShowPay(false)} />}
+      {showEdit && <InvoiceWizard editInvoice={invoice} onClose={() => setShowEdit(false)} onCreated={() => { setShowEdit(false); refresh(); }} />}
     </div>
   );
 }

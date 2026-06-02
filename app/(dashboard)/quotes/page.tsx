@@ -152,7 +152,7 @@ export default function QuotesPage() {
         {/* Tabs + search */}
         <div className="flex items-center justify-between flex-wrap gap-2 px-4 py-3" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
           <StatusTabs active={tab} onChange={k => setTab(k as QuoteTab)}
-            tabs={STATUS_TABS.filter(t => t.key === "all" || tabCount(t.key) > 0).map(t => ({ key: t.key, label: t.label, count: tabCount(t.key) }))} />
+            tabs={STATUS_TABS.filter(t => t.key === "all" || t.key === "archived" || tabCount(t.key) > 0).map(t => ({ key: t.key, label: t.label, count: tabCount(t.key) }))} />
           <div className="flex items-center gap-2 shrink-0">
             <div className="flex items-center gap-2 rounded-lg px-3 py-1.5" style={{ backgroundColor: "var(--bg-input)" }}>
               <Search className="w-3.5 h-3.5 shrink-0" style={{ color: "var(--text-muted)" }} />

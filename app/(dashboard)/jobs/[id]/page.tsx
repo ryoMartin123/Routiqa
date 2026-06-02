@@ -2,6 +2,7 @@
 
 import React, { use, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ArrowLeft, Pencil, CheckCircle, Circle, ChevronRight, Phone, MapPin, User, Clock, Calendar, DollarSign, Briefcase, AlertTriangle, Camera, ListChecks, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getJob, getWorkOrder, getJobNotes, resolveJobStatus, type JobNoteType } from "@/lib/jobs/data";
@@ -12,7 +13,7 @@ import {
 } from "@/lib/work-order-templates/data";
 import { getProject } from "@/lib/projects/data";
 import { getCustomer } from "@/lib/customers/data";
-import { getQuotesForJob, getInvoicesForJob, fmt } from "@/lib/quotes/data";
+import { getQuotesForJob, getInvoicesForJob, createInvoiceFromJob, fmt } from "@/lib/quotes/data";
 import { QUOTE_STATUS_STYLE, INVOICE_STATUS_STYLE } from "@/lib/quotes/types";
 import PhotoGallery from "@/components/files/PhotoGallery";
 import QuoteWizard from "@/components/quotes/QuoteWizard";
@@ -463,13 +464,19 @@ function StubTab({ label }: { label: string }) {
 
 // ─── Job financials tab ───────────────────────────────────
 function JobFinancialsTab({ jobId }: { jobId: string }) {
+  const router = useRouter();
   const [wizard, setWizard] = useState(false);
   const [, forceRefresh] = useState(0);
   const job      = getJob(jobId);
   const quotes   = getQuotesForJob(jobId);
   const invoices = getInvoicesForJob(jobId);
 
-  function Section({ title, onNew, children }: { title: string; onNew?: () => void; children: React.ReactNode }) {
+  function makeInvoice() {
+    const inv = createInvoiceFromJob(jobId);
+    if (inv) router.push(`/invoices/${inv.id}`);
+  }
+
+  function Section({ title, onNew, newLabel = "New Quote", children }: { title: string; onNew?: () => void; newLabel?: string; children: React.ReactNode }) {
     return (
       <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
         <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
@@ -477,7 +484,7 @@ function JobFinancialsTab({ jobId }: { jobId: string }) {
           {onNew && (
             <button onClick={onNew} className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg"
               style={{ backgroundColor: "#4f46e5", color: "#fff" }}>
-              <Plus className="w-3.5 h-3.5" /> New Quote
+              <Plus className="w-3.5 h-3.5" /> {newLabel}
             </button>
           )}
         </div>
@@ -514,7 +521,7 @@ function JobFinancialsTab({ jobId }: { jobId: string }) {
         })}
       </Section>
 
-      <Section title={`Invoices (${invoices.length})`}>
+      <Section title={`Invoices (${invoices.length})`} onNew={makeInvoice} newLabel="Create Invoice">
         {invoices.length === 0 ? (
           <div className="px-4 py-8 text-center"><p className="text-sm" style={{ color: "var(--text-muted)" }}>No invoices for this job</p></div>
         ) : invoices.map((inv, i) => {

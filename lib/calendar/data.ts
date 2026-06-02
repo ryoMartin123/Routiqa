@@ -1,7 +1,7 @@
 // Calendar aggregator — normalizes scheduled records from many modules into
 // CalendarItem[]. Filtering by hierarchy scope happens here so views stay dumb.
 
-import { ALL_JOBS, WORK_ORDERS, JOB_STATUS_CONFIG, type Job } from "@/lib/jobs/data";
+import { ALL_JOBS, getAllJobs, WORK_ORDERS, JOB_STATUS_CONFIG, type Job } from "@/lib/jobs/data";
 import { ALL_TASKS } from "@/lib/tasks/data";
 import { AGREEMENTS } from "@/lib/agreements/data";
 import { ALL_PROJECTS } from "@/lib/projects/data";
@@ -242,6 +242,30 @@ export function getUnscheduledItems(scope: CalendarScope): UnscheduledItem[] {
   // Priority sort: urgent → high → normal → low
   const rank: Record<ItemPriority, number> = { urgent: 0, high: 1, normal: 2, low: 3 };
   return out.sort((x, y) => rank[x.priority] - rank[y.priority]);
+}
+
+// Jobs that exist but have no scheduled slot yet (e.g. created by converting a
+// quote). Loaded client-side (reads the session job store), so the dispatch
+// page merges these in via an effect rather than during render.
+const JOB_DONE = new Set(["completed", "invoiced", "closed", "canceled", "no_show"]);
+export function getUnscheduledJobs(scope: CalendarScope): UnscheduledItem[] {
+  const out: UnscheduledItem[] = [];
+  for (const job of getAllJobs()) {
+    if (JOB_DONE.has(job.status)) continue;
+    if (parseDateTime(job.scheduledDate, job.scheduledTime)) continue;  // already scheduled
+    if (!inScope({ companyId: job.companyId, locationId: job.locationId, serviceAreaId: job.serviceAreaId }, scope)) continue;
+    out.push({
+      id: `uq-job-${job.id}`, type: "job", sourceType: "job", title: job.title,
+      reason: "New job — needs scheduling", status: job.status,
+      companyId: job.companyId, locationId: job.locationId, serviceAreaId: job.serviceAreaId,
+      customerName: job.customerName, address: job.propertyAddress, city: cityFromAddress(job.propertyAddress),
+      sourceId: job.id, sourceModule: "jobs", color: LAYER_CONFIG.job.color,
+      priority: job.priority, durationMinutes: job.durationMinutes,
+      jobType: job.type.charAt(0).toUpperCase() + job.type.slice(1),
+      value: job.estimatedAmount,
+    });
+  }
+  return out;
 }
 
 // ─── Helpers ──────────────────────────────────────────────

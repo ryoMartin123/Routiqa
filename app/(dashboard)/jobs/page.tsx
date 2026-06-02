@@ -4,8 +4,8 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Search, Plus, SlidersHorizontal, ChevronUp, ChevronDown, FolderKanban, Calendar, CalendarClock, Loader, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { ALL_JOBS, resolveJobStatus, type Job, type JobType } from "@/lib/jobs/data";
-import { ALL_PROJECTS, PROJECT_STATUS_CONFIG, getProjectProgress, type ProjectStatus } from "@/lib/projects/data";
+import { ALL_JOBS, getSessionJobs, resolveJobStatus, type Job, type JobType } from "@/lib/jobs/data";
+import { ALL_PROJECTS, getSessionProjects, PROJECT_STATUS_CONFIG, getProjectProgress, type Project, type ProjectStatus } from "@/lib/projects/data";
 import { getJobStatuses } from "@/lib/job-config/data";
 import { useHierarchy } from "@/components/providers/HierarchyProvider";
 import ModuleSummaryCards, { type SummaryCard } from "@/components/shared/ModuleSummaryCards";
@@ -34,8 +34,8 @@ const TABS = [
 type SortField = "customerName" | "type" | "status" | "scheduledDate" | "assignedTo";
 
 // ─── Mini projects table (shown when Projects tab active) ─
-function ProjectsInline({ companyId, locationId }: { companyId?: string; locationId?: string }) {
-  const filtered = ALL_PROJECTS
+function ProjectsInline({ projects, companyId, locationId }: { projects: Project[]; companyId?: string; locationId?: string }) {
+  const filtered = projects
     .filter(p => !companyId  || p.companyId  === companyId)
     .filter(p => !locationId || p.locationId === locationId);
 
@@ -102,10 +102,18 @@ export default function JobsPage() {
   const [statusConfig, setStatusConfig] = useState<{ key: string; name: string; color: string }[]>([]);
   useEffect(() => { setStatusConfig(getJobStatuses().filter(s => s.active)); }, []);
 
+  // Merge in session-created records (e.g. jobs/projects converted from quotes)
+  // after mount so SSR and first client render match the seed (no hydration gap).
+  const [extraJobs, setExtraJobs] = useState<Job[]>([]);
+  const [extraProjects, setExtraProjects] = useState<Project[]>([]);
+  useEffect(() => { setExtraJobs(getSessionJobs()); setExtraProjects(getSessionProjects()); }, []);
+  const allJobs = [...extraJobs, ...ALL_JOBS];
+  const allProjects = [...extraProjects, ...ALL_PROJECTS];
+
   const isProjects = tab === "projects";
 
   // Context filter
-  const contextFiltered = ALL_JOBS
+  const contextFiltered = allJobs
     .filter(j => !effectiveCompanyId  || j.companyId  === effectiveCompanyId)
     .filter(j => !effectiveLocationId || j.locationId === effectiveLocationId);
 
@@ -176,7 +184,7 @@ export default function JobsPage() {
               key: t.key, label: t.label,
               icon: t.key === "projects" ? FolderKanban : undefined,
               count: t.key === "projects"
-                ? ALL_PROJECTS.filter(p => (!effectiveCompanyId || p.companyId === effectiveCompanyId) && (!effectiveLocationId || p.locationId === effectiveLocationId)).length
+                ? allProjects.filter(p => (!effectiveCompanyId || p.companyId === effectiveCompanyId) && (!effectiveLocationId || p.locationId === effectiveLocationId)).length
                 : contextFiltered.filter(t.fn).length,
             }))} />
           {!isProjects && (
@@ -197,7 +205,7 @@ export default function JobsPage() {
         {/* Projects view */}
         {isProjects ? (
           <div className="p-4">
-            <ProjectsInline companyId={effectiveCompanyId} locationId={effectiveLocationId} />
+            <ProjectsInline projects={allProjects} companyId={effectiveCompanyId} locationId={effectiveLocationId} />
           </div>
         ) : (
           <>

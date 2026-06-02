@@ -17,6 +17,7 @@ import { downloadQuotePdf } from "@/lib/quotes/pdf";
 import { QUOTE_STATUS_STYLE, type QuoteStatus } from "@/lib/quotes/types";
 import { getCustomer } from "@/lib/customers/data";
 import QuotePreview from "@/components/quotes/QuotePreview";
+import QuoteWizard from "@/components/quotes/QuoteWizard";
 
 const TABS = ["Details", "Notes", "Activity"];
 
@@ -331,6 +332,7 @@ export default function QuoteDetailPage({ params }: { params: Promise<{ id: stri
   const [tab, setTab] = useState("Details");
   const [quote, setQuote] = useState(() => getQuote(id));
   const [showPreview, setShowPreview] = useState(false);
+  const [showEdit, setShowEdit] = useState(false);
 
   if (!quote) {
     return (
@@ -348,8 +350,8 @@ export default function QuoteDetailPage({ params }: { params: Promise<{ id: stri
 
   function changeStatus(next: QuoteStatus) { updateQuoteStatus(id, next); refresh(); }
   function doDuplicate() { const copy = duplicateQuote(id); if (copy) router.push(`/quotes/${copy.id}`); }
-  function doConvertJob() { convertQuoteToJob(id); refresh(); }
-  function doConvertProject() { convertQuoteToProject(id); refresh(); }
+  function doConvertJob() { const job = convertQuoteToJob(id); if (job) router.push(`/jobs/${job.id}`); else refresh(); }
+  function doConvertProject() { const p = convertQuoteToProject(id); if (p) router.push(`/projects/${p.id}`); else refresh(); }
   function doReopen() { reopenQuote(id); refresh(); }
   function doResend() { resendQuote(id); refresh(); }
   function doArchive() { archiveQuote(id); router.push("/quotes"); }
@@ -427,7 +429,7 @@ export default function QuoteDetailPage({ params }: { params: Promise<{ id: stri
               onCreateInvoice={doCreateInvoice}
               onDownloadPdf={downloadPdf}
               onPrint={printQuote}
-              onEdit={() => {}}
+              onEdit={() => setShowEdit(true)}
               onArchive={doArchive}
               onUnarchive={doUnarchive}
               onDelete={doDelete}
@@ -474,6 +476,11 @@ export default function QuoteDetailPage({ params }: { params: Promise<{ id: stri
       <div className="print-doc" aria-hidden>
         <QuotePreview data={previewData} />
       </div>
+
+      {/* Edit quote (reuses the wizard in edit mode) */}
+      {showEdit && (
+        <QuoteWizard editQuote={quote} onClose={() => setShowEdit(false)} onCreated={() => { setShowEdit(false); refresh(); }} />
+      )}
     </div>
   );
 }

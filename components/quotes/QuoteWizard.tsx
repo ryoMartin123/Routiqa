@@ -1,16 +1,18 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { X, Plus, Trash2, Check, ChevronLeft, ChevronRight, FileText, Send } from "lucide-react";
+import { X, Plus, Trash2, Check, ChevronLeft, ChevronRight, FileText, Send, Package, Tag } from "lucide-react";
 import UiSelect from "@/components/ui/Select";
 import QuotePreview, { type QuotePreviewData } from "@/components/quotes/QuotePreview";
+import CatalogPicker from "@/components/quotes/CatalogPicker";
 import { getAllCustomers, getProperties, getLeads, getJobs } from "@/lib/customers/data";
 import { ALL_PROJECTS } from "@/lib/projects/data";
 import {
-  createQuote, computeTotals, fmt,
+  createQuote, updateQuote, computeTotals, fmt,
   QUOTE_TEMPLATES, getQuoteTemplate,
   type LineItem, type QuoteRecord,
 } from "@/lib/quotes/data";
+import { getAllItems, itemToQuoteLine, getItemDefaults, createItem, type Item } from "@/lib/items/data";
 import { LINE_ITEM_CATEGORIES, type LineItemCategory } from "@/lib/quotes/types";
 
 type RelatedKind = "none" | "lead" | "job" | "project";
@@ -33,6 +35,8 @@ interface DraftItem {
   category: LineItemCategory;
   taxable: boolean;
   optional: boolean;
+  itemId?: string;       // set when added from the catalog (snapshot + back-ref)
+  unitCost?: number;     // snapshotted cost for margin display
 }
 
 let _seq = 0;
@@ -42,27 +46,46 @@ function blankItem(): DraftItem {
 
 const STEPS = ["Context", "Template", "Line Items", "Preview", "Save"];
 
-export default function QuoteWizard({ preset, onClose, onCreated }: {
+// "Jun 20, 2026" / "2026-06-20" → "2026-06-20" for a date input.
+function toInputDate(s?: string): string {
+  if (!s) return "";
+  const d = new Date(s);
+  if (isNaN(d.getTime())) return "";
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+export default function QuoteWizard({ preset, editQuote, onClose, onCreated }: {
   preset?: QuoteWizardPreset;
+  editQuote?: QuoteRecord;   // when set, the wizard edits this quote instead of creating
   onClose: () => void;
   onCreated: (id: string) => void;
 }) {
   const customers = getAllCustomers();
+  const e = editQuote;
 
   const [step, setStep] = useState(1);
-  const [customerId, setCustomerId] = useState(preset?.customerId ?? customers[0]?.id ?? "");
-  const [propertyId, setPropertyId] = useState(preset?.propertyId ?? "");
+  const [customerId, setCustomerId] = useState(e?.customerId ?? preset?.customerId ?? customers[0]?.id ?? "");
+  const [propertyId, setPropertyId] = useState(e?.propertyId ?? preset?.propertyId ?? "");
   const [relatedKind, setRelatedKind] = useState<RelatedKind>(
-    preset?.leadId ? "lead" : preset?.jobId ? "job" : preset?.projectId ? "project" : "none",
+    e ? (e.linkedType === "lead" || e.linkedType === "job" || e.linkedType === "project" ? e.linkedType : "none")
+      : preset?.leadId ? "lead" : preset?.jobId ? "job" : preset?.projectId ? "project" : "none",
   );
-  const [relatedId, setRelatedId] = useState(preset?.leadId ?? preset?.jobId ?? preset?.projectId ?? "");
-  const [templateKey, setTemplateKey] = useState("");
-  const [title, setTitle] = useState("");
-  const [taxRate, setTaxRate] = useState("0");
-  const [expiresAt, setExpiresAt] = useState("");
-  const [customerNotes, setCustomerNotes] = useState("");
-  const [internalNotes, setInternalNotes] = useState("");
-  const [items, setItems] = useState<DraftItem[]>([blankItem()]);
+  const [relatedId, setRelatedId] = useState(e?.linkedId ?? preset?.leadId ?? preset?.jobId ?? preset?.projectId ?? "");
+  const [templateKey, setTemplateKey] = useState(e ? (e.templateKey ?? "blank") : "");
+  const [title, setTitle] = useState(e?.title ?? "");
+  const [taxRate, setTaxRate] = useState(e && e.subtotal > 0 ? String(Math.round((e.tax / e.subtotal) * 1000) / 10) : "0");
+  const [expiresAt, setExpiresAt] = useState(toInputDate(e?.expiresAt));
+  const [customerNotes, setCustomerNotes] = useState(e?.customerNotes ?? "");
+  const [internalNotes, setInternalNotes] = useState(e?.internalNotes ?? "");
+  const [items, setItems] = useState<DraftItem[]>(
+    e && e.lineItems.length
+      ? e.lineItems.map(li => ({
+          id: li.id, name: li.name ?? "", description: li.description ?? "",
+          quantity: String(li.quantity), unitPrice: String(li.unitPrice),
+          category: li.category ?? "Labor", taxable: li.taxable ?? false, optional: li.optional ?? false,
+        }))
+      : [blankItem()],
+  );
 
   const customer = customers.find(c => c.id === customerId);
   const properties = useMemo(() => (customerId ? getProperties(customerId) : []), [customerId]);
@@ -80,9 +103,49 @@ export default function QuoteWizard({ preset, onClose, onCreated }: {
         id: it.id, name: it.name.trim() || undefined, description: it.description.trim() || it.name.trim(),
         quantity: qty, unitPrice: price, total: Math.round(qty * price * 100) / 100,
         category: it.category, taxable: it.taxable, optional: it.optional,
+        itemId: it.itemId, unitCost: it.unitCost,
       };
     });
   const totals = computeTotals(lineItems, (parseFloat(taxRate) || 0) / 100);
+
+  // Catalog linking + rep-only margin
+  const itemDefaults = useMemo(() => getItemDefaults(), []);
+  const catalog = useMemo(
+    () => getAllItems().filter(i => i.active && (!customer || i.companyId === customer.companyId)),
+    [customer],
+  );
+  const showCost = itemDefaults.showCostField;
+  const knownCost = items.reduce((s, it) => s + (it.optional ? 0 : (it.unitCost ?? 0) * (parseFloat(it.quantity) || 0)), 0);
+  const margin = totals.subtotal - knownCost;
+  const marginPct = totals.subtotal > 0 ? Math.round((margin / totals.subtotal) * 100) : 0;
+  const [showCatalog, setShowCatalog] = useState(false);
+
+  // Catalog item → editable draft line (snapshot of current item fields).
+  function lineToDraft(li: LineItem): DraftItem {
+    return {
+      id: li.id, itemId: li.itemId, name: li.name ?? "", description: li.description ?? "",
+      quantity: String(li.quantity), unitPrice: String(li.unitPrice), unitCost: li.unitCost,
+      category: (li.category ?? "Other") as LineItemCategory, taxable: li.taxable ?? true, optional: li.optional ?? false,
+    };
+  }
+  function addCatalogItems(sel: Item[]) {
+    setItems(prev => {
+      // Drop a lone untouched blank line so the catalog items aren't trailed by it.
+      const kept = prev.filter(it => it.name.trim() || it.description.trim() || it.itemId);
+      return [...kept, ...sel.map(it => lineToDraft(itemToQuoteLine(it)))];
+    });
+    setShowCatalog(false);
+  }
+  // Save a custom (unlinked) line back to the catalog, then link it.
+  function saveLineAsItem(it: DraftItem) {
+    const created = createItem({
+      name: it.name.trim() || "Untitled item", description: it.description.trim() || undefined,
+      type: "service", category: it.category,
+      unitPrice: parseFloat(it.unitPrice) || 0, taxable: it.taxable,
+      defaultQuantity: parseFloat(it.quantity) || 1,
+    });
+    setItem(it.id, { itemId: created.id });
+  }
 
   const selectedProperty = properties.find(p => p.id === propertyId);
   const propertyLabel = selectedProperty
@@ -140,10 +203,23 @@ export default function QuoteWizard({ preset, onClose, onCreated }: {
     customerNotes: customerNotes || undefined,
   };
 
-  // ── Create ──
+  // ── Create / Update ──
   function save(markSent: boolean) {
     if (!customer) return;
     const link = linkFields();
+    if (editQuote) {
+      updateQuote(editQuote.id, {
+        title: title.trim() || "Untitled Quote",
+        lineItems, subtotal: totals.subtotal, tax: totals.tax, total: totals.total,
+        expiresAt: expiresAt || undefined,
+        propertyId: propertyId || undefined, propertyLabel,
+        customerNotes: customerNotes || undefined, internalNotes: internalNotes || undefined,
+        templateKey: templateKey || undefined,
+        ...link,
+      });
+      onCreated(editQuote.id);
+      return;
+    }
     const q: QuoteRecord = createQuote({
       customerId, customerName: customer.name, customerInitials: customer.initials, locationName: customer.locationName,
       companyId: customer.companyId, locationId: customer.locationId, serviceAreaId: customer.serviceAreaId,
@@ -172,7 +248,7 @@ export default function QuoteWizard({ preset, onClose, onCreated }: {
         {/* Header + stepper */}
         <div className="px-6 pt-4 pb-3 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
           <div className="flex items-center justify-between mb-3">
-            <p className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>New Quote</p>
+            <p className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>{editQuote ? "Edit Quote" : "New Quote"}</p>
             <button onClick={onClose} style={{ color: "var(--text-muted)" }}><X className="w-4 h-4" /></button>
           </div>
           <div className="flex items-center gap-1">
@@ -203,7 +279,7 @@ export default function QuoteWizard({ preset, onClose, onCreated }: {
               <div>
                 <label className="block text-xs font-medium mb-1" style={{ color: "var(--text-secondary)" }}>Customer / Account *</label>
                 <UiSelect value={customerId} onChange={v => { setCustomerId(v); setPropertyId(""); setRelatedId(""); }}
-                  disabled={Boolean(preset?.lockCustomer)} options={customers.map(c => ({ value: c.id, label: c.name }))} />
+                  disabled={Boolean(preset?.lockCustomer) || Boolean(editQuote)} options={customers.map(c => ({ value: c.id, label: c.name }))} />
               </div>
               <div>
                 <label className="block text-xs font-medium mb-1" style={{ color: "var(--text-secondary)" }}>Property <span style={{ color: "var(--text-muted)" }}>(optional)</span></label>
@@ -283,13 +359,24 @@ export default function QuoteWizard({ preset, onClose, onCreated }: {
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <label className="text-xs font-semibold uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>Line Items</label>
-                  <button onClick={addItem} className="flex items-center gap-1 text-xs font-medium" style={{ color: "#4f46e5" }}><Plus className="w-3 h-3" /> Add Item</button>
+                  <div className="flex items-center gap-3">
+                    <button onClick={() => setShowCatalog(true)} className="flex items-center gap-1 text-xs font-medium" style={{ color: "#4f46e5" }}><Package className="w-3 h-3" /> Add from Catalog</button>
+                    {itemDefaults.allowCustomQuoteLines && (
+                      <button onClick={addItem} className="flex items-center gap-1 text-xs font-medium" style={{ color: "var(--text-secondary)" }}><Plus className="w-3 h-3" /> Add custom line</button>
+                    )}
+                  </div>
                 </div>
                 <div className="space-y-2">
                   {items.map(it => {
                     const lineTotal = (parseFloat(it.quantity) || 0) * (parseFloat(it.unitPrice) || 0);
+                    const lineMargin = (((parseFloat(it.unitPrice) || 0) - (it.unitCost ?? 0)) * (parseFloat(it.quantity) || 0));
                     return (
                       <div key={it.id} className="rounded-xl p-3 space-y-2" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border-subtle)" }}>
+                        {it.itemId && (
+                          <div className="flex items-center gap-1 text-[10px] font-semibold" style={{ color: "var(--accent-text)" }}>
+                            <Tag className="w-2.5 h-2.5" /> From catalog
+                          </div>
+                        )}
                         <div className="flex items-center gap-2">
                           <input value={it.name} onChange={e => setItem(it.id, { name: e.target.value })} placeholder="Item name"
                             className="flex-1 rounded-lg px-2.5 py-1.5 text-sm outline-none" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface)", color: "var(--text-primary)" }} />
@@ -314,7 +401,15 @@ export default function QuoteWizard({ preset, onClose, onCreated }: {
                           <label className="flex items-center gap-1 text-[11px] cursor-pointer" style={{ color: "var(--text-secondary)" }}>
                             <input type="checkbox" checked={it.optional} onChange={e => setItem(it.id, { optional: e.target.checked })} className="accent-indigo-600" /> Optional
                           </label>
-                          <span className="ml-auto text-sm font-semibold" style={{ color: it.optional ? "var(--text-muted)" : "var(--text-primary)" }}>{fmt(lineTotal)}</span>
+                          <div className="ml-auto flex items-center gap-3">
+                            {showCost && it.unitCost != null && (
+                              <span className="text-[10px]" style={{ color: lineMargin >= 0 ? "#059669" : "#dc2626" }}>{fmt(lineMargin)} margin</span>
+                            )}
+                            {!it.itemId && itemDefaults.allowSavingCustomLineAsItem && it.name.trim() && (
+                              <button onClick={() => saveLineAsItem(it)} className="text-[10px] font-medium" style={{ color: "var(--accent-text)" }}>Save to catalog</button>
+                            )}
+                            <span className="text-sm font-semibold" style={{ color: it.optional ? "var(--text-muted)" : "var(--text-primary)" }}>{fmt(lineTotal)}</span>
+                          </div>
                         </div>
                       </div>
                     );
@@ -343,6 +438,12 @@ export default function QuoteWizard({ preset, onClose, onCreated }: {
                     <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Total</span>
                     <span className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>{fmt(totals.total)}</span>
                   </div>
+                  {showCost && (
+                    <div className="flex items-center justify-between pt-1.5" style={{ borderTop: "1px dashed var(--border)" }}>
+                      <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>Est. margin · internal</span>
+                      <span className="text-xs font-semibold" style={{ color: margin >= 0 ? "#059669" : "#dc2626" }}>{fmt(margin)} · {marginPct}%</span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -367,19 +468,29 @@ export default function QuoteWizard({ preset, onClose, onCreated }: {
                   <div key={k} className="flex justify-between text-sm"><span style={{ color: "var(--text-muted)" }}>{k}</span><span className="font-medium text-right" style={{ color: "var(--text-primary)" }}>{v}</span></div>
                 ))}
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              {editQuote ? (
                 <button onClick={() => save(false)}
-                  className="flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-medium transition-colors"
-                  style={{ border: "1px solid var(--border)", color: "var(--text-secondary)", backgroundColor: "var(--bg-surface)" }}>
-                  <FileText className="w-4 h-4" /> Save as Draft
-                </button>
-                <button onClick={() => save(true)}
-                  className="flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-medium text-white transition-colors"
+                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-medium text-white transition-colors"
                   style={{ backgroundColor: "#4f46e5" }}>
-                  <Send className="w-4 h-4" /> Mark as Sent
+                  <Check className="w-4 h-4" /> Save Changes
                 </button>
-              </div>
-              <p className="text-[11px] text-center" style={{ color: "var(--text-muted)" }}>No emails or texts are sent yet — “Mark as Sent” only sets the status and logs activity.</p>
+              ) : (
+                <>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button onClick={() => save(false)}
+                      className="flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-medium transition-colors"
+                      style={{ border: "1px solid var(--border)", color: "var(--text-secondary)", backgroundColor: "var(--bg-surface)" }}>
+                      <FileText className="w-4 h-4" /> Save as Draft
+                    </button>
+                    <button onClick={() => save(true)}
+                      className="flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-medium text-white transition-colors"
+                      style={{ backgroundColor: "#4f46e5" }}>
+                      <Send className="w-4 h-4" /> Mark as Sent
+                    </button>
+                  </div>
+                  <p className="text-[11px] text-center" style={{ color: "var(--text-muted)" }}>No emails or texts are sent yet — “Mark as Sent” only sets the status and logs activity.</p>
+                </>
+              )}
             </div>
           )}
         </div>
@@ -397,6 +508,10 @@ export default function QuoteWizard({ preset, onClose, onCreated }: {
             </button>
           )}
         </div>
+
+        {showCatalog && (
+          <CatalogPicker items={catalog} showCost={showCost} onAdd={addCatalogItems} onClose={() => setShowCatalog(false)} />
+        )}
       </div>
     </div>
   );

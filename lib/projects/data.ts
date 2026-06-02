@@ -163,11 +163,50 @@ export const PROJECT_TASKS: Record<string, ProjectTask[]> = {
   ],
 };
 
+// ─── Runtime store (seed + projects created in-session, e.g. from a quote) ──
+const PROJECTS_KEY = "crm-extra-projects";
+let _extraProjects: Project[] | null = null;
+function extraProjects(): Project[] {
+  if (_extraProjects) return _extraProjects;
+  if (typeof window === "undefined") return [];
+  try { const r = localStorage.getItem(PROJECTS_KEY); _extraProjects = r ? JSON.parse(r) : []; }
+  catch { _extraProjects = []; }
+  return _extraProjects!;
+}
+
+export function getSessionProjects(): Project[] { return extraProjects(); }
+export function getAllProjects(): Project[] { return [...extraProjects(), ...ALL_PROJECTS]; }
+
+export interface NewProjectInput {
+  companyId: string; locationId: string; serviceAreaId?: string;
+  accountId: string; customerName: string; customerInitials: string; locationName: string;
+  name: string; description?: string; type?: ProjectType; priority?: ProjectPriority;
+  estimatedValue?: string; propertyAddress?: string;
+  assignedTo?: string; assignedToInitials?: string;
+}
+
+// Create a project (e.g. converted from a quote). Starts as a draft.
+export function createProject(input: NewProjectInput): Project {
+  const project: Project = {
+    id: `proj-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`,
+    companyId: input.companyId, locationId: input.locationId, serviceAreaId: input.serviceAreaId,
+    accountId: input.accountId, propertyAddress: input.propertyAddress,
+    name: input.name, description: input.description ?? "",
+    type: input.type ?? "installation", status: "draft", priority: input.priority ?? "normal",
+    assignedTo: input.assignedTo ?? "", assignedToInitials: input.assignedToInitials ?? "",
+    estimatedValue: input.estimatedValue, jobIds: [],
+    customerName: input.customerName, customerInitials: input.customerInitials, locationName: input.locationName,
+  };
+  _extraProjects = [project, ...extraProjects()];
+  try { localStorage.setItem(PROJECTS_KEY, JSON.stringify(_extraProjects)); } catch { /* ignore */ }
+  return project;
+}
+
 // ─── Lookup helpers ───────────────────────────────────────
 export const PROJECTS_MAP: Record<string, Project> = Object.fromEntries(ALL_PROJECTS.map(p => [p.id, p]));
 
 export function getProject(id: string): Project | undefined {
-  return PROJECTS_MAP[id];
+  return PROJECTS_MAP[id] ?? extraProjects().find(p => p.id === id);
 }
 
 export function getProjectTasks(projectId: string): ProjectTask[] {

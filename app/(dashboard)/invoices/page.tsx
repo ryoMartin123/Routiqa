@@ -7,7 +7,7 @@ import { Search, Plus, SlidersHorizontal, ChevronUp, ChevronDown, AlertTriangle,
 import { cn } from "@/lib/utils";
 import { getAllInvoices, fmt, type InvoiceRecord } from "@/lib/quotes/data";
 import { INVOICE_STATUS_STYLE, type InvoiceStatus } from "@/lib/quotes/types";
-import CreateDocumentModal from "@/components/quotes/CreateDocumentModal";
+import InvoiceWizard from "@/components/quotes/InvoiceWizard";
 import { useHierarchy } from "@/components/providers/HierarchyProvider";
 import ModuleSummaryCards, { type SummaryCard } from "@/components/shared/ModuleSummaryCards";
 import ModuleViewToggle, { type ModuleView } from "@/components/shared/ModuleViewToggle";
@@ -134,7 +134,7 @@ export default function InvoicesPage() {
         </div>
         <ModuleViewToggle view={moduleView} onChange={setModuleView} />
         <div className="flex-1 flex justify-end">
-          <button className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-3 py-2 rounded-lg transition-colors">
+          <button onClick={() => setShowCreate(true)} className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-3 py-2 rounded-lg transition-colors">
             <Plus className="w-4 h-4" /> New Invoice
           </button>
         </div>
@@ -240,6 +240,12 @@ export default function InvoicesPage() {
           </div>
         </div>
       </div>
+      )}
+
+      {showCreate && (
+        <InvoiceWizard
+          onClose={() => setShowCreate(false)}
+          onCreated={(id) => { setShowCreate(false); router.push(`/invoices/${id}`); }} />
       )}
     </div>
   );

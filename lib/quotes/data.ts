@@ -8,6 +8,8 @@
 
 import type { Quote, Invoice, QuoteStatus, InvoiceStatus, LineItemCategory } from "./types";
 import { QUOTE_STATUS_STYLE } from "./types";
+import { createJob, getJob, type Job } from "@/lib/jobs/data";
+import { createProject, type Project } from "@/lib/projects/data";
 
 const STATUS_LABEL: Record<QuoteStatus, string> =
   Object.fromEntries(Object.entries(QUOTE_STATUS_STYLE).map(([k, v]) => [k, v.label])) as Record<QuoteStatus, string>;
@@ -24,6 +26,8 @@ export interface LineItem {
   taxable?: boolean;
   optional?: boolean;             // optional add-on line (not in base total)
   notes?: string;
+  itemId?: string;                // catalog item this line was added from (snapshot + back-ref)
+  unitCost?: number;              // snapshotted cost for margin display (rep-only)
 }
 
 // ─── Activity log (per quote) ─────────────────────────────
@@ -64,6 +68,7 @@ export interface QuoteRecord extends Quote {
 export interface InvoiceRecord extends Invoice {
   lineItems: LineItem[];
   internalNotes?: string;
+  customerNotes?: string;          // customer-facing notes / terms shown on the invoice
   // Denormalized
   customerName: string;
   customerInitials: string;
@@ -72,6 +77,7 @@ export interface InvoiceRecord extends Invoice {
   linkedType?: "quote" | "job" | "project" | "agreement";
   linkedId?: string;
   quoteNumber?: string;
+  deleted?: boolean;
 }
 
 // ─── Currency helper ──────────────────────────────────────
@@ -361,10 +367,12 @@ export const ALL_INVOICES: InvoiceRecord[] = [
 const Q_KEY = "crm-extra-quotes";
 const I_KEY = "crm-extra-invoices";
 const QO_KEY = "crm-quote-overrides";   // per-quote field overrides (status, notes, activity…)
+const IO_KEY = "crm-invoice-overrides"; // per-invoice field overrides (status, payment…)
 
 let _extraQuotes:   QuoteRecord[] | null = null;
 let _extraInvoices: InvoiceRecord[] | null = null;
 let _quoteOverrides: Record<string, Partial<QuoteRecord>> | null = null;
+let _invoiceOverrides: Record<string, Partial<InvoiceRecord>> | null = null;
 
 function extraQuotes(): QuoteRecord[] {
   if (_extraQuotes) return _extraQuotes;
@@ -402,9 +410,91 @@ function applyOverride(q: QuoteRecord): QuoteRecord {
   return o ? { ...q, ...o } : q;
 }
 
+// Same override pattern for invoices (status changes, payments) on seed records.
+function invoiceOverrides(): Record<string, Partial<InvoiceRecord>> {
+  if (_invoiceOverrides) return _invoiceOverrides;
+  if (typeof window === "undefined") return {};
+  try { const r = localStorage.getItem(IO_KEY); _invoiceOverrides = r ? JSON.parse(r) : {}; }
+  catch { _invoiceOverrides = {}; }
+  return _invoiceOverrides!;
+}
+function saveInvoiceOverride(id: string, patch: Partial<InvoiceRecord>) {
+  const all = { ...invoiceOverrides() };
+  all[id] = { ...all[id], ...patch };
+  _invoiceOverrides = all;
+  try { localStorage.setItem(IO_KEY, JSON.stringify(all)); } catch { /* ignore */ }
+}
+function applyInvoiceOverride(inv: InvoiceRecord): InvoiceRecord {
+  const o = invoiceOverrides()[inv.id];
+  return o ? { ...inv, ...o } : inv;
+}
+
 export function getAllQuotes(): QuoteRecord[]   { return [...extraQuotes(), ...ALL_QUOTES].map(applyOverride).filter(q => !q.archived && !q.deleted); }
 export function getArchivedQuotes(): QuoteRecord[] { return [...extraQuotes(), ...ALL_QUOTES].map(applyOverride).filter(q => q.archived && !q.deleted); }
-export function getAllInvoices(): InvoiceRecord[] { return [...extraInvoices(), ...ALL_INVOICES]; }
+export function getAllInvoices(): InvoiceRecord[] { return [...extraInvoices(), ...ALL_INVOICES].map(applyInvoiceOverride).filter(i => !i.deleted); }
+
+// Persist an invoice edit — session invoices mutate in place; seed invoices via overrides.
+function persistInvoiceEdit(id: string, patch: Partial<InvoiceRecord>) {
+  if (extraInvoices().some(i => i.id === id)) {
+    _extraInvoices = extraInvoices().map(i => i.id === id ? { ...i, ...patch, updatedAt: nowStamp() } : i);
+    try { localStorage.setItem(I_KEY, JSON.stringify(_extraInvoices)); } catch { /* ignore */ }
+  } else {
+    saveInvoiceOverride(id, { ...patch, updatedAt: nowStamp() });
+  }
+}
+
+export function updateInvoiceStatus(id: string, status: InvoiceStatus): InvoiceRecord | undefined {
+  const inv = getInvoice(id);
+  if (!inv) return;
+  const patch: Partial<InvoiceRecord> = { status };
+  if (status === "paid") { patch.balanceDue = 0; patch.paidAt = nowStamp(); }
+  if (status === "void" || status === "canceled") patch.balanceDue = 0;
+  persistInvoiceEdit(id, patch);
+  return getInvoice(id);
+}
+
+// Record a payment against an invoice. Reduces the balance; flips status to
+// paid / partially_paid and stamps paidAt when settled in full.
+export function recordPayment(id: string, amount: number): InvoiceRecord | undefined {
+  const inv = getInvoice(id);
+  if (!inv) return;
+  const balance = Math.max(0, Math.round((inv.balanceDue - amount) * 100) / 100);
+  const patch: Partial<InvoiceRecord> = { balanceDue: balance };
+  if (balance <= 0) { patch.status = "paid"; patch.paidAt = nowStamp(); }
+  else patch.status = "partially_paid";
+  persistInvoiceEdit(id, patch);
+  return getInvoice(id);
+}
+
+export function updateInvoice(id: string, patch: Partial<InvoiceRecord>): InvoiceRecord | undefined {
+  persistInvoiceEdit(id, patch);
+  return getInvoice(id);
+}
+
+export function voidInvoice(id: string): void { persistInvoiceEdit(id, { status: "void", balanceDue: 0 }); }
+export function deleteInvoice(id: string): void {
+  if (extraInvoices().some(i => i.id === id)) {
+    _extraInvoices = extraInvoices().filter(i => i.id !== id);
+    try { localStorage.setItem(I_KEY, JSON.stringify(_extraInvoices)); } catch { /* ignore */ }
+  } else {
+    saveInvoiceOverride(id, { deleted: true });
+  }
+}
+export function duplicateInvoice(id: string): InvoiceRecord | undefined {
+  const src = getInvoice(id);
+  if (!src) return;
+  const copy: InvoiceRecord = {
+    ...src,
+    id: `inv-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`,
+    invoiceNumber: nextNumber("INV", getAllInvoices()),
+    status: "draft", balanceDue: src.total, paidAt: undefined,
+    createdAt: nowStamp(), updatedAt: nowStamp(),
+    lineItems: src.lineItems.map((li, i) => ({ ...li, id: `li-invdup-${Date.now()}-${i}` })),
+  };
+  _extraInvoices = [copy, ...extraInvoices()];
+  try { localStorage.setItem(I_KEY, JSON.stringify(_extraInvoices)); } catch { /* ignore */ }
+  return copy;
+}
 
 // ─── Activity helpers ─────────────────────────────────────
 function nowStamp(): string {
@@ -454,19 +544,48 @@ export function setQuoteNotes(id: string, notes: { internalNotes?: string; custo
   persistEdit(id, notes, newActivity("note", "Notes updated", actor));
 }
 
-// Convert to a job/project. Foundation only: marks the quote converted, links a
-// placeholder id, and logs activity. Real job/project creation lands later.
-export function convertQuoteToJob(id: string, actor = "Marcus Reyes"): QuoteRecord | undefined {
-  const q = getQuote(id);
-  if (!q) return;
-  persistEdit(id, { status: "converted" }, newActivity("converted", `Converted to a job from ${q.quoteNumber}`, actor));
+// Edit a quote's contents (title, line items, totals, notes, links). Used by the
+// edit flow; logs an "edited" activity entry.
+export function updateQuote(id: string, patch: Partial<QuoteRecord>, actor = "Marcus Reyes"): QuoteRecord | undefined {
+  persistEdit(id, patch, newActivity("edited", "Quote edited", actor));
   return getQuote(id);
 }
-export function convertQuoteToProject(id: string, actor = "Marcus Reyes"): QuoteRecord | undefined {
+
+// Convert to a job — creates a real (unscheduled) job, links it on the quote,
+// marks the quote converted, and logs activity. Returns the new job.
+export function convertQuoteToJob(id: string, actor = "Marcus Reyes"): Job | undefined {
   const q = getQuote(id);
   if (!q) return;
-  persistEdit(id, { status: "converted" }, newActivity("converted", `Converted to a project from ${q.quoteNumber}`, actor));
-  return getQuote(id);
+  const job = createJob({
+    companyId: q.companyId, locationId: q.locationId, serviceAreaId: q.serviceAreaId,
+    accountId: q.customerId, customerName: q.customerName, customerInitials: q.customerInitials,
+    locationName: q.locationName, title: q.title,
+    estimatedAmount: q.total > 0 ? fmt(q.total) : undefined,
+    propertyAddress: q.propertyLabel,
+  });
+  persistEdit(id,
+    { status: "converted", jobId: job.id, linkedType: "job", linkedId: job.id, linkedLabel: `Job: ${q.title}` },
+    newActivity("converted", `Converted to a job from ${q.quoteNumber}`, actor));
+  return job;
+}
+
+// Convert to a project — creates a real draft project, links it, marks the
+// quote converted, and logs activity. Returns the new project.
+export function convertQuoteToProject(id: string, actor = "Marcus Reyes"): Project | undefined {
+  const q = getQuote(id);
+  if (!q) return;
+  const project = createProject({
+    companyId: q.companyId, locationId: q.locationId, serviceAreaId: q.serviceAreaId,
+    accountId: q.customerId, customerName: q.customerName, customerInitials: q.customerInitials,
+    locationName: q.locationName, name: q.title,
+    description: `Created from quote ${q.quoteNumber}.`,
+    estimatedValue: q.total > 0 ? fmt(q.total) : undefined,
+    propertyAddress: q.propertyLabel,
+  });
+  persistEdit(id,
+    { status: "converted", projectId: project.id, linkedType: "project", linkedId: project.id, linkedLabel: `Project: ${q.title}` },
+    newActivity("converted", `Converted to a project from ${q.quoteNumber}`, actor));
+  return project;
 }
 
 // Duplicate a quote into a fresh draft (new number, cleared status/approval).
@@ -641,8 +760,27 @@ export function createQuote(input: NewQuoteInput): QuoteRecord {
 export interface NewInvoiceInput {
   customerId: string; customerName: string; customerInitials: string; locationName: string;
   title: string; lineItems: LineItem[]; taxRate?: number; dueDate: string;
+  companyId?: string; locationId?: string; serviceAreaId?: string;
+  propertyLabel?: string; customerNotes?: string; internalNotes?: string;
   quoteId?: string; quoteNumber?: string; jobId?: string; projectId?: string; agreementId?: string; propertyId?: string;
   linkedLabel?: string; linkedType?: InvoiceRecord["linkedType"]; linkedId?: string;
+}
+
+// Create a draft invoice from a (typically completed) job. Uses the job's
+// actual/estimated amount as a single line item; Net-30 due date.
+export function createInvoiceFromJob(jobId: string): InvoiceRecord | undefined {
+  const job = getJob(jobId);
+  if (!job) return;
+  const amount = parseFloat(String(job.actualAmount ?? job.estimatedAmount ?? "0").replace(/[^0-9.]/g, "")) || 0;
+  const due = new Date(); due.setDate(due.getDate() + 30);
+  const dueDate = due.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  return createInvoice({
+    customerId: job.accountId, customerName: job.customerName, customerInitials: job.customerInitials, locationName: job.locationName,
+    title: job.title, dueDate,
+    lineItems: [{ id: `li-job-${Date.now()}`, description: job.title, quantity: 1, unitPrice: amount, total: amount }],
+    jobId: job.id, projectId: job.projectId,
+    linkedLabel: `Job: ${job.title}`, linkedType: "job", linkedId: job.id,
+  });
 }
 
 export function createInvoice(input: NewInvoiceInput): InvoiceRecord {
@@ -650,17 +788,18 @@ export function createInvoice(input: NewInvoiceInput): InvoiceRecord {
   const all = getAllInvoices();
   const inv: InvoiceRecord = {
     id: `inv-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`,
-    organizationId: "org_northstar", companyId: "co_hvac", locationId: "loc_augusta",
+    organizationId: "org_northstar",
+    companyId: input.companyId ?? "co_hvac", locationId: input.locationId ?? "loc_augusta", serviceAreaId: input.serviceAreaId,
     customerId: input.customerId,
     propertyId: input.propertyId, jobId: input.jobId, projectId: input.projectId, agreementId: input.agreementId,
     quoteId: input.quoteId,
     invoiceNumber: nextNumber("INV", all), title: input.title, status: "draft",
     ...totals, balanceDue: totals.total, dueDate: input.dueDate,
     createdBy: "Marcus Reyes",
-    createdAt: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
-    updatedAt: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+    createdAt: nowStamp(), updatedAt: nowStamp(),
     lineItems: input.lineItems,
     customerName: input.customerName, customerInitials: input.customerInitials, locationName: input.locationName,
+    customerNotes: input.customerNotes, internalNotes: input.internalNotes,
     linkedLabel: input.linkedLabel, linkedType: input.linkedType, linkedId: input.linkedId,
     quoteNumber: input.quoteNumber,
   };

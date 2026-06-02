@@ -267,5 +267,7 @@ export function itemToQuoteLine(item: Item): LineItem {
     category: TYPE_TO_QUOTE_CATEGORY[item.type],
     taxable: item.taxable,
     optional: false,
+    itemId: item.id,
+    unitCost: item.unitCost,
   };
 }
