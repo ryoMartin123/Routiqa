@@ -8,7 +8,7 @@ import {
   TrendingUp, Briefcase, ClipboardList, Image as ImageIcon,
   FileText, ChevronRight, Plus, Pencil, LayoutDashboard,
   Settings2, ArrowLeft, CalendarClock,
-  Package, Tag, Percent, FileStack, FilePen,
+  Package, Tag, Percent, FileStack, FilePen, Lock,
 } from "lucide-react";
 import { useTheme } from "@/components/providers/ThemeProvider";
 import { useHierarchy } from "@/components/providers/HierarchyProvider";
@@ -36,7 +36,8 @@ const TaxesFeesSection          = dynamic(() => import("@/components/settings/Ta
 const AgreementsSettingsSection = dynamic(() => import("@/components/settings/AgreementsSettingsSection"), { loading: SectionLoading, ssr: false });
 const ProposalBuilderSection    = dynamic(() => import("@/components/settings/ProposalBuilderSection"),    { loading: SectionLoading, ssr: false });
 const MarketingSettingsSection  = dynamic(() => import("@/components/settings/MarketingSettingsSection"),  { loading: SectionLoading, ssr: false });
-import { companies, locations, serviceAreas } from "@/lib/hierarchy/data";
+import { serviceAreas } from "@/lib/hierarchy/data";
+import { AddCompanyModal, AddLocationModal } from "@/components/hierarchy/HierarchyModals";
 import type { HierarchyMode } from "@/lib/hierarchy/types";
 
 // ─── Navigation structure ─────────────────────────────────
@@ -249,12 +250,13 @@ const MODES: {
 ];
 
 // ─── Toggle component ─────────────────────────────────────
-function Toggle({ enabled, onChange }: { enabled: boolean; onChange: (v: boolean) => void }) {
+function Toggle({ enabled, onChange, disabled }: { enabled: boolean; onChange: (v: boolean) => void; disabled?: boolean }) {
   return (
     <button
-      onClick={() => onChange(!enabled)}
+      onClick={() => { if (!disabled) onChange(!enabled); }}
+      disabled={disabled}
       className="relative w-10 h-5 rounded-full transition-colors shrink-0"
-      style={{ backgroundColor: enabled ? "#4f46e5" : "var(--bg-input)", border: "1px solid var(--border)" }}
+      style={{ backgroundColor: enabled ? "#4f46e5" : "var(--bg-input)", border: "1px solid var(--border)", opacity: disabled ? 0.55 : 1, cursor: disabled ? "not-allowed" : "pointer" }}
       role="switch"
       aria-checked={enabled}
     >
@@ -268,10 +270,10 @@ function Toggle({ enabled, onChange }: { enabled: boolean; onChange: (v: boolean
 
 // ─── Toggle row ───────────────────────────────────────────
 function ToggleRow({
-  label, description, enabled, onChange, tag,
+  label, description, enabled, onChange, tag, disabled, lockedReason,
 }: {
   label: string; description: string; enabled: boolean;
-  onChange: (v: boolean) => void; tag?: string;
+  onChange: (v: boolean) => void; tag?: string; disabled?: boolean; lockedReason?: string;
 }) {
   return (
     <div className="flex items-center justify-between gap-4 py-3"
@@ -283,23 +285,46 @@ function ToggleRow({
             <span className="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide"
               style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>{tag}</span>
           )}
+          {disabled && lockedReason && (
+            <span className="flex items-center gap-1 text-[9px] font-semibold px-1.5 py-0.5 rounded uppercase tracking-wide"
+              style={{ backgroundColor: "#fef3c7", color: "#92400e" }}>
+              <Lock className="w-2.5 h-2.5" /> Locked
+            </span>
+          )}
         </div>
-        <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>{description}</p>
+        <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>{disabled && lockedReason ? lockedReason : description}</p>
       </div>
-      <Toggle enabled={enabled} onChange={onChange} />
+      <Toggle enabled={enabled} onChange={onChange} disabled={disabled} />
     </div>
   );
 }
 
 // ─── Business structure section ───────────────────────────
 function BusinessStructureSection() {
-  const { orgSettings, setOrgMode, setOrgSetting } = useHierarchy();
+  const {
+    orgSettings, setOrgMode, setOrgSetting,
+    canDisableMultiCompany, canDisableMultiLocation,
+    allCompanies, allLocations,
+  } = useHierarchy();
+
+  const activeCompanies = allCompanies.filter(c => c.status === "active").length;
+  const activeLocations = allLocations.filter(l => l.status === "active").length;
 
   const modeMatchesPreset = MODES.find(m =>
     m.layers[0].enabled === orgSettings.multiCompany &&
     m.layers[1].enabled === orgSettings.multiLocation &&
     m.layers[2].enabled === orgSettings.serviceAreasEnabled
   );
+
+  // A mode is locked when picking it would collapse a layer that data still
+  // depends on (the ratchet — grow freely, shrink only when safe).
+  function modeLock(mode: typeof MODES[number]): string | null {
+    if (!mode.layers[0].enabled && !canDisableMultiCompany)
+      return `Has ${activeCompanies} active companies — remove all but one first.`;
+    if (!mode.layers[1].enabled && !canDisableMultiLocation)
+      return `Has ${activeLocations} active locations — remove all but one first.`;
+    return null;
+  }
 
   return (
     <div className="space-y-6">
@@ -316,12 +341,18 @@ function BusinessStructureSection() {
         <div className="grid grid-cols-2 gap-3">
           {MODES.map(mode => {
             const active = orgSettings.mode === mode.key && Boolean(modeMatchesPreset);
+            const lock = modeLock(mode);
+            const locked = Boolean(lock) && !active;
             return (
-              <button key={mode.key} onClick={() => setOrgMode(mode.key)}
+              <button key={mode.key} onClick={() => { if (!locked) setOrgMode(mode.key); }}
+                disabled={locked}
+                title={locked ? lock! : undefined}
                 className="flex flex-col text-left p-4 rounded-xl transition-all"
                 style={{
                   border: `2px solid ${active ? "#4f46e5" : "var(--border)"}`,
                   backgroundColor: active ? "#f5f3ff" : "var(--bg-surface-2)",
+                  opacity: locked ? 0.6 : 1,
+                  cursor: locked ? "not-allowed" : "pointer",
                 }}>
                 <div className="flex items-center justify-between mb-1.5">
                   <span className="text-sm font-semibold" style={{ color: active ? "#4f46e5" : "var(--text-primary)" }}>
@@ -332,6 +363,7 @@ function BusinessStructureSection() {
                       <Check className="w-2.5 h-2.5 text-white" />
                     </span>
                   )}
+                  {locked && <Lock className="w-3 h-3" style={{ color: "#92400e" }} />}
                 </div>
                 <p className="text-[11px] mb-3" style={{ color: "var(--text-secondary)" }}>{mode.description}</p>
                 <div className="flex flex-col gap-1">
@@ -345,6 +377,9 @@ function BusinessStructureSection() {
                     </div>
                   ))}
                 </div>
+                {locked && (
+                  <p className="text-[10px] mt-2 leading-snug" style={{ color: "#92400e" }}>{lock}</p>
+                )}
               </button>
             );
           })}
@@ -370,12 +405,16 @@ function BusinessStructureSection() {
             description="Show company selector in the top bar. Use when managing multiple brands or business units."
             enabled={orgSettings.multiCompany}
             onChange={v => setOrgSetting("multiCompany", v)}
+            disabled={orgSettings.multiCompany && !canDisableMultiCompany}
+            lockedReason={`Can't turn off — you have ${activeCompanies} active companies. Deactivate all but one first.`}
           />
           <ToggleRow
             label="Multiple Locations"
             description="Show location/branch selector in the top bar. Use when you have more than one operating branch."
             enabled={orgSettings.multiLocation}
             onChange={v => setOrgSetting("multiLocation", v)}
+            disabled={orgSettings.multiLocation && !canDisableMultiLocation}
+            lockedReason={`Can't turn off — you have ${activeLocations} active locations. Deactivate all but one first.`}
           />
           <ToggleRow
             label="Service Areas"
@@ -473,21 +512,24 @@ function OrganizationSection() {
 
 // ─── Companies ────────────────────────────────────────────
 function CompaniesSection() {
-  const industryColors: Record<string, string> = { hvac: "#6366f1", roofing: "#0891b2", plumbing: "#0d9488", electrical: "#d97706" };
+  const { allCompanies, allLocations } = useHierarchy();
+  const [addOpen, setAddOpen] = useState(false);
+  const industryColors: Record<string, string> = { hvac: "#6366f1", roofing: "#0891b2", plumbing: "#0d9488", electrical: "#d97706", restoration: "#dc2626", property_maintenance: "#059669", consulting: "#7c3aed" };
   return (
     <div className="space-y-4">
+      <AddCompanyModal open={addOpen} onClose={() => setAddOpen(false)} />
       <SectionHeader
         title="Companies"
         subtitle="Business units and brands within your organization."
         action={
-          <button className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-3 py-2 rounded-lg transition-colors">
+          <button onClick={() => setAddOpen(true)} className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-3 py-2 rounded-lg transition-colors">
             <Plus className="w-4 h-4" /> Add Company
           </button>
         }
       />
       <div className="space-y-3">
-        {companies.map(co => {
-          const coLocations = locations.filter(l => l.companyId === co.id);
+        {allCompanies.map(co => {
+          const coLocations = allLocations.filter(l => l.companyId === co.id);
           const color = industryColors[co.industry ?? ""] ?? "#6b7280";
           return (
             <Card key={co.id}>
@@ -531,19 +573,22 @@ function CompaniesSection() {
 
 // ─── Locations ────────────────────────────────────────────
 function LocationsSection() {
+  const { allCompanies, allLocations } = useHierarchy();
+  const [addOpen, setAddOpen] = useState(false);
   return (
     <div className="space-y-4">
+      <AddLocationModal open={addOpen} onClose={() => setAddOpen(false)} />
       <SectionHeader
         title="Locations"
         subtitle="Branch offices and operating units under each company."
         action={
-          <button className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-3 py-2 rounded-lg transition-colors">
+          <button onClick={() => setAddOpen(true)} className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-3 py-2 rounded-lg transition-colors">
             <Plus className="w-4 h-4" /> Add Location
           </button>
         }
       />
-      {companies.map(co => {
-        const coLocations = locations.filter(l => l.companyId === co.id);
+      {allCompanies.map(co => {
+        const coLocations = allLocations.filter(l => l.companyId === co.id);
         return (
           <div key={co.id}>
             <p className="text-xs font-semibold uppercase tracking-widest mb-2 px-1"
@@ -586,6 +631,7 @@ function LocationsSection() {
 
 // ─── Service Areas ────────────────────────────────────────
 function ServiceAreasSection() {
+  const { allCompanies, allLocations } = useHierarchy();
   return (
     <div className="space-y-4">
       <SectionHeader
@@ -597,9 +643,9 @@ function ServiceAreasSection() {
           </button>
         }
       />
-      {locations.map(loc => {
+      {allLocations.map(loc => {
         const areas = serviceAreas.filter(sa => sa.locationId === loc.id);
-        const co = companies.find(c => c.id === loc.companyId);
+        const co = allCompanies.find(c => c.id === loc.companyId);
         return (
           <div key={loc.id}>
             <p className="text-xs font-semibold uppercase tracking-widest mb-2 px-1"

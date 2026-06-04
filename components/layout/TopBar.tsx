@@ -1,5 +1,6 @@
-import { Search, Bell, Plus, ChevronUp } from "lucide-react";
+import { Search, Bell, ChevronUp } from "lucide-react";
 import HierarchySelector from "@/components/layout/HierarchySelector";
+import GlobalCreateMenu from "@/components/layout/GlobalCreateMenu";
 
 export default function TopBar({ onHide }: { onHide?: () => void }) {
   return (
@@ -45,10 +46,7 @@ export default function TopBar({ onHide }: { onHide?: () => void }) {
           <Bell className="w-5 h-5" />
           <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />
         </button>
-        <button className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-3 py-2 rounded-lg transition-colors">
-          <Plus className="w-4 h-4" />
-          Create
-        </button>
+        <GlobalCreateMenu />
         {onHide && (
           <button onClick={onHide} title="Hide bar"
             className="p-2 rounded-lg transition-colors hover:bg-[var(--bg-surface-2)]"

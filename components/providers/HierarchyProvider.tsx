@@ -24,7 +24,14 @@ import {
   orgSettings as defaultOrgSettings,
   MODE_PRESETS,
   roleLabel,
+  getAllCompanies,
+  getAllLocations,
+  createCompany,
+  createLocation,
+  activeCompanyCount,
+  activeLocationCount,
 } from "@/lib/hierarchy/data";
+import type { NewCompanyInput, NewLocationInput } from "@/lib/hierarchy/data";
 import type {
   Company,
   HierarchyMode,
@@ -72,6 +79,19 @@ interface HierarchyContextValue {
   orgSettings: OrgSettings;
   setOrgMode: (mode: HierarchyMode) => void;
   setOrgSetting: <K extends keyof OrgSettings>(key: K, value: OrgSettings[K]) => void;
+
+  // Full hierarchy collections (seed + session) for management screens.
+  allCompanies: Company[];
+  allLocations: Location[];
+
+  // Guided growth — creating the 2nd company/location auto-enables its layer.
+  addCompany: (input: NewCompanyInput) => Company;
+  addLocation: (input: NewLocationInput) => Location;
+
+  // Ratchet flags — a layer can only be turned OFF while ≤1 active record
+  // depends on it. false ⇒ the toggle/mode that would collapse it is locked.
+  canDisableMultiCompany: boolean;
+  canDisableMultiLocation: boolean;
 }
 
 const HierarchyContext = createContext<HierarchyContextValue | null>(null);
@@ -98,6 +118,9 @@ export function HierarchyProvider({ children }: { children: React.ReactNode }) {
 
   // Org settings are persisted in localStorage so the settings page demo works.
   const [settings, setSettings] = useState<OrgSettings>(defaultOrgSettings);
+
+  // Bumped whenever a company/location is added so memoized lists recompute.
+  const [hierarchyVersion, setHierarchyVersion] = useState(0);
 
   // Restore persisted state on mount — validate IDs against current options
   // so stale IDs (from dev changes or location renames) don't filter out all records.
@@ -151,8 +174,12 @@ export function HierarchyProvider({ children }: { children: React.ReactNode }) {
   }
 
   // Switch business structure mode — applies hierarchy preset, preserves module flags.
+  // Ratchet guard: a preset that would collapse a layer is blocked while data
+  // still depends on it. Growing (enabling layers) is always allowed.
   function setOrgMode(mode: HierarchyMode) {
     const preset = MODE_PRESETS[mode];
+    if (!preset.multiCompany  && activeCompanyCount()  > 1) return;
+    if (!preset.multiLocation && activeLocationCount() > 1) return;
     const next: OrgSettings = {
       ...settings,          // keep existing module flags
       ...preset,            // overwrite hierarchy flags + mode
@@ -166,6 +193,9 @@ export function HierarchyProvider({ children }: { children: React.ReactNode }) {
 
   // Fine-grained update for individual toggle fields.
   function setOrgSetting<K extends keyof OrgSettings>(key: K, value: OrgSettings[K]) {
+    // Ratchet guard: refuse to collapse a layer that data still depends on.
+    if (key === "multiCompany"  && value === false && activeCompanyCount()  > 1) return;
+    if (key === "multiLocation" && value === false && activeLocationCount() > 1) return;
     const next = { ...settings, [key]: value };
     // Sync mode if hierarchy flags now match a preset exactly.
     const match = (Object.keys(MODE_PRESETS) as HierarchyMode[]).find(m => {
@@ -183,9 +213,40 @@ export function HierarchyProvider({ children }: { children: React.ReactNode }) {
     try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(next)); } catch { /* ignore */ }
   }
 
-  const companyOptions  = useMemo(() => authorizedCompanies(user), [user]);
-  const locationOptions = useMemo(() => authorizedLocations(user, resolve(company)), [user, company]);
-  const serviceAreaOptions = useMemo(() => authorizedServiceAreas(user, resolve(location)), [user, location]);
+  // ── Guided growth ──────────────────────────────────────────
+  // Adding a company/location persists it and, when it's the one that takes the
+  // org from a single record to multiple, flips that hierarchy layer on so the
+  // selector appears. The admin thinks "I'm adding a branch," not "I'm changing
+  // my structure mode" — the mode change is a side effect.
+  function addCompany(input: NewCompanyInput): Company {
+    const co = createCompany(input);
+    setHierarchyVersion((v) => v + 1);
+    if (activeCompanyCount() > 1 && !settings.multiCompany) {
+      setOrgSetting("multiCompany", true);
+    }
+    return co;
+  }
+
+  function addLocation(input: NewLocationInput): Location {
+    const loc = createLocation(input);
+    setHierarchyVersion((v) => v + 1);
+    if (activeLocationCount() > 1 && !settings.multiLocation) {
+      setOrgSetting("multiLocation", true);
+    }
+    return loc;
+  }
+
+  const companyOptions  = useMemo(() => authorizedCompanies(user), [user, hierarchyVersion]);
+  const locationOptions = useMemo(() => authorizedLocations(user, resolve(company)), [user, company, hierarchyVersion]);
+  const serviceAreaOptions = useMemo(() => authorizedServiceAreas(user, resolve(location)), [user, location, hierarchyVersion]);
+
+  // Full collections for management screens (all statuses, no cascade filter).
+  const allCompanies = useMemo(() => getAllCompanies(), [hierarchyVersion]);
+  const allLocations = useMemo(() => getAllLocations(), [hierarchyVersion]);
+
+  // Ratchet: only collapsible while at most one active record remains.
+  const canDisableMultiCompany  = useMemo(() => activeCompanyCount()  <= 1, [hierarchyVersion]);
+  const canDisableMultiLocation = useMemo(() => activeLocationCount() <= 1, [hierarchyVersion]);
 
   // Gate each selector through BOTH the data (are there options?) AND
   // the org feature flags (has the admin enabled this layer?).
@@ -221,6 +282,12 @@ export function HierarchyProvider({ children }: { children: React.ReactNode }) {
     orgSettings: settings,
     setOrgMode,
     setOrgSetting,
+    allCompanies,
+    allLocations,
+    addCompany,
+    addLocation,
+    canDisableMultiCompany,
+    canDisableMultiLocation,
   };
 
   return (

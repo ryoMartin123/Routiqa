@@ -91,14 +91,14 @@ export function roleLabel(user: CurrentUser): string {
 }
 
 export function authorizedCompanies(user: CurrentUser): Company[] {
-  const active = companies.filter((c) => c.status === "active");
+  const active = getAllCompanies().filter((c) => c.status === "active");
   if (user.memberships.some((m) => m.role === "org_admin")) return active;
 
   const allowed = new Set<string>();
   for (const m of user.memberships) {
     if (m.companyId) allowed.add(m.companyId);
     if (m.locationId) {
-      const loc = locations.find((l) => l.id === m.locationId);
+      const loc = getAllLocations().find((l) => l.id === m.locationId);
       if (loc) allowed.add(loc.companyId);
     }
   }
@@ -109,7 +109,7 @@ export function authorizedLocations(
   user: CurrentUser,
   companyId?: string,
 ): Location[] {
-  let active = locations.filter((l) => l.status === "active");
+  let active = getAllLocations().filter((l) => l.status === "active");
   if (companyId && companyId !== "all") {
     active = active.filter((l) => l.companyId === companyId);
   }
@@ -142,7 +142,85 @@ export function authorizedServiceAreas(
   );
   if (!allowedLocationIds.has(locationId)) return [];
 
-  return serviceAreas.filter(
+  return getAllServiceAreas().filter(
     (sa) => sa.status === "active" && sa.locationId === locationId,
   );
+}
+
+// ---------------------------------------------------------------------------
+// Runtime hierarchy store
+// ---------------------------------------------------------------------------
+// Companies and locations created in-session (e.g. via the Add Location / Add
+// Company wizards) persist to localStorage so admins can grow their structure
+// without a backend. Mirrors the seed + override pattern used by lib/jobs/data.
+// Server-side renders see seed data only (window undefined).
+
+const COMPANIES_KEY = "crm-extra-companies";
+const LOCATIONS_KEY = "crm-extra-locations";
+
+let _extraCompanies: Company[] | null = null;
+let _extraLocations: Location[] | null = null;
+
+function extraCompanies(): Company[] {
+  if (_extraCompanies) return _extraCompanies;
+  if (typeof window === "undefined") return [];
+  try { const r = localStorage.getItem(COMPANIES_KEY); _extraCompanies = r ? JSON.parse(r) : []; }
+  catch { _extraCompanies = []; }
+  return _extraCompanies!;
+}
+
+function extraLocations(): Location[] {
+  if (_extraLocations) return _extraLocations;
+  if (typeof window === "undefined") return [];
+  try { const r = localStorage.getItem(LOCATIONS_KEY); _extraLocations = r ? JSON.parse(r) : []; }
+  catch { _extraLocations = []; }
+  return _extraLocations!;
+}
+
+// Full collections (seed + session). These are the source of truth for the
+// selectors, settings management screens, and authorization helpers.
+export function getAllCompanies(): Company[] { return [...companies, ...extraCompanies()]; }
+export function getAllLocations(): Location[] { return [...locations, ...extraLocations()]; }
+export function getAllServiceAreas(): ServiceArea[] { return serviceAreas; }
+
+// Active-record counts drive the ratchet: a hierarchy layer can only be turned
+// OFF while at most one active record depends on it.
+export function activeCompanyCount(): number {
+  return getAllCompanies().filter((c) => c.status === "active").length;
+}
+export function activeLocationCount(companyId?: string): number {
+  return getAllLocations().filter(
+    (l) => l.status === "active" && (!companyId || l.companyId === companyId),
+  ).length;
+}
+
+export interface NewCompanyInput { name: string; industry?: string; primaryColor?: string; }
+export function createCompany(input: NewCompanyInput): Company {
+  const co: Company = {
+    id: `co-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`,
+    organizationId: ORG_ID,
+    name: input.name.trim(),
+    industry: input.industry,
+    primaryColor: input.primaryColor,
+    status: "active",
+  };
+  _extraCompanies = [...extraCompanies(), co];
+  try { localStorage.setItem(COMPANIES_KEY, JSON.stringify(_extraCompanies)); } catch { /* ignore */ }
+  return co;
+}
+
+export interface NewLocationInput { companyId: string; name: string; city?: string; state?: string; }
+export function createLocation(input: NewLocationInput): Location {
+  const loc: Location = {
+    id: `loc-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`,
+    organizationId: ORG_ID,
+    companyId: input.companyId,
+    name: input.name.trim(),
+    city: input.city,
+    state: input.state,
+    status: "active",
+  };
+  _extraLocations = [...extraLocations(), loc];
+  try { localStorage.setItem(LOCATIONS_KEY, JSON.stringify(_extraLocations)); } catch { /* ignore */ }
+  return loc;
 }

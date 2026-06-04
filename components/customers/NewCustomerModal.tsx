@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import { useHierarchy } from "@/components/providers/HierarchyProvider";
 import { useCustomers } from "@/components/providers/CustomerProvider";
-import { locations } from "@/lib/hierarchy/data";
+import { getAllLocations } from "@/lib/hierarchy/data";
 import { formatPhone, validatePhone, validateEmail } from "@/lib/utils/validation";
 import type { AccountType, PropertyType, Customer, CustomerType, CustomerStatus } from "@/lib/customers/data";
 import { AddressAutocomplete, EMPTY_ADDRESS, type ParsedAddress } from "@/components/address/AddressAutocomplete";
@@ -71,7 +71,7 @@ function buildCustomer(
   parsedAddress: ParsedAddress,
   email: string,
 ): Customer {
-  const loc     = locations.find(l => l.id === locationId);
+  const loc     = getAllLocations().find(l => l.id === locationId);
   const words   = name.trim().split(/\s+/);
   const initials = (words.length >= 2
     ? words[0][0] + words[words.length - 1][0]
@@ -200,12 +200,18 @@ function SuccessState({ name, onClose }: { name: string; onClose: () => void }) 
 
 // ─── Quick Add ────────────────────────────────────────────
 function QuickAddContent({ onClose }: { onClose: () => void }) {
-  const { locationOptions, effectiveLocationId } = useHierarchy();
+  const { locationOptions, effectiveLocationId, showCompanySelector, allCompanies } = useHierarchy();
   const { addCustomer } = useCustomers();
+
+  // When the active scope is "All", there's no location to inherit — force a
+  // pick rather than silently defaulting to the first branch.
+  const needsLocationChoice = !effectiveLocationId && locationOptions.length > 1;
+  const locLabel = (companyId: string, name: string) =>
+    showCompanySelector ? `${allCompanies.find(c => c.id === companyId)?.name ?? "—"} · ${name}` : name;
 
   const [data, setData] = useState<QuickData>({
     name: "", phone: "", accountType: "residential",
-    locationId: effectiveLocationId ?? locationOptions[0]?.id ?? "",
+    locationId: effectiveLocationId ?? (locationOptions.length === 1 ? locationOptions[0]!.id : ""),
   });
   const [errors, setErrors]     = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
@@ -218,6 +224,8 @@ function QuickAddContent({ onClose }: { onClose: () => void }) {
   function handleSave(status: CustomerStatus) {
     const errs: Record<string, string> = {};
     if (!data.name.trim()) errs.name = "Account name is required";
+    if (needsLocationChoice && !data.locationId)
+      errs.locationId = showCompanySelector ? "Choose a company and branch" : "Choose a branch";
     if (data.phone.trim()) {
       const e = validatePhone(data.phone);
       if (e) errs.phone = e;
@@ -258,19 +266,25 @@ function QuickAddContent({ onClose }: { onClose: () => void }) {
           </div>
         </Field>
         {locationOptions.length > 1 && (
-          <Field label="Branch">
+          <Field label={showCompanySelector ? "Company & Branch" : "Branch"} required={needsLocationChoice}>
             <Select value={data.locationId} onChange={v => set("locationId", v)}
-              options={locationOptions.map(l => ({ value: l.id, label: l.name }))} />
+              options={[
+                ...(needsLocationChoice ? [{ value: "", label: "Select where this account belongs…" }] : []),
+                ...locationOptions.map(l => ({ value: l.id, label: locLabel(l.companyId, l.name) })),
+              ]} />
+            {errors.locationId
+              ? <p className="mt-1 text-xs" style={{ color: "#ef4444" }}>{errors.locationId}</p>
+              : needsLocationChoice && <p className="mt-1 text-xs" style={{ color: "var(--text-muted)" }}>You&apos;re viewing all locations — pick where this account belongs.</p>}
           </Field>
         )}
       </div>
       <div className="px-6 py-4 flex gap-2" style={{ borderTop: "1px solid var(--border-subtle)" }}>
-        <button onClick={() => handleSave("Prospect")} disabled={!data.name.trim()}
+        <button onClick={() => handleSave("Prospect")} disabled={!data.name.trim() || (needsLocationChoice && !data.locationId)}
           className="flex-1 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-40"
           style={{ border: "1px solid var(--border)", color: "var(--text-secondary)", backgroundColor: "var(--bg-surface)" }}>
           Save as Prospect
         </button>
-        <button onClick={() => handleSave("Customer")} disabled={!data.name.trim()}
+        <button onClick={() => handleSave("Customer")} disabled={!data.name.trim() || (needsLocationChoice && !data.locationId)}
           className="flex-1 py-2 rounded-lg text-sm font-medium bg-indigo-600 hover:bg-indigo-700 text-white transition-colors disabled:opacity-40">
           Save as Customer
         </button>
@@ -307,8 +321,11 @@ function Step1({ data, set }: { data: WizardData; set: <K extends keyof WizardDa
   );
 }
 
-function Step2({ data, set }: { data: WizardData; set: <K extends keyof WizardData>(k: K, v: WizardData[K]) => void }) {
-  const { locationOptions, serviceAreaOptions, showLocationSelector, showServiceAreaSelector } = useHierarchy();
+function Step2({ data, set, errors }: { data: WizardData; set: <K extends keyof WizardData>(k: K, v: WizardData[K]) => void; errors: Record<string, string> }) {
+  const { locationOptions, serviceAreaOptions, showLocationSelector, showServiceAreaSelector, effectiveLocationId, showCompanySelector, allCompanies } = useHierarchy();
+  const needsLocationChoice = !effectiveLocationId && locationOptions.length > 1;
+  const locLabel = (companyId: string, name: string) =>
+    showCompanySelector ? `${allCompanies.find(c => c.id === companyId)?.name ?? "—"} · ${name}` : name;
   return (
     <div className="space-y-4">
       <Field label="Account Name" required>
@@ -327,9 +344,12 @@ function Step2({ data, set }: { data: WizardData; set: <K extends keyof WizardDa
         </div>
       </Field>
       {showLocationSelector && (
-        <Field label="Branch">
+        <Field label={showCompanySelector ? "Company & Branch" : "Branch"} required={needsLocationChoice}>
           <Select value={data.locationId} onChange={v => set("locationId", v)}
-            options={[{ value: "", label: "Select branch..." }, ...locationOptions.map(l => ({ value: l.id, label: l.name }))]} />
+            options={[{ value: "", label: "Select branch..." }, ...locationOptions.map(l => ({ value: l.id, label: locLabel(l.companyId, l.name) }))]} />
+          {errors.locationId
+            ? <p className="mt-1 text-xs" style={{ color: "#ef4444" }}>{errors.locationId}</p>
+            : needsLocationChoice && <p className="mt-1 text-xs" style={{ color: "var(--text-muted)" }}>You&apos;re viewing all locations — pick where this account belongs.</p>}
         </Field>
       )}
       {showServiceAreaSelector && (
@@ -441,8 +461,11 @@ function WizardContent({ onClose }: { onClose: () => void }) {
   const { locationOptions, effectiveLocationId } = useHierarchy();
   const { addCustomer } = useCustomers();
 
+  // No location to inherit when viewing "All" with multiple branches → must pick.
+  const needsLocationChoice = !effectiveLocationId && locationOptions.length > 1;
+
   const [step, setStep]   = useState(1);
-  const [data, setData]   = useState<WizardData>({ ...DEFAULT_WIZARD, locationId: effectiveLocationId ?? locationOptions[0]?.id ?? "" });
+  const [data, setData]   = useState<WizardData>({ ...DEFAULT_WIZARD, locationId: effectiveLocationId ?? (locationOptions.length === 1 ? locationOptions[0]!.id : "") });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
 
@@ -461,6 +484,7 @@ function WizardContent({ onClose }: { onClose: () => void }) {
   function validateCurrentStep(): Record<string, string> {
     const errs: Record<string, string> = {};
     if (step === 2 && !data.name.trim()) errs.name = "Account name is required";
+    if (step === 2 && needsLocationChoice && !data.locationId) errs.locationId = "Choose where this account belongs";
     if (step === 3) {
       if (!data.contactName.trim()) errs.contactName = "Contact name is required";
       if (!data.contactPhone.trim()) errs.contactPhone = "Phone number is required";
@@ -492,7 +516,7 @@ function WizardContent({ onClose }: { onClose: () => void }) {
 
   const basicCanProceed =
     (step === 1) ||
-    (step === 2 && data.name.trim() !== "") ||
+    (step === 2 && data.name.trim() !== "" && (!needsLocationChoice || data.locationId !== "")) ||
     (step === 3 && data.contactName.trim() !== "" && data.contactPhone.trim() !== "") ||
     (step === 4 && data.propertyParsedAddress.addressLine1.trim() !== "");
 
@@ -503,7 +527,7 @@ function WizardContent({ onClose }: { onClose: () => void }) {
       <StepProgress current={step} />
       <div className="flex-1 overflow-y-auto px-6 py-5">
         {step === 1 && <Step1 data={data} set={set} />}
-        {step === 2 && <Step2 data={data} set={set} />}
+        {step === 2 && <Step2 data={data} set={set} errors={errors} />}
         {step === 3 && <Step3 data={data} set={set} errors={errors} clearError={clearError} />}
         {step === 4 && <Step4 data={data} set={set} />}
       </div>

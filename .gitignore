@@ -17,6 +17,7 @@ tsconfig.tsbuildinfo
 
 # Local dev logs
 dev.log
+dev-server.log
 
 # Claude Code local settings
 .claude/
