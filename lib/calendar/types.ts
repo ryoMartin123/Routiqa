@@ -21,6 +21,37 @@ export type CalendarView = "dispatch" | "day" | "week";
 
 export type ItemPriority = "low" | "normal" | "high" | "urgent";
 
+// ─── Dispatch lane ────────────────────────────────────────
+// Every dispatchable thing is a Job under one lifecycle (decision: one status
+// model). The board collapses that ~11-state lifecycle into a handful of
+// display "lanes" — color tells you WHAT it is (type), the lane tells you WHERE
+// it is in its life (visual treatment: active glows, blocked is hatched, etc.).
+export type DispatchLane = "scheduled" | "active" | "blocked" | "done" | "fell_through";
+
+export const LANE_CONFIG: Record<DispatchLane, { label: string }> = {
+  scheduled:    { label: "Scheduled" },
+  active:       { label: "Active" },
+  blocked:      { label: "Blocked" },
+  done:         { label: "Done" },
+  fell_through: { label: "Fell through" },
+};
+
+// Map a raw job status key → dispatch lane.
+export function jobStatusToLane(status: string): DispatchLane {
+  switch (status) {
+    case "en_route":
+    case "in_progress":         return "active";
+    case "waiting_on_parts":
+    case "waiting_on_customer":  return "blocked";
+    case "completed":
+    case "invoiced":
+    case "closed":               return "done";
+    case "canceled":
+    case "no_show":              return "fell_through";
+    default:                     return "scheduled";
+  }
+}
+
 export interface CalendarItem {
   id: string;
   type: CalendarItemType;
@@ -47,6 +78,7 @@ export interface CalendarItem {
 
   // Display
   status?: string;
+  lane?: DispatchLane;   // derived from status — drives board visual treatment
   color: string;
   customerName?: string;
   address?: string;
@@ -69,6 +101,7 @@ export interface UnscheduledItem {
   locationId: string;
   serviceAreaId?: string;
   customerName?: string;
+  accountId?: string;        // customer id, when known — used to spawn a Job on schedule
   value?: string;
   sourceId: string;
   sourceModule: CalendarItem["sourceModule"];

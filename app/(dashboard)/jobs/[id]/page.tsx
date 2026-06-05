@@ -3,9 +3,9 @@
 import React, { use, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, CheckCircle, Circle, ChevronRight, Phone, MapPin, User, Clock, Calendar, DollarSign, Briefcase, AlertTriangle, Camera, ListChecks, Plus } from "lucide-react";
+import { ArrowLeft, CheckCircle, Circle, ChevronRight, Phone, MapPin, User, Clock, Calendar, DollarSign, Briefcase, AlertTriangle, Camera, ListChecks, Plus, Trash2, Ban, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { getJob, updateJob, getWorkOrder, getJobNotes, resolveJobStatus, type JobNoteType, type JobStatus } from "@/lib/jobs/data";
+import { getJob, updateJob, deleteJob, getWorkOrder, getJobNotes, resolveJobStatus, type JobNoteType, type JobStatus } from "@/lib/jobs/data";
 import UiSelect from "@/components/ui/Select";
 import { getJobStatuses } from "@/lib/job-config/data";
 import {
@@ -573,8 +573,10 @@ function InfoRow({ icon: Icon, label, value }: { icon: typeof Phone; label: stri
 // ─── Page ─────────────────────────────────────────────────
 export default function JobDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id }    = use(params);
+  const router    = useRouter();
   const [tab, setTab] = useState("Overview");
   const [job, setJob] = useState(() => getJob(id));
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const refresh = () => setJob(getJob(id));
 
   function changeStatus(next: string) {
@@ -583,6 +585,12 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
     updateJob(id, patch);
     refresh();
   }
+
+  // Cancel = reversible. Reactivate clears the schedule so it returns to the
+  // dispatch queue (unscheduled) ready to re-book. Delete = permanent.
+  function cancelJob()     { updateJob(id, { status: "canceled" }); refresh(); }
+  function reactivateJob() { updateJob(id, { status: "new", scheduledDate: "", scheduledTime: "", assignedTo: "", assignedToInitials: "" }); refresh(); }
+  function doDelete()      { deleteJob(id); router.push("/jobs"); }
 
   if (!job) {
     return (
@@ -627,12 +635,33 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
               <UiSelect size="sm" value={job.status} onChange={changeStatus}
                 options={getJobStatuses().filter(st => st.active).map(st => ({ value: st.key, label: st.name }))} />
             </div>
-            {job.status !== "completed" && (
-              <button onClick={() => changeStatus("completed")}
-                className="px-3 py-1.5 rounded-lg text-sm font-medium bg-indigo-600 hover:bg-indigo-700 text-white transition-colors">
-                Mark Complete
+            {job.status === "canceled" ? (
+              <button onClick={reactivateJob}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-indigo-600 hover:bg-indigo-700 text-white transition-colors">
+                <RotateCcw className="w-3.5 h-3.5" /> Reactivate
               </button>
+            ) : (
+              <>
+                {job.status !== "completed" && (
+                  <button onClick={() => changeStatus("completed")}
+                    className="px-3 py-1.5 rounded-lg text-sm font-medium bg-indigo-600 hover:bg-indigo-700 text-white transition-colors">
+                    Mark Complete
+                  </button>
+                )}
+                {job.status !== "completed" && (
+                  <button onClick={cancelJob}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
+                    style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>
+                    <Ban className="w-3.5 h-3.5" /> Cancel
+                  </button>
+                )}
+              </>
             )}
+            <button onClick={() => setConfirmDelete(true)} title="Delete job permanently"
+              className="p-2 rounded-lg transition-colors hover:bg-red-50"
+              style={{ color: "#dc2626", border: "1px solid var(--border)" }}>
+              <Trash2 className="w-4 h-4" />
+            </button>
           </div>
         </div>
         {/* Tabs */}
@@ -661,6 +690,31 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
         {tab === "Invoice / Estimate"&& <JobFinancialsTab jobId={id} />}
         {tab === "History"           && <StubTab label="History" />}
       </div>
+
+      {/* Delete confirmation */}
+      {confirmDelete && (
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={() => setConfirmDelete(false)}>
+          <div className="w-full max-w-sm rounded-2xl p-6" onClick={e => e.stopPropagation()}
+            style={{ backgroundColor: "var(--bg-surface)", boxShadow: "0 16px 48px rgba(0,0,0,0.24)" }}>
+            <div className="flex items-center gap-2.5 mb-2">
+              <div className="w-9 h-9 rounded-full flex items-center justify-center" style={{ backgroundColor: "#fee2e2" }}>
+                <Trash2 className="w-4 h-4 text-red-600" />
+              </div>
+              <p className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>Delete this job?</p>
+            </div>
+            <p className="text-sm mb-5" style={{ color: "var(--text-secondary)" }}>
+              &ldquo;{job.title}&rdquo; will be permanently removed — this can&apos;t be undone. To keep a record, use <span className="font-medium">Cancel</span> instead.
+            </p>
+            <div className="flex justify-end gap-2">
+              <button onClick={() => setConfirmDelete(false)} className="px-3 py-2 rounded-lg text-sm"
+                style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>Keep job</button>
+              <button onClick={doDelete} className="px-4 py-2 rounded-lg text-sm font-medium text-white" style={{ backgroundColor: "#dc2626" }}>
+                Delete permanently
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

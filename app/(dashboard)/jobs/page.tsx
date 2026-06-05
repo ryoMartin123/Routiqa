@@ -15,7 +15,15 @@ import ModuleSummaryCards, { type SummaryCard } from "@/components/shared/Module
 import ModuleViewToggle, { type ModuleView } from "@/components/shared/ModuleViewToggle";
 import StatusTabs from "@/components/shared/StatusTabs";
 
-const TODAY = "May 30, 2026";
+// Today's date in the same human format jobs store ("Jun 5, 2026"). Computed
+// client-side (see effect below) so it stays in sync with the dispatch board,
+// which schedules against the real current date.
+function todayStr(): string {
+  return new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
+// Statuses that mean the job is finished — excluded from the Unscheduled tab.
+const DONE_STATUSES = new Set(["completed", "invoiced", "closed", "canceled", "no_show"]);
 
 function daysAgo(dateStr?: string): number {
   if (!dateStr) return Infinity;
@@ -25,14 +33,20 @@ function daysAgo(dateStr?: string): number {
 }
 
 // ─── Filter tabs ──────────────────────────────────────────
-const TABS = [
-  { key: "today",       label: "Today",       fn: (j: Job) => j.scheduledDate === TODAY || j.status === "in_progress" || j.status === "en_route" },
-  { key: "scheduled",   label: "Scheduled",   fn: (j: Job) => j.status === "scheduled" && j.scheduledDate !== TODAY },
-  { key: "in_progress", label: "In Progress", fn: (j: Job) => j.status === "in_progress" || j.status === "en_route" },
-  { key: "completed",   label: "Completed",   fn: (j: Job) => j.status === "completed" },
-  { key: "all",         label: "All",         fn: (_: Job) => true },
-  { key: "projects",    label: "Projects",    fn: (_: Job) => false }, // special view
-];
+// Built per-render so the Today/Scheduled filters track the live "today" string.
+function tabsFor(today: string): { key: string; label: string; fn: (j: Job) => boolean }[] {
+  const isUnscheduled = (j: Job) => !j.scheduledDate?.trim() && !DONE_STATUSES.has(j.status);
+  return [
+    { key: "today",       label: "Today",       fn: (j) => (today !== "" && j.scheduledDate === today && j.status !== "canceled") || j.status === "in_progress" || j.status === "en_route" },
+    { key: "unscheduled", label: "Unscheduled", fn: isUnscheduled },
+    { key: "scheduled",   label: "Scheduled",   fn: (j) => j.status === "scheduled" && j.scheduledDate !== today },
+    { key: "in_progress", label: "In Progress", fn: (j) => j.status === "in_progress" || j.status === "en_route" },
+    { key: "completed",   label: "Completed",   fn: (j) => j.status === "completed" },
+    { key: "canceled",    label: "Canceled",    fn: (j) => j.status === "canceled" },
+    { key: "all",         label: "All",         fn: (j) => j.status !== "canceled" },
+    { key: "projects",    label: "Projects",    fn: () => false }, // special view
+  ];
+}
 
 type SortField = "customerName" | "type" | "status" | "scheduledDate" | "assignedTo";
 
@@ -107,6 +121,12 @@ export default function JobsPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [tab, setTab]         = useState("today");
   const [moduleView, setModuleView] = useState<ModuleView>("list");
+
+  // "Today" resolves client-side so it matches the dispatch board's real date
+  // (empty on first paint → Today shows only active jobs until this fills in).
+  const [today, setToday] = useState("");
+  useEffect(() => { setToday(todayStr()); }, []);
+  const TABS = tabsFor(today);
   const [search, setSearch]   = useState("");
   const [sortField, setSort]  = useState<SortField>("scheduledDate");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
@@ -133,7 +153,7 @@ export default function JobsPage() {
 
   // Summary metrics — respect the active context
   const summaryCards: SummaryCard[] = [
-    { icon: Calendar,      label: "Today's Jobs",        value: String(contextFiltered.filter(j => j.scheduledDate === TODAY).length),                                  sub: "Scheduled today",   iconColor: "#4f46e5" },
+    { icon: Calendar,      label: "Today's Jobs",        value: String(contextFiltered.filter(j => today !== "" && j.scheduledDate === today).length),                  sub: "Scheduled today",   iconColor: "#4f46e5" },
     { icon: CalendarClock, label: "Scheduled",           value: String(contextFiltered.filter(j => j.status === "scheduled").length),                                   sub: "Upcoming work",     iconColor: "#0891b2" },
     { icon: Loader,        label: "In Progress",         value: String(contextFiltered.filter(j => j.status === "in_progress" || j.status === "en_route").length),       sub: "Active now",        iconColor: "#f59e0b" },
     { icon: CheckCircle2,  label: "Completed This Week", value: String(contextFiltered.filter(j => j.status === "completed" && daysAgo(j.completedDate) <= 7).length),    sub: "Last 7 days",       iconColor: "#10b981" },

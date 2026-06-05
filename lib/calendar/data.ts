@@ -9,7 +9,7 @@ import { getAllQuotes } from "@/lib/quotes/data";
 import { getTechnicianUsers } from "@/lib/users/data";
 import { locations as HIER_LOCATIONS } from "@/lib/hierarchy/data";
 import {
-  LAYER_CONFIG, type CalendarItem, type CalendarItemType, type UnscheduledItem,
+  LAYER_CONFIG, jobStatusToLane, type CalendarItem, type CalendarItemType, type UnscheduledItem,
   type ItemPriority, type TechStatusKind,
 } from "./types";
 
@@ -52,20 +52,27 @@ function inScope(item: { companyId: string; locationId: string; serviceAreaId?: 
 
 // ─── Source → CalendarItem ────────────────────────────────
 function jobToItem(job: Job): CalendarItem | null {
+  // Canceled jobs leave the active board/calendar — they live in the Jobs
+  // "Canceled" tab until reactivated or deleted.
+  if (job.status === "canceled") return null;
   const start = parseDateTime(job.scheduledDate, job.scheduledTime);
   if (!start) return null;
   const end = new Date(start.getTime() + job.durationMinutes * 60_000);
   const cfg = JOB_STATUS_CONFIG[job.status];
+  // dispatchType is the visual layer (job / agreement_visit / sales_appointment /
+  // task) — the lifecycle/status is always the Job's.
+  const type = (job.dispatchType ?? "job") as CalendarItemType;
   return {
     id: `job-${job.id}`,
-    type: "job",
+    type,
     title: job.title,
     start, end, allDay: false, durationMinutes: job.durationMinutes,
     assignedTo: job.assignedTo, assignedToInitials: job.assignedToInitials,
     companyId: job.companyId, locationId: job.locationId, serviceAreaId: job.serviceAreaId,
     sourceId: job.id, sourceModule: "jobs",
     status: cfg?.label ?? job.status,
-    color: LAYER_CONFIG.job.color,
+    lane: jobStatusToLane(job.status),
+    color: (LAYER_CONFIG[type] ?? LAYER_CONFIG.job).color,
     customerName: job.customerName, address: job.propertyAddress,
     city: cityFromAddress(job.propertyAddress),
     jobType: job.type.charAt(0).toUpperCase() + job.type.slice(1),
@@ -170,6 +177,28 @@ export function getCalendarItems(scope: CalendarScope): CalendarItem[] {
   return items.sort((a, b) => a.start.getTime() - b.start.getTime());
 }
 
+// ─── Converted-source guard ───────────────────────────────
+// When a queue source (approved quote, agreement visit, follow-up task) is
+// scheduled, it spawns a Job. We persist the source key here so it stops
+// appearing in the queue — without it, the source would re-surface on reload
+// alongside the new Job (a duplicate).
+const CONVERTED_KEY = "crm-dispatch-converted";
+let _converted: Set<string> | null = null;
+function convertedSet(): Set<string> {
+  if (_converted) return _converted;
+  if (typeof window === "undefined") return new Set();
+  try { const r = localStorage.getItem(CONVERTED_KEY); _converted = new Set<string>(r ? JSON.parse(r) : []); }
+  catch { _converted = new Set(); }
+  return _converted!;
+}
+export function markSourceScheduled(sourceModule: string, sourceId: string): void {
+  const s = convertedSet(); s.add(`${sourceModule}:${sourceId}`);
+  try { localStorage.setItem(CONVERTED_KEY, JSON.stringify([...s])); } catch { /* ignore */ }
+}
+function isConverted(sourceModule: string, sourceId: string): boolean {
+  return convertedSet().has(`${sourceModule}:${sourceId}`);
+}
+
 // ─── Unscheduled queue (triage) ───────────────────────────
 export function getUnscheduledItems(scope: CalendarScope): UnscheduledItem[] {
   const out: UnscheduledItem[] = [];
@@ -177,12 +206,13 @@ export function getUnscheduledItems(scope: CalendarScope): UnscheduledItem[] {
   // Approved quotes waiting to be scheduled into a job
   for (const q of getAllQuotes()) {
     if (q.status !== "approved") continue;
+    if (isConverted("quotes", q.id)) continue;
     if (!inScope({ companyId: q.companyId, locationId: q.locationId }, scope)) continue;
     out.push({
       id: `uq-quote-${q.id}`, type: "job", sourceType: "approved_quote", title: q.title,
       reason: "Approved quote not scheduled", status: "approved",
       companyId: q.companyId, locationId: q.locationId,
-      customerName: q.customerName, value: `$${q.total.toLocaleString()}`,
+      customerName: q.customerName, accountId: q.customerId, value: `$${q.total.toLocaleString()}`,
       sourceId: q.id, sourceModule: "quotes", color: LAYER_CONFIG.job.color,
       priority: "high", durationMinutes: 240, jobType: "Installation",
     });
@@ -192,12 +222,13 @@ export function getUnscheduledItems(scope: CalendarScope): UnscheduledItem[] {
   for (const t of ALL_TASKS) {
     if (t.status === "completed") continue;
     if (t.type !== "schedule" && t.type !== "call") continue;
+    if (isConverted("tasks", t.id)) continue;
     if (!inScope({ companyId: t.companyId, locationId: t.locationId }, scope)) continue;
     out.push({
       id: `uq-task-${t.id}`, type: "task", sourceType: "task_follow_up", title: t.title,
       reason: "Follow-up needs scheduling", status: t.status,
       companyId: t.companyId, locationId: t.locationId,
-      customerName: t.customerName,
+      customerName: t.customerName, accountId: t.customerId,
       sourceId: t.id, sourceModule: "tasks", color: LAYER_CONFIG.task.color,
       priority: t.status === "overdue" ? "urgent" : "normal",
       durationMinutes: 30, preferredDate: t.dueDate, dueDate: t.dueDate,
@@ -207,6 +238,7 @@ export function getUnscheduledItems(scope: CalendarScope): UnscheduledItem[] {
   // Agreement visits due
   for (const a of getAllAgreements()) {
     if (a.status !== "due_soon" && a.status !== "overdue") continue;
+    if (isConverted("agreements", a.id)) continue;
     const loc = resolveAgreementLocation(a.location);
     if (!inScope({ companyId: loc.companyId, locationId: loc.locationId }, scope)) continue;
     out.push({

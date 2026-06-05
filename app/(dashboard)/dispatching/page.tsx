@@ -5,14 +5,23 @@ import { usePathname } from "next/navigation";
 import {
   Inbox, Search, SlidersHorizontal, Layers, Eye, EyeOff,
   ChevronLeft, ChevronRight, ChevronUp, ChevronDown, LayoutGrid, LayoutList, CalendarDays, CalendarRange, CalendarClock,
+  Plus, Briefcase,
 } from "lucide-react";
 import { useHierarchy } from "@/components/providers/HierarchyProvider";
 import CalendarItemDrawer from "@/components/calendar/CalendarItemDrawer";
 import ScheduleConfirmModal, { type ScheduleDraft } from "@/components/calendar/ScheduleConfirmModal";
 import Select from "@/components/ui/Select";
 import {
-  getCalendarItems, getUnscheduledItems, getUnscheduledJobs, getSessionCalendarItems, getTechnicians, getTechRoster, type CalendarScope, type TechRosterEntry,
+  getCalendarItems, getUnscheduledItems, getUnscheduledJobs, getSessionCalendarItems, getTechnicians, getTechRoster, markSourceScheduled, type CalendarScope, type TechRosterEntry,
 } from "@/lib/calendar/data";
+import { createJob, updateJob, type JobType } from "@/lib/jobs/data";
+import { getCustomer } from "@/lib/customers/data";
+import {
+  getAvailabilityForDay, createAvailability, techStatusForKind, AVAILABILITY_CONFIG,
+  type AvailabilityEvent, type NewAvailabilityInput,
+} from "@/lib/calendar/availability";
+import TimeOffModal from "@/components/calendar/TimeOffModal";
+import JobWizard from "@/components/jobs/JobWizard";
 import {
   LAYER_CONFIG, CALENDAR_LAYERS, PRIORITY_CONFIG, TECH_STATUS_CONFIG, HOUR_PX,
   type CalendarItem, type CalendarItemType, type UnscheduledItem, type DispatchMode,
@@ -37,6 +46,21 @@ function isSameDay(a: Date, b: Date): boolean { return a.getFullYear()===b.getFu
 function fmtTime(d: Date): string { return d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }); }
 function ymd(d: Date): string { return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; }
 function hourLabel(h: number): string { return `${h > 12 ? h - 12 : h}${h >= 12 ? "p" : "a"}`; }
+// Format a Date back into the human strings the jobs store uses, so a job
+// scheduled/moved on the board re-parses identically in the Jobs list + Today tab.
+function jobDateStr(d: Date): string { return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }); }
+function jobTimeStr(d: Date): string { return d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }); }
+
+// When a non-job queue source is scheduled it becomes a Job (one lifecycle); this
+// maps the source to the Job's visual layer (dispatchType) and its work type.
+type SourceJobMap = { dispatchType: "job" | "sales_appointment" | "agreement_visit" | "task"; jobType: JobType };
+const SOURCE_TO_JOB: Record<string, SourceJobMap> = {
+  approved_quote:   { dispatchType: "job",              jobType: "installation" },
+  agreement_visit:  { dispatchType: "agreement_visit",  jobType: "maintenance" },
+  task_follow_up:   { dispatchType: "task",             jobType: "other" },
+  sales_appointment:{ dispatchType: "sales_appointment", jobType: "estimate" },
+};
+const SOURCE_TO_JOB_DEFAULT: SourceJobMap = { dispatchType: "job", jobType: "repair" };
 
 export default function CalendarPage() {
   const { effectiveCompanyId, effectiveLocationId, effectiveServiceAreaId } = useHierarchy();
@@ -78,9 +102,16 @@ export default function CalendarPage() {
   const [boardId, setBoardId]     = useState("all");
 
   // Scheduling state
-  const [extra, setExtra]         = useState<CalendarItem[]>([]);
   const [removed, setRemoved]     = useState<Set<string>>(new Set());
   const [confirm, setConfirm]     = useState<{ item: UnscheduledItem; draft: ScheduleDraft } | null>(null);
+  // Bumped after a job is persisted (updateJob/createJob) or availability changes
+  // so the board/queue re-read the store (the single source of truth).
+  const [refreshKey, setRefreshKey] = useState(0);
+  // Technician availability for the focused day — loaded client-side (effect).
+  const [availability, setAvailability] = useState<AvailabilityEvent[]>([]);
+  const [timeOffOpen, setTimeOffOpen]   = useState(false);
+  const [createMenuOpen, setCreateMenuOpen] = useState(false);
+  const [showJobWizard, setShowJobWizard]   = useState(false);
 
   // Jobs created in-session (New Job form / quote conversion) live in the session
   // store; load them client-side so they merge into the queue (unscheduled) and
@@ -95,7 +126,26 @@ export default function CalendarPage() {
     setSessionUnscheduled(getUnscheduledJobs(s));
     setSessionItems(getSessionCalendarItems(s));
     setRoster(getTechRoster());
-  }, [effectiveCompanyId, effectiveLocationId, effectiveServiceAreaId]);
+  }, [effectiveCompanyId, effectiveLocationId, effectiveServiceAreaId, refreshKey]);
+
+  // Availability is per-day — reload when the focused day or data changes.
+  useEffect(() => { setAvailability(getAvailabilityForDay(ymd(focus))); }, [focus, refreshKey]);
+
+  // Live-refresh the resolved settings (hour window, blocks, layers) when the
+  // user returns from Settings or another tab saves — WITHOUT resetting their
+  // current view/mode/board. Fixes "changed the dispatch time but the board
+  // didn't update".
+  useEffect(() => {
+    const reread = () => setSettings(resolveDispatchSettings(effectiveCompanyId, effectiveLocationId));
+    window.addEventListener("focus", reread);
+    window.addEventListener("storage", reread);
+    document.addEventListener("visibilitychange", reread);
+    return () => {
+      window.removeEventListener("focus", reread);
+      window.removeEventListener("storage", reread);
+      document.removeEventListener("visibilitychange", reread);
+    };
+  }, [effectiveCompanyId, effectiveLocationId]);
 
   // Selection (drawer)
   const [selScheduled, setSelScheduled]     = useState<CalendarItem | null>(null);
@@ -161,7 +211,7 @@ export default function CalendarPage() {
   const hourly = settings.hourly;
   const activeBlocks = settings.blocks.filter(b => b.active).sort((a, b) => a.order - b.order);
 
-  const items = useMemo(() => [...rawItems, ...sessionItems, ...extra]
+  const items = useMemo(() => [...rawItems, ...sessionItems]
     .map(i => {
       const e = edits[i.id];
       if (!e) return i;
@@ -173,7 +223,7 @@ export default function CalendarPage() {
     .filter(i => fTech === "all" || i.assignedTo === fTech)
     .filter(i => fType === "all" || i.jobType === fType)
     .filter(i => fPrio === "all" || i.priority === fPrio),
-    [rawItems, sessionItems, extra, edits, hidden, fTech, fType, fPrio]);
+    [rawItems, sessionItems, edits, hidden, fTech, fType, fPrio]);
 
   // Narrow scheduled items + queue to the selected board (All Boards = no narrowing).
   const boardItems  = activeBoardDef ? items.filter(i => itemMatchesBoard(i, activeBoardDef)) : items;
@@ -187,10 +237,27 @@ export default function CalendarPage() {
 
   function toggleLayer(t: CalendarItemType) { setHidden(p => { const n = new Set(p); n.has(t) ? n.delete(t) : n.add(t); return n; }); }
   function reassign(tech: string) {
-    if (selScheduled) { setEdits(e => ({ ...e, [selScheduled.id]: { ...e[selScheduled.id], assignedTo: tech } })); setSelScheduled({ ...selScheduled, assignedTo: tech }); }
+    if (!selScheduled) return;
+    // Jobs persist to the store; other sources (tasks/agreements) stay board-local.
+    if (selScheduled.sourceModule === "jobs" && selScheduled.sourceId) {
+      updateJob(selScheduled.sourceId, { assignedTo: tech, assignedToInitials: initials(tech) });
+      setRefreshKey(k => k + 1);
+    } else {
+      setEdits(e => ({ ...e, [selScheduled.id]: { ...e[selScheduled.id], assignedTo: tech } }));
+    }
+    setSelScheduled({ ...selScheduled, assignedTo: tech });
   }
   // Commit a drag-move or drag-resize from the board (tech set when moved across rows).
   function applyMoveResize(id: string, start: Date, durationMinutes: number, tech?: string) {
+    const item = items.find(i => i.id === id);
+    if (item?.sourceModule === "jobs" && item.sourceId) {
+      updateJob(item.sourceId, {
+        scheduledDate: jobDateStr(start), scheduledTime: jobTimeStr(start), durationMinutes,
+        ...(tech ? { assignedTo: tech, assignedToInitials: initials(tech) } : {}),
+      });
+      setRefreshKey(k => k + 1);
+      return;
+    }
     setEdits(e => ({ ...e, [id]: { ...e[id], start, durationMinutes, ...(tech ? { assignedTo: tech } : {}) } }));
   }
 
@@ -206,20 +273,52 @@ export default function CalendarPage() {
     if (!confirm) return;
     const u = confirm.item;
     const start = new Date(`${d.date}T${d.time}`);
-    const end = new Date(start.getTime() + d.durationMinutes * 60_000);
-    const newItem: CalendarItem = {
-      id: `sched-${u.id}`, type: u.type === "job" ? "job" : u.type, title: u.title,
-      start, end, allDay: false, durationMinutes: d.durationMinutes,
-      assignedTo: d.tech || undefined, assignedToInitials: d.tech ? initials(d.tech) : undefined,
-      companyId: u.companyId, locationId: u.locationId,
-      sourceId: u.sourceId, sourceModule: u.sourceModule,
-      status: "Scheduled", color: u.color,
-      customerName: u.customerName, address: u.address, city: u.city,
-      jobType: u.jobType, priority: u.priority,
-    };
-    setExtra(e => [...e, newItem]);
-    setRemoved(r => new Set(r).add(u.id));
+
+    // A job from the queue → persist the schedule to the job record so it stays
+    // on the board (and shows as Scheduled in the Jobs list) across navigation.
+    if (u.sourceModule === "jobs" && u.sourceId) {
+      updateJob(u.sourceId, {
+        status: "scheduled",
+        scheduledDate: jobDateStr(start), scheduledTime: jobTimeStr(start),
+        durationMinutes: d.durationMinutes,
+        assignedTo: d.tech || "", assignedToInitials: d.tech ? initials(d.tech) : "",
+      });
+      setRefreshKey(k => k + 1);   // re-reads store: item moves out of queue, onto board
+      setConfirm(null);
+      return;
+    }
+
+    // Any other source (approved quote, agreement visit, follow-up task) becomes a
+    // real Job linked back to its origin, so everything on the board lives under
+    // the one job lifecycle. dispatchType keeps its original color/label.
+    const map = SOURCE_TO_JOB[u.sourceType] ?? SOURCE_TO_JOB_DEFAULT;
+    const cust = u.accountId ? getCustomer(u.accountId) : undefined;
+    createJob({
+      companyId: u.companyId, locationId: u.locationId, serviceAreaId: u.serviceAreaId,
+      accountId: u.accountId ?? cust?.id ?? "",
+      customerName: u.customerName ?? cust?.name ?? u.title,
+      customerInitials: cust?.initials ?? initials(u.customerName ?? u.title),
+      locationName: cust?.locationName ?? "",
+      title: u.title, type: map.jobType,
+      propertyAddress: u.address,
+      scheduledDate: jobDateStr(start), scheduledTime: jobTimeStr(start),
+      durationMinutes: d.durationMinutes,
+      assignedTo: d.tech || "", assignedToInitials: d.tech ? initials(d.tech) : "",
+      dispatchType: map.dispatchType,
+      sourceModule: u.sourceModule as "quotes" | "agreements" | "tasks" | "projects",
+      sourceRefId: u.sourceId,
+    });
+    markSourceScheduled(u.sourceModule, u.sourceId);  // drop the source from the queue for good
+    setRemoved(r => new Set(r).add(u.id));             // instant hide before the reload
+    setRefreshKey(k => k + 1);
     setConfirm(null);
+  }
+
+  // ── Availability ──
+  function handleAddTimeOff(input: NewAvailabilityInput) {
+    createAvailability(input);
+    setRefreshKey(k => k + 1);   // reloads availability for the focused day
+    setTimeOffOpen(false);
   }
 
   // Date nav
@@ -289,6 +388,38 @@ export default function CalendarPage() {
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Create — add a schedulable job or technician time off to the board */}
+          <div className="relative">
+            <button onClick={() => setCreateMenuOpen(o => !o)} title="Add to board"
+              className="flex items-center justify-center w-8 h-8 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white transition-colors"
+              aria-haspopup="menu" aria-expanded={createMenuOpen}>
+              <Plus className="w-4 h-4" />
+            </button>
+            {createMenuOpen && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setCreateMenuOpen(false)} />
+                <div role="menu" className="absolute right-0 mt-1.5 w-52 rounded-xl overflow-hidden z-50 py-1"
+                  style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "0 12px 32px rgba(0,0,0,0.18)" }}>
+                  <p className="text-[10px] font-semibold uppercase tracking-widest px-3 pt-2 pb-1" style={{ color: "var(--text-muted)" }}>Add to board</p>
+                  <button onClick={() => { setCreateMenuOpen(false); setShowJobWizard(true); }}
+                    className="w-full flex items-center gap-3 px-3 py-2 text-left transition-colors hover:bg-[var(--bg-surface-2)]">
+                    <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: "var(--accent-soft-bg)" }}>
+                      <Briefcase className="w-4 h-4" style={{ color: "var(--accent-text)" }} />
+                    </div>
+                    <div className="min-w-0"><p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>New Job</p><p className="text-[11px]" style={{ color: "var(--text-muted)" }}>Schedulable work</p></div>
+                  </button>
+                  <button onClick={() => { setCreateMenuOpen(false); setTimeOffOpen(true); }}
+                    className="w-full flex items-center gap-3 px-3 py-2 text-left transition-colors hover:bg-[var(--bg-surface-2)]">
+                    <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: "var(--accent-soft-bg)" }}>
+                      <CalendarClock className="w-4 h-4" style={{ color: "var(--accent-text)" }} />
+                    </div>
+                    <div className="min-w-0"><p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>Time Off</p><p className="text-[11px]" style={{ color: "var(--text-muted)" }}>PTO / blocked time</p></div>
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+
           {/* Combined Layers legend */}
           {availableLayers.length > 0 && (
             <div className="relative" ref={layersRef}>
@@ -351,7 +482,7 @@ export default function CalendarPage() {
       </div>
 
       {/* Board */}
-      {view === "dispatch" && <DispatchBoard focus={focus} mode={dispatchMode} items={boardItems} roster={boardRoster} dayStart={hourly.startHour} dayEnd={hourly.endHour} increment={hourly.increment} blocks={activeBlocks} onSelect={setSelScheduled} onMoveResize={applyMoveResize} onDropItem={(uid, tech, hour, minute) => { const u = unscheduled.find(x => x.id === uid); if (u) openConfirm(u, tech, focus, hour, minute); }} />}
+      {view === "dispatch" && <DispatchBoard focus={focus} mode={dispatchMode} items={boardItems} roster={boardRoster} availability={availability} dayStart={hourly.startHour} dayEnd={hourly.endHour} increment={hourly.increment} blocks={activeBlocks} onSelect={setSelScheduled} onMoveResize={applyMoveResize} onDropItem={(uid, tech, hour, minute) => { const u = unscheduled.find(x => x.id === uid); if (u) openConfirm(u, tech, focus, hour, minute); }} />}
       {view === "week"     && <WeekView  focus={focus} items={boardItems} onSelect={setSelScheduled} />}
       {view === "day"      && <DayView   focus={focus} items={boardItems} dayStart={hourly.startHour} dayEnd={hourly.endHour} onSelect={setSelScheduled} />}
       {view === "month"    && <MonthView focus={focus} items={boardItems} onSelect={setSelScheduled} />}
@@ -368,6 +499,12 @@ export default function CalendarPage() {
 
       {/* Confirm modal */}
       {confirm && <ScheduleConfirmModal item={confirm.item} draft={confirm.draft} technicians={technicians} onConfirm={confirmSchedule} onClose={() => setConfirm(null)} />}
+
+      {/* Time off / availability modal */}
+      {timeOffOpen && <TimeOffModal technicians={technicians} defaultDate={ymd(focus)} onClose={() => setTimeOffOpen(false)} onSave={handleAddTimeOff} />}
+
+      {/* Create a job straight from the board — refreshes so it lands on the grid / queue */}
+      {showJobWizard && <JobWizard onClose={() => setShowJobWizard(false)} onCreated={() => { setShowJobWizard(false); setRefreshKey(k => k + 1); }} />}
     </div>
   );
 }
@@ -381,15 +518,31 @@ function initials(name: string): string {
 const ROW_H = 64;
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 
-function DispatchBoard({ focus, mode, items, roster, dayStart, dayEnd, increment, blocks, onSelect, onMoveResize, onDropItem }: {
+function DispatchBoard({ focus, mode, items, roster, availability, dayStart, dayEnd, increment, blocks, onSelect, onMoveResize, onDropItem }: {
   focus: Date; mode: DispatchMode; items: CalendarItem[];
   roster: ReturnType<typeof getTechRoster>;
+  availability: AvailabilityEvent[];
   dayStart: number; dayEnd: number; increment: number; blocks: SettingsServiceBlock[];
   onSelect: (i: CalendarItem) => void;
   onMoveResize: (id: string, start: Date, durationMinutes: number, tech?: string) => void;
   onDropItem: (uid: string, tech: string, hour: number, minute: number) => void;
 }) {
   const dayItems = items.filter(i => isSameDay(i.start, focus) && !i.allDay);
+
+  // Board rows = an "Unassigned" lane (when any scheduled job has no tech) +
+  // the roster + any tech who has a job today but isn't on the roster. This
+  // guarantees a scheduled job is ALWAYS visible somewhere — clearing a tech no
+  // longer makes the job vanish.
+  const dayTechNames = new Set(dayItems.map(i => (i.assignedTo ?? "").trim()).filter(Boolean));
+  const rosterNames  = new Set(roster.map(r => r.name));
+  const orphanRows   = [...dayTechNames].filter(n => !rosterNames.has(n))
+    .map(n => ({ name: n, initials: initials(n), status: "available" as const }));
+  const hasUnassigned = dayItems.some(i => !(i.assignedTo ?? "").trim());
+  const rows = [
+    ...(hasUnassigned ? [{ name: "", initials: "—", status: "available" as const }] : []),
+    ...roster,
+    ...orphanRows,
+  ];
 
   // Hourly grid + drag snapping derived from the configured day window.
   const totalMin = Math.max(60, (dayEnd - dayStart) * 60);
@@ -398,10 +551,33 @@ function DispatchBoard({ focus, mode, items, roster, dayStart, dayEnd, increment
   const snap = (v: number) => Math.round(v / increment) * increment;
   const startMinOf = (i: CalendarItem) => (i.start.getHours() - dayStart) * 60 + i.start.getMinutes();
   const minToTime = (min: number) => { const h = dayStart + Math.floor(min / 60); const m = min % 60; return `${h > 12 ? h - 12 : h}:${String(m).padStart(2, "0")}${h >= 12 ? "p" : "a"}`; };
+  // Availability overlay geometry — all-day spans the whole row; timed uses hours.
+  const availSpan = (a: AvailabilityEvent) => {
+    const s = a.allDay ? 0 : Math.max(0, ((a.startHour ?? dayStart) - dayStart) * 60);
+    const e = a.allDay ? totalMin : Math.min(totalMin, ((a.endHour ?? dayEnd) - dayStart) * 60);
+    return { left: clamp((s / totalMin) * 100, 0, 100), width: clamp(((e - s) / totalMin) * 100, 0, 100) };
+  };
 
   // Live preview while moving / resizing a block (tech = target row); queue-drag row.
   const [preview, setPreview] = useState<{ id: string; startMin: number; durationMinutes: number; tech: string } | null>(null);
   const [dragTech, setDragTech] = useState<string | null>(null);
+
+  // "Now" indicator — the user's LOCAL current time, ticked each minute. Computed
+  // client-side (new Date() is the browser's local zone) so it's hydration-safe
+  // and always matches the viewer's clock.
+  const [now, setNow] = useState<{ min: number; label: string } | null>(null);
+  useEffect(() => {
+    const update = () => {
+      const d = new Date();
+      if (!isSameDay(d, focus)) { setNow(null); return; }
+      const min = (d.getHours() - dayStart) * 60 + d.getMinutes();
+      if (min < 0 || min > totalMin) { setNow(null); return; }
+      setNow({ min, label: d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) });
+    };
+    update();
+    const t = setInterval(update, 60_000);
+    return () => clearInterval(t);
+  }, [focus, dayStart, totalMin]);
 
   const labels = mode === "blocks"
     ? blocks.map(b => ({ key: b.id, label: b.name, span: b.endHour - b.startHour }))
@@ -465,34 +641,52 @@ function DispatchBoard({ focus, mode, items, roster, dayStart, dayEnd, increment
       {/* Header */}
       <div className="flex" style={{ borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
         <div className="w-[180px] shrink-0 px-3 py-2 text-[10px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Technician</div>
-        <div className="flex-1 flex">
+        <div className="flex-1 flex relative">
           {labels.map(l => (
             <div key={l.key} className="px-2 py-2 text-[10px] font-semibold text-center" style={{ flex: l.span, color: "var(--text-muted)", borderLeft: "1px solid var(--border-subtle)" }}>{l.label}</div>
           ))}
+          {/* Current-time label — centered on the now-line, above the grid */}
+          {now != null && (
+            <div className="absolute z-20 px-1.5 py-0.5 rounded-md text-[10px] font-bold whitespace-nowrap pointer-events-none"
+              style={{ left: `${(now.min / totalMin) * 100}%`, top: "50%", transform: "translate(-50%, -50%)", backgroundColor: "var(--accent-soft-bg)", color: "var(--accent-text)", border: "1px solid var(--accent-soft-border)" }}>
+              {now.label}
+            </div>
+          )}
         </div>
       </div>
 
       {/* Tech rows */}
-      {roster.length === 0 ? (
+      {rows.length === 0 ? (
         <div className="py-12 text-center"><p className="text-sm" style={{ color: "var(--text-muted)" }}>No technicians on this board.</p></div>
-      ) : roster.map((tech, ri) => {
+      ) : rows.map((tech, ri) => {
+        const isUnassigned = tech.name === "";
         const techItems = dayItems.filter(i => (i.assignedTo ?? "") === tech.name);
-        const sc = TECH_STATUS_CONFIG[tech.status];
+        // Availability for this tech today drives the row's status chip + overlays.
+        const techAvail = availability.filter(a => a.techName === tech.name);
+        const allDayOff = techAvail.find(a => a.allDay && AVAILABILITY_CONFIG[a.kind].blocksWork);
+        const onCall    = techAvail.find(a => a.kind === "on_call");
+        const dayStatus = allDayOff ? techStatusForKind(allDayOff.kind) : onCall ? "on_call" : tech.status;
+        const sc = TECH_STATUS_CONFIG[dayStatus];
         const bookedMin = techItems.reduce((s, i) => s + i.durationMinutes, 0);
         const openHrs = Math.max(0, Math.round((totalMin - bookedMin) / 60));
         const isDropTarget = dragTech === tech.name || (preview != null && preview.tech === tech.name);
         return (
-          <div key={tech.name} className="flex" style={{ borderBottom: ri < roster.length - 1 ? "1px solid var(--border-subtle)" : "none" }}>
+          <div key={tech.name || "__unassigned"} className="flex" style={{ borderBottom: ri < rows.length - 1 ? "1px solid var(--border-subtle)" : "none", backgroundColor: isUnassigned ? "var(--warning-soft-bg)" : undefined }}>
             {/* Tech cell */}
             <div className="w-[180px] shrink-0 px-3 py-2.5 flex items-start gap-2" style={{ borderRight: "1px solid var(--border-subtle)" }}>
-              <div className="w-7 h-7 rounded-full bg-indigo-600 flex items-center justify-center text-[9px] font-bold text-white shrink-0">{tech.initials}</div>
+              <div className="w-7 h-7 rounded-full flex items-center justify-center text-[9px] font-bold shrink-0"
+                style={{ backgroundColor: isUnassigned ? "var(--warning-soft-border)" : "#4f46e5", color: isUnassigned ? "var(--warning-text)" : "#fff" }}>{tech.initials}</div>
               <div className="min-w-0">
-                <p className="text-xs font-semibold truncate" style={{ color: "var(--text-primary)" }}>{tech.name}</p>
-                <div className="flex items-center gap-1 mt-0.5">
-                  <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: sc.color }} />
-                  <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>{sc.label}</span>
-                </div>
-                <p className="text-[9px] mt-0.5" style={{ color: "var(--text-muted)" }}>{techItems.length} job{techItems.length===1?"":"s"} · ~{openHrs}h open</p>
+                <p className="text-xs font-semibold truncate" style={{ color: isUnassigned ? "var(--warning-text)" : "var(--text-primary)" }}>{isUnassigned ? "Unassigned" : tech.name}</p>
+                {isUnassigned ? (
+                  <p className="text-[10px] mt-0.5" style={{ color: "var(--warning-icon)" }}>Needs a technician</p>
+                ) : (
+                  <div className="flex items-center gap-1 mt-0.5">
+                    <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: sc.color }} />
+                    <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>{sc.label}</span>
+                  </div>
+                )}
+                <p className="text-[9px] mt-0.5" style={{ color: "var(--text-muted)" }}>{techItems.length} job{techItems.length===1?"":"s"}{isUnassigned ? "" : ` · ~${openHrs}h open`}</p>
               </div>
             </div>
 
@@ -514,6 +708,28 @@ function DispatchBoard({ focus, mode, items, roster, dayStart, dayEnd, increment
                 {gridCells.map(c => <div key={c.key} className="h-full" style={{ flex: c.span, borderLeft: `1px ${c.half ? "dashed" : "solid"} var(--border-subtle)` }} />)}
               </div>
 
+              {/* Availability overlays — PTO / time off / training / blocked (behind jobs) */}
+              {techAvail.filter(a => AVAILABILITY_CONFIG[a.kind].blocksWork).map(a => {
+                const cfg = AVAILABILITY_CONFIG[a.kind]; const { left, width } = availSpan(a);
+                return (
+                  <div key={a.id} className="absolute top-0 bottom-0 flex items-center justify-center pointer-events-none overflow-hidden"
+                    style={{ left: `${left}%`, width: `${width}%`, backgroundColor: cfg.color + "14",
+                      backgroundImage: `repeating-linear-gradient(45deg, ${cfg.color}40 0, ${cfg.color}40 5px, transparent 5px, transparent 11px)`,
+                      borderLeft: `2px solid ${cfg.color}` }}>
+                    <span className="text-[9px] font-bold uppercase tracking-wide px-1 truncate" style={{ color: cfg.color }}>
+                      {cfg.label}{a.note ? ` · ${a.note}` : ""}
+                    </span>
+                  </div>
+                );
+              })}
+
+              {/* "Now" line — dashed, translucent purple; non-interactive, spans all rows */}
+              {now != null && (
+                <div className="absolute top-0 bottom-0 pointer-events-none z-10" style={{ left: `${(now.min / totalMin) * 100}%` }}>
+                  <div className="h-full" style={{ borderLeft: "1.5px dashed rgba(124, 58, 237, 0.45)" }} />
+                </div>
+              )}
+
               {/* Job blocks */}
               {techItems.map(i => {
                 const p = preview?.id === i.id ? preview : null;
@@ -523,16 +739,26 @@ function DispatchBoard({ focus, mode, items, roster, dayStart, dayEnd, increment
                 const width = Math.max(3, (Math.min(dur, totalMin - sm) / totalMin) * 100);
                 const prio = i.priority && i.priority !== "normal" ? PRIORITY_CONFIG[i.priority] : null;
                 const movingAway = p && p.tech !== (i.assignedTo ?? "");  // dragging to another tech
+                // Lane = where the job is in its lifecycle → visual treatment.
+                // Color still tells you what it is; the lane tells you its state.
+                const lane = i.lane ?? "scheduled";
+                const accent = lane === "blocked" ? "#f59e0b" : i.color;
+                const laneBg = lane === "blocked"
+                  ? "repeating-linear-gradient(45deg, rgba(245,158,11,0.20) 0, rgba(245,158,11,0.20) 6px, transparent 6px, transparent 12px)"
+                  : undefined;
+                const laneShadow = lane === "active" ? `0 0 0 2px ${i.color}, 0 2px 10px ${i.color}66` : undefined;
+                const laneOpacity = lane === "done" ? 0.5 : lane === "fell_through" ? 0.45 : 1;
                 return (
                   <div key={i.id} data-block
                     onMouseDown={e => beginDrag(e, i, "move")}
                     title="Drag to move (across techs) · drag right edge to resize"
                     className="absolute top-1.5 bottom-1.5 rounded-lg px-2 overflow-hidden select-none"
-                    style={{ left: `${left}%`, width: `${width}%`, backgroundColor: i.color + "26", borderLeft: `3px solid ${i.color}`, cursor: p ? "grabbing" : "grab", boxShadow: p ? "0 4px 14px rgba(0,0,0,0.25)" : undefined, opacity: movingAway ? 0.55 : 1, zIndex: p ? 20 : 1 }}>
+                    style={{ left: `${left}%`, width: `${width}%`, backgroundColor: i.color + "26", backgroundImage: laneBg, borderLeft: `3px solid ${accent}`, cursor: p ? "grabbing" : "grab", boxShadow: p ? "0 4px 14px rgba(0,0,0,0.25)" : laneShadow, opacity: movingAway ? 0.55 : laneOpacity, zIndex: p ? 20 : 1 }}>
                     <div className="flex items-center gap-1">
-                      <p className="text-[10px] font-semibold truncate leading-tight pt-0.5" style={{ color: "var(--text-primary)" }}>{i.customerName ?? i.title}</p>
+                      <p className="text-[10px] font-semibold truncate leading-tight pt-0.5" style={{ color: "var(--text-primary)", textDecoration: lane === "fell_through" ? "line-through" : "none" }}>{lane === "done" ? "✓ " : ""}{i.customerName ?? i.title}</p>
                       {movingAway && <span className="text-[8px] font-bold px-1 rounded shrink-0" style={{ backgroundColor: "var(--accent-soft-2-bg)", color: "var(--accent-text)" }}>→ {p!.tech}</span>}
-                      {!movingAway && prio && <span className="text-[8px] font-bold px-1 rounded shrink-0" style={{ backgroundColor: prio.bg, color: prio.color }}>{prio.label}</span>}
+                      {!movingAway && lane === "blocked" && <span className="text-[8px] font-bold px-1 rounded shrink-0" style={{ backgroundColor: "#fef3c7", color: "#92400e" }}>BLOCKED</span>}
+                      {!movingAway && lane !== "blocked" && prio && <span className="text-[8px] font-bold px-1 rounded shrink-0" style={{ backgroundColor: prio.bg, color: prio.color }}>{prio.label}</span>}
                     </div>
                     <p className="text-[9px] truncate" style={{ color: "var(--text-muted)" }}>
                       {p ? `${minToTime(sm)} · ${dur}m` : `${fmtTime(i.start)} · ${i.jobType ?? ""}${i.city ? ` · ${i.city}` : ""}`}

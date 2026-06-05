@@ -37,6 +37,13 @@ export interface Job {
   customerName: string;
   customerInitials: string;
   locationName: string;
+  // Dispatch: the Job is the one dispatchable unit. dispatchType is a visual
+  // label/layer (a maintenance visit or sales appointment is still a Job, just
+  // tagged so the board colors it correctly). source* links back to the record
+  // that spawned it (an approved quote, an agreement visit, a follow-up task).
+  dispatchType?: "job" | "sales_appointment" | "agreement_visit" | "task";
+  sourceModule?: "quotes" | "agreements" | "tasks" | "projects";
+  sourceRefId?: string;
 }
 
 export interface ChecklistItem {
@@ -158,6 +165,20 @@ export function updateJob(id: string, patch: Partial<Job>): Job | undefined {
   return getJob(id);
 }
 
+// Permanently remove a job (session record + any override). Used by the
+// "Delete" action — distinct from "Cancel" (a reversible status change).
+export function deleteJob(id: string): void {
+  if (extraJobs().some(j => j.id === id)) {
+    _extraJobs = extraJobs().filter(j => j.id !== id);
+    try { localStorage.setItem(JOBS_KEY, JSON.stringify(_extraJobs)); } catch { /* ignore */ }
+  }
+  if (jobOverrides()[id]) {
+    const all = { ...jobOverrides() }; delete all[id];
+    _jobOverrides = all;
+    try { localStorage.setItem(JOBS_OV_KEY, JSON.stringify(all)); } catch { /* ignore */ }
+  }
+}
+
 export interface NewJobInput {
   companyId: string; locationId: string; serviceAreaId?: string;
   accountId: string; customerName: string; customerInitials: string; locationName: string;
@@ -165,6 +186,7 @@ export interface NewJobInput {
   propertyAddress?: string; estimatedAmount?: string; projectId?: string;
   scheduledDate?: string; scheduledTime?: string; durationMinutes?: number;
   assignedTo?: string; assignedToInitials?: string;
+  dispatchType?: Job["dispatchType"]; sourceModule?: Job["sourceModule"]; sourceRefId?: string;
 }
 
 // Create a job (e.g. converted from a quote). Unscheduled by default — status
@@ -183,6 +205,7 @@ export function createJob(input: NewJobInput): Job {
     assignedTo: input.assignedTo ?? "", assignedToInitials: input.assignedToInitials ?? "",
     estimatedAmount: input.estimatedAmount,
     customerName: input.customerName, customerInitials: input.customerInitials, locationName: input.locationName,
+    dispatchType: input.dispatchType, sourceModule: input.sourceModule, sourceRefId: input.sourceRefId,
   };
   _extraJobs = [job, ...extraJobs()];
   try { localStorage.setItem(JOBS_KEY, JSON.stringify(_extraJobs)); } catch { /* ignore */ }
