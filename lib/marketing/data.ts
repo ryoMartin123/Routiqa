@@ -114,16 +114,7 @@ export const SEED_TEMPLATES: MarketingTemplate[] = [
 ];
 
 // ─── Seed campaigns ───────────────────────────────────────
-export const SEED_CAMPAIGNS: Campaign[] = [
-  { id: "cmp-1", name: "Open Estimate Follow-Up", type: "estimate_followup", channel: "email", audienceKey: "open_estimates", templateId: "tpl-est-fu",
-    status: "active", recipients: 6, createdAt: "May 28, 2026", stats: { delivered: 6, opened: 4, clicked: 2, responded: 1 } },
-  { id: "cmp-2", name: "Spring Maintenance Renewals", type: "maintenance_renewal", channel: "email", audienceKey: "agreement_renewals", templateId: "tpl-renewal",
-    status: "sent", recipients: 12, createdAt: "May 20, 2026", sentAt: "May 21, 2026", stats: { delivered: 12, opened: 9, clicked: 5, responded: 3 } },
-  { id: "cmp-3", name: "Win-Back Lost Leads", type: "email", channel: "email", audienceKey: "lost_leads", templateId: "tpl-winback",
-    status: "draft", recipients: 0, createdAt: "Jun 1, 2026" },
-  { id: "cmp-4", name: "Review Requests — Recent Jobs", type: "review_request", channel: "email", audienceKey: "recent_completed", templateId: "tpl-review",
-    status: "active", recipients: 9, createdAt: "May 30, 2026", stats: { delivered: 9, opened: 7, clicked: 6, responded: 4 } },
-];
+export const SEED_CAMPAIGNS: Campaign[] = [];
 
 // ─── Runtime store ────────────────────────────────────────
 const C_KEY = "crm-extra-campaigns";

@@ -94,9 +94,9 @@ export interface DispatchStore {
 
 export type ScopeLevel = "org" | "company" | "location";
 
-// ─── Mock users (dispatchers + field techs) ───────────────
-export const MOCK_DISPATCHERS = ["Sara Cho", "Kylie Reyes", "Ernest Vaughn", "Marcus Webb"];
-export const MOCK_TECHS = ["J. Patel", "M. Cole", "D. Nguyen", "T. Brooks", "R. Avery", "P. Singh"];
+// ─── Job types (board filter options) ─────────────────────
+// Dispatchers/technicians for boards now come from the user directory
+// (lib/users getDispatcherNames / getTechnicianNames). Job types stay here.
 export const MOCK_JOB_TYPES = ["Service", "Repair", "Installation", "Maintenance", "Inspection", "Estimate"];
 
 export const BOARD_TYPE_LABELS: Record<BoardType, string> = {
@@ -131,16 +131,11 @@ export function defaultDispatchSettings(): DispatchSettings {
   };
 }
 
-// Seed boards — Northstar HVAC (Augusta + Evans) and Northstar Roofing (Columbia).
+// Boards are created per location in Settings → Calendar / Dispatch. None are
+// seeded by default — a fresh org starts with no boards (the page falls back to
+// the built-in "All Boards" view).
 function defaultBoards(): DispatchBoard[] {
-  return [
-    { id: "brd-aug-service", name: "Service Board",     companyId: "co_hvac",    locationId: "loc_augusta",  boardType: "service",     dispatchers: ["Sara Cho"],      techNames: ["M. Cole", "T. Brooks"], jobTypes: ["Service", "Repair", "Maintenance"], serviceAreaIds: [], active: true, isDefault: true },
-    { id: "brd-aug-install", name: "Install Board",     companyId: "co_hvac",    locationId: "loc_augusta",  boardType: "install",     dispatchers: ["Kylie Reyes"],   techNames: ["J. Patel", "D. Nguyen"], jobTypes: ["Installation"],                     serviceAreaIds: [], active: true, isDefault: false },
-    { id: "brd-aug-maint",   name: "Maintenance Board", companyId: "co_hvac",    locationId: "loc_augusta",  boardType: "maintenance", dispatchers: ["Sara Cho"],      techNames: ["R. Avery"],              jobTypes: ["Maintenance", "Inspection"],        serviceAreaIds: [], active: true, isDefault: false },
-    { id: "brd-aug-comm",    name: "Commercial Board",  companyId: "co_hvac",    locationId: "loc_augusta",  boardType: "commercial",  dispatchers: ["Ernest Vaughn"], techNames: ["D. Nguyen", "R. Avery"], jobTypes: ["Service", "Inspection"],            serviceAreaIds: [], active: true, isDefault: false },
-    { id: "brd-evans-service", name: "Service Board",   companyId: "co_hvac",    locationId: "loc_evans",    boardType: "service",     dispatchers: ["Kylie Reyes"],   techNames: ["M. Cole"],               jobTypes: ["Service", "Repair"],                serviceAreaIds: [], active: true, isDefault: true },
-    { id: "brd-col-inspect", name: "Inspection Board",  companyId: "co_roofing", locationId: "loc_columbia", boardType: "service",     dispatchers: ["Marcus Webb"],   techNames: ["T. Brooks"],             jobTypes: ["Inspection", "Repair"],             serviceAreaIds: [], active: true, isDefault: true },
-  ];
+  return [];
 }
 
 function defaultStore(): DispatchStore {

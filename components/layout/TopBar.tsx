@@ -1,6 +1,7 @@
 import { Search, Bell, ChevronUp } from "lucide-react";
 import HierarchySelector from "@/components/layout/HierarchySelector";
 import GlobalCreateMenu from "@/components/layout/GlobalCreateMenu";
+import ViewAsMenu from "@/components/layout/ViewAsMenu";
 
 export default function TopBar({ onHide }: { onHide?: () => void }) {
   return (
@@ -39,6 +40,7 @@ export default function TopBar({ onHide }: { onHide?: () => void }) {
       </div>
 
       <div className="flex items-center gap-2 shrink-0">
+        <ViewAsMenu />
         <button
           className="relative p-2 rounded-lg transition-colors"
           style={{ color: "var(--text-secondary)" }}

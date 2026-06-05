@@ -49,56 +49,7 @@ const QUICK_REPLIES = [
 ];
 
 // ─── Mock data ────────────────────────────────────────────
-const SEED: Conversation[] = [
-  {
-    id: 1, name: "K. Brennan", preview: "Sounds good, see you at 3:30", time: "2m",
-    job: "Job #2231", type: "sms", unread: false,
-    contact: { name: "K. Brennan", phone: "(303) 555-0142", email: "kbrennan@email.com" },
-    activeJob: { title: "Water heater install", time: "Today · 3:30 PM", tech: "J. Patel" },
-    messages: [
-      { id: 1, from: "customer", text: "Hey — what time again for the water heater?", time: "2:14 PM" },
-      { id: 2, from: "us", text: "We've got you booked for 3:30 today. J. Patel is the tech.", time: "2:18 PM" },
-      { id: 3, from: "customer", text: "Sounds good, see you at 3:30", time: "2:21 PM" },
-    ],
-  },
-  {
-    id: 2, name: "Hammond LLC", preview: "Re: Invoice 1042 — can we split?", time: "18m",
-    job: "Job #2218", type: "email", unread: true,
-    contact: { name: "Hammond LLC", phone: "(706) 442-8800", email: "ap@hammondllc.com" },
-    activeJob: { title: "Roof inspection", time: "May 28 · 10:00 AM", tech: "D. Nguyen" },
-    messages: [
-      { id: 1, from: "customer", text: "Hey, regarding Invoice 1042 — is it possible to split the payment into two installments?", time: "9:42 AM" },
-    ],
-  },
-  {
-    id: 3, name: "T. Okafor", preview: "Confirming tomorrow's estimate", time: "1h",
-    job: "Lead", type: "sms", unread: false,
-    contact: { name: "T. Okafor", phone: "(803) 391-4422" },
-    activeJob: null,
-    messages: [
-      { id: 1, from: "customer", text: "Confirming tomorrow's estimate for the roof damage?", time: "1:10 PM" },
-    ],
-  },
-  {
-    id: 4, name: "Lakeside Apts", preview: "Missed call · 45s voicemail", time: "3h",
-    job: "Job #2228", type: "call", unread: true, missed: true,
-    contact: { name: "Lakeside Apts", phone: "(706) 555-2200" },
-    activeJob: { title: "Drain cleaning", time: "Today · 10:30 AM", tech: "M. Cole" },
-    messages: [
-      { id: 1, from: "customer", text: "Missed call · 45s voicemail left", time: "11:14 AM" },
-    ],
-  },
-  {
-    id: 5, name: "Alvarez Residence", preview: "Thanks for the quick fix!", time: "1d",
-    job: "Job #2230", type: "sms", unread: false,
-    contact: { name: "Alvarez Residence", phone: "(803) 229-1183", email: "alvarez@email.com" },
-    activeJob: { title: "HVAC tune-up", time: "Yesterday · 8:00 AM", tech: "J. Patel" },
-    messages: [
-      { id: 1, from: "us", text: "All done with the tune-up — system's running great. Invoice on its way.", time: "Yesterday" },
-      { id: 2, from: "customer", text: "Thanks for the quick fix!", time: "Yesterday" },
-    ],
-  },
-];
+const SEED: Conversation[] = [];
 
 // ─── Helpers ──────────────────────────────────────────────
 function initials(name: string): string {
@@ -259,7 +210,17 @@ export default function InboxPage() {
 
       {/* ── Center: chat ──────────────────────────────────── */}
       <section className="flex-1 flex flex-col min-w-0" style={{ backgroundColor: "var(--bg-surface)" }}>
-        {selected && (
+        {!selected ? (
+          <div className="flex-1 flex flex-col items-center justify-center gap-3 px-6 text-center">
+            <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ backgroundColor: "var(--bg-surface-2)" }}>
+              <MessageSquare className="w-5 h-5" style={{ color: "var(--text-muted)" }} />
+            </div>
+            <div>
+              <p className="text-sm font-medium" style={{ color: "var(--text-secondary)" }}>No conversations yet</p>
+              <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>Incoming SMS, email, and calls will appear here.</p>
+            </div>
+          </div>
+        ) : (
           <>
             {/* Chat header */}
             <header className="flex items-center justify-between gap-3 px-5 py-3 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface)" }}>

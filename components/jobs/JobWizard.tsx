@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { X, Briefcase } from "lucide-react";
 import UiSelect from "@/components/ui/Select";
 import DatePicker from "@/components/ui/DatePicker";
@@ -43,7 +43,9 @@ export default function JobWizard({ preset, onClose, onCreated }: {
   onCreated: (id: string) => void;
 }) {
   const customers = getAllCustomers();
-  const roster = getTechRoster();
+  // Roster is derived from the user directory (localStorage) — load client-side.
+  const [roster, setRoster] = useState<ReturnType<typeof getTechRoster>>([]);
+  useEffect(() => { setRoster(getTechRoster()); }, []);
 
   const [customerId, setCustomerId] = useState(preset?.customerId ?? customers[0]?.id ?? "");
   const [propertyId, setPropertyId] = useState("");

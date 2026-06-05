@@ -36,6 +36,7 @@ const TaxesFeesSection          = dynamic(() => import("@/components/settings/Ta
 const AgreementsSettingsSection = dynamic(() => import("@/components/settings/AgreementsSettingsSection"), { loading: SectionLoading, ssr: false });
 const ProposalBuilderSection    = dynamic(() => import("@/components/settings/ProposalBuilderSection"),    { loading: SectionLoading, ssr: false });
 const MarketingSettingsSection  = dynamic(() => import("@/components/settings/MarketingSettingsSection"),  { loading: SectionLoading, ssr: false });
+const UsersSection              = dynamic(() => import("@/components/settings/UsersSection"),              { loading: SectionLoading, ssr: false });
 import { serviceAreas } from "@/lib/hierarchy/data";
 import { AddCompanyModal, AddLocationModal } from "@/components/hierarchy/HierarchyModals";
 import type { HierarchyMode } from "@/lib/hierarchy/types";
@@ -811,8 +812,7 @@ export default function SettingsPage() {
       case "custom_fields":      return <CustomFieldsSection />;
       case "work_orders":    return <WorkOrderTemplatesSection />;
       case "agreements":     return <AgreementsSettingsSection />;
-      case "users":          return <ComingSoon label="Users & Roles" phase="Phase 1"
-        features={["Invite team members","Role-based access","Access grants per company/location","User profile management"]} />;
+      case "users":          return <UsersSection />;
       case "security":       return <ComingSoon label="Security" phase="Phase 1"
         features={["Two-factor authentication","Session management","Audit log","Password policies"]} />;
       case "marketing":      return <MarketingSettingsSection />;

@@ -27,67 +27,69 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useHierarchy } from "@/components/providers/HierarchyProvider";
+import { usePermissions } from "@/components/providers/PermissionProvider";
+import type { Resource } from "@/lib/roles/types";
 
-type NavItem = { name: string; href: string; icon: typeof LayoutDashboard };
+type NavItem = { name: string; href: string; icon: typeof LayoutDashboard; resource?: Resource };
 
 // Quick-access shortcuts shown above the groups — always visible.
 const PINNED: NavItem[] = [
-  { name: "Dashboard",   href: "/dashboard",   icon: LayoutDashboard },
-  { name: "Dispatching", href: "/dispatching", icon: Truck },
-  { name: "Customers",   href: "/customers",   icon: Users },
-  { name: "Jobs",        href: "/jobs",        icon: Briefcase },
+  { name: "Dashboard",   href: "/dashboard",   icon: LayoutDashboard, resource: "dashboard" },
+  { name: "Dispatching", href: "/dispatching", icon: Truck,           resource: "calendar"  },
+  { name: "Customers",   href: "/customers",   icon: Users,           resource: "customers" },
+  { name: "Jobs",        href: "/jobs",        icon: Briefcase,       resource: "jobs"      },
 ];
 
 const navigation: { section: string; items: NavItem[] }[] = [
   {
     section: "Work",
     items: [
-      { name: "Dashboard",   href: "/dashboard",   icon: LayoutDashboard },
-      { name: "Inbox",       href: "/inbox",       icon: Inbox },
-      { name: "Dispatching", href: "/dispatching", icon: Truck },
-      { name: "Tasks",       href: "/tasks",       icon: CheckSquare },
+      { name: "Dashboard",   href: "/dashboard",   icon: LayoutDashboard, resource: "dashboard"      },
+      { name: "Inbox",       href: "/inbox",       icon: Inbox,           resource: "communications" },
+      { name: "Dispatching", href: "/dispatching", icon: Truck,           resource: "calendar"       },
+      { name: "Tasks",       href: "/tasks",       icon: CheckSquare,     resource: "tasks"          },
     ],
   },
   {
     section: "Sales",
     items: [
-      { name: "Leads",            href: "/leads",  icon: TrendingUp },
-      { name: "Quotes",           href: "/quotes", icon: FilePen },
-      { name: "Items & Services", href: "/items",  icon: Package },
+      { name: "Leads",            href: "/leads",  icon: TrendingUp, resource: "leads"  },
+      { name: "Quotes",           href: "/quotes", icon: FilePen,    resource: "quotes" },
+      { name: "Items & Services", href: "/items",  icon: Package,    resource: "items"  },
     ],
   },
   {
     section: "Operations",
     items: [
-      { name: "Jobs",        href: "/jobs",        icon: Briefcase },
-      { name: "Work Orders", href: "/work-orders", icon: ClipboardList },
-      { name: "Projects",    href: "/projects",    icon: FolderKanban },
-      { name: "Agreements",  href: "/agreements",  icon: FileText },
+      { name: "Jobs",        href: "/jobs",        icon: Briefcase,     resource: "jobs"       },
+      { name: "Work Orders", href: "/work-orders", icon: ClipboardList, resource: "jobs"       },
+      { name: "Projects",    href: "/projects",    icon: FolderKanban,  resource: "projects"   },
+      { name: "Agreements",  href: "/agreements",  icon: FileText,      resource: "agreements" },
     ],
   },
   {
     section: "Customers",
     items: [
-      { name: "Customers",      href: "/customers", icon: Users },
-      { name: "Photos & Files", href: "/files",     icon: Images },
+      { name: "Customers",      href: "/customers", icon: Users,  resource: "customers" },
+      { name: "Photos & Files", href: "/files",     icon: Images, resource: "files"     },
     ],
   },
   {
     section: "Financial",
     items: [
-      { name: "Invoices", href: "/invoices", icon: Receipt },
+      { name: "Invoices", href: "/invoices", icon: Receipt, resource: "invoices" },
     ],
   },
   {
     section: "Grow",
     items: [
-      { name: "Marketing", href: "/marketing", icon: Megaphone },
-      { name: "Reports",   href: "/reports",   icon: BarChart2 },
+      { name: "Marketing", href: "/marketing", icon: Megaphone, resource: "marketing" },
+      { name: "Reports",   href: "/reports",   icon: BarChart2, resource: "reports"   },
     ],
   },
 ];
 
-const SETTINGS_ITEM: NavItem = { name: "Settings", href: "/settings", icon: Settings };
+const SETTINGS_ITEM: NavItem = { name: "Settings", href: "/settings", icon: Settings, resource: "settings" };
 
 // Groups expanded by default; the rest start collapsed and the user's choice
 // persists. The group holding the active route is always forced open.
@@ -97,6 +99,14 @@ const STORE_KEY = "crm-sidebar-groups";
 export default function Sidebar() {
   const pathname = usePathname();
   const { organization, activeScopeLabel, userName, userInitials, userRole } = useHierarchy();
+  const { can } = usePermissions();
+
+  // A nav item is visible when the acting user can view its resource.
+  const canSee = (item: NavItem) => !item.resource || can(item.resource, "view");
+  const visiblePinned = PINNED.filter(canSee);
+  const visibleGroups = navigation
+    .map(g => ({ ...g, items: g.items.filter(canSee) }))
+    .filter(g => g.items.length > 0);
 
   const [open, setOpen] = useState<Record<string, boolean>>(DEFAULT_OPEN);
   useEffect(() => {
@@ -176,21 +186,23 @@ export default function Sidebar() {
 
       {/* Nav */}
       <nav className="flex-1 overflow-y-auto thin-scroll-y py-3 px-2">
-        {/* Pinned shortcuts — always visible */}
+        {/* Pinned shortcuts */}
+        {visiblePinned.length > 0 && (
         <div className="mb-4">
           <p className="text-[10px] font-semibold uppercase tracking-widest px-2 mb-1" style={{ color: "var(--sidebar-section-label)" }}>
             Pinned
           </p>
-          {PINNED.map(item => (
+          {visiblePinned.map(item => (
             <NavRow key={item.name} item={item}
               active={isItemActive(item.href) && placeFor(item.href) === "pinned"}
               onSelect={() => go(item.href, "pinned")} />
           ))}
         </div>
+        )}
 
         {/* Collapsible groups — a pinned page highlights here only when its
             in-group copy was the one clicked (placeFor === this section). */}
-        {navigation.map(group => {
+        {visibleGroups.map(group => {
           const itemActiveHere = (href: string) =>
             isItemActive(href) && (!pinnedHrefs.has(href) || placeFor(href) === group.section);
           const hasActive = group.items.some(i => itemActiveHere(i.href));
@@ -223,9 +235,11 @@ export default function Sidebar() {
       </nav>
 
       {/* Settings — pinned at the bottom for quick access */}
+      {canSee(SETTINGS_ITEM) && (
       <div className="px-2 py-2" style={{ borderTop: "1px solid var(--sidebar-border)" }}>
         <NavRow item={SETTINGS_ITEM} active={isItemActive(SETTINGS_ITEM.href)} onSelect={() => go(SETTINGS_ITEM.href, "group")} />
       </div>
+      )}
 
       {/* User */}
       <div className="px-3 py-3" style={{ borderTop: "1px solid var(--sidebar-border)" }}>

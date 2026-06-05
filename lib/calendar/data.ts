@@ -6,6 +6,7 @@ import { ALL_TASKS } from "@/lib/tasks/data";
 import { getAllAgreements } from "@/lib/agreements/data";
 import { ALL_PROJECTS } from "@/lib/projects/data";
 import { getAllQuotes } from "@/lib/quotes/data";
+import { getTechnicianUsers } from "@/lib/users/data";
 import { locations as HIER_LOCATIONS } from "@/lib/hierarchy/data";
 import {
   LAYER_CONFIG, type CalendarItem, type CalendarItemType, type UnscheduledItem,
@@ -187,25 +188,6 @@ export function getUnscheduledItems(scope: CalendarScope): UnscheduledItem[] {
     });
   }
 
-  // Synthetic field-work waiting on dispatch (callbacks / reschedules)
-  const synthetic: UnscheduledItem[] = [
-    {
-      id: "uq-callback-1", type: "job", sourceType: "job", title: "Callback: AC not cooling",
-      reason: "Needs tech assigned", status: "needs_scheduling", companyId: "co_hvac", locationId: "loc_augusta",
-      customerName: "Alvarez Residence", city: "Augusta", address: "1840 Peach Orchard Rd, Augusta, GA",
-      sourceId: "7", sourceModule: "jobs", color: LAYER_CONFIG.job.color,
-      priority: "urgent", durationMinutes: 120, jobType: "Repair", preferredDate: "ASAP",
-    },
-    {
-      id: "uq-reschedule-1", type: "job", sourceType: "job", title: "Reschedule: Water heater install",
-      reason: "Waiting for customer confirmation", status: "waiting_on_customer", companyId: "co_hvac", locationId: "loc_augusta",
-      customerName: "K. Brennan", city: "Augusta", address: "27 Maple Ct, Augusta, GA",
-      sourceId: "3", sourceModule: "jobs", color: LAYER_CONFIG.job.color,
-      priority: "normal", durationMinutes: 120, jobType: "Installation",
-    },
-  ];
-  for (const s of synthetic) if (inScope(s, scope)) out.push(s);
-
   // Open "schedule"/"call" tasks needing an appointment
   for (const t of ALL_TASKS) {
     if (t.status === "completed") continue;
@@ -292,20 +274,16 @@ export function getTechnicians(items: CalendarItem[]): string[] {
 }
 
 // ─── Technician roster (dispatch rows) ────────────────────
-// Mock field-tech roster with daily status. Includes the techs referenced by
-// jobs plus a couple extra to show status variety. Replace with a users query.
+// Derived from the user directory: active users holding a Technician role. Daily
+// dispatch status isn't modeled on the user yet, so everyone shows "available".
+// NOTE: reads the (localStorage-backed) user store, so callers must load this
+// client-side via effect — not during SSR render — to avoid hydration mismatch.
 export interface TechRosterEntry { name: string; initials: string; status: TechStatusKind }
 
-export const TECH_ROSTER: TechRosterEntry[] = [
-  { name: "J. Patel",  initials: "JP", status: "on_job" },
-  { name: "M. Cole",   initials: "MC", status: "available" },
-  { name: "D. Nguyen", initials: "DN", status: "on_call" },
-  { name: "T. Brooks", initials: "TB", status: "late_shift" },
-  { name: "R. Avery",  initials: "RA", status: "off_today" },
-];
-
 export function getTechRoster(): TechRosterEntry[] {
-  return TECH_ROSTER;
+  return getTechnicianUsers().map(u => ({
+    name: u.fullName, initials: u.initials, status: "available" as const,
+  }));
 }
 
 // ─── Dispatch boards / teams ──────────────────────────────
@@ -319,12 +297,7 @@ export interface DispatchBoardDef {
   techNames: string[];   // empty = all technicians
 }
 
-export const DISPATCH_BOARDS: DispatchBoardDef[] = [
-  { id: "all",        name: "All Boards" ,    techNames: [] },
-  { id: "service",    name: "Service Board",    dispatcher: "Sara",   techNames: ["M. Cole", "T. Brooks"] },
-  { id: "install",    name: "Install Board",    dispatcher: "Kylie",  techNames: ["J. Patel", "D. Nguyen"] },
-  { id: "commercial", name: "Commercial Board", dispatcher: "Ernest", techNames: ["D. Nguyen", "R. Avery"] },
-];
+export const DISPATCH_BOARDS: DispatchBoardDef[] = [];
 
 export function getDispatchBoards(): DispatchBoardDef[] {
   return DISPATCH_BOARDS;

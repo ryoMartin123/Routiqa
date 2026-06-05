@@ -6,10 +6,11 @@ import {
   Star, CalendarDays, Clock, LayoutGrid, Users, Layers, Building2, MapPin, Inbox,
 } from "lucide-react";
 import UiSelect from "@/components/ui/Select";
+import { getDispatcherNames, getTechnicianNames } from "@/lib/users/data";
 import {
   getStore, saveStore, resetStore, scopeKeyOf, resolveFromStore, resolveParent,
   defaultDispatchSettings, formatHour, newBlockId, newBoardId,
-  MOCK_DISPATCHERS, MOCK_TECHS, MOCK_JOB_TYPES, BOARD_TYPE_LABELS, LAYER_LABEL,
+  MOCK_JOB_TYPES, BOARD_TYPE_LABELS, LAYER_LABEL,
   type DispatchStore, type ScopedDispatchConfig, type DispatchSettings,
   type SettingsServiceBlock, type DispatchBoard, type BoardType,
   type ScopeLevel, type DispatchSection,
@@ -723,8 +724,8 @@ function BoardEditor({ board, onPatch, onToggleMember, onDone }: {
             options={[{ value: "inherit", label: "Inherit" }, { value: "dispatch", label: "Dispatch Board" }, { value: "day", label: "Day" }, { value: "week", label: "Week" }, { value: "month", label: "Month" }]} />
         </div>
       </div>
-      <div><FieldLabel>Dispatchers</FieldLabel><ChipMulti all={MOCK_DISPATCHERS} selected={board.dispatchers} onToggle={v => onToggleMember("dispatchers", v)} /></div>
-      <div><FieldLabel>Technicians / Crews</FieldLabel><ChipMulti all={MOCK_TECHS} selected={board.techNames} onToggle={v => onToggleMember("techNames", v)} /></div>
+      <div><FieldLabel>Dispatchers</FieldLabel><ChipMulti all={getDispatcherNames()} selected={board.dispatchers} onToggle={v => onToggleMember("dispatchers", v)} /></div>
+      <div><FieldLabel>Technicians / Crews</FieldLabel><ChipMulti all={getTechnicianNames()} selected={board.techNames} onToggle={v => onToggleMember("techNames", v)} /></div>
       <div><FieldLabel>Job Types</FieldLabel><ChipMulti all={MOCK_JOB_TYPES} selected={board.jobTypes} onToggle={v => onToggleMember("jobTypes", v)} /></div>
       {areaOptions.length > 0 && (
         <div><FieldLabel>Service Areas (optional)</FieldLabel><ChipMulti all={areaOptions.map(a => a.name)}

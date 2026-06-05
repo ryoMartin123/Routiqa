@@ -10,6 +10,7 @@ import { ALL_JOBS, getSessionJobs, resolveJobStatus, type Job, type JobType } fr
 import { ALL_PROJECTS, getSessionProjects, PROJECT_STATUS_CONFIG, getProjectProgress, type Project, type ProjectStatus } from "@/lib/projects/data";
 import { getJobStatuses } from "@/lib/job-config/data";
 import { useHierarchy } from "@/components/providers/HierarchyProvider";
+import { usePermissions } from "@/components/providers/PermissionProvider";
 import ModuleSummaryCards, { type SummaryCard } from "@/components/shared/ModuleSummaryCards";
 import ModuleViewToggle, { type ModuleView } from "@/components/shared/ModuleViewToggle";
 import StatusTabs from "@/components/shared/StatusTabs";
@@ -93,6 +94,14 @@ function ProjectsInline({ projects, companyId, locationId }: { projects: Project
 // ─── Page ─────────────────────────────────────────────────
 export default function JobsPage() {
   const { effectiveCompanyId, effectiveLocationId } = useHierarchy();
+  const { can, accessLevel, fieldVisible, me } = usePermissions();
+
+  // Scope: managers/admins see all jobs in context; techs see only their own.
+  const jobsLevel = accessLevel("jobs", "view");
+  const canCreateJob = can("jobs", "create");
+  // Mask financial figures (job amount) unless the role may see totals.
+  const showAmount = fieldVisible("finance_totals");
+  const gridCols = showAmount ? "2.5fr 1fr 1fr 1.5fr 1fr 1fr" : "2.5fr 1fr 1fr 1.5fr 1fr";
 
   const router = useRouter();
   const [showCreate, setShowCreate] = useState(false);
@@ -116,10 +125,11 @@ export default function JobsPage() {
 
   const isProjects = tab === "projects";
 
-  // Context filter
+  // Context filter + permission scope (all vs. own-assigned vs. none)
   const contextFiltered = allJobs
     .filter(j => !effectiveCompanyId  || j.companyId  === effectiveCompanyId)
-    .filter(j => !effectiveLocationId || j.locationId === effectiveLocationId);
+    .filter(j => !effectiveLocationId || j.locationId === effectiveLocationId)
+    .filter(j => jobsLevel === "all" ? true : jobsLevel === "own" ? j.assignedTo === me : false);
 
   // Summary metrics — respect the active context
   const summaryCards: SummaryCard[] = [
@@ -166,9 +176,11 @@ export default function JobsPage() {
         </div>
         <ModuleViewToggle view={moduleView} onChange={setModuleView} />
         <div className="flex-1 flex justify-end">
-          <button onClick={() => setShowCreate(true)} className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-3 py-2 rounded-lg transition-colors">
-            <Plus className="w-4 h-4" /> New Job
-          </button>
+          {canCreateJob && (
+            <button onClick={() => setShowCreate(true)} className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-3 py-2 rounded-lg transition-colors">
+              <Plus className="w-4 h-4" /> New Job
+            </button>
+          )}
         </div>
       </div>
 
@@ -215,15 +227,15 @@ export default function JobsPage() {
           <>
             {/* Column headers */}
             <div className="grid px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider select-none"
-              style={{ gridTemplateColumns: "2.5fr 1fr 1fr 1.5fr 1fr 1fr", color: "var(--text-muted)", borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+              style={{ gridTemplateColumns: gridCols, color: "var(--text-muted)", borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
               {([
                 { label: "Job / Customer",  field: "customerName"  },
                 { label: "Type",            field: "type"          },
                 { label: "Status",          field: "status"        },
                 { label: "Scheduled",       field: "scheduledDate" },
                 { label: "Tech",            field: "assignedTo"    },
-                { label: "Amount",          field: null            },
-              ] as const).map(({ label, field }) => (
+                ...(showAmount ? [{ label: "Amount", field: null }] : []),
+              ] as { label: string; field: string | null }[]).map(({ label, field }) => (
                 <button key={label} onClick={() => field && handleSort(field as SortField)}
                   className={cn("flex items-center gap-1 text-left", field ? "cursor-pointer hover:opacity-80" : "cursor-default")}
                   style={{ color: sortField === field ? "#4f46e5" : "var(--text-muted)" }}>
@@ -241,7 +253,7 @@ export default function JobsPage() {
                 return (
                   <Link key={job.id} href={`/jobs/${job.id}`}
                     className="grid px-4 py-3 items-center hover:bg-[var(--bg-surface-2)] transition-colors"
-                    style={{ gridTemplateColumns: "2.5fr 1fr 1fr 1.5fr 1fr 1fr", borderBottom: i < displayed.length - 1 ? "1px solid var(--border-subtle)" : "none", textDecoration: "none" }}>
+                    style={{ gridTemplateColumns: gridCols, borderBottom: i < displayed.length - 1 ? "1px solid var(--border-subtle)" : "none", textDecoration: "none" }}>
                     {/* Job / Customer */}
                     <div className="flex items-center gap-2.5 min-w-0">
                       <div className="w-7 h-7 rounded-full bg-indigo-100 flex items-center justify-center text-[10px] font-bold text-indigo-600 shrink-0">{job.customerInitials}</div>
@@ -267,10 +279,12 @@ export default function JobsPage() {
                       <div className="w-5 h-5 rounded-full bg-indigo-600 flex items-center justify-center text-[8px] font-bold text-white shrink-0">{job.assignedToInitials}</div>
                       <span className="text-sm truncate" style={{ color: "var(--text-secondary)" }}>{job.assignedTo}</span>
                     </div>
-                    {/* Amount */}
-                    <span className="text-sm font-medium" style={{ color: job.actualAmount ? "#10b981" : "var(--text-secondary)" }}>
-                      {job.actualAmount ?? job.estimatedAmount ?? "—"}
-                    </span>
+                    {/* Amount — hidden for roles without financial-totals access */}
+                    {showAmount && (
+                      <span className="text-sm font-medium" style={{ color: job.actualAmount ? "#10b981" : "var(--text-secondary)" }}>
+                        {job.actualAmount ?? job.estimatedAmount ?? "—"}
+                      </span>
+                    )}
                   </Link>
                 );
               })}

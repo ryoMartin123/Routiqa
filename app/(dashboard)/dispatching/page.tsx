@@ -11,7 +11,7 @@ import CalendarItemDrawer from "@/components/calendar/CalendarItemDrawer";
 import ScheduleConfirmModal, { type ScheduleDraft } from "@/components/calendar/ScheduleConfirmModal";
 import Select from "@/components/ui/Select";
 import {
-  getCalendarItems, getUnscheduledItems, getUnscheduledJobs, getSessionCalendarItems, getTechnicians, getTechRoster, type CalendarScope,
+  getCalendarItems, getUnscheduledItems, getUnscheduledJobs, getSessionCalendarItems, getTechnicians, getTechRoster, type CalendarScope, type TechRosterEntry,
 } from "@/lib/calendar/data";
 import {
   LAYER_CONFIG, CALENDAR_LAYERS, PRIORITY_CONFIG, TECH_STATUS_CONFIG, HOUR_PX,
@@ -87,10 +87,14 @@ export default function CalendarPage() {
   // the board/calendar (scheduled) without a hydration gap.
   const [sessionUnscheduled, setSessionUnscheduled] = useState<UnscheduledItem[]>([]);
   const [sessionItems, setSessionItems] = useState<CalendarItem[]>([]);
+  // Technician roster is derived from the user directory (localStorage-backed),
+  // so load it client-side here rather than during render.
+  const [roster, setRoster] = useState<TechRosterEntry[]>([]);
   useEffect(() => {
     const s: CalendarScope = { companyId: effectiveCompanyId, locationId: effectiveLocationId, serviceAreaId: effectiveServiceAreaId };
     setSessionUnscheduled(getUnscheduledJobs(s));
     setSessionItems(getSessionCalendarItems(s));
+    setRoster(getTechRoster());
   }, [effectiveCompanyId, effectiveLocationId, effectiveServiceAreaId]);
 
   // Selection (drawer)
@@ -131,7 +135,6 @@ export default function CalendarPage() {
   const rawItems    = useMemo(() => getCalendarItems(scope), [effectiveCompanyId, effectiveLocationId, effectiveServiceAreaId]);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const allUnscheduled = useMemo(() => getUnscheduledItems(scope), [effectiveCompanyId, effectiveLocationId, effectiveServiceAreaId]);
-  const roster      = getTechRoster();
   const technicians = useMemo(() => Array.from(new Set([...roster.map(r => r.name), ...getTechnicians(rawItems)])), [rawItems, roster]);
 
   // Dispatch board / team selector — boards belong to a company + location and
