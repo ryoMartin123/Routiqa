@@ -137,6 +137,40 @@ body {
   font-family: var(--font-family-sans);
 }
 
+/* ─── Glossy selectable pill ──────────────────────────────────────────
+   Segmented "tab"-style selection buttons (data source, calculation,
+   visualization, etc.). The active state is a raised, glassy chip — a soft
+   vertical indigo gradient with a top sheen highlight and a subtle drop
+   shadow — instead of a flat solid fill. Toggle with data-active="true". */
+.glossy-pill {
+  border-radius: 8px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface-2);
+  color: var(--text-secondary);
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+.glossy-pill:hover {
+  border-color: var(--border);
+  color: var(--text-primary);
+}
+.glossy-pill[data-active="true"] {
+  border-color: var(--accent-soft-border);
+  color: var(--accent-text-strong);
+  background: linear-gradient(180deg, var(--accent-soft-bg) 0%, var(--accent-soft-2-bg) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),   /* top sheen — the gloss */
+    0 1px 2px rgba(79, 70, 229, 0.15);        /* soft lift */
+}
+.glossy-pill[data-active="true"]:hover {
+  color: var(--accent-text-strong);
+}
+/* Dark mode: dim the white sheen so it reads as a soft glass edge, not a glare. */
+[data-theme="dark"] .glossy-pill[data-active="true"] {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    0 1px 2px rgba(0, 0, 0, 0.45);
+}
+
 /* ─── react-grid-layout — drag, drop, resize ─────────────────────── */
 
 /* Drop placeholder — ghost of where item will land */

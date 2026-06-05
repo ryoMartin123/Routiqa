@@ -52,16 +52,11 @@ function Step({ n, icon: Icon, title, desc, children }: {
   );
 }
 
-// Pill toggle button
+// Pill toggle button — glossy "tab" style (see .glossy-pill in globals.css)
 function Pill({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
-    <button onClick={onClick}
-      className="text-xs px-2.5 py-1.5 rounded-lg transition-colors"
-      style={{
-        backgroundColor: active ? "#4f46e5" : "var(--bg-surface-2)",
-        color:           active ? "#fff" : "var(--text-secondary)",
-        border:          active ? "1px solid #4f46e5" : "1px solid var(--border-subtle)",
-      }}>
+    <button onClick={onClick} data-active={active}
+      className="glossy-pill text-xs font-medium px-2.5 py-1.5">
       {children}
     </button>
   );
