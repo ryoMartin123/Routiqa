@@ -8,6 +8,7 @@ import {
   MessageSquare, CheckSquare, Briefcase, FolderKanban,
   TrendingUp, AlertCircle,
 } from "lucide-react";
+import StatusBadge from "@/components/shared/StatusBadge";
 import {
   getLead, getLeadNotes, getLeadTasks,
   LEAD_STAGE_CONFIG, LEAD_SOURCE_LABELS,
@@ -599,7 +600,7 @@ function LeadQuotesTab({ id }: { id: string }) {
               <p className="text-sm font-mono font-medium" style={{ color: "var(--text-primary)" }}>{q.quoteNumber}</p>
               <p className="text-xs mt-0.5 truncate" style={{ color: "var(--text-muted)" }}>{q.title}</p>
             </div>
-            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0" style={{ backgroundColor: s.bg, color: s.color }}>{s.label}</span>
+            <StatusBadge label={s.label} color={s.color} className="shrink-0" />
             <span className="text-sm font-semibold shrink-0" style={{ color: "var(--text-primary)" }}>{q.total > 0 ? fmtCurrency(q.total) : "TBD"}</span>
           </Link>
         );

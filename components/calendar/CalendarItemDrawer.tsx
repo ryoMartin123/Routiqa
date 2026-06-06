@@ -6,6 +6,7 @@ import {
   CalendarClock, User, Tag, AlertTriangle, FileText,
 } from "lucide-react";
 import Select from "@/components/ui/Select";
+import StatusBadge from "@/components/shared/StatusBadge";
 import { getWorkOrder } from "@/lib/jobs/data";
 import {
   LAYER_CONFIG, PRIORITY_CONFIG, type CalendarItem, type UnscheduledItem,
@@ -60,7 +61,7 @@ export default function CalendarItemDrawer({
         <div className="flex items-start justify-between gap-3 px-5 py-4 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
           <div className="min-w-0">
             <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
-              <span className="inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: cfg.color + "22", color: cfg.color }}>{cfg.label}</span>
+              <StatusBadge label={cfg.label} color={cfg.color} />
               {priority && <span className="inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: PRIORITY_CONFIG[priority].bg, color: PRIORITY_CONFIG[priority].color }}>{PRIORITY_CONFIG[priority].label}</span>}
               {!isScheduled && <span className="inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: "#fef3c7", color: "#92400e" }}>Unscheduled</span>}
             </div>

@@ -269,7 +269,14 @@ export default function LeadsPage() {
 
   // Active pipeline stages from settings (loaded after mount to avoid hydration mismatch).
   const [activeStages, setActiveStages] = useState<PipelineStage[]>([]);
-  useEffect(() => { setActiveStages(getStages().filter(s => s.active)); }, []);
+  // Resolve the pipeline for the active hierarchy scope (Branch override →
+  // Company → Org → default), so the board reflects layered customization.
+  useEffect(() => {
+    setActiveStages(
+      getStages({ companyId: effectiveCompanyId, locationId: effectiveLocationId, serviceAreaId: effectiveServiceAreaId })
+        .filter(s => s.active),
+    );
+  }, [effectiveCompanyId, effectiveLocationId, effectiveServiceAreaId]);
 
   const resolve   = useMemo(() => buildStageResolver(activeStages), [activeStages]);
   const openStages = activeStages.filter(s => s.category === "open");

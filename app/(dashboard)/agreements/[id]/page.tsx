@@ -8,6 +8,7 @@ import {
   CheckCircle, AlertCircle, Circle, ChevronRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import StatusBadge from "@/components/shared/StatusBadge";
 import {
   AGREEMENTS, TEMPLATES, formatValue, getAgreement,
   type AgreementStatus, type VisitStatus, type CustomerAgreement,
@@ -478,12 +479,7 @@ export default function AgreementDetailPage({
                   >
                     {agreement.type}
                   </span>
-                  <span
-                    className="inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full"
-                    style={{ backgroundColor: s.bg, color: s.color }}
-                  >
-                    {s.label}
-                  </span>
+                  <StatusBadge label={s.label} color={s.color} />
                 </div>
                 <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
                   {agreement.location} · {formatValue(agreement)} · {agreement.visitFrequency}

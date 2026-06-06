@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ExternalLink } from "lucide-react";
 import { ALL_JOBS, JOB_STATUS_CONFIG } from "@/lib/jobs/data";
 import { useHierarchy } from "@/components/providers/HierarchyProvider";
+import StatusBadge from "@/components/shared/StatusBadge";
 
 const TODAY = "May 30, 2026";
 
@@ -54,8 +55,7 @@ export default function TodaysJobs() {
                   <p className="text-xs truncate" style={{ color: "var(--text-muted)" }}>{job.title}</p>
                 </div>
                 <span className="text-xs shrink-0" style={{ color: "var(--text-secondary)" }}>{job.assignedTo}</span>
-                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0"
-                  style={{ backgroundColor: s.bg, color: s.color }}>{s.label}</span>
+                <StatusBadge label={s.label} color={s.color} className="shrink-0" />
               </Link>
             );
           })}

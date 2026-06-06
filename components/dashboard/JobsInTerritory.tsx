@@ -5,6 +5,7 @@ import { Briefcase } from "lucide-react";
 import { ALL_JOBS, JOB_STATUS_CONFIG } from "@/lib/jobs/data";
 import { serviceAreas } from "@/lib/hierarchy/data";
 import { useHierarchy } from "@/components/providers/HierarchyProvider";
+import StatusBadge from "@/components/shared/StatusBadge";
 
 const TODAY = "May 30, 2026";
 
@@ -49,8 +50,7 @@ export default function JobsInTerritory() {
                   <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{job.customerName}</p>
                   <p className="text-xs truncate" style={{ color: "var(--text-muted)" }}>{job.title}</p>
                 </div>
-                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0"
-                  style={{ backgroundColor: s.bg, color: s.color }}>{s.label}</span>
+                <StatusBadge label={s.label} color={s.color} className="shrink-0" />
               </Link>
             );
           })}

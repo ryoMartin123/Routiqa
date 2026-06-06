@@ -14,6 +14,7 @@ import { usePermissions } from "@/components/providers/PermissionProvider";
 import ModuleSummaryCards, { type SummaryCard } from "@/components/shared/ModuleSummaryCards";
 import ModuleViewToggle, { type ModuleView } from "@/components/shared/ModuleViewToggle";
 import StatusTabs from "@/components/shared/StatusTabs";
+import StatusBadge from "@/components/shared/StatusBadge";
 
 // Today's date in the same human format jobs store ("Jun 5, 2026"). Computed
 // client-side (see effect below) so it stays in sync with the dispatch board,
@@ -89,7 +90,7 @@ function ProjectsInline({ projects, companyId, locationId }: { projects: Project
               </div>
             </div>
             <span className="text-sm" style={{ color: "var(--text-secondary)" }}>{p.type.charAt(0).toUpperCase() + p.type.slice(1)}</span>
-            <span className="inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: s.bg, color: s.color }}>{s.label}</span>
+            <StatusBadge label={s.label} color={s.color} />
             <span className="text-sm" style={{ color: "var(--text-secondary)" }}>{p.targetDate ?? "—"}</span>
             <div className="flex items-center gap-2">
               <div className="flex-1 h-1.5 rounded-full" style={{ backgroundColor: "var(--bg-input)" }}>
@@ -288,7 +289,7 @@ export default function JobsPage() {
                     {/* Type */}
                     <span className="text-sm capitalize" style={{ color: "var(--text-secondary)" }}>{job.type}</span>
                     {/* Status */}
-                    <span className="inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: s.bg, color: s.color }}>{s.label}</span>
+                    <StatusBadge label={s.label} color={s.color} />
                     {/* Scheduled */}
                     <div>
                       <p className="text-sm" style={{ color: "var(--text-primary)" }}>{job.scheduledDate}</p>

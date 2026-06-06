@@ -1,13 +1,17 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Pencil, ChevronUp, ChevronDown, Trash2, Check, X, RotateCcw } from "lucide-react";
+import { Plus, Pencil, ChevronUp, ChevronDown, Trash2, Check } from "lucide-react";
 import {
-  getStages, saveStages, resetStages, newStageId, slugify,
+  DEFAULT_STAGES, reorderStages, PIPELINE_SETTING_KEY, newStageId, slugify,
   STAGE_CATEGORY_LABELS, STAGE_COLORS,
   type PipelineStage, type StageCategory,
 } from "@/lib/pipelines/data";
 import UiSelect from "@/components/ui/Select";
+import { useScopedSetting } from "@/lib/settings-scope/useScopedSetting";
+import InheritanceChip from "@/components/settings/InheritanceChip";
+
+const sortStages = (s: PipelineStage[]) => [...s].sort((a, b) => a.order - b.order).map(x => ({ ...x }));
 
 const CATEGORIES = Object.keys(STAGE_CATEGORY_LABELS) as StageCategory[];
 
@@ -32,14 +36,22 @@ function Toggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void 
 }
 
 export default function PipelinesSection() {
-  const [stages, setStages] = useState<PipelineStage[]>([]);
+  // Cascading value resolved at the active settings layer (Org/Company/Branch).
+  const scoped = useScopedSetting<PipelineStage[]>(PIPELINE_SETTING_KEY, DEFAULT_STAGES);
+
+  const [stages, setStages] = useState<PipelineStage[]>(() => sortStages(DEFAULT_STAGES));
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState<FormState>({ ...EMPTY_FORM });
   const [saved, setSaved] = useState(false);
   const [dirty, setDirty] = useState(false);
 
-  useEffect(() => { setStages(getStages()); }, []);
+  // Re-seed the draft whenever the resolved value changes (layer switch, save,
+  // override, or reset). Editing the draft is local until "Save Changes".
+  useEffect(() => {
+    setStages(sortStages(scoped.value));
+    setDirty(false); setEditingId(null); setShowAdd(false);
+  }, [scoped.value]);
 
   function markDirty() { setDirty(true); setSaved(false); }
 
@@ -94,15 +106,10 @@ export default function PipelinesSection() {
   }
 
   function handleSave() {
-    saveStages(stages);
-    setStages(getStages());
+    scoped.save(reorderStages(stages));   // writes an override at the active layer
     setDirty(false);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
-  }
-  function handleReset() {
-    setStages(resetStages());
-    setDirty(false);
   }
 
   const sorted = [...stages].sort((a, b) => a.order - b.order);
@@ -179,19 +186,17 @@ export default function PipelinesSection() {
             Manage your lead pipeline stages. These drive the Leads page and pipeline board.
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <button onClick={handleReset}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm transition-colors"
-            style={{ border: "1px solid var(--border)", color: "var(--text-secondary)", backgroundColor: "var(--bg-surface)" }}>
-            <RotateCcw className="w-3.5 h-3.5" /> Reset Defaults
-          </button>
-          <button onClick={handleSave} disabled={!dirty && !saved}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-white transition-colors disabled:opacity-50"
-            style={{ backgroundColor: saved ? "#10b981" : "#4f46e5" }}>
-            <Check className="w-3.5 h-3.5" /> {saved ? "Saved" : "Save Changes"}
-          </button>
-        </div>
+        <button onClick={handleSave} disabled={!dirty && !saved}
+          className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-white transition-colors disabled:opacity-50"
+          style={{ backgroundColor: saved ? "#10b981" : "#4f46e5" }}>
+          <Check className="w-3.5 h-3.5" /> {saved ? "Saved" : "Save Changes"}
+        </button>
       </div>
+
+      {/* Inheritance state for the active layer */}
+      <InheritanceChip
+        source={scoped.source} isOverride={scoped.isOverride} parentSource={scoped.parentSource}
+        onOverride={scoped.override} onReset={scoped.reset} />
 
       {dirty && (
         <div className="rounded-lg px-3 py-2 text-xs" style={{ backgroundColor: "#fef3c7", color: "#92400e" }}>

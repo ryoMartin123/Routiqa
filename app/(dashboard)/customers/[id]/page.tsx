@@ -13,6 +13,7 @@ import {
   Image as ImageIcon, Paperclip, Smartphone, CheckSquare,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import StatusBadge from "@/components/shared/StatusBadge";
 import {
   getCustomer, getContacts, getProperties, getEquipment, getJobs, getLeads, getNotes, getTasks,
   type Contact, type Property, type CustomerType, type CustomerStatus,
@@ -297,7 +298,7 @@ function OverviewTab({ id }: { id: string }) {
                   </div>
                   <div className="flex items-center gap-2 shrink-0 ml-3">
                     {lead.value && <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{lead.value}</span>}
-                    <span className="inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: s.bg, color: s.color }}>{lead.status}</span>
+                    <StatusBadge label={lead.status} color={s.color} />
                   </div>
                 </Row>
               );
@@ -887,7 +888,7 @@ function JobsTab({ id }: { id: string }) {
                 <span className="text-sm" style={{ color: "var(--text-secondary)" }}>{job.date}</span>
                 <span className="text-sm" style={{ color: "var(--text-secondary)" }}>{job.tech}</span>
                 <span className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{job.amount ?? "—"}</span>
-                <span className="inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: s.bg, color: s.color }}>{job.status}</span>
+                <StatusBadge label={job.status} color={s.color} />
               </TableRow>
             );
           })}
@@ -915,7 +916,7 @@ function LeadsTab({ id }: { id: string }) {
             return (
               <TableRow key={lead.id} last={i === leads.length - 1} cols="2fr 1fr 1fr 1fr 1fr">
                 <span className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{lead.title}</span>
-                <span className="inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: s.bg, color: s.color }}>{lead.status}</span>
+                <StatusBadge label={lead.status} color={s.color} />
                 <span className="text-sm" style={{ color: "var(--text-secondary)" }}>{lead.date}</span>
                 <span className="text-sm" style={{ color: "var(--text-secondary)" }}>{lead.source ?? "—"}</span>
                 <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{lead.value ?? "TBD"}</span>
@@ -1068,7 +1069,7 @@ function EquipmentTab({ id }: { id: string }) {
                 <span className="text-xs font-mono" style={{ color: "var(--text-muted)" }}>{eq.serialNumber ?? "—"}</span>
                 <span className="text-sm" style={{ color: "var(--text-secondary)" }}>{eq.installDate ?? "—"}</span>
                 <span className="text-sm" style={{ color: eq.lastServiceDate ? "var(--text-secondary)" : "var(--text-muted)" }}>{eq.lastServiceDate ?? "—"}</span>
-                <span className="inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: s.bg, color: s.color }}>{s.label}</span>
+                <StatusBadge label={s.label} color={s.color} />
               </div>
             );
           })}
@@ -1513,19 +1514,22 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
           </div>
         </div>
 
-        {/* Tab bar */}
-        <div className="flex items-center gap-0.5 px-6 overflow-x-auto">
+        {/* Tab bar — pill style, matching StatusTabs used across the CRM */}
+        <div className="flex items-center gap-0.5 px-6 py-2 overflow-x-auto">
           {TABS.map((t) => {
             const active = tab === t;
             return (
               <button
                 key={t}
                 onClick={() => setTab(t)}
-                className="relative px-3 py-2.5 text-sm font-medium transition-colors whitespace-nowrap shrink-0"
-                style={{ color: active ? "#4f46e5" : "var(--text-muted)" }}
+                className="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors whitespace-nowrap shrink-0"
+                style={{
+                  backgroundColor: active ? "var(--accent-soft-bg)" : "transparent",
+                  color: active ? "var(--accent-text)" : "var(--text-muted)",
+                  border: `1px solid ${active ? "var(--accent-soft-border)" : "transparent"}`,
+                }}
               >
                 {t}
-                {active && <span className="absolute bottom-0 left-0 right-0 h-0.5 rounded-t bg-indigo-600" />}
               </button>
             );
           })}

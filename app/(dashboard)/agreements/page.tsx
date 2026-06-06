@@ -15,6 +15,7 @@ import {
 import AgreementBuilder from "@/components/agreements/AgreementBuilder";
 import ModuleSummaryCards from "@/components/shared/ModuleSummaryCards";
 import ModuleViewToggle, { type ModuleView } from "@/components/shared/ModuleViewToggle";
+import StatusBadge from "@/components/shared/StatusBadge";
 import StatusTabs from "@/components/shared/StatusTabs";
 
 // ─── Status config ────────────────────────────────────────
@@ -100,12 +101,7 @@ function TemplatesTable() {
             >
               {t.activeCount}
             </span>
-            <span
-              className="inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full"
-              style={{ backgroundColor: s.bg, color: s.color }}
-            >
-              {s.label}
-            </span>
+            <StatusBadge label={s.label} color={s.color} />
           </div>
         );
       })}
@@ -354,12 +350,7 @@ export default function AgreementsPage() {
 
                       {/* Status */}
                       <div>
-                        <span
-                          className="inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full"
-                          style={{ backgroundColor: s.bg, color: s.color }}
-                        >
-                          {s.label}
-                        </span>
+                        <StatusBadge label={s.label} color={s.color} />
                       </div>
 
                       {/* Location */}

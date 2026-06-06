@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowLeft, Pencil, CheckCircle, Circle, ChevronRight, MapPin, User, Calendar, DollarSign, Clock, Plus } from "lucide-react";
 import { getProject, getProjectTasks, getProjectProgress, PROJECT_STATUS_CONFIG, PROJECT_TYPE_LABELS } from "@/lib/projects/data";
 import { getJobsForProject, JOB_STATUS_CONFIG } from "@/lib/jobs/data";
+import StatusBadge from "@/components/shared/StatusBadge";
 import { getCustomer } from "@/lib/customers/data";
 import { getQuotesForProject, fmt as fmtCurrency } from "@/lib/quotes/data";
 import { QUOTE_STATUS_STYLE } from "@/lib/quotes/types";
@@ -105,7 +106,7 @@ function OverviewTab({ projectId }: { projectId: string }) {
                   <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>{job.scheduledDate} · {job.assignedTo}</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: js.bg, color: js.color }}>{js.label}</span>
+                  <StatusBadge label={js.label} color={js.color} />
                   <ChevronRight className="w-3.5 h-3.5" style={{ color: "var(--text-muted)" }} />
                 </div>
               </Link>
@@ -153,7 +154,7 @@ function JobsTab({ projectId }: { projectId: string }) {
             style={{ gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr 1fr", borderBottom: i < jobs.length - 1 ? "1px solid var(--border-subtle)" : "none", textDecoration: "none" }}>
             <span className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{job.title}</span>
             <span className="text-sm capitalize" style={{ color: "var(--text-secondary)" }}>{job.type}</span>
-            <span className="inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: s.bg, color: s.color }}>{s.label}</span>
+            <StatusBadge label={s.label} color={s.color} />
             <span className="text-sm" style={{ color: "var(--text-secondary)" }}>{job.scheduledDate}</span>
             <span className="text-sm" style={{ color: "var(--text-secondary)" }}>{job.assignedTo}</span>
             <span className="text-sm font-medium" style={{ color: "var(--text-secondary)" }}>{job.estimatedAmount ?? "—"}</span>
@@ -251,7 +252,7 @@ function ProjectEstimatesTab({ projectId }: { projectId: string }) {
               <p className="text-sm font-mono font-medium" style={{ color: "var(--text-primary)" }}>{q.quoteNumber}</p>
               <p className="text-xs mt-0.5 truncate" style={{ color: "var(--text-muted)" }}>{q.title}</p>
             </div>
-            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0" style={{ backgroundColor: s.bg, color: s.color }}>{s.label}</span>
+            <StatusBadge label={s.label} color={s.color} className="shrink-0" />
             <span className="text-sm font-semibold shrink-0" style={{ color: "var(--text-primary)" }}>{q.total > 0 ? fmtCurrency(q.total) : "TBD"}</span>
           </Link>
         );
@@ -296,7 +297,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <h1 className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>{project.name}</h1>
-                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: s.bg, color: s.color }}>{s.label}</span>
+                <StatusBadge label={s.label} color={s.color} />
               </div>
               <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
                 {project.customerName} · {progress.completed}/{progress.total} jobs complete · {pct}%

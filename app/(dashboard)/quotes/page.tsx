@@ -14,6 +14,7 @@ import { useHierarchy } from "@/components/providers/HierarchyProvider";
 import ModuleSummaryCards, { type SummaryCard } from "@/components/shared/ModuleSummaryCards";
 import ModuleViewToggle, { type ModuleView } from "@/components/shared/ModuleViewToggle";
 import StatusTabs from "@/components/shared/StatusTabs";
+import StatusBadge from "@/components/shared/StatusBadge";
 
 function daysUntil(dateStr?: string): number {
   if (!dateStr) return Infinity;
@@ -224,7 +225,7 @@ export default function QuotesPage() {
                       ) : <span style={{ color: "var(--text-muted)" }}>—</span>}
                     </div>
                     {/* Status */}
-                    <span className="inline-block w-fit text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: s.bg, color: s.color }}>{s.label}</span>
+                    <StatusBadge label={s.label} color={s.color} className="w-fit" />
                     {/* Total */}
                     <span className="text-sm font-semibold" style={{ color: q.total > 0 ? "var(--text-primary)" : "var(--text-muted)" }}>{q.total > 0 ? fmt(q.total) : "TBD"}</span>
                     {/* Assigned To */}

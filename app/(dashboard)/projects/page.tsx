@@ -9,6 +9,7 @@ import { useHierarchy } from "@/components/providers/HierarchyProvider";
 import ModuleSummaryCards, { type SummaryCard } from "@/components/shared/ModuleSummaryCards";
 import ModuleViewToggle, { type ModuleView } from "@/components/shared/ModuleViewToggle";
 import StatusTabs from "@/components/shared/StatusTabs";
+import StatusBadge from "@/components/shared/StatusBadge";
 
 function parseMoney(s?: string): number {
   if (!s) return 0;
@@ -162,7 +163,7 @@ export default function ProjectsPage() {
                   </div>
                 </div>
                 <span className="text-sm" style={{ color: "var(--text-secondary)" }}>{PROJECT_TYPE_LABELS[p.type]}</span>
-                <span className="inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: s.bg, color: s.color }}>{s.label}</span>
+                <StatusBadge label={s.label} color={s.color} />
                 <span className="text-sm truncate" style={{ color: "var(--text-secondary)" }}>{p.customerName}</span>
                 <span className="text-sm" style={{ color: "var(--text-secondary)" }}>{p.targetDate ?? "—"}</span>
                 <div className="flex items-center gap-2">

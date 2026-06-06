@@ -18,9 +18,12 @@ export default function TopBar({ onHide }: { onHide?: () => void }) {
         <HierarchySelector />
       </div>
 
-      {/* Center — search pinned to the middle of the bar */}
-      <div className="w-full max-w-md shrink-0">
-        <GlobalSearch />
+      {/* Center — search + create grouped and centered together */}
+      <div className="shrink-0 flex items-center gap-2">
+        <div className="w-[24rem] max-w-full">
+          <GlobalSearch />
+        </div>
+        <GlobalCreateMenu />
       </div>
 
       {/* Right — actions */}
@@ -33,7 +36,6 @@ export default function TopBar({ onHide }: { onHide?: () => void }) {
           <Bell className="w-5 h-5" />
           <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />
         </button>
-        <GlobalCreateMenu />
         {onHide && (
           <button onClick={onHide} title="Hide bar"
             className="p-2 rounded-lg transition-colors hover:bg-[var(--bg-surface-2)]"

@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { useHierarchy } from "@/components/providers/HierarchyProvider";
 import CalendarItemDrawer from "@/components/calendar/CalendarItemDrawer";
+import StatusBadge from "@/components/shared/StatusBadge";
 import ScheduleConfirmModal, { type ScheduleDraft } from "@/components/calendar/ScheduleConfirmModal";
 import Select from "@/components/ui/Select";
 import {
@@ -882,7 +883,7 @@ function QueueRow({ item: u, onSelect, last }: { item: UnscheduledItem; onSelect
       onClick={() => onSelect(u)}
       className="flex items-center gap-3 px-3 py-2.5 cursor-grab active:cursor-grabbing transition-colors hover:bg-[var(--bg-surface-2)]"
       style={{ borderBottom: last ? "none" : "1px solid var(--border-subtle)", borderLeft: `3px solid ${u.color}` }}>
-      <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full shrink-0" style={{ backgroundColor: cfg.color + "22", color: cfg.color }}>{cfg.label}</span>
+      <StatusBadge label={cfg.label} color={cfg.color} size="sm" className="shrink-0" />
       <div className="min-w-0 flex-1">
         <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{u.title}</p>
         <p className="text-[10px] truncate" style={{ color: "var(--text-muted)" }}>{u.customerName ?? u.reason}{u.city ? ` · ${u.city}` : ""}</p>
@@ -903,7 +904,7 @@ function QueueCard({ item: u, onSelect }: { item: UnscheduledItem; onSelect: (u:
       style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", borderLeft: `3px solid ${u.color}` }}>
       <div className="flex items-start justify-between gap-2 mb-1">
         <div className="flex items-center gap-1.5 min-w-0">
-          <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full shrink-0" style={{ backgroundColor: cfg.color + "22", color: cfg.color }}>{cfg.label}</span>
+          <StatusBadge label={cfg.label} color={cfg.color} size="sm" className="shrink-0" />
           <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full shrink-0" style={{ backgroundColor: prio.bg, color: prio.color }}>{prio.label}</span>
         </div>
         {u.value && <span className="text-xs font-bold shrink-0" style={{ color: "var(--text-primary)" }}>{u.value}</span>}

@@ -40,6 +40,10 @@ const UsersSection              = dynamic(() => import("@/components/settings/Us
 import { serviceAreas } from "@/lib/hierarchy/data";
 import { AddCompanyModal, AddLocationModal } from "@/components/hierarchy/HierarchyModals";
 import type { HierarchyMode } from "@/lib/hierarchy/types";
+import { SettingsScopeProvider } from "@/components/providers/SettingsScopeProvider";
+import SettingsScopeBar from "@/components/settings/SettingsScopeBar";
+import SectionGate from "@/components/settings/SectionGate";
+import type { SectionLayers } from "@/lib/settings-scope/types";
 
 // ─── Navigation structure ─────────────────────────────────
 type SectionKey =
@@ -163,6 +167,40 @@ const CATEGORIES: Category[] = [
     ],
   },
 ];
+
+// ─── Which hierarchy layer each section is edited at ──────
+// Drives the scope-aware behavior: at a layer not listed here, the section shows
+// a read-only "managed at X" notice (see SectionGate). "any" = personal/global.
+const SECTION_LAYERS: Record<SectionKey, SectionLayers> = {
+  appearance:         "any",
+  business_structure: ["org"],
+  organization:       ["org"],
+  companies:          ["org"],
+  locations:          ["org"],
+  service_areas:      ["org"],
+  pipelines:          ["org", "company", "location"],
+  job_types:          ["org", "company", "location"],
+  work_orders:        ["org", "company"],
+  photo_categories:   ["org", "company"],
+  calendar_dispatch:  ["company", "location"],
+  agreements:         ["org", "company"],
+  items_categories:   ["org", "company"],
+  quote_settings:     ["org", "company", "location"],
+  quote_templates:    ["org", "company"],
+  proposal_builder:   ["org", "company"],
+  terms_conditions:   ["org", "company"],
+  taxes_fees:         ["org", "company", "location"],
+  users:              ["org", "company"],
+  security:           ["org"],
+  marketing:          ["org", "company"],
+  communication:      ["org", "company"],
+  integrations:       ["org"],
+  industry:           ["org", "company"],
+  custom_fields:      ["org", "company"],
+  dashboards:         "any",
+  billing:            ["org"],
+  import_export:      ["org"],
+};
 
 // ─── Shared primitives ────────────────────────────────────
 function SectionHeader({ title, subtitle, action }: { title: string; subtitle: string; action?: React.ReactNode }) {
@@ -867,12 +905,15 @@ export default function SettingsPage() {
           <ChevronRight className="w-3.5 h-3.5" />
           <span style={{ color: "var(--text-primary)" }}>{item?.label}</span>
         </div>
-        {renderSection(view.section)}
+        <SectionGate layers={SECTION_LAYERS[view.section] ?? "any"} title={item?.label ?? "This setting"}>
+          {renderSection(view.section)}
+        </SectionGate>
       </div>
     );
   }
 
   return (
+    <SettingsScopeProvider>
     <div className="flex h-full" style={{ backgroundColor: "var(--bg-page)" }}>
       {/* ── Condensed sidebar — 7 categories only ── */}
       <div
@@ -912,9 +953,15 @@ export default function SettingsPage() {
       </div>
 
       {/* ── Right content ── */}
-      <div className="flex-1 overflow-y-auto p-6">
-        {renderContent()}
+      <div className="flex-1 overflow-y-auto flex flex-col">
+        <div className="sticky top-0 z-10 shrink-0">
+          <SettingsScopeBar />
+        </div>
+        <div className="p-6">
+          {renderContent()}
+        </div>
       </div>
     </div>
+    </SettingsScopeProvider>
   );
 }

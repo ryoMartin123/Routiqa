@@ -11,6 +11,7 @@ import InvoiceWizard from "@/components/quotes/InvoiceWizard";
 import { useHierarchy } from "@/components/providers/HierarchyProvider";
 import ModuleSummaryCards, { type SummaryCard } from "@/components/shared/ModuleSummaryCards";
 import ModuleViewToggle, { type ModuleView } from "@/components/shared/ModuleViewToggle";
+import StatusBadge from "@/components/shared/StatusBadge";
 import StatusTabs from "@/components/shared/StatusTabs";
 
 const NOW = new Date();
@@ -215,8 +216,7 @@ export default function InvoicesPage() {
                     </span>
                   ) : <span style={{ color: "var(--text-muted)" }}>—</span>}
                 </div>
-                <span className="inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full"
-                  style={{ backgroundColor: s.bg, color: s.color }}>{s.label}</span>
+                <StatusBadge label={s.label} color={s.color} />
                 <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{fmt(inv.total)}</span>
                 <span className="text-sm font-semibold"
                   style={{ color: inv.balanceDue > 0 ? (isOverdue ? "#dc2626" : "var(--text-primary)") : "#10b981" }}>

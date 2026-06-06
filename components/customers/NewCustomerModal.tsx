@@ -561,10 +561,10 @@ export default function NewCustomerModal({ open, onClose }: { open: boolean; onC
   if (!open) return null;
 
   return (
-    <>
-      <div className="fixed inset-0 z-40 bg-black/40" onClick={onClose} />
-      <div className="fixed inset-y-0 right-0 z-50 flex flex-col w-[600px] max-w-full"
-        style={{ backgroundColor: "var(--bg-surface)", borderLeft: "1px solid var(--border-subtle)", boxShadow: "-4px 0 24px rgba(0,0,0,0.12)" }}>
+    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="w-full max-w-2xl max-h-[90vh] flex flex-col rounded-2xl overflow-hidden"
+        onClick={e => e.stopPropagation()}
+        style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "0 16px 48px rgba(0,0,0,0.24)" }}>
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-5 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
           <div>
@@ -589,6 +589,6 @@ export default function NewCustomerModal({ open, onClose }: { open: boolean; onC
         </div>
         {mode === "quick" ? <QuickAddContent onClose={onClose} /> : <WizardContent onClose={onClose} />}
       </div>
-    </>
+    </div>
   );
 }

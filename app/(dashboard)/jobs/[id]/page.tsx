@@ -5,9 +5,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, CheckCircle, Circle, ChevronRight, Phone, MapPin, User, Clock, Calendar, DollarSign, Briefcase, AlertTriangle, Camera, ListChecks, Plus, Trash2, Ban, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { getJob, updateJob, deleteJob, getWorkOrder, getJobNotes, resolveJobStatus, type JobNoteType, type JobStatus } from "@/lib/jobs/data";
-import UiSelect from "@/components/ui/Select";
+import { getJob, updateJob, deleteJob, getWorkOrder, getJobNotes, resolveJobStatus, type JobNoteType } from "@/lib/jobs/data";
 import { getJobStatuses } from "@/lib/job-config/data";
+import StatusBadge from "@/components/shared/StatusBadge";
 import {
   suggestTemplateForJobType, getChecklist, getPhotos, getInstructions,
   CHECKLIST_TYPE_LABELS, type ChecklistItem as TemplateChecklistItem,
@@ -514,7 +514,7 @@ function JobFinancialsTab({ jobId }: { jobId: string }) {
                 <p className="text-sm font-mono font-medium" style={{ color: "var(--text-primary)" }}>{q.quoteNumber}</p>
                 <p className="text-xs mt-0.5 truncate" style={{ color: "var(--text-muted)" }}>{q.title}</p>
               </div>
-              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0" style={{ backgroundColor: s.bg, color: s.color }}>{s.label}</span>
+              <StatusBadge label={s.label} color={s.color} className="shrink-0" />
               <span className="text-sm font-semibold shrink-0" style={{ color: "var(--text-primary)" }}>{q.total > 0 ? fmt(q.total) : "TBD"}</span>
               <ChevronRight className="w-4 h-4 shrink-0" style={{ color: "var(--text-muted)" }} />
             </Link>
@@ -535,7 +535,7 @@ function JobFinancialsTab({ jobId }: { jobId: string }) {
                 <p className="text-sm font-mono font-medium" style={{ color: "var(--text-primary)" }}>{inv.invoiceNumber}</p>
                 <p className="text-xs mt-0.5 truncate" style={{ color: "var(--text-muted)" }}>{inv.title}</p>
               </div>
-              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0" style={{ backgroundColor: s.bg, color: s.color }}>{s.label}</span>
+              <StatusBadge label={s.label} color={s.color} className="shrink-0" />
               <div className="text-right shrink-0">
                 <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{fmt(inv.total)}</p>
                 {inv.balanceDue > 0 && <p className="text-[10px]" style={{ color: inv.status === "past_due" ? "#dc2626" : "var(--text-muted)" }}>{fmt(inv.balanceDue)} due</p>}
@@ -579,17 +579,14 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
   const [confirmDelete, setConfirmDelete] = useState(false);
   const refresh = () => setJob(getJob(id));
 
-  function changeStatus(next: string) {
-    const patch: { status: JobStatus; completedDate?: string } = { status: next as JobStatus };
-    if (next === "completed") patch.completedDate = new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-    updateJob(id, patch);
-    refresh();
-  }
-
-  // Cancel = reversible. Reactivate clears the schedule so it returns to the
-  // dispatch queue (unscheduled) ready to re-book. Delete = permanent.
+  // Status is driven elsewhere: scheduling on the dispatch board, and the field
+  // progression (en route / in progress / complete) by the technician. The Jobs
+  // page only exposes office-level actions and shows status read-only.
+  // Cancel = reversible. Reschedule/Reactivate clear the schedule so the job
+  // returns to the dispatch queue ready to re-book. Delete = permanent.
   function cancelJob()     { updateJob(id, { status: "canceled" }); refresh(); }
   function reactivateJob() { updateJob(id, { status: "new", scheduledDate: "", scheduledTime: "", assignedTo: "", assignedToInitials: "" }); refresh(); }
+  function rescheduleJob() { updateJob(id, { status: "new", scheduledDate: "", scheduledTime: "" }); router.push("/dispatching"); }
   function doDelete()      { deleteJob(id); router.push("/jobs"); }
 
   if (!job) {
@@ -625,38 +622,33 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <h1 className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>{job.title}</h1>
-                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: s.bg, color: s.color }}>{s.label}</span>
+                <StatusBadge label={s.label} color={s.color} />
               </div>
               <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>{job.customerName} · {job.scheduledDate} at {job.scheduledTime}</p>
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            <div className="w-44">
-              <UiSelect size="sm" value={job.status} onChange={changeStatus}
-                options={getJobStatuses().filter(st => st.active).map(st => ({ value: st.key, label: st.name }))} />
-            </div>
+            {/* Status is read-only here (shown as the badge above). Only
+                office-level actions live on this page. */}
             {job.status === "canceled" ? (
               <button onClick={reactivateJob}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-indigo-600 hover:bg-indigo-700 text-white transition-colors">
                 <RotateCcw className="w-3.5 h-3.5" /> Reactivate
               </button>
-            ) : (
+            ) : !["completed", "invoiced", "closed", "no_show"].includes(job.status) ? (
               <>
-                {job.status !== "completed" && (
-                  <button onClick={() => changeStatus("completed")}
-                    className="px-3 py-1.5 rounded-lg text-sm font-medium bg-indigo-600 hover:bg-indigo-700 text-white transition-colors">
-                    Mark Complete
-                  </button>
-                )}
-                {job.status !== "completed" && (
-                  <button onClick={cancelJob}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
-                    style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>
-                    <Ban className="w-3.5 h-3.5" /> Cancel
-                  </button>
-                )}
+                <button onClick={rescheduleJob} title="Send back to the dispatch board to re-book"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
+                  style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>
+                  <Calendar className="w-3.5 h-3.5" /> Reschedule
+                </button>
+                <button onClick={cancelJob}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
+                  style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>
+                  <Ban className="w-3.5 h-3.5" /> Cancel
+                </button>
               </>
-            )}
+            ) : null}
             <button onClick={() => setConfirmDelete(true)} title="Delete job permanently"
               className="p-2 rounded-lg transition-colors hover:bg-red-50"
               style={{ color: "#dc2626", border: "1px solid var(--border)" }}>

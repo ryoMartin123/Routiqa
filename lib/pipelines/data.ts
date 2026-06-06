@@ -1,6 +1,10 @@
-// Pipeline stages — settings model + localStorage CRUD.
-// Future: lives at the Company layer; companies start from industry defaults
-// then customize. Will drive the Leads page and pipeline board.
+// Pipeline stages — settings model, resolved through the layered scoped store.
+// Lives at Org → Company → Branch (cascade + override). getStages(scope) resolves
+// the effective stages for a scope; the Settings editor uses useScopedSetting.
+
+import { resolveScoped, writeScoped, clearScoped, type ScopeIds } from "@/lib/settings-scope/store";
+
+export const PIPELINE_SETTING_KEY = "pipeline-stages";
 
 export type StageCategory = "open" | "won" | "lost";
 
@@ -25,7 +29,7 @@ export const STAGE_COLORS = [
 ];
 
 // ─── Default stages (General Service template) ────────────
-const DEFAULT_STAGES: PipelineStage[] = [
+export const DEFAULT_STAGES: PipelineStage[] = [
   { id: "ps-1", name: "New Lead",              key: "new_lead",              order: 1, color: "#6366f1", category: "open", active: true },
   { id: "ps-2", name: "Contacted",            key: "contacted",             order: 2, color: "#f59e0b", category: "open", active: true },
   { id: "ps-3", name: "Appointment Scheduled", key: "appointment_scheduled", order: 3, color: "#3b82f6", category: "open", active: true },
@@ -36,35 +40,25 @@ const DEFAULT_STAGES: PipelineStage[] = [
   { id: "ps-8", name: "Lost",                 key: "lost",                  order: 8, color: "#ef4444", category: "lost", active: true },
 ];
 
-const STORAGE_KEY = "crm-pipeline-stages";
-let _stages: PipelineStage[] | null = null;
-
-function init(): PipelineStage[] {
-  if (_stages) return _stages;
-  if (typeof window === "undefined") return DEFAULT_STAGES;
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    _stages = raw ? (JSON.parse(raw) as PipelineStage[]) : [...DEFAULT_STAGES];
-  } catch {
-    _stages = [...DEFAULT_STAGES];
-  }
-  return _stages;
+// Re-number order sequentially (called on save).
+export function reorderStages(stages: PipelineStage[]): PipelineStage[] {
+  return [...stages].sort((a, b) => a.order - b.order).map((s, i) => ({ ...s, order: i + 1 }));
 }
 
-export function getStages(): PipelineStage[] {
-  return [...init()].sort((a, b) => a.order - b.order);
+// Effective stages for a scope (defaults to Org when no scope given), sorted.
+export function getStages(scope: ScopeIds = {}): PipelineStage[] {
+  return resolveScoped<PipelineStage[]>(PIPELINE_SETTING_KEY, scope, DEFAULT_STAGES)
+    .slice().sort((a, b) => a.order - b.order);
 }
 
-export function saveStages(stages: PipelineStage[]): void {
-  // Re-number order sequentially on save
-  const ordered = [...stages].sort((a, b) => a.order - b.order).map((s, i) => ({ ...s, order: i + 1 }));
-  _stages = ordered;
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(ordered)); } catch { /* ignore */ }
+// Persist stages at a scope (Org by default — used by industry defaults).
+export function saveStages(stages: PipelineStage[], scopeKey = "org"): void {
+  writeScoped(PIPELINE_SETTING_KEY, scopeKey, reorderStages(stages));
 }
 
-export function resetStages(): PipelineStage[] {
-  _stages = [...DEFAULT_STAGES];
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(_stages)); } catch { /* ignore */ }
+// Drop the override at a scope (Org by default) → falls back to inherited/default.
+export function resetStages(scopeKey = "org"): PipelineStage[] {
+  clearScoped(PIPELINE_SETTING_KEY, scopeKey);
   return [...DEFAULT_STAGES];
 }
 
