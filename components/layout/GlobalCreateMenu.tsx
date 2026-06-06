@@ -1,14 +1,14 @@
 "use client";
 
 // Global "Create" button — a minimalist icon trigger in the top bar that opens a
-// menu to create any primary record. Records with a modal creator (customer,
-// job, quote, invoice, agreement) open it in place from any route; the rest jump
-// to their section to create there.
+// centered popup to create any primary record. Records with a modal creator
+// (customer, job, quote, invoice, agreement) open it in place from any route;
+// the rest jump to their section to create there.
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  Plus, UserPlus, Briefcase, FileText, Receipt, FileCheck,
+  Plus, X, UserPlus, Briefcase, FileText, Receipt, FileCheck,
   TrendingUp, FolderKanban, ListChecks,
 } from "lucide-react";
 import NewCustomerModal from "@/components/customers/NewCustomerModal";
@@ -20,55 +20,78 @@ import AgreementBuilder from "@/components/agreements/AgreementBuilder";
 type ModalKind = "customer" | "job" | "quote" | "invoice" | "agreement";
 
 const MODAL_ITEMS: { kind: ModalKind; label: string; sublabel: string; icon: typeof UserPlus }[] = [
-  { kind: "customer",  label: "Customer",        sublabel: "Account or prospect",  icon: UserPlus },
-  { kind: "job",       label: "Job",             sublabel: "Schedule or dispatch", icon: Briefcase },
-  { kind: "quote",     label: "Quote / Estimate", sublabel: "Build a proposal",    icon: FileText },
-  { kind: "invoice",   label: "Invoice",         sublabel: "Bill a customer",      icon: Receipt },
-  { kind: "agreement", label: "Agreement",       sublabel: "Maintenance plan",     icon: FileCheck },
+  { kind: "customer",  label: "Customer",         sublabel: "Account or prospect",  icon: UserPlus },
+  { kind: "job",       label: "Job",              sublabel: "Schedule or dispatch", icon: Briefcase },
+  { kind: "quote",     label: "Quote / Estimate", sublabel: "Build a proposal",     icon: FileText },
+  { kind: "invoice",   label: "Invoice",          sublabel: "Bill a customer",      icon: Receipt },
+  { kind: "agreement", label: "Agreement",        sublabel: "Maintenance plan",     icon: FileCheck },
 ];
 
 const NAV_ITEMS: { label: string; sublabel: string; href: string; icon: typeof UserPlus }[] = [
-  { label: "Lead",    sublabel: "Sales pipeline",  href: "/leads",    icon: TrendingUp },
-  { label: "Project", sublabel: "Multi-job work",  href: "/projects", icon: FolderKanban },
-  { label: "Task",    sublabel: "Follow-up / to-do", href: "/tasks",  icon: ListChecks },
+  { label: "Lead",    sublabel: "Sales pipeline",    href: "/leads",    icon: TrendingUp },
+  { label: "Project", sublabel: "Multi-job work",    href: "/projects", icon: FolderKanban },
+  { label: "Task",    sublabel: "Follow-up / to-do", href: "/tasks",    icon: ListChecks },
 ];
 
 export default function GlobalCreateMenu() {
   const router = useRouter();
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [active, setActive]     = useState<ModalKind | null>(null);
+  const [open, setOpen]     = useState(false);
+  const [active, setActive] = useState<ModalKind | null>(null);
+
+  // Escape closes the popup.
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open]);
 
   return (
     <>
-      <div className="relative">
-        <button
-          onClick={() => setMenuOpen(o => !o)}
-          title="Create"
-          className="flex items-center justify-center w-9 h-9 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white transition-colors"
-          aria-haspopup="menu" aria-expanded={menuOpen}
-        >
-          <Plus className="w-5 h-5" />
-        </button>
+      <button
+        onClick={() => setOpen(true)}
+        title="Create"
+        className="flex items-center justify-center w-9 h-9 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white transition-colors"
+        aria-haspopup="dialog" aria-expanded={open}
+      >
+        <Plus className="w-5 h-5" />
+      </button>
 
-        {menuOpen && (
-          <>
-            <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
-            <div role="menu" className="absolute right-0 mt-1.5 w-60 rounded-xl overflow-hidden z-50 py-1"
-              style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "0 12px 32px rgba(0,0,0,0.18)" }}>
-              <p className="text-[10px] font-semibold uppercase tracking-widest px-3 pt-2 pb-1" style={{ color: "var(--text-muted)" }}>Create new</p>
-              {MODAL_ITEMS.map(item => (
-                <Row key={item.kind} icon={item.icon} label={item.label} sublabel={item.sublabel}
-                  onClick={() => { setMenuOpen(false); setActive(item.kind); }} />
-              ))}
-              <div className="my-1" style={{ borderTop: "1px solid var(--border-subtle)" }} />
-              {NAV_ITEMS.map(item => (
-                <Row key={item.href} icon={item.icon} label={item.label} sublabel={item.sublabel}
-                  onClick={() => { setMenuOpen(false); router.push(item.href); }} />
-              ))}
+      {/* Centered popup */}
+      {open && (
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={() => setOpen(false)}>
+          <div role="dialog" aria-modal="true" className="w-full max-w-lg rounded-2xl overflow-hidden" onClick={e => e.stopPropagation()}
+            style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "0 16px 48px rgba(0,0,0,0.24)" }}>
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+              <p className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>Create new</p>
+              <button onClick={() => setOpen(false)} style={{ color: "var(--text-muted)" }}><X className="w-4 h-4" /></button>
             </div>
-          </>
-        )}
-      </div>
+
+            {/* Body */}
+            <div className="px-6 py-5 space-y-5">
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-widest mb-2" style={{ color: "var(--text-muted)" }}>Records</p>
+                <div className="grid grid-cols-2 gap-2.5">
+                  {MODAL_ITEMS.map(item => (
+                    <Tile key={item.kind} icon={item.icon} label={item.label} sublabel={item.sublabel}
+                      onClick={() => { setOpen(false); setActive(item.kind); }} />
+                  ))}
+                </div>
+              </div>
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-widest mb-2" style={{ color: "var(--text-muted)" }}>Open to create</p>
+                <div className="grid grid-cols-3 gap-2.5">
+                  {NAV_ITEMS.map(item => (
+                    <Tile key={item.href} icon={item.icon} label={item.label} sublabel={item.sublabel}
+                      onClick={() => { setOpen(false); router.push(item.href); }} />
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Hosted create modals */}
       <NewCustomerModal open={active === "customer"} onClose={() => setActive(null)} />
@@ -89,16 +112,17 @@ export default function GlobalCreateMenu() {
   );
 }
 
-function Row({ icon: Icon, label, sublabel, onClick }: { icon: typeof UserPlus; label: string; sublabel: string; onClick: () => void }) {
+function Tile({ icon: Icon, label, sublabel, onClick }: { icon: typeof UserPlus; label: string; sublabel: string; onClick: () => void }) {
   return (
-    <button role="menuitem" onClick={onClick}
-      className="w-full flex items-center gap-3 px-3 py-2 text-left transition-colors hover:bg-[var(--bg-surface-2)]">
-      <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: "var(--accent-soft-bg)" }}>
+    <button onClick={onClick}
+      className="flex items-center gap-3 p-3 rounded-xl text-left transition-colors hover:bg-[var(--bg-surface-2)]"
+      style={{ border: "1px solid var(--border-subtle)" }}>
+      <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: "var(--accent-soft-bg)" }}>
         <Icon className="w-4 h-4" style={{ color: "var(--accent-text)" }} />
       </div>
       <div className="min-w-0">
-        <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{label}</p>
-        <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>{sublabel}</p>
+        <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{label}</p>
+        <p className="text-[11px] truncate" style={{ color: "var(--text-muted)" }}>{sublabel}</p>
       </div>
     </button>
   );

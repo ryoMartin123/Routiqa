@@ -228,6 +228,30 @@ export function getAgreement(id: string): CustomerAgreement | undefined {
   return getAllAgreements().find(a => a.id === id);
 }
 
+// Delete a session agreement; delete all agreements for a set of customers
+// (used when a company — and therefore its customers — is deleted).
+export function deleteAgreement(id: string): void {
+  _extra = extraAgreements().filter(a => a.id !== id);
+  persistExtra();
+}
+export function deleteAgreementsForCustomers(customerIds: string[]): number {
+  const set = new Set(customerIds);
+  const matched = extraAgreements().filter(a => a.customerId && set.has(a.customerId));
+  if (matched.length) {
+    _extra = extraAgreements().filter(a => !(a.customerId && set.has(a.customerId)));
+    persistExtra();
+  }
+  return matched.length;
+}
+
+// Agreements for an account — matches the linked customerId (set by the
+// builder) and falls back to the denormalized customer name for seed records.
+export function getAgreementsForCustomer(customerId: string, customerName?: string): CustomerAgreement[] {
+  return getAllAgreements().filter(
+    a => a.customerId === customerId || (!!customerName && a.customer === customerName),
+  );
+}
+
 export interface NewAgreementInput {
   customerId: string;
   customer: string; customerInitials: string;

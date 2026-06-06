@@ -20,18 +20,26 @@ import {
   authorizedLocations,
   authorizedServiceAreas,
   currentUser,
-  organization,
+  organization as seedOrganization,
+  getOrganization,
+  updateOrganization,
   orgSettings as defaultOrgSettings,
   MODE_PRESETS,
   roleLabel,
   getAllCompanies,
   getAllLocations,
+  getAllServiceAreas,
   createCompany,
   createLocation,
+  createServiceArea,
+  updateCompany,
+  updateLocation,
+  updateServiceArea,
   activeCompanyCount,
   activeLocationCount,
 } from "@/lib/hierarchy/data";
-import type { NewCompanyInput, NewLocationInput } from "@/lib/hierarchy/data";
+import type { NewCompanyInput, NewLocationInput, NewServiceAreaInput } from "@/lib/hierarchy/data";
+import { deleteCompanyCascade } from "@/lib/hierarchy/cascade";
 import type {
   Company,
   HierarchyMode,
@@ -79,14 +87,25 @@ interface HierarchyContextValue {
   orgSettings: OrgSettings;
   setOrgMode: (mode: HierarchyMode) => void;
   setOrgSetting: <K extends keyof OrgSettings>(key: K, value: OrgSettings[K]) => void;
+  updateOrganization: (patch: Partial<Organization>) => void;
 
   // Full hierarchy collections (seed + session) for management screens.
   allCompanies: Company[];
   allLocations: Location[];
+  allServiceAreas: ServiceArea[];
 
   // Guided growth — creating the 2nd company/location auto-enables its layer.
   addCompany: (input: NewCompanyInput) => Company;
   addLocation: (input: NewLocationInput) => Location;
+  addServiceArea: (input: NewServiceAreaInput) => ServiceArea;
+
+  // Edits (rename, city/state, industry, status) for management screens.
+  editCompany: (id: string, patch: Partial<Company>) => void;
+  editLocation: (id: string, patch: Partial<Location>) => void;
+  editServiceArea: (id: string, patch: Partial<ServiceArea>) => void;
+
+  // Permanently delete a company and all its branches, service areas, and data.
+  removeCompany: (id: string) => void;
 
   // Ratchet flags — a layer can only be turned OFF while ≤1 active record
   // depends on it. false ⇒ the toggle/mode that would collapse it is locked.
@@ -119,7 +138,12 @@ export function HierarchyProvider({ children }: { children: React.ReactNode }) {
   // Org settings are persisted in localStorage so the settings page demo works.
   const [settings, setSettings] = useState<OrgSettings>(defaultOrgSettings);
 
-  // Bumped whenever a company/location is added so memoized lists recompute.
+  // Organization record (name editable from the settings page). Seed value for
+  // hydration-safety; the persisted override is loaded in the mount effect.
+  const [org, setOrg] = useState<Organization>(seedOrganization);
+
+  // Bumped whenever a company/location/service area is added or edited so
+  // memoized lists recompute.
   const [hierarchyVersion, setHierarchyVersion] = useState(0);
 
   // Restore persisted state on mount — validate IDs against current options
@@ -153,6 +177,9 @@ export function HierarchyProvider({ children }: { children: React.ReactNode }) {
         if (saved.mode) setSettings(saved);
       }
     } catch { /* ignore */ }
+
+    // Load any persisted organization override (e.g. renamed org).
+    setOrg(getOrganization());
   }, []);
 
   function persistSelection(next: { company: SelectionValue; location: SelectionValue; serviceArea: SelectionValue }) {
@@ -236,13 +263,45 @@ export function HierarchyProvider({ children }: { children: React.ReactNode }) {
     return loc;
   }
 
+  function addServiceArea(input: NewServiceAreaInput): ServiceArea {
+    const sa = createServiceArea(input);
+    setHierarchyVersion((v) => v + 1);
+    if (!settings.serviceAreasEnabled) setOrgSetting("serviceAreasEnabled", true);
+    return sa;
+  }
+
+  // ── Edits ──────────────────────────────────────────────────
+  function editCompany(id: string, patch: Partial<Company>) {
+    updateCompany(id, patch);
+    setHierarchyVersion((v) => v + 1);
+  }
+  function editLocation(id: string, patch: Partial<Location>) {
+    updateLocation(id, patch);
+    setHierarchyVersion((v) => v + 1);
+  }
+  function editServiceArea(id: string, patch: Partial<ServiceArea>) {
+    updateServiceArea(id, patch);
+    setHierarchyVersion((v) => v + 1);
+  }
+  function handleUpdateOrganization(patch: Partial<Organization>) {
+    setOrg(updateOrganization(patch));
+  }
+
+  function removeCompany(id: string) {
+    deleteCompanyCascade(id);
+    // Drop the selection if it pointed at the deleted company.
+    if (company === id) { setCompanyState("all"); setLocationState("all"); setServiceAreaState("all"); }
+    setHierarchyVersion((v) => v + 1);
+  }
+
   const companyOptions  = useMemo(() => authorizedCompanies(user), [user, hierarchyVersion]);
   const locationOptions = useMemo(() => authorizedLocations(user, resolve(company)), [user, company, hierarchyVersion]);
   const serviceAreaOptions = useMemo(() => authorizedServiceAreas(user, resolve(location)), [user, location, hierarchyVersion]);
 
   // Full collections for management screens (all statuses, no cascade filter).
-  const allCompanies = useMemo(() => getAllCompanies(), [hierarchyVersion]);
-  const allLocations = useMemo(() => getAllLocations(), [hierarchyVersion]);
+  const allCompanies    = useMemo(() => getAllCompanies(), [hierarchyVersion]);
+  const allLocations    = useMemo(() => getAllLocations(), [hierarchyVersion]);
+  const allServiceAreas = useMemo(() => getAllServiceAreas(), [hierarchyVersion]);
 
   // Ratchet: only collapsible while at most one active record remains.
   const canDisableMultiCompany  = useMemo(() => activeCompanyCount()  <= 1, [hierarchyVersion]);
@@ -269,7 +328,7 @@ export function HierarchyProvider({ children }: { children: React.ReactNode }) {
   }, [companyOptions, locationOptions, effectiveCompanyId, effectiveLocationId]);
 
   const value: HierarchyContextValue = {
-    organization,
+    organization: org,
     userName: user.fullName,
     userInitials: user.initials,
     userRole: roleLabel(user),
@@ -282,10 +341,17 @@ export function HierarchyProvider({ children }: { children: React.ReactNode }) {
     orgSettings: settings,
     setOrgMode,
     setOrgSetting,
+    updateOrganization: handleUpdateOrganization,
     allCompanies,
     allLocations,
+    allServiceAreas,
     addCompany,
     addLocation,
+    addServiceArea,
+    editCompany,
+    editLocation,
+    editServiceArea,
+    removeCompany,
     canDisableMultiCompany,
     canDisableMultiLocation,
   };

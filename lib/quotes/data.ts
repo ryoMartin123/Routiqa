@@ -421,6 +421,17 @@ export function getQuote(id: string): QuoteRecord | undefined {
 export { QUOTE_TEMPLATES, getQuoteTemplate } from "./templates";
 export function getInvoice(id: string): InvoiceRecord | undefined { return getAllInvoices().find(i => i.id === id); }
 
+// Delete every quote/invoice under a company (hierarchy cascade). Includes
+// archived quotes so nothing for the company lingers.
+export function deleteQuotesByCompany(companyId: string): void {
+  [...getAllQuotes(), ...getArchivedQuotes()]
+    .filter(q => q.companyId === companyId)
+    .forEach(q => deleteQuote(q.id));
+}
+export function deleteInvoicesByCompany(companyId: string): void {
+  getAllInvoices().filter(i => i.companyId === companyId).forEach(i => deleteInvoice(i.id));
+}
+
 export function getQuotesForCustomer(customerId: string): QuoteRecord[] {
   return getAllQuotes().filter(q => q.customerId === customerId);
 }

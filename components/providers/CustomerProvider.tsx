@@ -5,17 +5,27 @@ import {
   ALL_CUSTOMERS,
   _addToStore,
   _loadFromStorage,
+  getAllCustomers,
+  updateCustomer as updateInStore,
+  deleteCustomer as deleteFromStore,
   type Customer,
 } from "@/lib/customers/data";
 
 interface CustomerContextValue {
   customers: Customer[];
   addCustomer: (c: Customer) => void;
+  updateCustomer: (id: string, patch: Partial<Customer>) => void;
+  deleteCustomer: (id: string) => void;
+  // Re-sync from the data layer (e.g. after a cascade delete elsewhere).
+  reload: () => void;
 }
 
 const CustomerContext = createContext<CustomerContextValue>({
   customers: ALL_CUSTOMERS,
   addCustomer: () => {},
+  updateCustomer: () => {},
+  deleteCustomer: () => {},
+  reload: () => {},
 });
 
 export function useCustomers(): CustomerContextValue {
@@ -57,8 +67,31 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
     });
   }
 
+  function updateCustomer(id: string, patch: Partial<Customer>) {
+    // 1. Patch the module-level store (persists to localStorage)
+    updateInStore(id, patch);
+
+    // 2. Mirror into React state so list/detail pages re-render
+    setCustomers(prev => prev.map(c => (c.id === id ? { ...c, ...patch } : c)));
+  }
+
+  function deleteCustomer(id: string) {
+    // 1. Remove from the module-level store (persists to localStorage)
+    deleteFromStore(id);
+
+    // 2. Mirror into React state
+    setCustomers(prev => prev.filter(c => c.id !== id));
+  }
+
+  // Re-read the data layer — used after deletions performed outside this
+  // provider (e.g. a company cascade removes its customers).
+  function reload() {
+    _loadFromStorage();
+    setCustomers(getAllCustomers());
+  }
+
   return (
-    <CustomerContext.Provider value={{ customers, addCustomer }}>
+    <CustomerContext.Provider value={{ customers, addCustomer, updateCustomer, deleteCustomer, reload }}>
       {children}
     </CustomerContext.Provider>
   );

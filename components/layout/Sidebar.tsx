@@ -24,6 +24,7 @@ import {
   MapPin,
   ChevronDown,
   PanelLeftClose,
+  PanelLeftOpen,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useHierarchy } from "@/components/providers/HierarchyProvider";
@@ -95,6 +96,7 @@ const SETTINGS_ITEM: NavItem = { name: "Settings", href: "/settings", icon: Sett
 // persists. The group holding the active route is always forced open.
 const DEFAULT_OPEN: Record<string, boolean> = { Work: true, Sales: true };
 const STORE_KEY = "crm-sidebar-groups";
+const COLLAPSE_KEY = "crm-sidebar-collapsed";
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -124,7 +126,25 @@ export default function Sidebar() {
     });
   }
 
+  // Collapsed = icon-only rail. Persisted across sessions.
+  const [collapsed, setCollapsed] = useState(false);
+  useEffect(() => {
+    try { if (localStorage.getItem(COLLAPSE_KEY) === "1") setCollapsed(true); } catch { /* ignore */ }
+  }, []);
+  function toggleCollapsed() {
+    setCollapsed(c => {
+      const next = !c;
+      try { localStorage.setItem(COLLAPSE_KEY, next ? "1" : "0"); } catch { /* ignore */ }
+      return next;
+    });
+  }
+
   const pinnedHrefs = new Set(PINNED.map(p => p.href));
+
+  // Flat, deduped list for the collapsed rail (pinned first, then the rest).
+  const collapsedSeen = new Set<string>();
+  const collapsedItems = [...visiblePinned, ...visibleGroups.flatMap(g => g.items)]
+    .filter(i => (collapsedSeen.has(i.href) ? false : (collapsedSeen.add(i.href), true)));
 
   // `pendingHref` is the route just clicked. App Router only updates `pathname`
   // once the navigation settles, so without this the *previous* page stays
@@ -147,45 +167,58 @@ export default function Sidebar() {
   // Record the clicked copy (for the pinned/group highlight) and the optimistic target.
   const go = (href: string, place: string) => { setSource({ href, place }); setPendingHref(href); };
 
-  function NavRow({ item, active, onSelect }: { item: NavItem; active: boolean; onSelect?: () => void }) {
+  function NavRow({ item, active, onSelect, iconOnly }: { item: NavItem; active: boolean; onSelect?: () => void; iconOnly?: boolean }) {
     return (
       <Link
         key={item.name}
         href={item.href}
         onClick={onSelect}
-        className={cn("flex items-center gap-2.5 px-2 py-1.5 rounded-md text-sm mb-0.5 transition-colors")}
+        title={iconOnly ? item.name : undefined}
+        className={cn("flex items-center rounded-md text-sm mb-0.5 transition-colors", iconOnly ? "justify-center py-2" : "gap-2.5 px-2 py-1.5")}
         style={{
           backgroundColor: active ? "var(--sidebar-item-active)" : "transparent",
           color: active ? "var(--sidebar-text-active)" : "var(--sidebar-text)",
         }}
       >
         <item.icon className="w-4 h-4 shrink-0" />
-        <span className="truncate">{item.name}</span>
+        {!iconOnly && <span className="truncate">{item.name}</span>}
       </Link>
     );
   }
 
   return (
-    <div className="flex flex-col w-56 shrink-0" style={{ backgroundColor: "var(--sidebar-bg)" }}>
+    <div className={cn("flex flex-col shrink-0 transition-[width] duration-150", collapsed ? "w-16" : "w-56")} style={{ backgroundColor: "var(--sidebar-bg)" }}>
       {/* Org / Location header */}
-      <div className="flex items-center justify-between px-4 py-4" style={{ borderBottom: "1px solid var(--sidebar-border)" }}>
-        <div className="min-w-0">
-          <p className="text-sm font-semibold leading-tight truncate" style={{ color: "var(--sidebar-text-active)" }}>
-            {organization.name}
-          </p>
-          <div className="flex items-center gap-1 mt-0.5">
-            <MapPin className="w-3 h-3 shrink-0" style={{ color: "var(--sidebar-text)" }} />
-            <span className="text-xs truncate" style={{ color: "var(--sidebar-text)" }}>{activeScopeLabel}</span>
-            <ChevronDown className="w-3 h-3 shrink-0" style={{ color: "var(--sidebar-text)" }} />
+      <div className={cn("flex items-center px-4 py-4", collapsed ? "justify-center" : "justify-between")} style={{ borderBottom: "1px solid var(--sidebar-border)" }}>
+        {!collapsed && (
+          <div className="min-w-0">
+            <p className="text-sm font-semibold leading-tight truncate" style={{ color: "var(--sidebar-text-active)" }}>
+              {organization.name}
+            </p>
+            <div className="flex items-center gap-1 mt-0.5">
+              <MapPin className="w-3 h-3 shrink-0" style={{ color: "var(--sidebar-text)" }} />
+              <span className="text-xs truncate" style={{ color: "var(--sidebar-text)" }}>{activeScopeLabel}</span>
+              <ChevronDown className="w-3 h-3 shrink-0" style={{ color: "var(--sidebar-text)" }} />
+            </div>
           </div>
-        </div>
-        <button className="shrink-0 p-1 rounded" style={{ color: "var(--sidebar-text)" }}>
-          <PanelLeftClose className="w-4 h-4" />
+        )}
+        <button onClick={toggleCollapsed} title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          className="shrink-0 p-1 rounded transition-colors hover:bg-[var(--sidebar-item-active)]" style={{ color: "var(--sidebar-text)" }}>
+          {collapsed ? <PanelLeftOpen className="w-4 h-4" /> : <PanelLeftClose className="w-4 h-4" />}
         </button>
       </div>
 
       {/* Nav */}
       <nav className="flex-1 overflow-y-auto thin-scroll-y py-3 px-2">
+        {collapsed ? (
+          /* Icon-only rail — flat, deduped list with tooltips */
+          collapsedItems.map(item => (
+            <NavRow key={item.href} item={item} iconOnly
+              active={isItemActive(item.href)}
+              onSelect={() => go(item.href, pinnedHrefs.has(item.href) ? "pinned" : "group")} />
+          ))
+        ) : (
+        <>
         {/* Pinned shortcuts */}
         {visiblePinned.length > 0 && (
         <div className="mb-4">
@@ -232,26 +265,35 @@ export default function Sidebar() {
             </div>
           );
         })}
+        </>
+        )}
       </nav>
 
       {/* Settings — pinned at the bottom for quick access */}
       {canSee(SETTINGS_ITEM) && (
       <div className="px-2 py-2" style={{ borderTop: "1px solid var(--sidebar-border)" }}>
-        <NavRow item={SETTINGS_ITEM} active={isItemActive(SETTINGS_ITEM.href)} onSelect={() => go(SETTINGS_ITEM.href, "group")} />
+        <NavRow item={SETTINGS_ITEM} iconOnly={collapsed} active={isItemActive(SETTINGS_ITEM.href)} onSelect={() => go(SETTINGS_ITEM.href, "group")} />
       </div>
       )}
 
       {/* User */}
-      <div className="px-3 py-3" style={{ borderTop: "1px solid var(--sidebar-border)" }}>
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-white text-xs font-semibold shrink-0">
+      <div className={cn("py-3", collapsed ? "px-2 flex justify-center" : "px-3")} style={{ borderTop: "1px solid var(--sidebar-border)" }}>
+        {collapsed ? (
+          <div title={`${userName} · ${userRole}`}
+            className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-white text-xs font-semibold shrink-0">
             {userInitials}
           </div>
-          <div className="min-w-0">
-            <p className="text-sm font-medium truncate" style={{ color: "var(--sidebar-text-active)" }}>{userName}</p>
-            <p className="text-xs truncate" style={{ color: "var(--sidebar-text)" }}>{userRole}</p>
+        ) : (
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-white text-xs font-semibold shrink-0">
+              {userInitials}
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-medium truncate" style={{ color: "var(--sidebar-text-active)" }}>{userName}</p>
+              <p className="text-xs truncate" style={{ color: "var(--sidebar-text)" }}>{userRole}</p>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

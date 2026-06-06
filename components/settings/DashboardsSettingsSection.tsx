@@ -159,7 +159,7 @@ function WidgetLibraryTab() {
                   <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>
                     {w.allowedRoles.length === 0 ? "All roles" : w.allowedRoles.map(r =>
                       r === "org_admin" ? "Admin" :
-                      r === "company_admin" ? "Co. Admin" :
+                      r === "branch_manager" ? "Branch Mgr" :
                       r === "location_manager" ? "Manager" : r
                     ).join(", ")}
                   </span>

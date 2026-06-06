@@ -11,7 +11,8 @@ import UiSelect from "@/components/ui/Select";
 import { useHierarchy } from "@/components/providers/HierarchyProvider";
 import { serviceAreas as ALL_SERVICE_AREAS } from "@/lib/hierarchy/data";
 import { usePermissions } from "@/components/providers/PermissionProvider";
-import { ROLE_PRESETS, ASSIGNABLE_ROLES } from "@/lib/roles/presets";
+import { getAssignableRoles, getOrgRole, getRoleLabel } from "@/lib/roles/store";
+import { assignmentError, allowedLevelsForRole } from "@/lib/roles/validate";
 import type { RoleKey } from "@/lib/roles/types";
 import {
   getUsers, upsertUser, setUserStatus,
@@ -115,7 +116,7 @@ export default function UsersSection() {
                     {u.assignments.map(a => (
                       <span key={a.id} className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-md"
                         style={{ backgroundColor: "var(--accent-soft-bg)", color: "var(--accent-text)" }}>
-                        {ROLE_PRESETS[a.role]?.label ?? a.role}
+                        {getRoleLabel(a.role)}
                         <span style={{ opacity: 0.6 }}>· {scopeLabel(a)}</span>
                       </span>
                     ))}
@@ -191,20 +192,28 @@ function UserDrawer({
                   : a.level === "location" ? a.locationId ?? ""
                   : a.level === "service_area" ? a.serviceAreaId ?? "" : "",
         }))
-      : [{ role: "csr", level: "location", targetId: "" }],
+      : [{ role: "salesperson", level: "location", targetId: "" }],
   );
   const [error, setError] = useState<string | null>(null);
 
   // ── Scope option lists ──────────────────────────────────
-  const levelOptions = useMemo(() => {
-    const opts = [{ value: "org", label: "Organization-wide" }];
+  // Every level the org structure supports; per-role lists are filtered from
+  // this by allowedLevelsForRole (so an org-level role can't be scoped to a branch).
+  const allLevelOptions = useMemo(() => {
+    const opts: { value: ScopeLevel; label: string }[] = [{ value: "org", label: "Organization-wide" }];
     if (companies.length) opts.push({ value: "company", label: "Company" });
     if (locations.length) opts.push({ value: "location", label: "Location" });
     if (serviceAreasEnabled && areas.length) opts.push({ value: "service_area", label: "Service Area" });
     return opts;
   }, [companies.length, locations.length, areas.length, serviceAreasEnabled]);
 
-  const roleOptions = ASSIGNABLE_ROLES.map(r => ({ value: r, label: ROLE_PRESETS[r].label }));
+  function levelOptionsFor(role: RoleKey) {
+    const def = getOrgRole(role);
+    const allowed = def ? allowedLevelsForRole(def) : (["org", "company", "location", "service_area"] as ScopeLevel[]);
+    return allLevelOptions.filter(o => allowed.includes(o.value));
+  }
+
+  const roleOptions = getAssignableRoles().map(r => ({ value: r.key, label: r.label }));
 
   function targetOptions(level: ScopeLevel) {
     if (level === "company") return companies.map(c => ({ value: c.id, label: c.name }));
@@ -216,7 +225,18 @@ function UserDrawer({
   function updateRow(i: number, patch: Partial<DraftAssignment>) {
     setRows(rs => rs.map((r, idx) => (idx === i ? { ...r, ...patch } : r)));
   }
-  function addRow() { setRows(rs => [...rs, { role: "technician", level: "location", targetId: "" }]); }
+  function addRow() { setRows(rs => [...rs, { role: "field_technician", level: "location", targetId: "" }]); }
+
+  // When the role changes, snap the scope level back into the allowed range.
+  function changeRole(i: number, role: RoleKey) {
+    const def = getOrgRole(role);
+    const allowed = def ? allowedLevelsForRole(def) : (["org", "company", "location", "service_area"] as ScopeLevel[]);
+    setRows(rs => rs.map((r, idx) => {
+      if (idx !== i) return r;
+      const level = allowed.includes(r.level) ? r.level : allowed[0];
+      return { ...r, role, level, targetId: level === r.level ? r.targetId : "" };
+    }));
+  }
   function removeRow(i: number) { setRows(rs => rs.filter((_, idx) => idx !== i)); }
 
   function resolveAssignment(r: DraftAssignment): Omit<RoleAssignment, "id"> | null {
@@ -240,6 +260,11 @@ function UserDrawer({
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) { setError("A valid email is required."); return; }
     if (!isOwner) {
       if (rows.length === 0) { setError("Add at least one role assignment."); return; }
+      // Catch impossible role@scope grants (e.g. an org-level role on one branch).
+      for (const r of rows) {
+        const def = getOrgRole(r.role);
+        if (def) { const e = assignmentError(def, r.level); if (e) { setError(e); return; } }
+      }
       const resolved = rows.map(resolveAssignment);
       if (resolved.some(a => a === null)) { setError("Each assignment needs a scope selected."); return; }
       upsertUser({ id: user?.id, fullName: fullName.trim(), email: email.trim(), status, assignments: resolved as Omit<RoleAssignment, "id">[] });
@@ -251,9 +276,9 @@ function UserDrawer({
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 flex justify-end" onClick={onClose}>
-      <div className="w-full max-w-md h-full overflow-y-auto flex flex-col" onClick={e => e.stopPropagation()}
-        style={{ backgroundColor: "var(--bg-surface)", boxShadow: "-8px 0 32px rgba(0,0,0,0.18)" }}>
+    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="w-full max-w-lg max-h-[90vh] rounded-2xl overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}
+        style={{ backgroundColor: "var(--bg-surface)", boxShadow: "0 16px 48px rgba(0,0,0,0.24)" }}>
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
           <div className="flex items-center gap-2.5">
@@ -269,7 +294,7 @@ function UserDrawer({
         </div>
 
         {/* Body */}
-        <div className="flex-1 p-5 space-y-5">
+        <div className="flex-1 overflow-y-auto p-5 space-y-5">
           {/* Identity */}
           <div className="space-y-3">
             <Field label="Full name">
@@ -317,7 +342,7 @@ function UserDrawer({
                   <div key={i} className="rounded-lg p-3 space-y-2" style={{ border: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
                     <div className="flex items-center gap-2">
                       <div className="flex-1">
-                        <UiSelect value={r.role} onChange={v => updateRow(i, { role: v as RoleKey })} options={roleOptions} size="sm" />
+                        <UiSelect value={r.role} onChange={v => changeRole(i, v as RoleKey)} options={roleOptions} size="sm" />
                       </div>
                       <button onClick={() => removeRow(i)} title="Remove" className="p-1.5 rounded-md" style={{ color: "var(--text-muted)" }}>
                         <Trash2 className="w-3.5 h-3.5" />
@@ -327,7 +352,7 @@ function UserDrawer({
                       <div className="w-40 shrink-0">
                         <UiSelect value={r.level}
                           onChange={v => updateRow(i, { level: v as ScopeLevel, targetId: "" })}
-                          options={levelOptions} size="sm" />
+                          options={levelOptionsFor(r.role)} size="sm" />
                       </div>
                       <div className="flex-1">
                         {r.level === "org" ? (
@@ -339,7 +364,7 @@ function UserDrawer({
                       </div>
                     </div>
                     <p className="text-[11px] leading-snug" style={{ color: "var(--text-muted)" }}>
-                      {ROLE_PRESETS[r.role]?.description}
+                      {getOrgRole(r.role)?.description}
                     </p>
                   </div>
                 ))}

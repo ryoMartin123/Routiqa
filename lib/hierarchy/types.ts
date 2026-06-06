@@ -86,4 +86,6 @@ export interface OrgSettings {
   projectsEnabled: boolean;
   agreementsEnabled: boolean;
   marketingEnabled: boolean;
+  // Preferences
+  customerQuickAdd: boolean;   // offer the fast name+phone "Quick Add" path on the New Customer modal
 }

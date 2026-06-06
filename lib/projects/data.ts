@@ -109,6 +109,17 @@ export function createProject(input: NewProjectInput): Project {
   return project;
 }
 
+// Delete a session project; delete every project under a company (cascade).
+export function deleteProject(id: string): void {
+  if (extraProjects().some(p => p.id === id)) {
+    _extraProjects = extraProjects().filter(p => p.id !== id);
+    try { localStorage.setItem(PROJECTS_KEY, JSON.stringify(_extraProjects)); } catch { /* ignore */ }
+  }
+}
+export function deleteProjectsByCompany(companyId: string): void {
+  getAllProjects().filter(p => p.companyId === companyId).forEach(p => deleteProject(p.id));
+}
+
 // ─── Lookup helpers ───────────────────────────────────────
 export const PROJECTS_MAP: Record<string, Project> = Object.fromEntries(ALL_PROJECTS.map(p => [p.id, p]));
 

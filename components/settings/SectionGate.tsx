@@ -10,6 +10,7 @@ import { useSettingsScope } from "@/components/providers/SettingsScopeProvider";
 import {
   effectiveLayers, jumpLayer, LAYER_META, type SectionLayers,
 } from "@/lib/settings-scope/types";
+import ScopeBadge from "@/components/settings/ScopeBadge";
 
 export default function SectionGate({
   layers, title, children,
@@ -21,7 +22,15 @@ export default function SectionGate({
   const { activeLayer, available, setActiveLayer } = useSettingsScope();
   const eff = effectiveLayers(layers, available);
 
-  if (eff === "any" || eff.includes(activeLayer)) return <>{children}</>;
+  // Editable here — render with a badge stating which level this section edits at.
+  if (eff === "any" || eff.includes(activeLayer)) {
+    return (
+      <div>
+        <div className="mb-3"><ScopeBadge level={eff === "any" ? "any" : activeLayer} /></div>
+        {children}
+      </div>
+    );
+  }
 
   const target = jumpLayer(eff);
   const meta = LAYER_META[target];

@@ -5,9 +5,11 @@ import { X, Briefcase } from "lucide-react";
 import UiSelect from "@/components/ui/Select";
 import DatePicker from "@/components/ui/DatePicker";
 import TimePicker from "@/components/ui/TimePicker";
-import { getAllCustomers, getProperties } from "@/lib/customers/data";
+import { getAllCustomers, getProperties, updateCustomer } from "@/lib/customers/data";
 import { createJob, type JobType, type JobPriority } from "@/lib/jobs/data";
 import { getTechRoster } from "@/lib/calendar/data";
+import { AddressAutocomplete, EMPTY_ADDRESS, type ParsedAddress } from "@/components/address/AddressAutocomplete";
+import { todayYMD, isPastDateTime } from "@/lib/utils/schedule";
 
 export interface JobWizardPreset {
   customerId?: string;
@@ -61,20 +63,47 @@ export default function JobWizard({ preset, onClose, onCreated }: {
   const customer = customers.find(c => c.id === customerId);
   const properties = useMemo(() => (customerId ? getProperties(customerId) : []), [customerId]);
   const selectedProperty = properties.find(p => p.id === propertyId);
-  const propertyAddress = selectedProperty
-    ? `${selectedProperty.address}, ${selectedProperty.city}`
-    : customer ? `${customer.address}, ${customer.city}` : undefined;
 
-  const canCreate = Boolean(customerId && title.trim());
+  // Service address — required to dispatch. Prefilled from the selected property
+  // or the customer's address; empty (and required) for a quick-add customer who
+  // has no address yet, so we capture it at the moment we need it.
+  const [addr, setAddr] = useState<ParsedAddress>({ ...EMPTY_ADDRESS });
+  const [saveToCustomer, setSaveToCustomer] = useState(false);
+  useEffect(() => {
+    const src = selectedProperty
+      ? { line1: selectedProperty.address, city: selectedProperty.city, state: selectedProperty.state, zip: selectedProperty.zip }
+      : customer
+      ? { line1: customer.address, city: customer.city, state: customer.state, zip: customer.zip }
+      : { line1: "", city: "", state: "", zip: "" };
+    setAddr({ ...EMPTY_ADDRESS, addressLine1: src.line1 ?? "", city: src.city ?? "", state: src.state ?? "", postalCode: src.zip ?? "" });
+    // Default the "save back" toggle on only when we're capturing a fresh address
+    // for an account that doesn't have one yet.
+    setSaveToCustomer(Boolean(customer) && !selectedProperty && !src.line1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [customerId, propertyId]);
+
+  const formattedAddress = addr.addressLine1.trim()
+    ? [addr.addressLine1.trim(), addr.city.trim()].filter(Boolean).join(", ")
+    : undefined;
+
+  const schedulePast = isPastDateTime(date, time);
+  const canCreate = Boolean(customerId && title.trim() && addr.addressLine1.trim()) && !schedulePast;
   const willSchedule = Boolean(date);
 
   function handleCreate() {
     if (!customer) return;
+    // Persist the address back to the customer so it's there next time.
+    if (saveToCustomer) {
+      updateCustomer(customer.id, {
+        address: addr.addressLine1.trim(), city: addr.city.trim(),
+        state: addr.state.trim(), zip: addr.postalCode.trim(),
+      });
+    }
     const job = createJob({
       companyId: customer.companyId, locationId: customer.locationId, serviceAreaId: customer.serviceAreaId,
       accountId: customer.id, customerName: customer.name, customerInitials: customer.initials, locationName: customer.locationName,
       title: title.trim(), type, priority,
-      propertyAddress, projectId: preset?.projectId,
+      propertyAddress: formattedAddress, projectId: preset?.projectId,
       estimatedAmount: estimate.trim() ? (estimate.trim().startsWith("$") ? estimate.trim() : `$${estimate.trim()}`) : undefined,
       scheduledDate: date ? fmtDate(date) : undefined,
       scheduledTime: time ? fmtTime(time) : undefined,
@@ -113,6 +142,18 @@ export default function JobWizard({ preset, onClose, onCreated }: {
             </div>
           </div>
 
+          {/* Service address — required so the job can actually be dispatched */}
+          <div>
+            <label className="block text-xs font-medium mb-1" style={{ color: "var(--text-secondary)" }}>Service Address <span style={{ color: "#ef4444" }}>*</span></label>
+            <AddressAutocomplete value={addr} onChange={setAddr} placeholder="Start typing a street address…" required />
+            {customer && !selectedProperty && (
+              <label className="flex items-center gap-2 mt-2 cursor-pointer select-none">
+                <input type="checkbox" checked={saveToCustomer} onChange={e => setSaveToCustomer(e.target.checked)} className="accent-indigo-600" />
+                <span className="text-xs" style={{ color: "var(--text-secondary)" }}>Save this address to {customer.name}</span>
+              </label>
+            )}
+          </div>
+
           <div>
             <label className="block text-xs font-medium mb-1" style={{ color: "var(--text-secondary)" }}>Job Title *</label>
             <input value={title} onChange={e => setTitle(e.target.value)} placeholder="e.g. AC not cooling — diagnostic"
@@ -139,7 +180,7 @@ export default function JobWizard({ preset, onClose, onCreated }: {
             <div className="grid grid-cols-3 gap-3">
               <div>
                 <label className="block text-[10px] font-medium mb-1" style={{ color: "var(--text-secondary)" }}>Date</label>
-                <DatePicker size="sm" value={date} onChange={setDate} placeholder="Pick a date" />
+                <DatePicker size="sm" value={date} onChange={setDate} placeholder="Pick a date" min={todayYMD()} />
               </div>
               <div>
                 <label className="block text-[10px] font-medium mb-1" style={{ color: "var(--text-secondary)" }}>Time</label>
@@ -151,6 +192,11 @@ export default function JobWizard({ preset, onClose, onCreated }: {
                   className="w-full rounded-lg px-2.5 py-1.5 text-xs outline-none" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface)", color: "var(--text-primary)" }} />
               </div>
             </div>
+            {schedulePast && (
+              <p className="text-[10px]" style={{ color: "#dc2626" }}>
+                That date/time is in the past. Choose a current or future slot, or leave blank to send it to the dispatch queue.
+              </p>
+            )}
             <div>
               <label className="block text-[10px] font-medium mb-1" style={{ color: "var(--text-secondary)" }}>Assigned Technician</label>
               <UiSelect size="sm" value={tech} onChange={setTech}

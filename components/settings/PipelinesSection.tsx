@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Pencil, ChevronUp, ChevronDown, Trash2, Check } from "lucide-react";
+import { Plus, Pencil, ChevronUp, ChevronDown, Trash2 } from "lucide-react";
 import {
   DEFAULT_STAGES, reorderStages, PIPELINE_SETTING_KEY, newStageId, slugify,
   STAGE_CATEGORY_LABELS, STAGE_COLORS,
@@ -10,6 +10,7 @@ import {
 import UiSelect from "@/components/ui/Select";
 import { useScopedSetting } from "@/lib/settings-scope/useScopedSetting";
 import InheritanceChip from "@/components/settings/InheritanceChip";
+import { useRegisterSaveAction } from "@/components/settings/SettingsActions";
 
 const sortStages = (s: PipelineStage[]) => [...s].sort((a, b) => a.order - b.order).map(x => ({ ...x }));
 
@@ -112,6 +113,9 @@ export default function PipelinesSection() {
     setTimeout(() => setSaved(false), 2000);
   }
 
+  // Publish Save up to the shared slot above the scope header.
+  useRegisterSaveAction({ dirty, saved, onSave: handleSave });
+
   const sorted = [...stages].sort((a, b) => a.order - b.order);
 
   // ── Inline form renderer ──
@@ -179,18 +183,11 @@ export default function PipelinesSection() {
   return (
     <div className="space-y-5">
       {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h2 className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>Pipelines</h2>
-          <p className="text-sm mt-0.5" style={{ color: "var(--text-secondary)" }}>
-            Manage your lead pipeline stages. These drive the Leads page and pipeline board.
-          </p>
-        </div>
-        <button onClick={handleSave} disabled={!dirty && !saved}
-          className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-white transition-colors disabled:opacity-50"
-          style={{ backgroundColor: saved ? "#10b981" : "#4f46e5" }}>
-          <Check className="w-3.5 h-3.5" /> {saved ? "Saved" : "Save Changes"}
-        </button>
+      <div>
+        <h2 className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>Pipelines</h2>
+        <p className="text-sm mt-0.5" style={{ color: "var(--text-secondary)" }}>
+          Manage your lead pipeline stages. These drive the Leads page and pipeline board.
+        </p>
       </div>
 
       {/* Inheritance state for the active layer */}
@@ -218,10 +215,10 @@ export default function PipelinesSection() {
               style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>{stages.length}</span>
           </p>
           {!showAdd && (
-            <button onClick={startAdd}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-white"
+            <button onClick={startAdd} title="Add stage"
+              className="flex items-center justify-center w-7 h-7 rounded-lg text-white transition-colors hover:bg-indigo-700"
               style={{ backgroundColor: "#4f46e5" }}>
-              <Plus className="w-3.5 h-3.5" /> Add Stage
+              <Plus className="w-4 h-4" />
             </button>
           )}
         </div>

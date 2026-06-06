@@ -7,7 +7,7 @@ import type { ActivityEvent } from "./types";
 import {
   getQuotesForCustomer, getInvoicesForCustomer, ALL_QUOTES, ALL_INVOICES, fmt,
 } from "@/lib/quotes/data";
-import { ALL_JOBS } from "@/lib/jobs/data";
+import { ALL_JOBS, getAllJobs } from "@/lib/jobs/data";
 
 const EVENTS: Record<string, ActivityEvent[]> = {};
 
@@ -22,6 +22,7 @@ const EVENTS: Record<string, ActivityEvent[]> = {};
 // are always included.
 const SEED_QUOTE_IDS   = new Set(ALL_QUOTES.map(q => q.id));
 const SEED_INVOICE_IDS = new Set(ALL_INVOICES.map(i => i.id));
+const SEED_JOB_IDS     = new Set(ALL_JOBS.map(j => j.id));
 
 function humanDate(d: string): string {
   const dt = new Date(d);
@@ -79,20 +80,18 @@ function deriveCustomerEvents(customerId: string, includeSeedRecords: boolean): 
     }
   }
 
-  // Jobs (by account) — only for customers without a seeded timeline, since
-  // demo customers already have hand-written job history and jobs aren't
-  // created in-session.
-  if (includeSeedRecords) {
-    for (const j of ALL_JOBS.filter(j => j.accountId === customerId)) {
-      const done = j.status === "completed" || j.status === "invoiced" || j.status === "closed";
-      const when = j.completedDate ?? j.scheduledDate;
-      out.push({
-        id: `derived-job-${j.id}`, customerId, eventType: done ? "job_completed" : "job_scheduled",
-        title: `Job ${done ? "completed" : "scheduled"}: ${j.title}`,
-        description: `${humanDate(j.scheduledDate)}${j.assignedTo ? ` · ${j.assignedTo}` : ""}`,
-        createdBy: j.assignedTo, createdAt: sortKey(when), displayDate: humanDate(when),
-      });
-    }
+  // Jobs (by account) — include session-created jobs always; seed jobs only
+  // when the customer has no hand-written timeline (mirrors quotes/invoices).
+  for (const j of getAllJobs().filter(j => j.accountId === customerId)) {
+    if (!includeSeedRecords && SEED_JOB_IDS.has(j.id)) continue;
+    const done = j.status === "completed" || j.status === "invoiced" || j.status === "closed";
+    const when = j.completedDate ?? j.scheduledDate ?? "";
+    out.push({
+      id: `derived-job-${j.id}`, customerId, eventType: done ? "job_completed" : "job_scheduled",
+      title: `Job ${done ? "completed" : "scheduled"}: ${j.title}`,
+      description: `${j.scheduledDate ? humanDate(j.scheduledDate) : "Unscheduled"}${j.assignedTo ? ` · ${j.assignedTo}` : ""}`,
+      createdBy: j.assignedTo || "—", createdAt: sortKey(when), displayDate: when ? humanDate(when) : "—",
+    });
   }
 
   return out;

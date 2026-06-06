@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Sun, Moon, Building2, MapPin, Map, Check,
-  Globe, Users, Shield, Megaphone, MessageSquare,
+  Globe, Users, Shield, ShieldCheck, Megaphone, MessageSquare,
   Puzzle, Factory, Sliders, CreditCard, ArrowUpDown,
   TrendingUp, Briefcase, ClipboardList, Image as ImageIcon,
   FileText, ChevronRight, Plus, Pencil, LayoutDashboard,
@@ -37,12 +37,17 @@ const AgreementsSettingsSection = dynamic(() => import("@/components/settings/Ag
 const ProposalBuilderSection    = dynamic(() => import("@/components/settings/ProposalBuilderSection"),    { loading: SectionLoading, ssr: false });
 const MarketingSettingsSection  = dynamic(() => import("@/components/settings/MarketingSettingsSection"),  { loading: SectionLoading, ssr: false });
 const UsersSection              = dynamic(() => import("@/components/settings/UsersSection"),              { loading: SectionLoading, ssr: false });
-import { serviceAreas } from "@/lib/hierarchy/data";
-import { AddCompanyModal, AddLocationModal } from "@/components/hierarchy/HierarchyModals";
+const RolesSection              = dynamic(() => import("@/components/settings/RolesSection"),              { loading: SectionLoading, ssr: false });
+import {
+  AddCompanyModal, AddLocationModal, AddServiceAreaModal,
+  EditCompanyModal, EditLocationModal, EditServiceAreaModal,
+} from "@/components/hierarchy/HierarchyModals";
+import type { Company, Location, ServiceArea } from "@/lib/hierarchy/types";
 import type { HierarchyMode } from "@/lib/hierarchy/types";
 import { SettingsScopeProvider } from "@/components/providers/SettingsScopeProvider";
-import SettingsScopeBar from "@/components/settings/SettingsScopeBar";
 import SectionGate from "@/components/settings/SectionGate";
+import EditingScopeHeader from "@/components/settings/EditingScopeHeader";
+import { SettingsActionsProvider, SettingsSaveSlot } from "@/components/settings/SettingsActions";
 import type { SectionLayers } from "@/lib/settings-scope/types";
 
 // ─── Navigation structure ─────────────────────────────────
@@ -51,7 +56,7 @@ type SectionKey =
   | "organization" | "companies" | "locations" | "service_areas"
   | "pipelines" | "job_types" | "work_orders" | "photo_categories" | "calendar_dispatch" | "agreements"
   | "items_categories" | "quote_settings" | "quote_templates" | "proposal_builder" | "terms_conditions" | "taxes_fees"
-  | "users" | "security"
+  | "users" | "roles" | "security"
   | "marketing" | "communication"
   | "integrations" | "industry" | "custom_fields" | "dashboards" | "billing" | "import_export";
 
@@ -143,8 +148,9 @@ const CATEGORIES: Category[] = [
     description: "Team members, roles, and access control",
     icon: Users,
     items: [
-      { key: "users",    label: "Users & Roles", description: "Invite team members and manage roles",          icon: Users,  phase: "Phase 1" },
-      { key: "security", label: "Security",      description: "Two-factor auth, sessions, and audit logging",  icon: Shield, phase: "Phase 1" },
+      { key: "users",    label: "Users & Roles",       description: "Invite team members and assign roles",          icon: Users,       phase: "Phase 1" },
+      { key: "roles",    label: "Roles & Permissions",  description: "Create roles and set what each can access",      icon: ShieldCheck, phase: "Phase 1" },
+      { key: "security", label: "Security",             description: "Two-factor auth, sessions, and audit logging",  icon: Shield,      phase: "Phase 1" },
     ],
   },
   {
@@ -190,7 +196,8 @@ const SECTION_LAYERS: Record<SectionKey, SectionLayers> = {
   proposal_builder:   ["org", "company"],
   terms_conditions:   ["org", "company"],
   taxes_fees:         ["org", "company", "location"],
-  users:              ["org", "company"],
+  users:              ["org"],
+  roles:              ["org"],
   security:           ["org"],
   marketing:          ["org", "company"],
   communication:      ["org", "company"],
@@ -499,17 +506,45 @@ function BusinessStructureSection() {
           Changes take effect immediately. Module settings are stored per organization and will persist across sessions in production.
         </p>
       </Card>
+
+      {/* ── Preferences ───────────────────────────────────── */}
+      <Card>
+        <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: "var(--text-muted)" }}>
+          Preferences
+        </p>
+        <p className="text-xs mb-3" style={{ color: "var(--text-muted)" }}>
+          Optional workflow tweaks for how your team works day to day.
+        </p>
+        <div className="divide-y-0">
+          <ToggleRow
+            label="Customer Quick Add"
+            description="Add a fast name + phone entry option to the New Customer screen. Off by default — new customers go through the full setup wizard."
+            enabled={orgSettings.customerQuickAdd}
+            onChange={v => setOrgSetting("customerQuickAdd", v)}
+          />
+        </div>
+      </Card>
     </div>
   );
 }
 
 // ─── Organization ─────────────────────────────────────────
 function OrganizationSection() {
-  const { organization, orgSettings } = useHierarchy();
+  const { organization, orgSettings, updateOrganization } = useHierarchy();
   const [name, setName]   = useState(organization.name);
   const [saved, setSaved] = useState(false);
 
-  function handleSave() { setSaved(true); setTimeout(() => setSaved(false), 2000); }
+  // Keep the field in sync if the stored org name loads/changes after mount.
+  useEffect(() => { setName(organization.name); }, [organization.name]);
+
+  const dirty = name.trim() !== organization.name && name.trim().length > 0;
+
+  function handleSave() {
+    if (!dirty) return;
+    updateOrganization({ name: name.trim() });
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  }
 
   return (
     <div className="space-y-4">
@@ -537,8 +572,8 @@ function OrganizationSection() {
             </div>
           </div>
           <div className="flex justify-end pt-2">
-            <button onClick={handleSave}
-              className="px-4 py-2 rounded-lg text-sm font-medium text-white transition-colors"
+            <button onClick={handleSave} disabled={!dirty && !saved}
+              className="px-4 py-2 rounded-lg text-sm font-medium text-white transition-colors disabled:opacity-40"
               style={{ backgroundColor: saved ? "#10b981" : "#4f46e5" }}>
               {saved ? "Saved ✓" : "Save Changes"}
             </button>
@@ -553,10 +588,12 @@ function OrganizationSection() {
 function CompaniesSection() {
   const { allCompanies, allLocations } = useHierarchy();
   const [addOpen, setAddOpen] = useState(false);
+  const [editing, setEditing] = useState<Company | null>(null);
   const industryColors: Record<string, string> = { hvac: "#6366f1", roofing: "#0891b2", plumbing: "#0d9488", electrical: "#d97706", restoration: "#dc2626", property_maintenance: "#059669", consulting: "#7c3aed" };
   return (
     <div className="space-y-4">
       <AddCompanyModal open={addOpen} onClose={() => setAddOpen(false)} />
+      {editing && <EditCompanyModal company={editing} open onClose={() => setEditing(null)} />}
       <SectionHeader
         title="Companies"
         subtitle="Business units and brands within your organization."
@@ -597,7 +634,7 @@ function CompaniesSection() {
                     </p>
                   </div>
                 </div>
-                <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs"
+                <button onClick={() => setEditing(co)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs"
                   style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>
                   <Pencil className="w-3 h-3" /> Edit
                 </button>
@@ -614,9 +651,11 @@ function CompaniesSection() {
 function LocationsSection() {
   const { allCompanies, allLocations } = useHierarchy();
   const [addOpen, setAddOpen] = useState(false);
+  const [editing, setEditing] = useState<Location | null>(null);
   return (
     <div className="space-y-4">
       <AddLocationModal open={addOpen} onClose={() => setAddOpen(false)} />
+      {editing && <EditLocationModal location={editing} open onClose={() => setEditing(null)} />}
       <SectionHeader
         title="Locations"
         subtitle="Branch offices and operating units under each company."
@@ -652,7 +691,7 @@ function LocationsSection() {
                         style={{ backgroundColor: loc.status === "active" ? "#d1fae5" : "var(--bg-input)", color: loc.status === "active" ? "#065f46" : "var(--text-muted)" }}>
                         {loc.status}
                       </span>
-                      <button className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs"
+                      <button onClick={() => setEditing(loc)} className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs"
                         style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>
                         <Pencil className="w-3 h-3" /> Edit
                       </button>
@@ -670,25 +709,32 @@ function LocationsSection() {
 
 // ─── Service Areas ────────────────────────────────────────
 function ServiceAreasSection() {
-  const { allCompanies, allLocations } = useHierarchy();
+  const { allCompanies, allLocations, allServiceAreas } = useHierarchy();
+  const [addOpen, setAddOpen] = useState(false);
+  const [editing, setEditing] = useState<ServiceArea | null>(null);
   return (
     <div className="space-y-4">
+      <AddServiceAreaModal open={addOpen} onClose={() => setAddOpen(false)} />
+      {editing && <EditServiceAreaModal serviceArea={editing} open onClose={() => setEditing(null)} />}
       <SectionHeader
         title="Service Areas"
         subtitle="Territories and markets served under each location."
         action={
-          <button className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-3 py-2 rounded-lg transition-colors">
+          <button onClick={() => setAddOpen(true)} className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-3 py-2 rounded-lg transition-colors">
             <Plus className="w-4 h-4" /> Add Service Area
           </button>
         }
       />
       {allLocations.map(loc => {
-        const areas = serviceAreas.filter(sa => sa.locationId === loc.id);
+        const areas = allServiceAreas.filter(sa => sa.locationId === loc.id);
         const co = allCompanies.find(c => c.id === loc.companyId);
         return (
           <div key={loc.id}>
             <p className="text-xs font-semibold uppercase tracking-widest mb-2 px-1"
               style={{ color: "var(--text-muted)" }}>{loc.name} — {co?.name}</p>
+            {areas.length === 0 ? (
+              <p className="text-xs px-1 pb-1" style={{ color: "var(--text-muted)" }}>No service areas yet.</p>
+            ) : (
             <div className="space-y-2">
               {areas.map(sa => (
                 <Card key={sa.id}>
@@ -707,7 +753,7 @@ function ServiceAreasSection() {
                         style={{ backgroundColor: sa.status === "active" ? "#d1fae5" : "var(--bg-input)", color: sa.status === "active" ? "#065f46" : "var(--text-muted)" }}>
                         {sa.status}
                       </span>
-                      <button className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs"
+                      <button onClick={() => setEditing(sa)} className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs"
                         style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>
                         <Pencil className="w-3 h-3" /> Edit
                       </button>
@@ -716,6 +762,7 @@ function ServiceAreasSection() {
                 </Card>
               ))}
             </div>
+            )}
           </div>
         );
       })}
@@ -851,6 +898,7 @@ export default function SettingsPage() {
       case "work_orders":    return <WorkOrderTemplatesSection />;
       case "agreements":     return <AgreementsSettingsSection />;
       case "users":          return <UsersSection />;
+      case "roles":          return <RolesSection />;
       case "security":       return <ComingSoon label="Security" phase="Phase 1"
         features={["Two-factor authentication","Session management","Audit log","Password policies"]} />;
       case "marketing":      return <MarketingSettingsSection />;
@@ -889,22 +937,26 @@ export default function SettingsPage() {
     const item = cat.items.find(i => i.key === view.section)!;
     return (
       <div className="space-y-5">
-        {/* Breadcrumb */}
-        <div className="flex items-center gap-1.5 text-sm" style={{ color: "var(--text-muted)" }}>
-          <button onClick={goHome}
-            className="hover:underline transition-colors"
-            style={{ color: "var(--text-secondary)" }}>
-            Settings
-          </button>
-          <ChevronRight className="w-3.5 h-3.5" />
-          <button onClick={() => goCategory(view.category)}
-            className="hover:underline transition-colors"
-            style={{ color: "var(--text-secondary)" }}>
-            {cat.label}
-          </button>
-          <ChevronRight className="w-3.5 h-3.5" />
-          <span style={{ color: "var(--text-primary)" }}>{item?.label}</span>
+        {/* Breadcrumb row — Save action sits inline on the right */}
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-1.5 text-sm min-w-0" style={{ color: "var(--text-muted)" }}>
+            <button onClick={goHome}
+              className="hover:underline transition-colors"
+              style={{ color: "var(--text-secondary)" }}>
+              Settings
+            </button>
+            <ChevronRight className="w-3.5 h-3.5 shrink-0" />
+            <button onClick={() => goCategory(view.category)}
+              className="hover:underline transition-colors"
+              style={{ color: "var(--text-secondary)" }}>
+              {cat.label}
+            </button>
+            <ChevronRight className="w-3.5 h-3.5 shrink-0" />
+            <span className="truncate" style={{ color: "var(--text-primary)" }}>{item?.label}</span>
+          </div>
+          <SettingsSaveSlot />
         </div>
+        <EditingScopeHeader sectionLayers={SECTION_LAYERS[view.section] ?? "any"} />
         <SectionGate layers={SECTION_LAYERS[view.section] ?? "any"} title={item?.label ?? "This setting"}>
           {renderSection(view.section)}
         </SectionGate>
@@ -914,6 +966,7 @@ export default function SettingsPage() {
 
   return (
     <SettingsScopeProvider>
+    <SettingsActionsProvider>
     <div className="flex h-full" style={{ backgroundColor: "var(--bg-page)" }}>
       {/* ── Condensed sidebar — 7 categories only ── */}
       <div
@@ -952,16 +1005,15 @@ export default function SettingsPage() {
         })}
       </div>
 
-      {/* ── Right content ── */}
+      {/* ── Right content ── (layer switching lives inside each section's
+          Editing Scope header now, not in a global top bar) ── */}
       <div className="flex-1 overflow-y-auto flex flex-col">
-        <div className="sticky top-0 z-10 shrink-0">
-          <SettingsScopeBar />
-        </div>
         <div className="p-6">
           {renderContent()}
         </div>
       </div>
     </div>
+    </SettingsActionsProvider>
     </SettingsScopeProvider>
   );
 }

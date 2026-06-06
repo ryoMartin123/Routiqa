@@ -147,8 +147,8 @@ export function setUserStatus(id: string, status: UserStatus): void {
 // The rest of the app identifies a person by display name (assignedTo: string),
 // so these return names. Technicians populate the dispatch board & job assignee
 // pickers; dispatchers populate the board editor.
-const TECH_ROLES: RoleKey[] = ["technician"];
-const DISPATCH_ROLES: RoleKey[] = ["dispatcher", "location_manager", "company_admin", "org_admin", "org_owner"];
+const TECH_ROLES: RoleKey[] = ["field_technician", "installer"];
+const DISPATCH_ROLES: RoleKey[] = ["dispatcher", "location_manager", "branch_manager", "org_admin", "org_owner"];
 
 export function getActiveUsers(): AppUser[] {
   return init().filter(u => u.status === "active");

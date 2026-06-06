@@ -2,6 +2,15 @@
 // Maps to future DB tables:
 //   accounts, contacts, properties, equipment,
 //   jobs (summary view), leads, customer_notes
+//
+// Jobs, leads, and tasks live in their own module stores (lib/jobs,
+// lib/leads, lib/tasks) keyed by accountId. The getters below read from
+// those real stores and map them onto the customer-profile display types,
+// so a job created anywhere shows on its account.
+
+import { getAllJobs, type JobStatus as RealJobStatus, type JobType as RealJobType } from "@/lib/jobs/data";
+import { getAllLeads, LEAD_SOURCE_LABELS, type LeadStage } from "@/lib/leads/data";
+import { getTasksForCustomer, type TaskType as RealTaskType } from "@/lib/tasks/data";
 
 // ─── Types ────────────────────────────────────────────────
 export type AccountType    = "residential" | "commercial" | "property_management" | "multi_site" | "other";
@@ -149,8 +158,25 @@ export interface CustomerTask {
 
 export const TASKS: Record<string, CustomerTask[]> = {};
 
+// Profile TaskType is a subset; map unknown real types onto "other".
+const PROFILE_TASK_TYPES: TaskType[] = ["follow_up", "call", "schedule", "send_estimate", "send_agreement", "other"];
+function mapTaskType(t: RealTaskType): TaskType {
+  return PROFILE_TASK_TYPES.includes(t as TaskType) ? (t as TaskType) : "other";
+}
+
 export function getTasks(customerId: string): CustomerTask[] {
-  return TASKS[customerId] ?? [];
+  const seeded = TASKS[customerId];
+  if (seeded) return seeded;
+  return getTasksForCustomer(customerId).map(t => ({
+    id: t.id,
+    customerId,
+    title: t.title,
+    type: mapTaskType(t.type),
+    dueDate: t.dueDate,
+    assignedTo: t.assignedTo,
+    status: t.status,
+    notes: t.notes,
+  }));
 }
 
 // ─── Runtime store (pre-Supabase) ────────────────────────
@@ -170,6 +196,34 @@ export function _loadFromStorage(): void {
   } catch { /* ignore */ }
 }
 
+// Patch a runtime customer (e.g. saving a service address captured at job time).
+// Seed customers aren't patched here (the prototype's seed is empty post-clear).
+export function updateCustomer(id: string, patch: Partial<Customer>): Customer | undefined {
+  let updated: Customer | undefined;
+  _extra = _extra.map(c => {
+    if (c.id !== id) return c;
+    updated = { ...c, ...patch };
+    return updated;
+  });
+  if (updated) {
+    try { localStorage.setItem("crm-extra-customers", JSON.stringify(_extra)); } catch { /* ignore */ }
+  }
+  return updated ?? getCustomer(id);
+}
+
+// Remove a runtime customer from the store.
+// Seed customers (ALL_CUSTOMERS) are not removable here; the prototype's
+// seed is empty post-clear, so every account lives in _extra.
+export function deleteCustomer(id: string): boolean {
+  const before = _extra.length;
+  _extra = _extra.filter(c => c.id !== id);
+  const removed = _extra.length < before;
+  if (removed) {
+    try { localStorage.setItem("crm-extra-customers", JSON.stringify(_extra)); } catch { /* ignore */ }
+  }
+  return removed;
+}
+
 // ─── Lookup helpers ───────────────────────────────────────
 export function getCustomer(id: string): Customer | undefined {
   return ALL_CUSTOMERS.find((c) => c.id === id) ?? _extra.find((c) => c.id === id);
@@ -177,6 +231,18 @@ export function getCustomer(id: string): Customer | undefined {
 
 export function getAllCustomers(): Customer[] {
   return [...ALL_CUSTOMERS, ..._extra];
+}
+
+// ─── By-company helpers (hierarchy cascade) ───────────────
+export function getCustomersByCompany(companyId: string): Customer[] {
+  return getAllCustomers().filter(c => c.companyId === companyId);
+}
+// Deletes every customer under a company; returns the deleted ids so callers
+// can cascade dependent records (e.g. agreements keyed by customerId).
+export function deleteCustomersByCompany(companyId: string): string[] {
+  const ids = getCustomersByCompany(companyId).map(c => c.id);
+  ids.forEach(id => deleteCustomer(id));
+  return ids;
 }
 
 export function getContacts(customerId: string): Contact[] {
@@ -209,14 +275,95 @@ export function getEquipment(customerId: string): Equipment[] {
   return EQUIPMENT[customerId] ?? [];
 }
 
-export function getJobs(customerId: string): CustomerJob[] {
-  return JOBS[customerId] ?? [];
+// ─── Real-store → profile-display mappers ─────────────────
+// The jobs module has a granular status set; collapse it onto the four
+// summary statuses the profile renders.
+const JOB_STATUS_MAP: Record<RealJobStatus, JobStatus> = {
+  new: "Scheduled", scheduled: "Scheduled", en_route: "Scheduled",
+  in_progress: "In Progress", waiting_on_parts: "In Progress", waiting_on_customer: "In Progress",
+  completed: "Completed", invoiced: "Completed", closed: "Completed",
+  canceled: "Canceled", no_show: "Canceled",
+};
+function titleCase(s: string): string {
+  return s.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
 }
 
+export function getJobs(customerId: string): CustomerJob[] {
+  const seeded = JOBS[customerId];
+  if (seeded) return seeded;
+  return getAllJobs()
+    .filter(j => j.accountId === customerId)
+    .map(j => ({
+      id: j.id,
+      customerId,
+      title: j.title,
+      type: titleCase(j.type as RealJobType),
+      status: JOB_STATUS_MAP[j.status] ?? "Scheduled",
+      date: j.scheduledDate || "Unscheduled",
+      tech: j.assignedTo || "Unassigned",
+      amount: j.actualAmount ?? j.estimatedAmount,
+    }));
+}
+
+// Lead pipeline stage → profile summary status.
+const LEAD_STAGE_MAP: Record<LeadStage, LeadStatus> = {
+  new_lead: "New",
+  contacted: "Contacted", appointment_scheduled: "Contacted", follow_up: "Contacted",
+  estimate_needed: "Quoted", estimate_sent: "Quoted",
+  won: "Won", lost: "Lost",
+};
+
 export function getLeads(customerId: string): CustomerLead[] {
-  return LEADS[customerId] ?? [];
+  const seeded = LEADS[customerId];
+  if (seeded) return seeded;
+  return getAllLeads()
+    .filter(l => l.accountId === customerId)
+    .map(l => ({
+      id: l.id,
+      customerId,
+      title: l.title,
+      status: LEAD_STAGE_MAP[l.stage] ?? "New",
+      date: l.displayDate,
+      value: l.estimatedValue,
+      source: LEAD_SOURCE_LABELS[l.source],
+    }));
+}
+
+// ─── Customer notes runtime store ─────────────────────────
+const NOTES_KEY = "crm-customer-notes";
+let _notes: Record<string, CustomerNote[]> | null = null;
+function notesStore(): Record<string, CustomerNote[]> {
+  if (_notes) return _notes;
+  if (typeof window === "undefined") return {};
+  try { const raw = localStorage.getItem(NOTES_KEY); _notes = raw ? JSON.parse(raw) : {}; }
+  catch { _notes = {}; }
+  return _notes!;
 }
 
 export function getNotes(customerId: string): CustomerNote[] {
-  return NOTES[customerId] ?? [];
+  const seeded = NOTES[customerId] ?? [];
+  const runtime = notesStore()[customerId] ?? [];
+  return [...runtime, ...seeded];
+}
+
+export function addNote(
+  customerId: string,
+  text: string,
+  type: NoteType = "note",
+  user = "You",
+): CustomerNote {
+  const note: CustomerNote = {
+    id: `note-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`,
+    customerId,
+    date: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+    user,
+    userInitials: user.split(" ").map(w => w[0] ?? "").join("").slice(0, 2).toUpperCase() || "Y",
+    text,
+    type,
+  };
+  const store = { ...notesStore() };
+  store[customerId] = [note, ...(store[customerId] ?? [])];
+  _notes = store;
+  try { localStorage.setItem(NOTES_KEY, JSON.stringify(store)); } catch { /* ignore */ }
+  return note;
 }

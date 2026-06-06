@@ -1,13 +1,13 @@
-// ─── Preset roles ─────────────────────────────────────────
-// System roles, expressed as capability maps. They are NOT user-editable today;
-// a future custom-role builder writes new RoleDefinition rows in this same shape,
-// so the resolver and gating UI never change ("presets now, custom-ready").
+// ─── Default roles (HVAC preset) ──────────────────────────
+// The roles a fresh HVAC org ships with. They're plain data: the roles store
+// (store.ts) seeds itself from these, after which admins can edit permissions or
+// add custom roles. The resolver and matrix UI read whatever the store returns,
+// so editing a role here vs. in the UI is the same shape.
 //
-// Tuning these is intentionally easy — they're plain data. Missing resource ⇒ no
-// access; missing action ⇒ "none". org_owner/org_admin/company_admin use
+// Missing resource ⇒ no access; missing action ⇒ "none". Org/branch admins use
 // `allAccess` (scoped by their membership) instead of an exhaustive map.
 
-import type { Action, AccessLevel, CapabilityMap, RoleDefinition, RoleKey } from "./types";
+import type { Action, AccessLevel, RoleDefinition, RoleKey } from "./types";
 
 // Action-level shorthands.
 const A: AccessLevel = "all";
@@ -18,36 +18,40 @@ const FULL: Record<Action, AccessLevel> = {
 const VIEW: Partial<Record<Action, AccessLevel>> = { view: A };
 
 export const ROLE_PRESETS: Record<RoleKey, RoleDefinition> = {
-  // ── Org-wide admins (allAccess, scoped by membership) ────
+  // ── Organization Owner (the account holder) ──────────────
   org_owner: {
     key: "org_owner", label: "Organization Owner", system: true, scopeTier: "org_admin",
-    description: "Full control of the entire organization, including billing and ownership.",
+    description: "The account owner. Full control of everything, including billing and ownership.",
     allAccess: true,
     capabilities: { billing: { ...FULL } },
     masks: ["finance_cost_margin", "finance_totals", "finance_payroll", "comms_internal_notes", "sales_other_commissions"],
     flags: ["hierarchy_manage", "users_manage", "roles_manage", "billing_manage", "reports_cross_scope", "records_deactivate", "automation_manage"],
   },
+
+  // ── Org Admin ────────────────────────────────────────────
   org_admin: {
-    key: "org_admin", label: "Organization Admin", system: true, scopeTier: "org_admin",
-    description: "Manage all companies, locations, users, and settings. No billing/ownership.",
+    key: "org_admin", label: "Org Admin", system: true, scopeTier: "org_admin",
+    description: "Manage every company, location, user, and setting across the organization. No billing.",
     allAccess: true,
     capabilities: {},
     masks: ["finance_cost_margin", "finance_totals", "finance_payroll", "comms_internal_notes", "sales_other_commissions"],
     flags: ["hierarchy_manage", "users_manage", "roles_manage", "reports_cross_scope", "records_deactivate", "automation_manage"],
   },
-  company_admin: {
-    key: "company_admin", label: "Company Admin", system: true, scopeTier: "company_admin",
-    description: "Full control within one company and its locations.",
+
+  // ── Branch Manager (over a company / brand and its locations) ──
+  branch_manager: {
+    key: "branch_manager", label: "Branch Manager", system: true, scopeTier: "company_admin",
+    description: "Run a company/brand and all of its locations: team, operations, and local reporting.",
     allAccess: true,
     capabilities: {},
-    masks: ["finance_cost_margin", "finance_totals", "finance_payroll", "comms_internal_notes", "sales_other_commissions"],
-    flags: ["hierarchy_manage", "users_manage", "reports_cross_scope", "records_deactivate", "automation_manage"],
+    masks: ["finance_cost_margin", "finance_totals", "comms_internal_notes", "sales_other_commissions"],
+    flags: ["users_manage", "reports_cross_scope", "records_deactivate", "automation_manage"],
   },
 
-  // ── Location / branch manager ────────────────────────────
+  // ── Location Manager (a single branch) ───────────────────
   location_manager: {
     key: "location_manager", label: "Location Manager", system: true, scopeTier: "location_manager",
-    description: "Run a branch: customers, jobs, scheduling, team, and local reports.",
+    description: "Run one location: customers, jobs, scheduling, team, and local reports.",
     capabilities: {
       dashboard: VIEW,
       customers: { ...FULL }, contacts: { ...FULL }, leads: { ...FULL }, deals: { ...FULL },
@@ -61,41 +65,50 @@ export const ROLE_PRESETS: Record<RoleKey, RoleDefinition> = {
     flags: ["records_deactivate"],
   },
 
-  // ── Dispatcher ───────────────────────────────────────────
+  // ── Dispatcher (can own multiple locations via grants) ───
   dispatcher: {
     key: "dispatcher", label: "Dispatcher", system: true, scopeTier: "employee",
-    description: "Schedule and assign field work; owns the calendar and dispatch queue.",
+    description: "Schedule and assign field work across one or more locations; owns the dispatch board.",
     capabilities: {
       dashboard: VIEW,
       calendar: { view: A, create: A, edit: A, assign: A },
-      jobs: { view: A, edit: A, assign: A }, tasks: { view: A, create: A, edit: A, assign: A },
-      customers: VIEW, contacts: VIEW, leads: VIEW, files: VIEW,
+      jobs: { view: A, create: A, edit: A, assign: A }, tasks: { view: A, create: A, edit: A, assign: A },
+      customers: VIEW, contacts: VIEW, leads: VIEW, files: VIEW, projects: VIEW,
       communications: { view: A, create: A }, reports: VIEW,
     },
     masks: ["comms_internal_notes"],
     flags: [],
   },
 
-  // ── CSR / office ─────────────────────────────────────────
-  csr: {
-    key: "csr", label: "CSR / Office", system: true, scopeTier: "employee",
-    description: "Front office: customers, scheduling, communications, and invoicing.",
+  // ── Field Technician (service) ───────────────────────────
+  field_technician: {
+    key: "field_technician", label: "Field Technician", system: true, scopeTier: "employee",
+    description: "See and update assigned service jobs, work orders, and photos. No financials.",
     capabilities: {
       dashboard: VIEW,
-      customers: { ...FULL }, contacts: { ...FULL }, leads: { ...FULL },
-      jobs: { view: A, create: A, edit: A }, tasks: { ...FULL },
-      calendar: { view: A, create: A }, communications: { ...FULL },
-      quotes: { view: A, create: A, edit: A },
-      invoices: { view: A, create: A, edit: A }, payments: { view: A, create: A },
-      agreements: { view: A, create: A }, files: { view: A, create: A }, reports: VIEW,
+      jobs: { view: O, edit: O }, tasks: { view: O, edit: O },
+      files: { view: O, create: O }, customers: { view: O }, calendar: { view: O },
     },
-    masks: ["finance_totals", "comms_internal_notes"],
+    masks: [],
     flags: [],
   },
 
-  // ── Sales / estimator ────────────────────────────────────
-  sales: {
-    key: "sales", label: "Sales / Estimator", system: true, scopeTier: "employee",
+  // ── Installer (project / install crew) ───────────────────
+  installer: {
+    key: "installer", label: "Installer", system: true, scopeTier: "employee",
+    description: "Carry out assigned installations and projects, with work orders and photos. No financials.",
+    capabilities: {
+      dashboard: VIEW,
+      jobs: { view: O, edit: O }, projects: { view: O, edit: O }, tasks: { view: O, edit: O },
+      files: { view: O, create: O }, customers: { view: O }, calendar: { view: O },
+    },
+    masks: [],
+    flags: [],
+  },
+
+  // ── Salesperson / Estimator ──────────────────────────────
+  salesperson: {
+    key: "salesperson", label: "Salesperson", system: true, scopeTier: "employee",
     description: "Work the pipeline: leads, quotes, proposals, and agreements.",
     capabilities: {
       dashboard: VIEW,
@@ -109,83 +122,27 @@ export const ROLE_PRESETS: Record<RoleKey, RoleDefinition> = {
     masks: ["finance_cost_margin", "finance_totals", "comms_internal_notes"],
     flags: [],
   },
+};
 
-  // ── Field technician ─────────────────────────────────────
-  technician: {
-    key: "technician", label: "Field Technician", system: true, scopeTier: "employee",
-    description: "See and update assigned jobs, work orders, and photos. No financials.",
-    capabilities: {
-      dashboard: VIEW,
-      jobs: { view: O, edit: O }, tasks: { view: O, edit: O },
-      files: { view: O, create: O }, customers: { view: O }, calendar: { view: O },
-    },
-    masks: [],
-    flags: [],
-  },
-
-  // ── Bookkeeper / accountant ──────────────────────────────
-  bookkeeper: {
-    key: "bookkeeper", label: "Bookkeeper", system: true, scopeTier: "company_admin",
-    description: "Invoices, payments, and financial reporting. Read-only on operations.",
-    capabilities: {
-      dashboard: VIEW,
-      invoices: { view: A, create: A, edit: A, export: A }, payments: { ...FULL },
-      quotes: VIEW, agreements: VIEW, customers: VIEW, jobs: VIEW,
-      reports: { view: A, export: A }, items: VIEW,
-    },
-    masks: ["finance_cost_margin", "finance_totals", "finance_payroll"],
-    flags: ["reports_cross_scope"],
-  },
-
-  // ── Marketing ────────────────────────────────────────────
-  marketing: {
-    key: "marketing", label: "Marketing", system: true, scopeTier: "company_admin",
-    description: "Campaigns, templates, and audiences. Reads CRM data; no financials.",
-    capabilities: {
-      dashboard: VIEW,
-      marketing: { ...FULL }, communications: { view: A, create: A },
-      customers: VIEW, leads: VIEW, agreements: VIEW, reports: VIEW,
-    },
-    masks: [],
-    flags: ["automation_manage"],
-  },
-
-  // ── Generic employee (hierarchy fallback) ────────────────
-  employee: {
-    key: "employee", label: "Employee", system: true, scopeTier: "employee",
-    description: "Basic access to assigned work.",
-    capabilities: {
-      dashboard: VIEW,
-      jobs: { view: O }, tasks: { view: O, edit: O }, customers: { view: O }, files: { view: O },
-    },
-    masks: [],
-    flags: [],
-  },
-
-  // ── Read-only viewer / auditor ───────────────────────────
-  viewer: {
-    key: "viewer", label: "Viewer", system: true, scopeTier: "employee",
-    description: "Read-only access within scope. No changes.",
-    capabilities: {
-      dashboard: VIEW, customers: VIEW, contacts: VIEW, leads: VIEW, deals: VIEW,
-      jobs: VIEW, projects: VIEW, tasks: VIEW, files: VIEW, agreements: VIEW,
-      calendar: VIEW, quotes: VIEW, invoices: VIEW, reports: VIEW,
-    },
-    masks: [],
-    flags: [],
-  },
+// Minimal safe role for an unknown key (e.g. a deleted custom role still on a
+// grant). Dashboard view only.
+export const FALLBACK_ROLE: RoleDefinition = {
+  key: "__fallback", label: "Limited", system: true, scopeTier: "employee",
+  description: "Minimal access (role not found).",
+  capabilities: { dashboard: { view: "all" } },
+  masks: [], flags: [],
 };
 
 export function getRolePreset(key: RoleKey): RoleDefinition {
-  return ROLE_PRESETS[key];
+  return ROLE_PRESETS[key] ?? FALLBACK_ROLE;
 }
 
-// Ordered list for the Roles UI (admins first, then operational, then read-only).
+// Ordered list for the Roles UI (owner/admins first, then operational).
 export const ROLE_ORDER: RoleKey[] = [
-  "org_owner", "org_admin", "company_admin", "location_manager", "dispatcher",
-  "csr", "sales", "technician", "bookkeeper", "marketing", "employee", "viewer",
+  "org_owner", "org_admin", "branch_manager", "location_manager",
+  "dispatcher", "field_technician", "installer", "salesperson",
 ];
 
-// Roles offered when assigning a user (excludes the org_owner super-grant, which
-// is set elsewhere). Plain export so the Users UI can list them.
+// Roles offered when assigning a user (excludes org_owner, set only on the
+// account owner). Custom roles are appended by the store at runtime.
 export const ASSIGNABLE_ROLES: RoleKey[] = ROLE_ORDER.filter(r => r !== "org_owner");

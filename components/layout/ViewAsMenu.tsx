@@ -8,7 +8,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Eye, Check, X, ChevronDown } from "lucide-react";
 import { usePermissionContext } from "@/components/providers/PermissionProvider";
-import { ROLE_PRESETS } from "@/lib/roles/presets";
+import { getRoleLabel } from "@/lib/roles/store";
 
 export default function ViewAsMenu() {
   const { users, actingUser, realUser, isImpersonating, setActingUserId, resetActing } = usePermissionContext();
@@ -26,7 +26,7 @@ export default function ViewAsMenu() {
     if (u.isOrgOwner) return "Owner";
     const role = u.assignments[0]?.role;
     const extra = u.assignments.length > 1 ? ` +${u.assignments.length - 1}` : "";
-    return role ? ROLE_PRESETS[role].label + extra : "No role";
+    return role ? getRoleLabel(role) + extra : "No role";
   };
 
   return (

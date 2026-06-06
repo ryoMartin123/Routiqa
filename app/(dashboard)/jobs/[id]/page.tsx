@@ -1,8 +1,8 @@
 "use client";
 
-import React, { use, useState } from "react";
+import React, { use, useState, Suspense } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, CheckCircle, Circle, ChevronRight, Phone, MapPin, User, Clock, Calendar, DollarSign, Briefcase, AlertTriangle, Camera, ListChecks, Plus, Trash2, Ban, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getJob, updateJob, deleteJob, getWorkOrder, getJobNotes, resolveJobStatus, type JobNoteType } from "@/lib/jobs/data";
@@ -571,9 +571,14 @@ function InfoRow({ icon: Icon, label, value }: { icon: typeof Phone; label: stri
 }
 
 // ─── Page ─────────────────────────────────────────────────
-export default function JobDetailPage({ params }: { params: Promise<{ id: string }> }) {
+function JobDetailContent({ params }: { params: Promise<{ id: string }> }) {
   const { id }    = use(params);
   const router    = useRouter();
+  const searchParams = useSearchParams();
+  // Back target — defaults to the Jobs list, but a linking page (e.g. a customer
+  // profile's Jobs tab) can pass ?back=<url>&backLabel=<text> to return there.
+  const backHref  = searchParams.get("back") || "/jobs";
+  const backLabel = searchParams.get("backLabel") || "Jobs";
   const [tab, setTab] = useState("Overview");
   const [job, setJob] = useState(() => getJob(id));
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -592,8 +597,8 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
   if (!job) {
     return (
       <div className="p-6">
-        <Link href="/jobs" className="flex items-center gap-1.5 text-sm mb-4" style={{ color: "var(--text-secondary)" }}>
-          <ArrowLeft className="w-4 h-4" /> Back to Jobs
+        <Link href={backHref} className="flex items-center gap-1.5 text-sm mb-4" style={{ color: "var(--text-secondary)" }}>
+          <ArrowLeft className="w-4 h-4" /> Back to {backLabel}
         </Link>
         <p className="text-sm" style={{ color: "var(--text-muted)" }}>Job not found.</p>
       </div>
@@ -609,8 +614,8 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
         {/* Top row */}
         <div className="flex items-center justify-between px-6 py-4">
           <div className="flex items-center gap-4 min-w-0">
-            <Link href="/jobs" className="flex items-center gap-1.5 text-sm shrink-0" style={{ color: "var(--text-secondary)" }}>
-              <ArrowLeft className="w-4 h-4" /> Jobs
+            <Link href={backHref} className="flex items-center gap-1.5 text-sm shrink-0" style={{ color: "var(--text-secondary)" }}>
+              <ArrowLeft className="w-4 h-4" /> {backLabel}
             </Link>
             {project && (
               <>
@@ -708,5 +713,14 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
         </div>
       )}
     </div>
+  );
+}
+
+export default function JobDetailPage(props: { params: Promise<{ id: string }> }) {
+  // Suspense boundary required because the content reads useSearchParams.
+  return (
+    <Suspense fallback={null}>
+      <JobDetailContent {...props} />
+    </Suspense>
   );
 }

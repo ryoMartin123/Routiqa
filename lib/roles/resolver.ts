@@ -8,7 +8,7 @@
 // + Technician at Evans yields manager powers on an Augusta record and tech
 // powers on an Evans record, automatically.
 
-import { ROLE_PRESETS } from "./presets";
+import { getRoleDefinition } from "./store";
 import {
   RESTRICTED_RESOURCES,
   type Action, type AccessLevel, type FieldMask, type PermissionContext, type Principal,
@@ -17,8 +17,10 @@ import {
 
 const RANK: Record<AccessLevel, number> = { none: 0, own: 1, all: 2 };
 
+// Resolve a grant's role through the store (custom + edited roles), falling back
+// to the shipped preset / a safe minimal role for unknown keys.
 function roleOf(g: RoleGrant): RoleDefinition {
-  return ROLE_PRESETS[g.role] ?? ROLE_PRESETS.employee;
+  return getRoleDefinition(g.role);
 }
 
 // Does a grant's scope contain the given context?

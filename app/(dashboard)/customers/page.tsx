@@ -2,12 +2,13 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Search, Plus, SlidersHorizontal, ChevronUp, ChevronDown, Users, UserPlus, TrendingUp, Building2 } from "lucide-react";
+import { Search, Plus, SlidersHorizontal, ChevronUp, ChevronDown, Users, UserPlus, TrendingUp, Building2, FlaskConical } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { type Customer, type AccountType, type CustomerType, type CustomerStatus } from "@/lib/customers/data";
 import { useHierarchy } from "@/components/providers/HierarchyProvider";
 import { useCustomers } from "@/components/providers/CustomerProvider";
 import NewCustomerModal from "@/components/customers/NewCustomerModal";
+import { seedTestData } from "@/lib/dev/seedTestData";
 import ModuleSummaryCards, { type SummaryCard } from "@/components/shared/ModuleSummaryCards";
 import StatusTabs from "@/components/shared/StatusTabs";
 import ModuleViewToggle, { type ModuleView } from "@/components/shared/ModuleViewToggle";
@@ -50,7 +51,7 @@ function statusPill(status: CustomerStatus) {
 // ─── Page ─────────────────────────────────────────────────
 export default function CustomersPage() {
   const { effectiveCompanyId, effectiveLocationId, effectiveServiceAreaId } = useHierarchy();
-  const { customers } = useCustomers();
+  const { customers, addCustomer } = useCustomers();
 
   const [modalOpen, setModalOpen] = useState(false);
   const [tab, setTab]             = useState("all");
@@ -134,7 +135,16 @@ export default function CustomersPage() {
           </p>
         </div>
         <ModuleViewToggle view={moduleView} onChange={setModuleView} />
-        <div className="flex-1 flex justify-end">
+        <div className="flex-1 flex justify-end gap-2">
+          <button
+            onClick={() => seedTestData(addCustomer)}
+            title="Create one test account per type (with jobs, an agreement, and a quote) to exercise the profile wiring"
+            className="flex items-center gap-1.5 text-sm font-medium px-3 py-2 rounded-lg transition-colors"
+            style={{ border: "1px solid var(--border)", color: "var(--text-secondary)", backgroundColor: "var(--bg-surface)" }}
+          >
+            <FlaskConical className="w-4 h-4" />
+            Load Test Data
+          </button>
           <button
             onClick={() => setModalOpen(true)}
             className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-3 py-2 rounded-lg transition-colors"

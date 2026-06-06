@@ -7,3 +7,5 @@ export * from "./catalog";
 export * from "./presets";
 export * from "./resolver";
 export * from "./principal";
+export * from "./store";
+export * from "./validate";

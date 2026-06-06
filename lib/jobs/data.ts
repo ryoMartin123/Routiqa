@@ -179,6 +179,11 @@ export function deleteJob(id: string): void {
   }
 }
 
+// Delete every job under a company (hierarchy cascade).
+export function deleteJobsByCompany(companyId: string): void {
+  getAllJobs().filter(j => j.companyId === companyId).forEach(j => deleteJob(j.id));
+}
+
 export interface NewJobInput {
   companyId: string; locationId: string; serviceAreaId?: string;
   accountId: string; customerName: string; customerInitials: string; locationName: string;

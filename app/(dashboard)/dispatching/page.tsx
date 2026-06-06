@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   Inbox, Search, SlidersHorizontal, Layers, Eye, EyeOff,
   ChevronLeft, ChevronRight, ChevronUp, ChevronDown, LayoutGrid, LayoutList, CalendarDays, CalendarRange, CalendarClock,
-  Plus, Briefcase,
+  Plus, Briefcase, X,
 } from "lucide-react";
 import { useHierarchy } from "@/components/providers/HierarchyProvider";
 import CalendarItemDrawer from "@/components/calendar/CalendarItemDrawer";
@@ -18,7 +18,7 @@ import {
 import { createJob, updateJob, type JobType } from "@/lib/jobs/data";
 import { getCustomer } from "@/lib/customers/data";
 import {
-  getAvailabilityForDay, createAvailability, techStatusForKind, AVAILABILITY_CONFIG,
+  getAvailabilityForDay, createAvailability, removeAvailability, techStatusForKind, AVAILABILITY_CONFIG,
   type AvailabilityEvent, type NewAvailabilityInput,
 } from "@/lib/calendar/availability";
 import TimeOffModal from "@/components/calendar/TimeOffModal";
@@ -46,7 +46,11 @@ function addMonths(d: Date, n: number): Date { return new Date(d.getFullYear(), 
 function isSameDay(a: Date, b: Date): boolean { return a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate(); }
 function fmtTime(d: Date): string { return d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }); }
 function ymd(d: Date): string { return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; }
-function hourLabel(h: number): string { return `${h > 12 ? h - 12 : h}${h >= 12 ? "p" : "a"}`; }
+function hourLabel(h: number): string {
+  const period = h >= 12 && h < 24 ? "pm" : "am";
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  return `${String(h12).padStart(2, "0")}:00 ${period}`;
+}
 // Format a Date back into the human strings the jobs store uses, so a job
 // scheduled/moved on the board re-parses identically in the Jobs list + Today tab.
 function jobDateStr(d: Date): string { return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }); }
@@ -321,6 +325,10 @@ export default function CalendarPage() {
     setRefreshKey(k => k + 1);   // reloads availability for the focused day
     setTimeOffOpen(false);
   }
+  function handleRemoveTimeOff(id: string) {
+    removeAvailability(id);
+    setRefreshKey(k => k + 1);
+  }
 
   // Date nav
   const step = view === "week" ? 7 : 1;
@@ -483,7 +491,7 @@ export default function CalendarPage() {
       </div>
 
       {/* Board */}
-      {view === "dispatch" && <DispatchBoard focus={focus} mode={dispatchMode} items={boardItems} roster={boardRoster} availability={availability} dayStart={hourly.startHour} dayEnd={hourly.endHour} increment={hourly.increment} blocks={activeBlocks} onSelect={setSelScheduled} onMoveResize={applyMoveResize} onDropItem={(uid, tech, hour, minute) => { const u = unscheduled.find(x => x.id === uid); if (u) openConfirm(u, tech, focus, hour, minute); }} />}
+      {view === "dispatch" && <DispatchBoard focus={focus} mode={dispatchMode} items={boardItems} roster={boardRoster} availability={availability} dayStart={hourly.startHour} dayEnd={hourly.endHour} increment={hourly.increment} blocks={activeBlocks} onSelect={setSelScheduled} onMoveResize={applyMoveResize} onRemoveAvailability={handleRemoveTimeOff} onDropItem={(uid, tech, hour, minute) => { const u = unscheduled.find(x => x.id === uid); if (u) openConfirm(u, tech, focus, hour, minute); }} />}
       {view === "week"     && <WeekView  focus={focus} items={boardItems} onSelect={setSelScheduled} />}
       {view === "day"      && <DayView   focus={focus} items={boardItems} dayStart={hourly.startHour} dayEnd={hourly.endHour} onSelect={setSelScheduled} />}
       {view === "month"    && <MonthView focus={focus} items={boardItems} onSelect={setSelScheduled} />}
@@ -519,13 +527,14 @@ function initials(name: string): string {
 const ROW_H = 64;
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 
-function DispatchBoard({ focus, mode, items, roster, availability, dayStart, dayEnd, increment, blocks, onSelect, onMoveResize, onDropItem }: {
+function DispatchBoard({ focus, mode, items, roster, availability, dayStart, dayEnd, increment, blocks, onSelect, onMoveResize, onRemoveAvailability, onDropItem }: {
   focus: Date; mode: DispatchMode; items: CalendarItem[];
   roster: ReturnType<typeof getTechRoster>;
   availability: AvailabilityEvent[];
   dayStart: number; dayEnd: number; increment: number; blocks: SettingsServiceBlock[];
   onSelect: (i: CalendarItem) => void;
   onMoveResize: (id: string, start: Date, durationMinutes: number, tech?: string) => void;
+  onRemoveAvailability: (id: string) => void;
   onDropItem: (uid: string, tech: string, hour: number, minute: number) => void;
 }) {
   const dayItems = items.filter(i => isSameDay(i.start, focus) && !i.allDay);
@@ -573,7 +582,8 @@ function DispatchBoard({ focus, mode, items, roster, availability, dayStart, day
       if (!isSameDay(d, focus)) { setNow(null); return; }
       const min = (d.getHours() - dayStart) * 60 + d.getMinutes();
       if (min < 0 || min > totalMin) { setNow(null); return; }
-      setNow({ min, label: d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) });
+      const h12 = d.getHours() % 12 === 0 ? 12 : d.getHours() % 12;
+      setNow({ min, label: `${h12}:${String(d.getMinutes()).padStart(2, "0")}` });
     };
     update();
     const t = setInterval(update, 60_000);
@@ -638,19 +648,28 @@ function DispatchBoard({ focus, mode, items, roster, availability, dayStart, day
   }
 
   return (
-    <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
-      {/* Header */}
-      <div className="flex" style={{ borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
-        <div className="w-[180px] shrink-0 px-3 py-2 text-[10px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Technician</div>
+    <div className="relative" style={{ paddingTop: "20px" }}>
+      {/* Current-time box — OUTSIDE the board container (which clips), pinned above
+          it and aligned to the now-line. Offset by the 180px technician column so
+          its x matches the dashed line inside the grid. */}
+      {now != null && (
+        <div className="absolute z-30 px-1.5 py-0.5 rounded-md text-[10px] font-bold whitespace-nowrap pointer-events-none"
+          style={{ top: 0, left: `calc(180px + (100% - 180px) * ${now.min / totalMin})`, transform: "translateX(-50%)", backgroundColor: "var(--accent-soft-bg)", color: "var(--accent-text)", border: "1px solid var(--accent-soft-border)" }}>
+          {now.label}
+        </div>
+      )}
+      <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+        {/* Header */}
+        <div className="flex" style={{ borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+          <div className="w-[180px] shrink-0 px-3 py-2 text-[10px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Technician</div>
         <div className="flex-1 flex relative">
           {labels.map(l => (
-            <div key={l.key} className="px-2 py-2 text-[10px] font-semibold text-center" style={{ flex: l.span, color: "var(--text-muted)", borderLeft: "1px solid var(--border-subtle)" }}>{l.label}</div>
+            <div key={l.key} className="px-1 py-1.5 text-[10px] font-semibold text-center whitespace-nowrap" style={{ flex: l.span, color: "var(--text-muted)", borderLeft: "1px solid var(--border-subtle)" }}>{l.label}</div>
           ))}
-          {/* Current-time label — centered on the now-line, above the grid */}
+          {/* Now-line continues through the time-header row */}
           {now != null && (
-            <div className="absolute z-20 px-1.5 py-0.5 rounded-md text-[10px] font-bold whitespace-nowrap pointer-events-none"
-              style={{ left: `${(now.min / totalMin) * 100}%`, top: "50%", transform: "translate(-50%, -50%)", backgroundColor: "var(--accent-soft-bg)", color: "var(--accent-text)", border: "1px solid var(--accent-soft-border)" }}>
-              {now.label}
+            <div className="absolute top-0 bottom-0 pointer-events-none z-10" style={{ left: `${(now.min / totalMin) * 100}%` }}>
+              <div className="h-full" style={{ borderLeft: "1.5px dashed rgba(124, 58, 237, 0.45)" }} />
             </div>
           )}
         </div>
@@ -720,6 +739,15 @@ function DispatchBoard({ focus, mode, items, roster, availability, dayStart, day
                     <span className="text-[9px] font-bold uppercase tracking-wide px-1 truncate" style={{ color: cfg.color }}>
                       {cfg.label}{a.note ? ` · ${a.note}` : ""}
                     </span>
+                    {/* Remove this blocked/time-off span */}
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onRemoveAvailability(a.id); }}
+                      onMouseDown={(e) => e.stopPropagation()}
+                      title={`Remove ${cfg.label}`}
+                      className="absolute top-0.5 right-0.5 w-4 h-4 rounded flex items-center justify-center opacity-60 hover:opacity-100 transition-opacity"
+                      style={{ pointerEvents: "auto", backgroundColor: "var(--bg-surface)", color: cfg.color, border: `1px solid ${cfg.color}55`, zIndex: 25 }}>
+                      <X className="w-2.5 h-2.5" />
+                    </button>
                   </div>
                 );
               })}
@@ -775,6 +803,7 @@ function DispatchBoard({ focus, mode, items, roster, availability, dayStart, day
           </div>
         );
       })}
+      </div>
     </div>
   );
 }

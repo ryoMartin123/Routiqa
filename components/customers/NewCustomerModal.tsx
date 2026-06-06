@@ -556,9 +556,17 @@ function WizardContent({ onClose }: { onClose: () => void }) {
 
 // ─── Modal root ───────────────────────────────────────────
 export default function NewCustomerModal({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const [mode, setMode] = useState<"quick" | "full">("quick");
-  useEffect(() => { if (open) setMode("quick"); }, [open]);
+  // The full wizard is the standard flow. Businesses can opt into the fast
+  // name+phone path via Settings → Business Structure → Customer Quick Add.
+  const { orgSettings } = useHierarchy();
+  const quickAddEnabled = orgSettings.customerQuickAdd;
+
+  const [mode, setMode] = useState<"quick" | "full">("full");
+  useEffect(() => { if (open) setMode(quickAddEnabled ? "quick" : "full"); }, [open, quickAddEnabled]);
   if (!open) return null;
+
+  // Without Quick Add enabled, only the wizard is offered (no mode toggle).
+  const showQuick = quickAddEnabled && mode === "quick";
 
   return (
     <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={onClose}>
@@ -570,24 +578,26 @@ export default function NewCustomerModal({ open, onClose }: { open: boolean; onC
           <div>
             <h2 className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>New Customer</h2>
             <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
-              {mode === "quick" ? "Fast entry — name, phone, and type" : "Full setup — 4-step wizard"}
+              {showQuick ? "Fast entry — name, phone, and type" : "Full setup — 4-step wizard"}
             </p>
           </div>
           <button onClick={onClose} className="p-2 rounded-lg" style={{ color: "var(--text-muted)" }}>
             <X className="w-4 h-4" />
           </button>
         </div>
-        {/* Mode toggle */}
-        <div className="flex gap-1 px-6 py-3 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
-          {(["quick", "full"] as const).map(m => (
-            <button key={m} onClick={() => setMode(m)}
-              className="flex-1 py-1.5 rounded-lg text-xs font-semibold capitalize transition-all"
-              style={{ backgroundColor: mode === m ? "var(--bg-input)" : "transparent", color: mode === m ? "var(--text-primary)" : "var(--text-muted)", border: `1px solid ${mode === m ? "var(--border)" : "transparent"}` }}>
-              {m === "quick" ? "⚡ Quick Add" : "🧭 Full Setup"}
-            </button>
-          ))}
-        </div>
-        {mode === "quick" ? <QuickAddContent onClose={onClose} /> : <WizardContent onClose={onClose} />}
+        {/* Mode toggle — only when Quick Add is enabled for the org */}
+        {quickAddEnabled && (
+          <div className="flex gap-1 px-6 py-3 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+            {(["quick", "full"] as const).map(m => (
+              <button key={m} onClick={() => setMode(m)}
+                className="flex-1 py-1.5 rounded-lg text-xs font-semibold capitalize transition-all"
+                style={{ backgroundColor: mode === m ? "var(--bg-input)" : "transparent", color: mode === m ? "var(--text-primary)" : "var(--text-muted)", border: `1px solid ${mode === m ? "var(--border)" : "transparent"}` }}>
+                {m === "quick" ? "⚡ Quick Add" : "🧭 Full Setup"}
+              </button>
+            ))}
+          </div>
+        )}
+        {showQuick ? <QuickAddContent onClose={onClose} /> : <WizardContent onClose={onClose} />}
       </div>
     </div>
   );

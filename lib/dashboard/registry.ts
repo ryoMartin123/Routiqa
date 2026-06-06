@@ -1,7 +1,7 @@
 // Dashboard widget registry.
 // Read-only — never changes at runtime. Visibility/order live in layouts.ts.
 
-import type { HierarchyRole } from "@/lib/hierarchy/types";
+import type { RoleKey } from "@/lib/roles/types";
 
 export type WidgetSize     = "full" | "wide" | "narrow";
 export type ContextLevel   = "org" | "company" | "location" | "service_area";
@@ -16,7 +16,7 @@ export interface WidgetDef {
   // Context levels where this widget is meaningful.
   allowedContexts: ContextLevel[];
   // Roles that can see this widget. Empty = all roles.
-  allowedRoles:    HierarchyRole[];
+  allowedRoles:    RoleKey[];
 }
 
 export const WIDGET_REGISTRY: WidgetDef[] = [
@@ -80,7 +80,7 @@ export const WIDGET_REGISTRY: WidgetDef[] = [
     description: "Key metrics per branch — jobs, open leads, and outstanding invoices.",
     category: "operations", defaultSize: "wide",
     allowedContexts: ["org", "company"],
-    allowedRoles: ["org_admin", "company_admin"],
+    allowedRoles: ["org_admin", "branch_manager"],
   },
   {
     id: "quotes_followup", title: "Quotes — Follow-Up",
@@ -94,7 +94,7 @@ export const WIDGET_REGISTRY: WidgetDef[] = [
     description: "Month-to-date revenue bar chart with outstanding and average ticket metrics.",
     category: "financial", defaultSize: "narrow",
     allowedContexts: ["org", "company", "location"],
-    allowedRoles: ["org_admin", "company_admin", "location_manager"],
+    allowedRoles: ["org_admin", "branch_manager", "location_manager"],
   },
 
   // ── Company + Location + Service Area ─────────────────────
@@ -124,7 +124,7 @@ export const WIDGET_REGISTRY: WidgetDef[] = [
     description: "Jobs with incomplete required photo checklists.",
     category: "operations", defaultSize: "narrow",
     allowedContexts: ["company", "location", "service_area"],
-    allowedRoles: ["org_admin", "company_admin", "location_manager"],
+    allowedRoles: ["org_admin", "branch_manager", "location_manager"],
   },
 
   // ── Service Area ──────────────────────────────────────────

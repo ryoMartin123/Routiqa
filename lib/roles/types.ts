@@ -71,18 +71,24 @@ export type SensitiveFlag =
   | "automation_manage";        // marketing/automation rules
 
 // ─── Role keys ────────────────────────────────────────────
-// Superset of the 4 hierarchy roles (so existing memberships resolve) plus the
-// richer service-business presets used by the Users UI.
-export type RoleKey =
-  | HierarchyRole               // org_admin | company_admin | location_manager | employee
-  | "org_owner"
-  | "dispatcher"
-  | "csr"
-  | "sales"
-  | "technician"
-  | "bookkeeper"
-  | "marketing"
-  | "viewer";
+// A role key is any string: built-in defaults (see DEFAULT_ROLE_KEYS) plus
+// admin-created custom roles. Kept as `string` (rather than a closed union) so
+// the custom-role builder can mint new keys without a type change. HierarchyRole
+// keys are a subset, so existing hierarchy memberships still resolve.
+export type RoleKey = string;
+
+// The built-in roles shipped by default (HVAC preset). Custom roles live
+// alongside these in the roles store.
+export const DEFAULT_ROLE_KEYS = [
+  "org_owner",
+  "org_admin",
+  "branch_manager",
+  "location_manager",
+  "dispatcher",
+  "field_technician",
+  "installer",
+  "salesperson",
+] as const;
 
 // ─── Capability map ───────────────────────────────────────
 export type CapabilityMap = Partial<Record<Resource, Partial<Record<Action, AccessLevel>>>>;

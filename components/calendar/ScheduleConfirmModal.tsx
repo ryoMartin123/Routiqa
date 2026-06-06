@@ -6,6 +6,7 @@ import Select from "@/components/ui/Select";
 import DatePicker from "@/components/ui/DatePicker";
 import TimePicker from "@/components/ui/TimePicker";
 import type { UnscheduledItem } from "@/lib/calendar/types";
+import { todayYMD, isPastDateTime } from "@/lib/utils/schedule";
 
 export interface ScheduleDraft {
   tech: string;
@@ -26,6 +27,7 @@ export default function ScheduleConfirmModal({
 }) {
   const [d, setD] = useState<ScheduleDraft>(draft);
   const set = <K extends keyof ScheduleDraft>(k: K, v: ScheduleDraft[K]) => setD(p => ({ ...p, [k]: v }));
+  const isPast = isPastDateTime(d.date, d.time);
 
   return (
     <div className="fixed inset-0 z-[60] bg-black/40 flex items-center justify-center p-4" onClick={onClose}>
@@ -53,12 +55,18 @@ export default function ScheduleConfirmModal({
 
           <div className="grid grid-cols-2 gap-3">
             <Field label="Date">
-              <DatePicker value={d.date} onChange={v => set("date", v)} clearable={false} />
+              <DatePicker value={d.date} onChange={v => set("date", v)} clearable={false} min={todayYMD()} />
             </Field>
             <Field label="Time">
               <TimePicker value={d.time} onChange={v => set("time", v)} />
             </Field>
           </div>
+
+          {isPast && (
+            <p className="text-xs" style={{ color: "#dc2626" }}>
+              That time is in the past — pick a current or future date and time.
+            </p>
+          )}
 
           <Field label="Duration (minutes)">
             <input type="number" min={15} step={15} value={d.durationMinutes} onChange={e => set("durationMinutes", parseInt(e.target.value) || 60)}
@@ -68,7 +76,7 @@ export default function ScheduleConfirmModal({
 
         <div className="px-5 py-4 flex justify-end gap-2" style={{ borderTop: "1px solid var(--border-subtle)" }}>
           <button onClick={onClose} className="px-3 py-1.5 rounded-lg text-sm" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>Cancel</button>
-          <button onClick={() => onConfirm(d)} disabled={!d.date || !d.time}
+          <button onClick={() => onConfirm(d)} disabled={!d.date || !d.time || isPast}
             className="px-4 py-1.5 rounded-lg text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 transition-colors">
             Confirm &amp; Schedule
           </button>
