@@ -49,6 +49,7 @@ import SectionGate from "@/components/settings/SectionGate";
 import EditingScopeHeader from "@/components/settings/EditingScopeHeader";
 import { SettingsActionsProvider, SettingsSaveSlot } from "@/components/settings/SettingsActions";
 import type { SectionLayers } from "@/lib/settings-scope/types";
+import HoverInfo, { Pill } from "@/components/shared/HoverInfo";
 
 // ─── Navigation structure ─────────────────────────────────
 type SectionKey =
@@ -618,16 +619,10 @@ function CompaniesSection() {
                   <div>
                     <div className="flex items-center gap-2">
                       <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{co.name}</p>
-                      {co.industry && (
-                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full capitalize"
-                          style={{ backgroundColor: color + "20", color }}>
-                          {co.industry.toUpperCase()}
-                        </span>
-                      )}
-                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
-                        style={{ backgroundColor: co.status === "active" ? "#d1fae5" : "var(--bg-input)", color: co.status === "active" ? "#065f46" : "var(--text-muted)" }}>
-                        {co.status}
-                      </span>
+                      <HoverInfo rows={[
+                        ...(co.industry ? [{ label: "Type", node: <Pill text={co.industry.toUpperCase()} style={{ backgroundColor: color + "20", color }} /> }] : []),
+                        { label: "Status", node: <Pill text={co.status} style={{ backgroundColor: co.status === "active" ? "#d1fae5" : "var(--bg-input)", color: co.status === "active" ? "#065f46" : "var(--text-muted)" }} /> },
+                      ]} />
                     </div>
                     <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
                       {coLocations.length} {coLocations.length === 1 ? "location" : "locations"} · {co.id}

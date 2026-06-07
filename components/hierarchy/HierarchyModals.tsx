@@ -36,9 +36,10 @@ function ModalShell({ icon: Icon, title, subtitle, onClose, children }: {
   icon: typeof MapPin; title: string; subtitle: string;
   onClose: () => void; children: React.ReactNode;
 }) {
+  // Backdrop does NOT close the modal — only the ✕ (or Cancel) does.
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="w-full max-w-md rounded-2xl overflow-hidden" onClick={e => e.stopPropagation()}
+    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+      <div className="w-full max-w-md rounded-2xl overflow-hidden"
         style={{ backgroundColor: "var(--bg-surface)", boxShadow: "0 16px 48px rgba(0,0,0,0.24)" }}>
         <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
           <div className="flex items-center gap-2.5">
@@ -461,16 +462,37 @@ export function AddServiceAreaModal({ open, onClose, defaultLocationId }: {
 
   return (
     <ModalShell icon={Map} title="Add Service Area" subtitle="A territory or market under a location" onClose={onClose}>
-      <div className="px-6 py-4 space-y-4">
-        <Labeled label="Location" required>
-          <UiSelect value={locationId} onChange={setLocationId}
-            options={activeLocations.map(l => ({ value: l.id, label: locLabel(l) }))} />
-        </Labeled>
-        <Labeled label="Service Area Name" required>
-          <TextInput value={name} onChange={setName} placeholder="e.g. Aiken, SC" />
-        </Labeled>
-      </div>
-      <FooterButtons onCancel={onClose} onSave={handleSave} disabled={!canSave} label="Add Service Area" />
+      {activeLocations.length === 0 ? (
+        <>
+          <div className="px-6 py-6">
+            <div className="rounded-lg px-3 py-3 flex items-start gap-2.5" style={{ backgroundColor: "#fffbeb", border: "1px solid #fde68a" }}>
+              <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" style={{ color: "#92400e" }} />
+              <div>
+                <p className="text-sm font-medium" style={{ color: "#92400e" }}>No locations yet</p>
+                <p className="text-xs mt-1 leading-relaxed" style={{ color: "#92400e" }}>
+                  A service area belongs to a location. Add a location first, then you can create service areas under it.
+                </p>
+              </div>
+            </div>
+          </div>
+          <div className="px-6 py-4 flex justify-end" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+            <button onClick={onClose} className="px-4 py-2 rounded-lg text-sm font-medium text-white" style={{ backgroundColor: "#4f46e5" }}>Got it</button>
+          </div>
+        </>
+      ) : (
+        <>
+          <div className="px-6 py-4 space-y-4">
+            <Labeled label="Location" required>
+              <UiSelect value={locationId} onChange={setLocationId}
+                options={activeLocations.map(l => ({ value: l.id, label: locLabel(l) }))} />
+            </Labeled>
+            <Labeled label="Service Area Name" required>
+              <TextInput value={name} onChange={setName} placeholder="e.g. Aiken, SC" />
+            </Labeled>
+          </div>
+          <FooterButtons onCancel={onClose} onSave={handleSave} disabled={!canSave} label="Add Service Area" />
+        </>
+      )}
     </ModalShell>
   );
 }
