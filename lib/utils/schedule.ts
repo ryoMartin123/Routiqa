@@ -27,3 +27,22 @@ export function isPastDateTime(ymd: string, hm?: string): boolean {
   const when = new Date(y, m - 1, d, h || 0, mm || 0, 0, 0);
   return when.getTime() < now.getTime();
 }
+
+// ─── Dispatch board working-hours window ──────────────────
+// True when a timed slot starts before the board opens, or its duration would
+// run past closing — i.e. it falls outside the allocated hours.
+export function isOutsideHours(time: string, durationMinutes: number, dayStart: number, dayEnd: number): boolean {
+  if (!time) return false;
+  const [h, m] = time.split(":").map(Number);
+  if (isNaN(h)) return false;
+  const startMin = h * 60 + (m || 0);
+  const dur = Math.max(0, durationMinutes || 0);
+  return startMin < dayStart * 60 || startMin + dur > dayEnd * 60;
+}
+
+// Readable hour label, e.g. 17 → "5:00 PM".
+export function formatHour(h: number): string {
+  const period = h >= 12 ? "PM" : "AM";
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  return `${h12}:00 ${period}`;
+}

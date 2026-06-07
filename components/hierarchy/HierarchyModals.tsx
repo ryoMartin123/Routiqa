@@ -267,9 +267,11 @@ export function EditCompanyModal({ company, open, onClose }: { company: Company;
   const [industry, setIndustry] = useState(company.industry ?? "hvac");
   const [status, setStatus]     = useState<Status>(company.status);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [initial] = useState(() => JSON.stringify({ name: company.name, industry: company.industry ?? "hvac", status: company.status }));
 
   if (!open) return null;
-  const canSave = Boolean(name.trim());
+  const dirty = JSON.stringify({ name, industry, status }) !== initial;
+  const canSave = Boolean(name.trim()) && dirty;
 
   function handleSave() {
     if (!canSave) return;
@@ -387,12 +389,14 @@ export function EditLocationModal({ location, open, onClose }: { location: Locat
   const [city, setCity]   = useState(location.city ?? "");
   const [state, setState] = useState(location.state ?? "");
   const [status, setStatus] = useState<Status>(location.status);
+  const [initial] = useState(() => JSON.stringify({ companyId: location.companyId, name: location.name, city: location.city ?? "", state: location.state ?? "", status: location.status }));
 
   if (!open) return null;
-  const canSave = Boolean(companyId && name.trim());
   // A branch can't be active under an inactive company.
   const companyActive = allCompanies.find(c => c.id === companyId)?.status === "active";
   const effStatus: Status = companyActive ? status : "inactive";
+  const dirty = JSON.stringify({ companyId, name, city, state, status: effStatus }) !== initial;
+  const canSave = Boolean(companyId && name.trim()) && dirty;
 
   function handleSave() {
     if (!canSave) return;
@@ -480,9 +484,9 @@ export function EditServiceAreaModal({ serviceArea, open, onClose }: {
   const [locationId, setLocationId] = useState(serviceArea.locationId);
   const [name, setName]   = useState(serviceArea.name);
   const [status, setStatus] = useState<Status>(serviceArea.status);
+  const [initial] = useState(() => JSON.stringify({ locationId: serviceArea.locationId, name: serviceArea.name, status: serviceArea.status }));
 
   if (!open) return null;
-  const canSave = Boolean(locationId && name.trim());
   const locLabel = (l: Location) => {
     const co = allCompanies.find(c => c.id === l.companyId);
     return co ? `${co.name} · ${l.name}` : l.name;
@@ -492,6 +496,8 @@ export function EditServiceAreaModal({ serviceArea, open, onClose }: {
   const parentActive = !!parentLoc && parentLoc.status === "active"
     && allCompanies.find(c => c.id === parentLoc.companyId)?.status === "active";
   const effStatus: Status = parentActive ? status : "inactive";
+  const dirty = JSON.stringify({ locationId, name, status: effStatus }) !== initial;
+  const canSave = Boolean(locationId && name.trim()) && dirty;
 
   function handleSave() {
     if (!canSave) return;

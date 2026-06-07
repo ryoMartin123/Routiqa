@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { X, Briefcase } from "lucide-react";
+import { X, Briefcase, Plus } from "lucide-react";
 import UiSelect from "@/components/ui/Select";
 import DatePicker from "@/components/ui/DatePicker";
 import TimePicker from "@/components/ui/TimePicker";
@@ -52,6 +52,7 @@ export default function JobWizard({ preset, onClose, onCreated }: {
   const [customerId, setCustomerId] = useState(preset?.customerId ?? customers[0]?.id ?? "");
   const [propertyId, setPropertyId] = useState("");
   const [title, setTitle]   = useState("");
+  const [description, setDescription] = useState("");
   const [type, setType]     = useState<JobType>("repair");
   const [priority, setPriority] = useState<JobPriority>("normal");
   const [date, setDate]     = useState("");
@@ -62,38 +63,44 @@ export default function JobWizard({ preset, onClose, onCreated }: {
 
   const customer = customers.find(c => c.id === customerId);
   const properties = useMemo(() => (customerId ? getProperties(customerId) : []), [customerId]);
-  const selectedProperty = properties.find(p => p.id === propertyId);
+  // One property → just use it. Multiple → let the user pick which.
+  const selectedProperty = properties.find(p => p.id === propertyId) ?? properties[0];
+  const multiProperty = properties.length > 1;
 
-  // Service address — required to dispatch. Prefilled from the selected property
-  // or the customer's address; empty (and required) for a quick-add customer who
-  // has no address yet, so we capture it at the moment we need it.
+  // The account's on-file address for the selected property (read-only).
+  const existing = selectedProperty
+    ? { line1: selectedProperty.address, city: selectedProperty.city, state: selectedProperty.state, zip: selectedProperty.zip }
+    : customer
+    ? { line1: customer.address, city: customer.city, state: customer.state, zip: customer.zip }
+    : { line1: "", city: "", state: "", zip: "" };
+  const hasExisting = Boolean((existing.line1 ?? "").trim());
+  const existingLabel = hasExisting
+    ? [existing.line1, [existing.city, existing.state].filter(Boolean).join(", "), existing.zip].filter(Boolean).join(", ")
+    : "";
+
+  // A separately-entered address is ALWAYS saved back to the account (no opt-out).
+  const [useNewAddress, setUseNewAddress] = useState(false);
   const [addr, setAddr] = useState<ParsedAddress>({ ...EMPTY_ADDRESS });
-  const [saveToCustomer, setSaveToCustomer] = useState(false);
+  // No address on file → force entering one. Reset when the account changes.
   useEffect(() => {
-    const src = selectedProperty
-      ? { line1: selectedProperty.address, city: selectedProperty.city, state: selectedProperty.state, zip: selectedProperty.zip }
-      : customer
-      ? { line1: customer.address, city: customer.city, state: customer.state, zip: customer.zip }
-      : { line1: "", city: "", state: "", zip: "" };
-    setAddr({ ...EMPTY_ADDRESS, addressLine1: src.line1 ?? "", city: src.city ?? "", state: src.state ?? "", postalCode: src.zip ?? "" });
-    // Default the "save back" toggle on only when we're capturing a fresh address
-    // for an account that doesn't have one yet.
-    setSaveToCustomer(Boolean(customer) && !selectedProperty && !src.line1);
+    setUseNewAddress(!hasExisting);
+    setAddr({ ...EMPTY_ADDRESS });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [customerId, propertyId]);
+  }, [customerId]);
 
-  const formattedAddress = addr.addressLine1.trim()
-    ? [addr.addressLine1.trim(), addr.city.trim()].filter(Boolean).join(", ")
-    : undefined;
+  const jobAddress = useNewAddress
+    ? (addr.addressLine1.trim() ? [addr.addressLine1.trim(), addr.city.trim()].filter(Boolean).join(", ") : "")
+    : existingLabel;
 
   const schedulePast = isPastDateTime(date, time);
-  const canCreate = Boolean(customerId && title.trim() && addr.addressLine1.trim()) && !schedulePast;
+  const addressOk = useNewAddress ? Boolean(addr.addressLine1.trim()) : hasExisting;
+  const canCreate = Boolean(customerId && title.trim() && description.trim()) && addressOk && !schedulePast;
   const willSchedule = Boolean(date);
 
   function handleCreate() {
     if (!customer) return;
-    // Persist the address back to the customer so it's there next time.
-    if (saveToCustomer) {
+    // A separately-entered address is saved to the account for record.
+    if (useNewAddress && addr.addressLine1.trim()) {
       updateCustomer(customer.id, {
         address: addr.addressLine1.trim(), city: addr.city.trim(),
         state: addr.state.trim(), zip: addr.postalCode.trim(),
@@ -102,8 +109,8 @@ export default function JobWizard({ preset, onClose, onCreated }: {
     const job = createJob({
       companyId: customer.companyId, locationId: customer.locationId, serviceAreaId: customer.serviceAreaId,
       accountId: customer.id, customerName: customer.name, customerInitials: customer.initials, locationName: customer.locationName,
-      title: title.trim(), type, priority,
-      propertyAddress: formattedAddress, projectId: preset?.projectId,
+      title: title.trim(), description: description.trim(), type, priority,
+      propertyAddress: jobAddress || undefined, projectId: preset?.projectId,
       estimatedAmount: estimate.trim() ? (estimate.trim().startsWith("$") ? estimate.trim() : `$${estimate.trim()}`) : undefined,
       scheduledDate: date ? fmtDate(date) : undefined,
       scheduledTime: time ? fmtTime(time) : undefined,
@@ -129,28 +136,45 @@ export default function JobWizard({ preset, onClose, onCreated }: {
 
         {/* Body */}
         <div className="flex-1 overflow-y-auto thin-scroll-y px-6 py-4 space-y-4">
-          <div className="grid grid-cols-2 gap-3">
+          <div className={multiProperty ? "grid grid-cols-2 gap-3" : ""}>
             <div>
               <label className="block text-xs font-medium mb-1" style={{ color: "var(--text-secondary)" }}>Customer / Account *</label>
               <UiSelect value={customerId} onChange={v => { setCustomerId(v); setPropertyId(""); }}
                 disabled={Boolean(preset?.lockCustomer)} options={customers.map(c => ({ value: c.id, label: c.name }))} />
             </div>
-            <div>
-              <label className="block text-xs font-medium mb-1" style={{ color: "var(--text-secondary)" }}>Property <span style={{ color: "var(--text-muted)" }}>(optional)</span></label>
-              <UiSelect value={propertyId} onChange={setPropertyId} placeholder="Account address"
-                options={[{ value: "", label: "Account address" }, ...properties.map(p => ({ value: p.id, label: `${p.label ? p.label + " — " : ""}${p.address}, ${p.city}` }))]} />
-            </div>
+            {multiProperty && (
+              <div>
+                <label className="block text-xs font-medium mb-1" style={{ color: "var(--text-secondary)" }}>Property</label>
+                <UiSelect value={selectedProperty?.id ?? ""} onChange={v => { setPropertyId(v); setUseNewAddress(false); }}
+                  options={properties.map(p => ({ value: p.id, label: `${p.label ? p.label + " — " : ""}${p.address}, ${p.city}` }))} />
+              </div>
+            )}
           </div>
 
-          {/* Service address — required so the job can actually be dispatched */}
+          {/* Service address — required so the job can be dispatched */}
           <div>
             <label className="block text-xs font-medium mb-1" style={{ color: "var(--text-secondary)" }}>Service Address <span style={{ color: "#ef4444" }}>*</span></label>
-            <AddressAutocomplete value={addr} onChange={setAddr} placeholder="Start typing a street address…" required />
-            {customer && !selectedProperty && (
-              <label className="flex items-center gap-2 mt-2 cursor-pointer select-none">
-                <input type="checkbox" checked={saveToCustomer} onChange={e => setSaveToCustomer(e.target.checked)} className="accent-indigo-600" />
-                <span className="text-xs" style={{ color: "var(--text-secondary)" }}>Save this address to {customer.name}</span>
-              </label>
+            {useNewAddress ? (
+              <>
+                <AddressAutocomplete value={addr} onChange={setAddr} placeholder="Start typing a street address…" required />
+                <div className="flex items-center justify-between mt-2 gap-2">
+                  <span className="text-xs" style={{ color: "var(--text-muted)" }}>This address will be saved to {customer?.name ?? "the account"}.</span>
+                  {hasExisting && (
+                    <button onClick={() => setUseNewAddress(false)} className="text-xs font-medium shrink-0" style={{ color: "var(--accent-text)" }}>
+                      Use account address
+                    </button>
+                  )}
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="w-full rounded-lg px-3 py-2 text-sm" style={{ border: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)", color: hasExisting ? "var(--text-primary)" : "var(--text-muted)" }}>
+                  {existingLabel || "No address on file"}
+                </div>
+                <button onClick={() => { setUseNewAddress(true); setAddr({ ...EMPTY_ADDRESS }); }} className="flex items-center gap-1 text-xs font-medium mt-2" style={{ color: "var(--accent-text)" }}>
+                  <Plus className="w-3 h-3" /> Add a separate address
+                </button>
+              </>
             )}
           </div>
 
@@ -169,6 +193,13 @@ export default function JobWizard({ preset, onClose, onCreated }: {
               <label className="block text-xs font-medium mb-1" style={{ color: "var(--text-secondary)" }}>Priority</label>
               <UiSelect value={priority} onChange={v => setPriority(v as JobPriority)} options={PRIORITIES.map(p => ({ value: p, label: cap(p) }))} />
             </div>
+          </div>
+
+          {/* Estimated amount — above scheduling */}
+          <div>
+            <label className="block text-xs font-medium mb-1" style={{ color: "var(--text-secondary)" }}>Estimated Amount <span style={{ color: "var(--text-muted)" }}>(optional)</span></label>
+            <input value={estimate} onChange={e => setEstimate(e.target.value)} placeholder="e.g. 285"
+              className="w-full rounded-lg px-3 py-2 text-sm outline-none" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface)", color: "var(--text-primary)" }} />
           </div>
 
           {/* Scheduling */}
@@ -205,9 +236,10 @@ export default function JobWizard({ preset, onClose, onCreated }: {
           </div>
 
           <div>
-            <label className="block text-xs font-medium mb-1" style={{ color: "var(--text-secondary)" }}>Estimated Amount <span style={{ color: "var(--text-muted)" }}>(optional)</span></label>
-            <input value={estimate} onChange={e => setEstimate(e.target.value)} placeholder="e.g. 285"
-              className="w-full rounded-lg px-3 py-2 text-sm outline-none" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface)", color: "var(--text-primary)" }} />
+            <label className="block text-xs font-medium mb-1" style={{ color: "var(--text-secondary)" }}>Description <span style={{ color: "#ef4444" }}>*</span></label>
+            <textarea value={description} onChange={e => setDescription(e.target.value)} rows={3}
+              placeholder="What needs to be done on this job…"
+              className="w-full rounded-lg px-3 py-2 text-sm outline-none resize-none" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface)", color: "var(--text-primary)" }} />
           </div>
         </div>
 

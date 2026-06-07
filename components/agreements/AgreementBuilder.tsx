@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   X, Check, ChevronLeft, ChevronRight, Plus, Trash2, Star, FileText, Send,
 } from "lucide-react";
@@ -18,11 +18,15 @@ import {
   type SectionKey, type TemplateService, type TemplateVisit,
 } from "@/lib/agreements/templates";
 import {
-  createAgreement, type AgreementVisit, type Industry,
+  createAgreement, updateAgreement, type AgreementVisit, type CustomerAgreement, type Industry,
   type VisitFrequency, type BillingFrequency,
 } from "@/lib/agreements/data";
 
-const STEPS = ["Customer", "Template", "Services", "Visits", "Billing", "Benefits", "Terms"];
+// Create flow is intentionally short: pick the customer + a template (everything
+// else is baked into the template). Customizing for one customer happens in EDIT
+// mode, which exposes the full adjust steps against an existing agreement.
+const STEPS_CREATE = ["Customer", "Template"];
+const STEPS_EDIT   = ["Services", "Visits", "Billing", "Benefits", "Terms"];
 
 let _seq = 0;
 const uid = (p: string) => `${p}-${Date.now()}-${_seq++}`;
@@ -39,11 +43,16 @@ function toInput(d: Date): string { return `${d.getFullYear()}-${String(d.getMon
 
 export interface AgreementBuilderPreset { customerId?: string; lockCustomer?: boolean; }
 
-export default function AgreementBuilder({ preset, onClose, onCreated }: {
+export default function AgreementBuilder({ preset, editAgreement, onClose, onCreated }: {
   preset?: AgreementBuilderPreset;
+  editAgreement?: CustomerAgreement;   // when set → edit/customize an existing agreement
   onClose: () => void;
   onCreated: (id: string) => void;
 }) {
+  const isEdit = Boolean(editAgreement);
+  const STEPS = isEdit ? STEPS_EDIT : STEPS_CREATE;
+  const firstStep = isEdit ? 3 : 1;    // edit jumps straight to the adjust steps
+  const lastStep  = isEdit ? 7 : 2;
   const customers = getAllCustomers();
   const types = useMemo(() => getAgreementTypes().filter(t => t.active), []);
   const visitRules = useMemo(() => getVisitRules().filter(r => r.active), []);
@@ -52,7 +61,7 @@ export default function AgreementBuilder({ preset, onClose, onCreated }: {
   const planTemplates = useMemo(() => getPlanTemplates().filter(t => t.active), []);
   const jobTypes = useMemo(() => getJobTypes(), []);
 
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(firstStep);
 
   // Step 1 — customer & coverage
   const [customerId, setCustomerId] = useState(preset?.customerId ?? customers[0]?.id ?? "");
@@ -252,6 +261,56 @@ export default function AgreementBuilder({ preset, onClose, onCreated }: {
     onCreated(created.id);
   }
 
+  // ── Edit mode: seed the adjust steps from the existing agreement ──
+  useEffect(() => {
+    const ea = editAgreement;
+    if (!ea) return;
+    setCustomerId(ea.customerId ?? customers.find(c => c.name === ea.customer)?.id ?? "");
+    setTitle(ea.type ?? "");
+    setPlanLevel(ea.planLevel ?? "");
+    setTemplateId(ea.templateId ?? "");
+    setCoverage(ea.coverage ?? []);
+    setServices((ea.servicesDetailed ?? []).map(s => ({
+      id: uid("s"), name: s.name, description: s.description ?? "",
+      quantity: String(s.quantity), included: s.included, discountPct: String(s.discountPct ?? 0),
+    })));
+    setVisits((ea.visitPlan ?? []).map(v => ({
+      id: uid("v"), name: v.name, frequencyKey: v.frequencyKey,
+      preferredWindow: v.preferredWindow ?? "", durationMin: String(v.durationMin), jobTypeKey: v.jobTypeKey ?? "",
+    })));
+    const byLabel = billingRules.find(r => r.name === ea.billingLabel)?.key;
+    const byFreq = ea.billingFrequency === "Monthly" ? "monthly" : ea.billingFrequency === "Quarterly" ? "quarterly" : "annual";
+    setBillingKey(byLabel ?? byFreq);
+    setBillingAmount(String(ea.billingAmount ?? 0));
+    setBillingTaxable(!!ea.billingTaxable);
+    setBenefits(ea.benefits ?? []);
+    setExclusions(ea.exclusions ?? "");
+    setSections(ea.sections ?? ALL_SECTIONS.map(s => s.key));
+    setTerms((ea.terms ?? []).map(t => ({ ...t })));
+    if (ea.planLevel) setPlanLevel(ea.planLevel);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ── Save edits to an existing agreement (preserves scheduled visits) ──
+  function saveEdit() {
+    if (!editAgreement) return;
+    updateAgreement(editAgreement.id, {
+      type: title || editAgreement.type,
+      planLevel: planLevel || undefined,
+      services: docData.services.map(s => s.name),
+      servicesDetailed: docData.services,
+      visitPlan: docData.visits,
+      visitFrequency, billingFrequency,
+      billingLabel, billingAmount: parseFloat(billingAmount) || 0, billingTaxable,
+      firstBillingDate: docData.firstBillingDate,
+      annualValue,
+      benefits, terms, exclusions: exclusions || undefined, sections,
+      coverage: coverage.length ? coverage : undefined,
+      renewal: docData.renewal,
+    });
+    onCreated(editAgreement.id);
+  }
+
   // ── Step gating ──
   const canNext =
     step === 1 ? Boolean(customerId && startDate) :
@@ -267,12 +326,12 @@ export default function AgreementBuilder({ preset, onClose, onCreated }: {
         {/* Header + stepper */}
         <div className="px-6 pt-4 pb-3 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
           <div className="flex items-center justify-between mb-3">
-            <p className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>New Agreement</p>
+            <p className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>{isEdit ? "Customize Agreement" : "New Agreement"}</p>
             <button onClick={onClose} style={{ color: "var(--text-muted)" }}><X className="w-4 h-4" /></button>
           </div>
           <div className="flex items-center gap-1">
             {STEPS.map((label, i) => {
-              const n = i + 1, done = n < step, current = n === step;
+              const n = firstStep + i, done = n < step, current = n === step;
               return (
                 <div key={label} className="flex items-center gap-1 flex-1 last:flex-none">
                   <div className="flex items-center gap-1.5">
@@ -365,6 +424,24 @@ export default function AgreementBuilder({ preset, onClose, onCreated }: {
                 <input value={planLevel} onChange={e => setPlanLevel(e.target.value)} placeholder="e.g. Silver, Gold"
                   className="w-full rounded-lg px-3 py-2 text-sm outline-none" style={inputStyle} />
               </Field>
+
+              {/* Create directly from the template — everything is built in. */}
+              {templateId && (
+                <div className="rounded-xl p-4 space-y-3" style={cardStyle}>
+                  <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+                    This creates the agreement from the template ({tmpl?.services.length ?? 0} services · {tmpl?.visits.length ?? 0} visit type(s) · ${tmpl?.billing.amount ?? 0} {tmpl?.billing.frequencyKey}). You can customize it for this customer afterward from the agreement page.
+                  </p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button onClick={() => save(false)} className="flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium"
+                      style={{ border: "1px solid var(--border)", color: "var(--text-secondary)", backgroundColor: "var(--bg-surface)" }}>
+                      <FileText className="w-4 h-4" /> Save as Draft
+                    </button>
+                    <button onClick={() => save(true)} className="flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium text-white" style={{ backgroundColor: "#4f46e5" }}>
+                      <Send className="w-4 h-4" /> Activate Agreement
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -521,27 +598,33 @@ export default function AgreementBuilder({ preset, onClose, onCreated }: {
               </Field>
               <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>Customer-Facing Preview</p>
               <AgreementDocumentPreview data={docData} />
-              <div className="grid grid-cols-2 gap-3">
-                <button onClick={() => save(false)} className="flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-medium"
-                  style={{ border: "1px solid var(--border)", color: "var(--text-secondary)", backgroundColor: "var(--bg-surface)" }}>
-                  <FileText className="w-4 h-4" /> Save as Draft
+              {isEdit ? (
+                <button onClick={saveEdit} className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-medium text-white" style={{ backgroundColor: "#4f46e5" }}>
+                  <Check className="w-4 h-4" /> Save Changes
                 </button>
-                <button onClick={() => save(true)} className="flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-medium text-white" style={{ backgroundColor: "#4f46e5" }}>
-                  <Send className="w-4 h-4" /> Activate Agreement
-                </button>
-              </div>
-              <p className="text-[11px] text-center" style={{ color: "var(--text-muted)" }}>No e-signature is sent — “Activate” sets the agreement live and schedules its visits.</p>
+              ) : (
+                <div className="grid grid-cols-2 gap-3">
+                  <button onClick={() => save(false)} className="flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-medium"
+                    style={{ border: "1px solid var(--border)", color: "var(--text-secondary)", backgroundColor: "var(--bg-surface)" }}>
+                    <FileText className="w-4 h-4" /> Save as Draft
+                  </button>
+                  <button onClick={() => save(true)} className="flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-medium text-white" style={{ backgroundColor: "#4f46e5" }}>
+                    <Send className="w-4 h-4" /> Activate Agreement
+                  </button>
+                </div>
+              )}
+              {!isEdit && <p className="text-[11px] text-center" style={{ color: "var(--text-muted)" }}>No e-signature is sent — “Activate” sets the agreement live and schedules its visits.</p>}
             </div>
           )}
         </div>
 
         {/* Footer nav */}
         <div className="px-6 py-4 flex items-center justify-between shrink-0" style={{ borderTop: "1px solid var(--border-subtle)" }}>
-          <button onClick={() => (step === 1 ? onClose() : setStep(s => s - 1))}
+          <button onClick={() => (step === firstStep ? onClose() : setStep(s => s - 1))}
             className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>
-            <ChevronLeft className="w-4 h-4" /> {step === 1 ? "Cancel" : "Back"}
+            <ChevronLeft className="w-4 h-4" /> {step === firstStep ? "Cancel" : "Back"}
           </button>
-          {step < 7 && (
+          {step < lastStep && (
             <button onClick={() => canNext && setStep(s => s + 1)} disabled={!canNext}
               className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-40" style={{ backgroundColor: "#4f46e5" }}>
               Next <ChevronRight className="w-4 h-4" />

@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, CheckCircle, Circle, ChevronRight, Phone, MapPin, User, Clock, Calendar, DollarSign, Briefcase, AlertTriangle, Camera, ListChecks, Plus, Trash2, Ban, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getJob, updateJob, deleteJob, getWorkOrder, getJobNotes, resolveJobStatus, type JobNoteType } from "@/lib/jobs/data";
+import WorkOrderWizard from "@/components/jobs/WorkOrderWizard";
 import { getJobStatuses } from "@/lib/job-config/data";
 import StatusBadge from "@/components/shared/StatusBadge";
 import {
@@ -170,6 +171,9 @@ const CHECK_TYPE_BADGE: Record<string, { bg: string; color: string }> = {
 function WorkOrderTab({ jobId }: { jobId: string }) {
   const job = getJob(jobId)!;
   const template = suggestTemplateForJobType(job.type);
+  const [wizard, setWizard] = useState(false);
+  const [woVersion, setWoVersion] = useState(0);
+  const wo = React.useMemo(() => getWorkOrder(jobId), [jobId, woVersion]);
 
   if (!template) return <StubContent label="No work order template configured. Add one in Settings → Work Orders." />;
 
@@ -180,6 +184,37 @@ function WorkOrderTab({ jobId }: { jobId: string }) {
 
   return (
     <div className="max-w-2xl space-y-4">
+      {wizard && <WorkOrderWizard preset={{ jobId }} onClose={() => setWizard(false)} onCreated={() => { setWizard(false); setWoVersion(v => v + 1); }} />}
+
+      {/* Work order status / create CTA */}
+      <div className="rounded-xl p-4 flex items-center justify-between" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+        {wo ? (
+          <>
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: "#d1fae5" }}>
+                <ListChecks className="w-4.5 h-4.5" style={{ color: "#065f46" }} />
+              </div>
+              <div>
+                <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Work order created</p>
+                <p className="text-xs" style={{ color: "var(--text-muted)" }}>{wo.title} · {wo.checklist.length} steps · {wo.status.replace(/_/g, " ")}</p>
+              </div>
+            </div>
+            <button onClick={() => setWizard(true)} className="px-3 py-1.5 rounded-lg text-xs" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>
+              Re-generate
+            </button>
+          </>
+        ) : (
+          <>
+            <div>
+              <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>No work order yet</p>
+              <p className="text-xs" style={{ color: "var(--text-muted)" }}>Generate one from a template to give the tech their checklist.</p>
+            </div>
+            <button onClick={() => setWizard(true)} className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-3 py-1.5 rounded-lg transition-colors">
+              <Plus className="w-3.5 h-3.5" /> Create Work Order
+            </button>
+          </>
+        )}
+      </div>
       {/* Template header */}
       <div className="rounded-xl p-6" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
         <div className="flex items-start justify-between mb-1">

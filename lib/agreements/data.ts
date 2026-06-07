@@ -234,6 +234,19 @@ export function deleteAgreement(id: string): void {
   _extra = extraAgreements().filter(a => a.id !== id);
   persistExtra();
 }
+
+// Patch a session agreement (e.g. customizing a template-created agreement for
+// one customer). Seed agreements aren't patched here (the prototype seed is empty).
+export function updateAgreement(id: string, patch: Partial<CustomerAgreement>): CustomerAgreement | undefined {
+  let updated: CustomerAgreement | undefined;
+  _extra = extraAgreements().map(a => {
+    if (a.id !== id) return a;
+    updated = { ...a, ...patch };
+    return updated;
+  });
+  if (updated) persistExtra();
+  return updated;
+}
 export function deleteAgreementsForCustomers(customerIds: string[]): number {
   const set = new Set(customerIds);
   const matched = extraAgreements().filter(a => a.customerId && set.has(a.customerId));

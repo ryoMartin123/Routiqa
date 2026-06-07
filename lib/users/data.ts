@@ -134,12 +134,21 @@ export function upsertUser(input: UpsertUserInput): AppUser {
   return created;
 }
 
-// Soft toggle — never hard-delete a user. Owner can't be deactivated.
+// Soft toggle — deactivate/reactivate. Owner can't be deactivated.
 export function setUserStatus(id: string, status: UserStatus): void {
   const list = init();
   const u = list.find(x => x.id === id);
   if (!u || u.isOrgOwner) return;
   u.status = status;
+  persist();
+}
+
+// Permanently remove a user from the directory. The org owner can't be deleted.
+export function deleteUser(id: string): void {
+  const list = init();
+  const u = list.find(x => x.id === id);
+  if (!u || u.isOrgOwner) return;
+  _users = list.filter(x => x.id !== id);
   persist();
 }
 
@@ -154,18 +163,32 @@ export function getActiveUsers(): AppUser[] {
   return init().filter(u => u.status === "active");
 }
 
+// Staffed = on the team (invited or active); excludes only deactivated users.
+// Rosters/pickers use this so a tech you just invited is immediately schedulable.
+export function getStaffedUsers(): AppUser[] {
+  return init().filter(u => u.status !== "inactive");
+}
+
 function hasRoleIn(u: AppUser, roles: RoleKey[]): boolean {
   return u.assignments.some(a => roles.includes(a.role));
 }
 
-// Active field technicians — dispatch board rows & job assignees.
+// Field technicians — dispatch board rows & job assignees (invited + active).
 export function getTechnicianUsers(): AppUser[] {
-  return getActiveUsers().filter(u => hasRoleIn(u, TECH_ROLES));
+  return getStaffedUsers().filter(u => hasRoleIn(u, TECH_ROLES));
 }
 export function getTechnicianNames(): string[] {
   return getTechnicianUsers().map(u => u.fullName);
 }
 // Users who can run a board — dispatchers plus managers/admins/owner.
 export function getDispatcherNames(): string[] {
-  return getActiveUsers().filter(u => hasRoleIn(u, DISPATCH_ROLES)).map(u => u.fullName);
+  return getStaffedUsers().filter(u => hasRoleIn(u, DISPATCH_ROLES)).map(u => u.fullName);
+}
+
+// Staffed users holding any of the given roles — used by dispatch boards that
+// assign members by role rather than by name.
+export function getUsersByRoles(roleKeys: string[]): AppUser[] {
+  if (!roleKeys.length) return [];
+  const set = new Set(roleKeys);
+  return getStaffedUsers().filter(u => u.assignments.some(a => set.has(a.role)));
 }

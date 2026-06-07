@@ -6,7 +6,7 @@ import Select from "@/components/ui/Select";
 import DatePicker from "@/components/ui/DatePicker";
 import TimePicker from "@/components/ui/TimePicker";
 import type { UnscheduledItem } from "@/lib/calendar/types";
-import { todayYMD, isPastDateTime } from "@/lib/utils/schedule";
+import { todayYMD, isPastDateTime, isOutsideHours, formatHour } from "@/lib/utils/schedule";
 
 export interface ScheduleDraft {
   tech: string;
@@ -17,17 +17,20 @@ export interface ScheduleDraft {
 
 // Confirmation before an unscheduled item becomes a scheduled job — never schedule silently.
 export default function ScheduleConfirmModal({
-  item, draft, technicians, onConfirm, onClose,
+  item, draft, technicians, dayStart, dayEnd, onConfirm, onClose,
 }: {
   item: UnscheduledItem;
   draft: ScheduleDraft;
   technicians: string[];
+  dayStart: number;   // board opening hour (24h)
+  dayEnd: number;     // board closing hour (24h)
   onConfirm: (d: ScheduleDraft) => void;
   onClose: () => void;
 }) {
   const [d, setD] = useState<ScheduleDraft>(draft);
   const set = <K extends keyof ScheduleDraft>(k: K, v: ScheduleDraft[K]) => setD(p => ({ ...p, [k]: v }));
   const isPast = isPastDateTime(d.date, d.time);
+  const outsideHours = isOutsideHours(d.time, d.durationMinutes, dayStart, dayEnd);
 
   return (
     <div className="fixed inset-0 z-[60] bg-black/40 flex items-center justify-center p-4" onClick={onClose}>
@@ -72,11 +75,17 @@ export default function ScheduleConfirmModal({
             <input type="number" min={15} step={15} value={d.durationMinutes} onChange={e => set("durationMinutes", parseInt(e.target.value) || 60)}
               className="w-full rounded-lg px-3 py-2 text-sm outline-none" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface)", color: "var(--text-primary)" }} />
           </Field>
+
+          {outsideHours && !isPast && (
+            <p className="text-xs" style={{ color: "#dc2626" }}>
+              Outside the board&apos;s hours ({formatHour(dayStart)}–{formatHour(dayEnd)}). Move the start earlier or shorten the duration so it ends by {formatHour(dayEnd)}.
+            </p>
+          )}
         </div>
 
         <div className="px-5 py-4 flex justify-end gap-2" style={{ borderTop: "1px solid var(--border-subtle)" }}>
           <button onClick={onClose} className="px-3 py-1.5 rounded-lg text-sm" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>Cancel</button>
-          <button onClick={() => onConfirm(d)} disabled={!d.date || !d.time || isPast}
+          <button onClick={() => onConfirm(d)} disabled={!d.date || !d.time || isPast || outsideHours}
             className="px-4 py-1.5 rounded-lg text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 transition-colors">
             Confirm &amp; Schedule
           </button>

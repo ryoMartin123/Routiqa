@@ -3,9 +3,9 @@
 import { useMemo, useState, useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import {
-  Inbox, Search, SlidersHorizontal, Layers, Eye, EyeOff,
+  Inbox, Search, SlidersHorizontal, Eye, EyeOff,
   ChevronLeft, ChevronRight, ChevronUp, ChevronDown, LayoutGrid, LayoutList, CalendarDays, CalendarRange, CalendarClock,
-  Plus, Briefcase, X,
+  Plus, Briefcase, X, Users,
 } from "lucide-react";
 import { useHierarchy } from "@/components/providers/HierarchyProvider";
 import CalendarItemDrawer from "@/components/calendar/CalendarItemDrawer";
@@ -17,6 +17,7 @@ import {
 } from "@/lib/calendar/data";
 import { createJob, updateJob, type JobType } from "@/lib/jobs/data";
 import { getCustomer } from "@/lib/customers/data";
+import { getUsersByRoles } from "@/lib/users/data";
 import {
   getAvailabilityForDay, createAvailability, removeAvailability, techStatusForKind, AVAILABILITY_CONFIG,
   type AvailabilityEvent, type NewAvailabilityInput,
@@ -176,32 +177,31 @@ export default function CalendarPage() {
     return () => document.removeEventListener("mousedown", onDown);
   }, [filtersOpen]);
 
-  // Combined layers legend popover
-  const [layersOpen, setLayersOpen] = useState(false);
-  const layersRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!layersOpen) return;
-    const onDown = (e: MouseEvent) => { if (layersRef.current && !layersRef.current.contains(e.target as Node)) setLayersOpen(false); };
-    document.addEventListener("mousedown", onDown);
-    return () => document.removeEventListener("mousedown", onDown);
-  }, [layersOpen]);
-
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const rawItems    = useMemo(() => getCalendarItems(scope), [effectiveCompanyId, effectiveLocationId, effectiveServiceAreaId]);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const allUnscheduled = useMemo(() => getUnscheduledItems(scope), [effectiveCompanyId, effectiveLocationId, effectiveServiceAreaId]);
   const technicians = useMemo(() => Array.from(new Set([...roster.map(r => r.name), ...getTechnicians(rawItems)])), [rawItems, roster]);
+  // No technicians on the roster → nothing can be scheduled or created here yet.
+  const noTechs = roster.length === 0;
 
   // Dispatch board / team selector — boards belong to a company + location and
   // are scoped to the current context. Selecting a board filters the technician
   // rows, scheduled items, and the unscheduled queue to that board.
   const boardOptions = [{ value: "all", label: "All Boards" }, ...boards.map(b => ({ value: b.id, label: b.name }))];
   const activeBoardDef = boards.find(b => b.id === boardId);
-  const boardRoster = (!activeBoardDef || activeBoardDef.techNames.length === 0)
-    ? roster
-    : activeBoardDef.techNames.map(name =>
-        roster.find(r => r.name === name) ?? { name, initials: initials(name), status: "available" as const },
-      );
+  // A board scopes its rows to specific users (techNames) and/or roles (roleKeys).
+  // No members specified → the full roster.
+  const boardRoster = (() => {
+    const roleKeys = activeBoardDef?.roleKeys ?? [];
+    const techNames = activeBoardDef?.techNames ?? [];
+    if (!activeBoardDef || (techNames.length === 0 && roleKeys.length === 0)) return roster;
+    const names = new Set<string>(techNames);
+    getUsersByRoles(roleKeys).forEach(u => names.add(u.fullName));
+    return Array.from(names).map(name =>
+      roster.find(r => r.name === name) ?? { name, initials: initials(name), status: "available" as const },
+    );
+  })();
   const activeDispatcherLabel = activeBoardDef?.dispatchers.join(", ");
 
   // Selecting a board seeds its default view/mode (still overridable afterward).
@@ -236,11 +236,13 @@ export default function CalendarPage() {
     .filter(u => !removed.has(u.id))
     .filter(u => !activeBoardDef || itemMatchesBoard(u, activeBoardDef));
   const jobTypes = useMemo(() => Array.from(new Set(rawItems.map(i => i.jobType).filter(Boolean))) as string[], [rawItems]);
-  const activeFilters = [fTech !== "all", fType !== "all", fPrio !== "all", boardId !== "all"].filter(Boolean).length;
   const availableLayers = CALENDAR_LAYERS.filter(t => ["job","agreement_visit","task","project_milestone"].includes(t) && rawItems.some(i => i.type === t));
   const activeLayerCount = availableLayers.filter(t => !hidden.has(t)).length;
+  const layersFiltered = activeLayerCount < availableLayers.length;
+  const activeFilters = [fTech !== "all", fType !== "all", fPrio !== "all", boardId !== "all", layersFiltered].filter(Boolean).length;
 
   function toggleLayer(t: CalendarItemType) { setHidden(p => { const n = new Set(p); n.has(t) ? n.delete(t) : n.add(t); return n; }); }
+  function showAllLayers() { setHidden(p => { const n = new Set(p); availableLayers.forEach(t => n.delete(t)); return n; }); }
   function reassign(tech: string) {
     if (!selScheduled) return;
     // Jobs persist to the store; other sources (tasks/agreements) stay board-local.
@@ -268,6 +270,7 @@ export default function CalendarPage() {
 
   // ── Scheduling ──
   function openConfirm(u: UnscheduledItem, tech: string, day: Date, hour: number, minute = 0) {
+    if (noTechs) return;   // can't schedule without technicians (banner explains)
     setConfirm({ item: u, draft: { tech, date: ymd(day), time: `${String(hour).padStart(2,"0")}:${String(minute).padStart(2,"0")}`, durationMinutes: u.durationMinutes } });
   }
   function scheduleFromDrawer(u: UnscheduledItem) {
@@ -399,8 +402,9 @@ export default function CalendarPage() {
         <div className="flex items-center gap-2">
           {/* Create — add a schedulable job or technician time off to the board */}
           <div className="relative">
-            <button onClick={() => setCreateMenuOpen(o => !o)} title="Add to board"
-              className="flex items-center justify-center w-8 h-8 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white transition-colors"
+            <button onClick={() => !noTechs && setCreateMenuOpen(o => !o)} disabled={noTechs}
+              title={noTechs ? "Add technicians in Settings → Users & Roles first" : "Add to board"}
+              className="flex items-center justify-center w-8 h-8 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               aria-haspopup="menu" aria-expanded={createMenuOpen}>
               <Plus className="w-4 h-4" />
             </button>
@@ -429,39 +433,7 @@ export default function CalendarPage() {
             )}
           </div>
 
-          {/* Combined Layers legend */}
-          {availableLayers.length > 0 && (
-            <div className="relative" ref={layersRef}>
-              <button onClick={() => setLayersOpen(o => !o)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors"
-                style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface)", color: "var(--text-secondary)" }}>
-                <Layers className="w-3.5 h-3.5" /> Layers
-                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>{activeLayerCount}/{availableLayers.length}</span>
-              </button>
-              {layersOpen && (
-                <div className="absolute right-0 top-full mt-2 z-50 rounded-xl p-3 w-56" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "0 12px 32px rgba(0,0,0,0.18)" }}>
-                  <p className="text-[10px] font-semibold uppercase tracking-wider mb-2" style={{ color: "var(--text-muted)" }}>Visible Layers</p>
-                  <div className="space-y-0.5">
-                    {availableLayers.map(type => {
-                      const cfg = LAYER_CONFIG[type]; const on = !hidden.has(type);
-                      return (
-                        <button key={type} onClick={() => toggleLayer(type)}
-                          className="w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-lg text-sm transition-colors hover:bg-[var(--bg-surface-2)]">
-                          <span className="flex items-center gap-2 min-w-0">
-                            <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: cfg.color }} />
-                            <span className="truncate" style={{ color: "var(--text-primary)" }}>{cfg.label}</span>
-                          </span>
-                          {on ? <Eye className="w-3.5 h-3.5 shrink-0" style={{ color: "var(--accent-text)" }} /> : <EyeOff className="w-3.5 h-3.5 shrink-0" style={{ color: "var(--text-muted)" }} />}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Filter — Board is the first filter */}
+          {/* Filter — Board is the first filter; layers fold in here too */}
           <div className="relative" ref={filtersRef}>
             <button onClick={() => setFiltersOpen(o => !o)}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors"
@@ -473,7 +445,7 @@ export default function CalendarPage() {
               <div className="absolute right-0 top-full mt-2 z-50 rounded-xl p-4 w-72" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "0 12px 32px rgba(0,0,0,0.18)" }}>
                 <div className="flex items-center justify-between mb-3">
                   <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Filters</p>
-                  {activeFilters > 0 && <button onClick={() => { setBoardId("all"); setFTech("all"); setFType("all"); setFPrio("all"); }} className="text-xs" style={{ color: "var(--accent-text)" }}>Clear all</button>}
+                  {activeFilters > 0 && <button onClick={() => { setBoardId("all"); setFTech("all"); setFType("all"); setFPrio("all"); showAllLayers(); }} className="text-xs" style={{ color: "var(--accent-text)" }}>Clear all</button>}
                 </div>
                 <div className="space-y-2.5">
                   <FilterField label="Dispatch Board">
@@ -483,12 +455,47 @@ export default function CalendarPage() {
                   <FilterField label="Technician"><Select size="sm" value={fTech} onChange={setFTech} options={[{ value: "all", label: "All Technicians" }, ...technicians.map(t => ({ value: t, label: t }))]} /></FilterField>
                   <FilterField label="Job Type"><Select size="sm" value={fType} onChange={setFType} options={[{ value: "all", label: "All Types" }, ...jobTypes.map(t => ({ value: t, label: t }))]} /></FilterField>
                   <FilterField label="Priority"><Select size="sm" value={fPrio} onChange={setFPrio} options={[{ value: "all", label: "Any Priority" }, { value: "urgent", label: "Urgent" }, { value: "high", label: "High" }, { value: "normal", label: "Normal" }, { value: "low", label: "Low" }]} /></FilterField>
+
+                  {/* Layers — show/hide item types on the board */}
+                  {availableLayers.length > 0 && (
+                    <div className="pt-1.5" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <p className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Layers</p>
+                        <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>{activeLayerCount}/{availableLayers.length} shown</span>
+                      </div>
+                      <div className="space-y-0.5">
+                        {availableLayers.map(type => {
+                          const cfg = LAYER_CONFIG[type]; const on = !hidden.has(type);
+                          return (
+                            <button key={type} onClick={() => toggleLayer(type)}
+                              className="w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-lg text-sm transition-colors hover:bg-[var(--bg-surface-2)]">
+                              <span className="flex items-center gap-2 min-w-0">
+                                <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: cfg.color }} />
+                                <span className="truncate" style={{ color: on ? "var(--text-primary)" : "var(--text-muted)" }}>{cfg.label}</span>
+                              </span>
+                              {on ? <Eye className="w-3.5 h-3.5 shrink-0" style={{ color: "var(--accent-text)" }} /> : <EyeOff className="w-3.5 h-3.5 shrink-0" style={{ color: "var(--text-muted)" }} />}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
           </div>
         </div>
       </div>
+
+      {/* No technicians → can't schedule or create work here yet */}
+      {noTechs && (
+        <div className="rounded-xl px-4 py-3 flex items-center gap-3" style={{ backgroundColor: "#fef3c7", border: "1px solid #fde68a" }}>
+          <Users className="w-4 h-4 shrink-0" style={{ color: "#92400e" }} />
+          <p className="text-xs font-medium" style={{ color: "#92400e" }}>
+            No technicians yet — add team members with a Field Technician or Installer role in Settings → Users &amp; Roles before scheduling or creating jobs here.
+          </p>
+        </div>
+      )}
 
       {/* Board */}
       {view === "dispatch" && <DispatchBoard focus={focus} mode={dispatchMode} items={boardItems} roster={boardRoster} availability={availability} dayStart={hourly.startHour} dayEnd={hourly.endHour} increment={hourly.increment} blocks={activeBlocks} onSelect={setSelScheduled} onMoveResize={applyMoveResize} onRemoveAvailability={handleRemoveTimeOff} onDropItem={(uid, tech, hour, minute) => { const u = unscheduled.find(x => x.id === uid); if (u) openConfirm(u, tech, focus, hour, minute); }} />}
@@ -507,7 +514,7 @@ export default function CalendarPage() {
       {selUnscheduled && <CalendarItemDrawer unscheduled={selUnscheduled} technicians={technicians} onClose={() => setSelUnscheduled(null)} onSchedule={() => scheduleFromDrawer(selUnscheduled)} />}
 
       {/* Confirm modal */}
-      {confirm && <ScheduleConfirmModal item={confirm.item} draft={confirm.draft} technicians={technicians} onConfirm={confirmSchedule} onClose={() => setConfirm(null)} />}
+      {confirm && <ScheduleConfirmModal item={confirm.item} draft={confirm.draft} technicians={technicians} dayStart={hourly.startHour} dayEnd={hourly.endHour} onConfirm={confirmSchedule} onClose={() => setConfirm(null)} />}
 
       {/* Time off / availability modal */}
       {timeOffOpen && <TimeOffModal technicians={technicians} defaultDate={ymd(focus)} onClose={() => setTimeOffOpen(false)} onSave={handleAddTimeOff} />}
@@ -539,19 +546,16 @@ function DispatchBoard({ focus, mode, items, roster, availability, dayStart, day
 }) {
   const dayItems = items.filter(i => isSameDay(i.start, focus) && !i.allDay);
 
-  // Board rows = an "Unassigned" lane (when any scheduled job has no tech) +
-  // the roster + any tech who has a job today but isn't on the roster. This
-  // guarantees a scheduled job is ALWAYS visible somewhere — clearing a tech no
-  // longer makes the job vanish.
-  const dayTechNames = new Set(dayItems.map(i => (i.assignedTo ?? "").trim()).filter(Boolean));
-  const rosterNames  = new Set(roster.map(r => r.name));
-  const orphanRows   = [...dayTechNames].filter(n => !rosterNames.has(n))
-    .map(n => ({ name: n, initials: initials(n), status: "available" as const }));
-  const hasUnassigned = dayItems.some(i => !(i.assignedTo ?? "").trim());
+  // Board rows = the roster, plus a single "Unassigned" lane that catches any job
+  // with no tech OR a job assigned to someone who isn't on the roster (e.g. a
+  // removed tech). We no longer spawn a phantom row per off-roster name — those
+  // jobs stay visible in the Unassigned lane instead.
+  const rosterNames = new Set(roster.map(r => r.name));
+  const isOrphan = (i: CalendarItem) => { const a = (i.assignedTo ?? "").trim(); return !a || !rosterNames.has(a); };
+  const hasUnassigned = dayItems.some(isOrphan);
   const rows = [
     ...(hasUnassigned ? [{ name: "", initials: "—", status: "available" as const }] : []),
     ...roster,
-    ...orphanRows,
   ];
 
   // Hourly grid + drag snapping derived from the configured day window.
@@ -680,7 +684,7 @@ function DispatchBoard({ focus, mode, items, roster, availability, dayStart, day
         <div className="py-12 text-center"><p className="text-sm" style={{ color: "var(--text-muted)" }}>No technicians on this board.</p></div>
       ) : rows.map((tech, ri) => {
         const isUnassigned = tech.name === "";
-        const techItems = dayItems.filter(i => (i.assignedTo ?? "") === tech.name);
+        const techItems = isUnassigned ? dayItems.filter(isOrphan) : dayItems.filter(i => (i.assignedTo ?? "").trim() === tech.name);
         // Availability for this tech today drives the row's status chip + overlays.
         const techAvail = availability.filter(a => a.techName === tech.name);
         const allDayOff = techAvail.find(a => a.allDay && AVAILABILITY_CONFIG[a.kind].blocksWork);

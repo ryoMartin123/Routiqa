@@ -50,7 +50,8 @@ export interface DispatchBoard {
   locationId: string;
   boardType: BoardType;
   dispatchers: string[];
-  techNames: string[];
+  techNames: string[];                 // specific users assigned to the board
+  roleKeys: string[];                  // roles assigned to the board (expand to users)
   jobTypes: string[];
   serviceAreaIds: string[];           // optional narrowing; empty = all
   defaultView?: CalendarViewMode;     // optional per-board view seed
@@ -134,8 +135,23 @@ export function defaultDispatchSettings(): DispatchSettings {
 // Boards are created per location in Settings → Calendar / Dispatch. None are
 // seeded by default — a fresh org starts with no boards (the page falls back to
 // the built-in "All Boards" view).
+// The CRM always has at least one board, so adding technicians / scheduling
+// never hits a "no board" edge case. This default board is org-wide, includes
+// all technicians, and can't be deleted.
+export const DEFAULT_BOARD_ID = "board-default";
 function defaultBoards(): DispatchBoard[] {
-  return [];
+  return [{
+    id: DEFAULT_BOARD_ID, name: "Main Board", companyId: "", locationId: "", boardType: "custom",
+    dispatchers: [], techNames: [], roleKeys: [], jobTypes: [], serviceAreaIds: [],
+    active: true, isDefault: true,
+  }];
+}
+
+// Guarantee ≥1 board and exactly one default. Applied to every store read.
+export function ensureBoards(boards: DispatchBoard[] | undefined): DispatchBoard[] {
+  if (!boards || boards.length === 0) return defaultBoards();
+  if (!boards.some(b => b.isDefault)) return boards.map((b, i) => (i === 0 ? { ...b, isDefault: true } : b));
+  return boards;
 }
 
 function defaultStore(): DispatchStore {
@@ -178,6 +194,7 @@ function migrateV1(parsed: Record<string, unknown>): DispatchStore {
         boardType: "custom" as BoardType,
         dispatchers: (b.dispatchers as string[]) ?? [],
         techNames: (b.techNames as string[]) ?? [],
+        roleKeys: (b.roleKeys as string[]) ?? [],
         jobTypes: (b.jobTypes as string[]) ?? [],
         serviceAreaIds: [],
         active: b.active !== false,
@@ -185,7 +202,7 @@ function migrateV1(parsed: Record<string, unknown>): DispatchStore {
       };
     });
   }
-  return { version: 3, scopes: { org }, boards, queueViews: defaultQueueViews() };
+  return { version: 3, scopes: { org }, boards: ensureBoards(boards), queueViews: defaultQueueViews() };
 }
 
 export function getStore(): DispatchStore {
@@ -199,7 +216,7 @@ export function getStore(): DispatchStore {
       return {
         version: 3,
         scopes: store.scopes ?? {},
-        boards: store.boards ?? defaultBoards(),
+        boards: ensureBoards(store.boards),
         queueViews: store.queueViews?.length ? store.queueViews : defaultQueueViews(),
       };
     }
@@ -209,7 +226,7 @@ export function getStore(): DispatchStore {
       const upgraded: DispatchStore = {
         version: 3,
         scopes: store.scopes ?? {},
-        boards: store.boards ?? defaultBoards(),
+        boards: ensureBoards(store.boards),
         queueViews: defaultQueueViews(),
       };
       saveStore(upgraded);
@@ -278,10 +295,11 @@ export function resolveParent(store: DispatchStore, level: ScopeLevel, companyId
 // ─── Boards ───────────────────────────────────────────────
 // Boards available for a context. Undefined company/location = no narrowing.
 export function getBoardsForContext(companyId?: string, locationId?: string): DispatchBoard[] {
+  // A board with no company/location is org-wide and shows in every context.
   return getStore().boards.filter(b =>
     b.active &&
-    (!companyId  || b.companyId  === companyId) &&
-    (!locationId || b.locationId === locationId),
+    (!companyId  || !b.companyId  || b.companyId  === companyId) &&
+    (!locationId || !b.locationId || b.locationId === locationId),
   );
 }
 

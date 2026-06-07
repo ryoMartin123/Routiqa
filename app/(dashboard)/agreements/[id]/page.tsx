@@ -2,15 +2,17 @@
 
 import { use, useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
-  ArrowLeft, Pencil, RefreshCw, XCircle,
+  ArrowLeft, Pencil, RefreshCw, XCircle, Trash2, MoreVertical,
   Calendar, User, MapPin, DollarSign, Repeat, Clock,
   CheckCircle, AlertCircle, Circle, ChevronRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import StatusBadge from "@/components/shared/StatusBadge";
+import AgreementBuilder from "@/components/agreements/AgreementBuilder";
 import {
-  AGREEMENTS, TEMPLATES, formatValue, getAgreement,
+  AGREEMENTS, TEMPLATES, formatValue, getAgreement, deleteAgreement, updateAgreement,
   type AgreementStatus, type VisitStatus, type CustomerAgreement,
 } from "@/lib/agreements/data";
 
@@ -428,7 +430,29 @@ export default function AgreementDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState("Overview");
+  const [editing, setEditing] = useState(false);
+  const [actionsOpen, setActionsOpen] = useState(false);
+
+  function handleDelete() {
+    if (confirm("Delete this agreement? This can't be undone.")) {
+      deleteAgreement(id);
+      router.push("/agreements");
+    }
+  }
+  function handleCancel() {
+    if (confirm("Cancel this agreement? It stays on record but is marked canceled.")) {
+      updateAgreement(id, { status: "canceled" });
+      setAgreement(getAgreement(id));
+      setActionsOpen(false);
+    }
+  }
+  function handleRenew() {
+    updateAgreement(id, { status: "active" });
+    setAgreement(getAgreement(id));
+    setActionsOpen(false);
+  }
 
   // Seed lookup on the server; merge in session-created agreements on the client.
   const [agreement, setAgreement] = useState<CustomerAgreement | undefined>(() => AGREEMENTS.find((a) => a.id === id));
@@ -488,26 +512,47 @@ export default function AgreementDetailPage({
             </div>
           </div>
 
-          {/* Actions */}
-          <div className="flex items-center gap-2 shrink-0">
-            <button
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors"
-              style={{ border: "1px solid var(--border)", color: "var(--text-secondary)", backgroundColor: "var(--bg-surface)" }}
-            >
-              <Pencil className="w-3.5 h-3.5" />
-              Edit
+          {/* Actions — consolidated into one menu */}
+          <div className="relative shrink-0">
+            <button onClick={() => setActionsOpen(o => !o)} aria-label="Agreement actions"
+              className="flex items-center justify-center w-9 h-9 rounded-lg transition-colors hover:bg-[var(--bg-surface-2)]"
+              style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>
+              <MoreVertical className="w-4 h-4" />
             </button>
-            <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm bg-indigo-600 hover:bg-indigo-700 text-white transition-colors">
-              <RefreshCw className="w-3.5 h-3.5" />
-              Renew
-            </button>
-            <button
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors"
-              style={{ border: "1px solid #fecaca", color: "#dc2626" }}
-            >
-              <XCircle className="w-3.5 h-3.5" />
-              Cancel
-            </button>
+            {actionsOpen && (
+              <>
+                <button aria-hidden tabIndex={-1} onClick={() => setActionsOpen(false)} className="fixed inset-0 z-40 cursor-default" />
+                <div className="absolute right-0 top-full mt-1.5 z-50 w-44 rounded-xl overflow-hidden py-1"
+                  style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "0 12px 32px rgba(0,0,0,0.18)" }}>
+                  <button onClick={() => { setActionsOpen(false); setEditing(true); }}
+                    className="flex items-center gap-2 w-full px-3 py-2 text-sm transition-colors hover:bg-[var(--bg-surface-2)]" style={{ color: "var(--text-primary)" }}>
+                    <Pencil className="w-3.5 h-3.5" /> Edit
+                  </button>
+                  {agreement.status === "canceled" ? (
+                    <button onClick={handleRenew}
+                      className="flex items-center gap-2 w-full px-3 py-2 text-sm transition-colors hover:bg-[var(--bg-surface-2)]" style={{ color: "var(--text-primary)" }}>
+                      <RefreshCw className="w-3.5 h-3.5" /> Reactivate
+                    </button>
+                  ) : (
+                    <button onClick={handleRenew}
+                      className="flex items-center gap-2 w-full px-3 py-2 text-sm transition-colors hover:bg-[var(--bg-surface-2)]" style={{ color: "var(--text-primary)" }}>
+                      <RefreshCw className="w-3.5 h-3.5" /> Renew
+                    </button>
+                  )}
+                  {agreement.status !== "canceled" && (
+                    <button onClick={handleCancel}
+                      className="flex items-center gap-2 w-full px-3 py-2 text-sm transition-colors hover:bg-[var(--bg-surface-2)]" style={{ color: "var(--text-secondary)" }}>
+                      <XCircle className="w-3.5 h-3.5" /> Cancel agreement
+                    </button>
+                  )}
+                  <div style={{ borderTop: "1px solid var(--border-subtle)" }} />
+                  <button onClick={() => { setActionsOpen(false); handleDelete(); }}
+                    className="flex items-center gap-2 w-full px-3 py-2 text-sm transition-colors hover:bg-red-50" style={{ color: "#dc2626" }}>
+                    <Trash2 className="w-3.5 h-3.5" /> Delete
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
 
@@ -541,6 +586,15 @@ export default function AgreementDetailPage({
         {activeTab === "Photos & Files"    && <StubTab label="Photos & Files" />}
         {activeTab === "Communication"     && <StubTab label="Communication" />}
       </div>
+
+      {/* Customize this customer's agreement */}
+      {editing && (
+        <AgreementBuilder
+          editAgreement={agreement}
+          onClose={() => setEditing(false)}
+          onCreated={() => { setEditing(false); setAgreement(getAgreement(id)); }}
+        />
+      )}
     </div>
   );
 }

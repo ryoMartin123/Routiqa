@@ -106,7 +106,9 @@ export default function EditCustomerModal({
   const { updateCustomer } = useCustomers();
 
   const [data, setData]     = useState<EditForm>(() => toForm(customer));
+  const [initial]           = useState(() => JSON.stringify(toForm(customer)));
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const dirty = JSON.stringify(data) !== initial;
 
   function set<K extends keyof EditForm>(k: K, v: EditForm[K]) {
     setData(d => ({ ...d, [k]: v }));
@@ -260,7 +262,7 @@ export default function EditCustomerModal({
             style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>
             Cancel
           </button>
-          <button onClick={handleSave} disabled={!data.name.trim()}
+          <button onClick={handleSave} disabled={!data.name.trim() || !dirty}
             className="px-4 py-2 rounded-lg text-sm font-medium bg-indigo-600 hover:bg-indigo-700 text-white transition-colors disabled:opacity-40">
             Save Changes
           </button>

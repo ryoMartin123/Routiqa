@@ -1,23 +1,26 @@
 "use client";
 
 // ─── Settings → Users & Roles ─────────────────────────────
-// Team directory + invite/edit slide-over. Each user holds one or more
-// role@scope assignments (the "multiple assignments" model). Mutations require
-// the `users_manage` flag; otherwise the screen is read-only.
+// Team directory + invite/edit modal. A user holds one or more role@layer grants
+// (e.g. Field Technician at two locations within a company). The role decides
+// WHAT they can do; the layer decides WHICH org/company/location they operate in.
+// Status is not edited directly — it follows the invite / activate / deactivate
+// actions. Mutations require the `users_manage` flag; otherwise it's read-only.
 
 import { useMemo, useState } from "react";
-import { Users, Plus, Pencil, X, Trash2, ShieldCheck, Mail, RotateCcw } from "lucide-react";
+import { Users, Plus, Pencil, X, Trash2, ShieldCheck, Mail, RotateCcw, CheckCircle, Ban, ChevronDown } from "lucide-react";
 import UiSelect from "@/components/ui/Select";
 import { useHierarchy } from "@/components/providers/HierarchyProvider";
-import { serviceAreas as ALL_SERVICE_AREAS } from "@/lib/hierarchy/data";
 import { usePermissions } from "@/components/providers/PermissionProvider";
 import { getAssignableRoles, getOrgRole, getRoleLabel } from "@/lib/roles/store";
 import { assignmentError, allowedLevelsForRole } from "@/lib/roles/validate";
 import type { RoleKey } from "@/lib/roles/types";
 import {
-  getUsers, upsertUser, setUserStatus,
+  getUsers, upsertUser, setUserStatus, deleteUser,
   type AppUser, type RoleAssignment, type ScopeLevel, type UserStatus,
 } from "@/lib/users/data";
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 // A draft assignment row in the editor (ids resolved on save).
 interface DraftAssignment {
@@ -37,7 +40,7 @@ const LEVEL_LABEL: Record<ScopeLevel, string> = {
 };
 
 export default function UsersSection() {
-  const { allCompanies, allLocations, orgSettings } = useHierarchy();
+  const { allCompanies, allLocations, allServiceAreas, orgSettings } = useHierarchy();
   const { hasFlag } = usePermissions();
   const canManage = hasFlag("users_manage");
 
@@ -45,13 +48,12 @@ export default function UsersSection() {
   const users = useMemo(() => getUsers(), [version]);
   const refresh = () => setVersion(v => v + 1);
 
-  // Drawer: null = closed; otherwise the user being edited (or a blank draft).
   const [editing, setEditing] = useState<AppUser | "new" | null>(null);
 
-  // ── Scope option builders ───────────────────────────────
+  // ── Scope label builders ────────────────────────────────
   const companyName = (id?: string) => allCompanies.find(c => c.id === id)?.name ?? id ?? "—";
   const locationName = (id?: string) => allLocations.find(l => l.id === id)?.name ?? id ?? "—";
-  const areaName = (id?: string) => ALL_SERVICE_AREAS.find(a => a.id === id)?.name ?? id ?? "—";
+  const areaName = (id?: string) => allServiceAreas.find(a => a.id === id)?.name ?? id ?? "—";
 
   function scopeLabel(a: RoleAssignment): string {
     if (a.level === "org") return "Org-wide";
@@ -67,7 +69,7 @@ export default function UsersSection() {
         <div>
           <h2 className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>Users &amp; Roles</h2>
           <p className="text-sm mt-0.5" style={{ color: "var(--text-secondary)" }}>
-            Invite team members and grant roles per company, location, or territory.
+            Invite team members and grant a role at the right layer — organization-wide, a company, or specific locations.
           </p>
         </div>
         {canManage && (
@@ -83,7 +85,7 @@ export default function UsersSection() {
         <table className="w-full text-sm" style={{ backgroundColor: "var(--bg-surface)" }}>
           <thead>
             <tr style={{ borderBottom: "1px solid var(--border-subtle)" }}>
-              {["User", "Roles & Scope", "Status", ""].map((h, i) => (
+              {["User", "Roles & Layer", "Status", ""].map((h, i) => (
                 <th key={i} className="text-left font-semibold px-4 py-2.5 text-[11px] uppercase tracking-wide"
                   style={{ color: "var(--text-muted)" }}>{h}</th>
               ))}
@@ -110,7 +112,7 @@ export default function UsersSection() {
                     </div>
                   </div>
                 </td>
-                {/* Roles & scope */}
+                {/* Roles & layer */}
                 <td className="px-4 py-3 align-top">
                   <div className="flex flex-wrap gap-1.5">
                     {u.assignments.map(a => (
@@ -146,30 +148,30 @@ export default function UsersSection() {
       </div>
 
       <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>
-        Roles control what each member can do; scope controls which records they can see. A user can hold
-        more than one role across different companies or locations.
+        A role sets what a member can do; the layer sets which company or locations they operate in. Grant the same role at
+        more than one location if they cover several. Role permissions are configured in Settings → Roles &amp; Permissions.
       </p>
 
-      {/* Drawer */}
       {editing && (
-        <UserDrawer
+        <UserModal
           user={editing === "new" ? null : editing}
           companies={allCompanies.filter(c => c.status === "active")}
           locations={allLocations.filter(l => l.status === "active")}
-          areas={orgSettings.serviceAreasEnabled ? ALL_SERVICE_AREAS.filter(a => a.status === "active") : []}
+          areas={orgSettings.serviceAreasEnabled ? allServiceAreas.filter(a => a.status === "active") : []}
           serviceAreasEnabled={orgSettings.serviceAreasEnabled}
           onClose={() => setEditing(null)}
           onSaved={() => { setEditing(null); refresh(); }}
           onStatus={(id, s) => { setUserStatus(id, s); setEditing(null); refresh(); }}
+          onDelete={(id) => { deleteUser(id); setEditing(null); refresh(); }}
         />
       )}
     </div>
   );
 }
 
-// ─── Invite / edit slide-over ─────────────────────────────
-function UserDrawer({
-  user, companies, locations, areas, serviceAreasEnabled, onClose, onSaved, onStatus,
+// ─── Invite / edit modal ──────────────────────────────────
+function UserModal({
+  user, companies, locations, areas, serviceAreasEnabled, onClose, onSaved, onStatus, onDelete,
 }: {
   user: AppUser | null;
   companies: { id: string; name: string }[];
@@ -179,26 +181,31 @@ function UserDrawer({
   onClose: () => void;
   onSaved: () => void;
   onStatus: (id: string, status: UserStatus) => void;
+  onDelete: (id: string) => void;
 }) {
   const isOwner = !!user?.isOrgOwner;
-  const [fullName, setFullName] = useState(user?.fullName ?? "");
-  const [email, setEmail]       = useState(user?.email ?? "");
-  const [status, setStatus]     = useState<UserStatus>(user?.status ?? "invited");
-  const [rows, setRows] = useState<DraftAssignment[]>(
-    user
-      ? user.assignments.map(a => ({
-          role: a.role, level: a.level,
-          targetId: a.level === "company" ? a.companyId ?? ""
-                  : a.level === "location" ? a.locationId ?? ""
-                  : a.level === "service_area" ? a.serviceAreaId ?? "" : "",
-        }))
-      : [{ role: "salesperson", level: "location", targetId: "" }],
-  );
+  // Status follows actions (invite / activate / deactivate); not edited in the form.
+  const status: UserStatus = user?.status ?? "invited";
+  const initialFullName = user?.fullName ?? "";
+  const initialEmail    = user?.email ?? "";
+  const initialRows: DraftAssignment[] = user
+    ? user.assignments.map(a => ({
+        role: a.role, level: a.level,
+        targetId: a.level === "company" ? a.companyId ?? ""
+                : a.level === "location" ? a.locationId ?? ""
+                : a.level === "service_area" ? a.serviceAreaId ?? "" : "",
+      }))
+    : [{ role: "field_technician", level: "location", targetId: "" }];
+  const [fullName, setFullName] = useState(initialFullName);
+  const [email, setEmail]       = useState(initialEmail);
+  const [rows, setRows]         = useState<DraftAssignment[]>(initialRows);
+  const initialKey = JSON.stringify({ fullName: initialFullName, email: initialEmail, rows: initialRows });
+  const dirty = JSON.stringify({ fullName, email, rows }) !== initialKey;
   const [error, setError] = useState<string | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
 
-  // ── Scope option lists ──────────────────────────────────
-  // Every level the org structure supports; per-role lists are filtered from
-  // this by allowedLevelsForRole (so an org-level role can't be scoped to a branch).
+  // Scope option lists — per-role levels are filtered so an org-level role can't
+  // be scoped to a single branch.
   const allLevelOptions = useMemo(() => {
     const opts: { value: ScopeLevel; label: string }[] = [{ value: "org", label: "Organization-wide" }];
     if (companies.length) opts.push({ value: "company", label: "Company" });
@@ -226,8 +233,9 @@ function UserDrawer({
     setRows(rs => rs.map((r, idx) => (idx === i ? { ...r, ...patch } : r)));
   }
   function addRow() { setRows(rs => [...rs, { role: "field_technician", level: "location", targetId: "" }]); }
+  function removeRow(i: number) { setRows(rs => rs.filter((_, idx) => idx !== i)); }
 
-  // When the role changes, snap the scope level back into the allowed range.
+  // When the role changes, snap the layer back into the role's allowed range.
   function changeRole(i: number, role: RoleKey) {
     const def = getOrgRole(role);
     const allowed = def ? allowedLevelsForRole(def) : (["org", "company", "location", "service_area"] as ScopeLevel[]);
@@ -237,7 +245,6 @@ function UserDrawer({
       return { ...r, role, level, targetId: level === r.level ? r.targetId : "" };
     }));
   }
-  function removeRow(i: number) { setRows(rs => rs.filter((_, idx) => idx !== i)); }
 
   function resolveAssignment(r: DraftAssignment): Omit<RoleAssignment, "id"> | null {
     if (r.level === "org") return { role: r.role, level: "org" };
@@ -257,22 +264,25 @@ function UserDrawer({
 
   function save() {
     if (!fullName.trim()) { setError("Name is required."); return; }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) { setError("A valid email is required."); return; }
+    if (!EMAIL_RE.test(email.trim())) { setError("A valid email is required."); return; }
     if (!isOwner) {
-      if (rows.length === 0) { setError("Add at least one role assignment."); return; }
-      // Catch impossible role@scope grants (e.g. an org-level role on one branch).
+      if (rows.length === 0) { setError("Add at least one role."); return; }
       for (const r of rows) {
         const def = getOrgRole(r.role);
         if (def) { const e = assignmentError(def, r.level); if (e) { setError(e); return; } }
       }
       const resolved = rows.map(resolveAssignment);
-      if (resolved.some(a => a === null)) { setError("Each assignment needs a scope selected."); return; }
+      if (resolved.some(a => a === null)) { setError("Each role needs a layer selected."); return; }
       upsertUser({ id: user?.id, fullName: fullName.trim(), email: email.trim(), status, assignments: resolved as Omit<RoleAssignment, "id">[] });
     } else {
-      // Owner: name/email/status only; assignments are locked.
       upsertUser({ id: user?.id, fullName: fullName.trim(), email: email.trim(), status, assignments: user!.assignments });
     }
     onSaved();
+  }
+
+  function handleDelete() {
+    if (!user) return;
+    if (confirm(`Remove ${user.fullName} from the team? This can't be undone.`)) onDelete(user.id);
   }
 
   return (
@@ -287,10 +297,18 @@ function UserDrawer({
             </div>
             <div>
               <p className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>{user ? "Edit User" : "Invite User"}</p>
-              <p className="text-xs" style={{ color: "var(--text-muted)" }}>{user ? "Update details and role assignments" : "Send an invite and assign roles"}</p>
+              <p className="text-xs" style={{ color: "var(--text-muted)" }}>{user ? "Update details, roles, and layers" : "Send an invite and grant roles"}</p>
             </div>
           </div>
-          <button onClick={onClose} style={{ color: "var(--text-muted)" }}><X className="w-4 h-4" /></button>
+          <div className="flex items-center gap-2">
+            {user && (
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
+                style={{ backgroundColor: STATUS_BADGE[status].bg, color: STATUS_BADGE[status].color }}>
+                {STATUS_BADGE[status].label}
+              </span>
+            )}
+            <button onClick={onClose} style={{ color: "var(--text-muted)" }}><X className="w-4 h-4" /></button>
+          </div>
         </div>
 
         {/* Body */}
@@ -309,20 +327,12 @@ function UserDrawer({
                   className="w-full py-2 text-sm outline-none bg-transparent" style={{ color: "var(--text-primary)" }} />
               </div>
             </Field>
-            <Field label="Status">
-              <UiSelect value={status} onChange={v => setStatus(v as UserStatus)}
-                options={[
-                  { value: "invited", label: "Invited" },
-                  { value: "active", label: "Active" },
-                  { value: "inactive", label: "Inactive" },
-                ]} />
-            </Field>
           </div>
 
-          {/* Assignments */}
+          {/* Roles & layers */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>Role Assignments</p>
+              <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>Roles &amp; Layers</p>
               {!isOwner && (
                 <button onClick={addRow} className="flex items-center gap-1 text-xs font-medium" style={{ color: "var(--accent-text)" }}>
                   <Plus className="w-3.5 h-3.5" /> Add
@@ -334,7 +344,7 @@ function UserDrawer({
               <div className="rounded-lg px-3 py-3 text-xs flex items-center gap-2"
                 style={{ backgroundColor: "var(--bg-surface-2)", color: "var(--text-secondary)" }}>
                 <ShieldCheck className="w-4 h-4 shrink-0" style={{ color: "#4f46e5" }} />
-                Organization Owner — full access to everything. This grant can&apos;t be changed.
+                Organization Owner — full access to everything. This can&apos;t be changed.
               </div>
             ) : (
               <div className="space-y-2">
@@ -344,9 +354,11 @@ function UserDrawer({
                       <div className="flex-1">
                         <UiSelect value={r.role} onChange={v => changeRole(i, v as RoleKey)} options={roleOptions} size="sm" />
                       </div>
-                      <button onClick={() => removeRow(i)} title="Remove" className="p-1.5 rounded-md" style={{ color: "var(--text-muted)" }}>
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                      {rows.length > 1 && (
+                        <button onClick={() => removeRow(i)} title="Remove" className="p-1.5 rounded-md" style={{ color: "var(--text-muted)" }}>
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="w-40 shrink-0">
@@ -368,9 +380,9 @@ function UserDrawer({
                     </p>
                   </div>
                 ))}
-                {rows.length === 0 && (
-                  <p className="text-xs text-center py-4" style={{ color: "var(--text-muted)" }}>No assignments yet — add one.</p>
-                )}
+                <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>
+                  Add a row per layer — e.g. the same role at two locations within a company.
+                </p>
               </div>
             )}
           </div>
@@ -382,26 +394,42 @@ function UserDrawer({
 
         {/* Footer */}
         <div className="shrink-0 px-5 py-3 flex items-center justify-between gap-2" style={{ borderTop: "1px solid var(--border-subtle)" }}>
-          <div>
-            {user && !isOwner && (
-              user.status === "inactive" ? (
-                <button onClick={() => onStatus(user.id, "active")}
-                  className="flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-lg"
+          {/* Secondary actions tucked into one menu */}
+          <div className="relative">
+            {user && !isOwner ? (
+              <>
+                <button onClick={() => setMenuOpen(o => !o)}
+                  className="flex items-center gap-1.5 text-sm font-medium px-3 py-2 rounded-lg transition-colors hover:bg-[var(--bg-surface-2)]"
                   style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>
-                  <RotateCcw className="w-3.5 h-3.5" /> Reactivate
+                  Actions <ChevronDown className="w-3.5 h-3.5" />
                 </button>
-              ) : (
-                <button onClick={() => onStatus(user.id, "inactive")}
-                  className="flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-lg"
-                  style={{ border: "1px solid #fecaca", color: "#b91c1c" }}>
-                  <Trash2 className="w-3.5 h-3.5" /> Deactivate
-                </button>
-              )
-            )}
+                {menuOpen && (
+                  <>
+                    <button aria-hidden tabIndex={-1} onClick={() => setMenuOpen(false)} className="fixed inset-0 z-40 cursor-default" />
+                    <div className="absolute left-0 bottom-full mb-1.5 z-50 w-48 rounded-xl overflow-hidden py-1"
+                      style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "0 12px 32px rgba(0,0,0,0.18)" }}>
+                      {status === "inactive" ? (
+                        <MenuItem icon={RotateCcw} label="Reactivate" onClick={() => { setMenuOpen(false); onStatus(user.id, "active"); }} />
+                      ) : (
+                        <>
+                          {status === "invited" && (
+                            <MenuItem icon={CheckCircle} label="Mark Active" onClick={() => { setMenuOpen(false); onStatus(user.id, "active"); }} />
+                          )}
+                          <MenuItem icon={Ban} label="Deactivate" onClick={() => { setMenuOpen(false); onStatus(user.id, "inactive"); }} />
+                        </>
+                      )}
+                      <div style={{ borderTop: "1px solid var(--border-subtle)" }} />
+                      <MenuItem icon={Trash2} label="Delete user" danger onClick={() => { setMenuOpen(false); handleDelete(); }} />
+                    </div>
+                  </>
+                )}
+              </>
+            ) : <span />}
           </div>
           <div className="flex items-center gap-2">
             <button onClick={onClose} className="text-sm font-medium px-3 py-2 rounded-lg" style={{ color: "var(--text-secondary)" }}>Cancel</button>
-            <button onClick={save} className="text-sm font-medium px-4 py-2 rounded-lg text-white" style={{ backgroundColor: "#4f46e5" }}>
+            <button onClick={save} disabled={!dirty}
+              className="text-sm font-medium px-4 py-2 rounded-lg text-white transition-colors disabled:opacity-40" style={{ backgroundColor: "#4f46e5" }}>
               {user ? "Save Changes" : "Send Invite"}
             </button>
           </div>
@@ -417,5 +445,17 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       <label className="block text-xs font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>{label}</label>
       {children}
     </div>
+  );
+}
+
+function MenuItem({ icon: Icon, label, onClick, danger }: {
+  icon: typeof Trash2; label: string; onClick: () => void; danger?: boolean;
+}) {
+  return (
+    <button onClick={onClick}
+      className="flex items-center gap-2 w-full px-3 py-2 text-sm transition-colors hover:bg-[var(--bg-surface-2)]"
+      style={{ color: danger ? "#dc2626" : "var(--text-primary)" }}>
+      <Icon className="w-3.5 h-3.5" /> {label}
+    </button>
   );
 }

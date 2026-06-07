@@ -1,14 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
-  Plus, Pencil, Trash2, Check, RotateCcw, ChevronUp, ChevronDown,
-  Star, CalendarDays, Clock, LayoutGrid, Users, Layers, Building2, MapPin, Inbox,
+  Plus, Pencil, Trash2, Check, ChevronUp, ChevronDown, X,
+  Star, CalendarDays, Clock, LayoutGrid, Users, Layers, Inbox, Search,
 } from "lucide-react";
+import { useRegisterSaveAction } from "@/components/settings/SettingsActions";
 import UiSelect from "@/components/ui/Select";
 import { getDispatcherNames, getTechnicianNames } from "@/lib/users/data";
+import { getAssignableRoles, getRoleLabel } from "@/lib/roles/store";
 import {
-  getStore, saveStore, resetStore, scopeKeyOf, resolveFromStore, resolveParent,
+  getStore, saveStore, scopeKeyOf, resolveFromStore, resolveParent,
   defaultDispatchSettings, formatHour, newBlockId, newBoardId,
   MOCK_JOB_TYPES, BOARD_TYPE_LABELS, LAYER_LABEL,
   type DispatchStore, type ScopedDispatchConfig, type DispatchSettings,
@@ -117,6 +119,73 @@ function ChipMulti({ all, selected, onToggle, labels }: { all: string[]; selecte
   );
 }
 
+// Modern multi-select: selected items show as removable chips; the dropdown is
+// searchable. Used for picking dispatchers, technicians, and roles on a board.
+function MultiSelect({ options, selected, onToggle, placeholder }: {
+  options: { value: string; label: string }[];
+  selected: string[];
+  onToggle: (v: string) => void;
+  placeholder: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [q, setQ] = useState("");
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const onDoc = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, [open]);
+
+  const selOpts = options.filter(o => selected.includes(o.value));
+  const ql = q.trim().toLowerCase();
+  const filtered = ql ? options.filter(o => o.label.toLowerCase().includes(ql)) : options;
+
+  return (
+    <div className="relative" ref={ref}>
+      <button type="button" onClick={() => setOpen(o => !o)}
+        className="w-full min-h-[38px] rounded-lg px-2.5 py-1.5 flex flex-wrap items-center gap-1.5 text-left transition-colors"
+        style={{ border: `1px solid ${open ? "#a5b4fc" : "var(--border)"}`, backgroundColor: "var(--bg-surface)", boxShadow: open ? "0 0 0 3px rgba(99,102,241,0.12)" : "none" }}>
+        {selOpts.length === 0
+          ? <span className="text-sm" style={{ color: "var(--text-muted)" }}>{placeholder}</span>
+          : selOpts.map(o => (
+              <span key={o.value} className="flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full" style={{ backgroundColor: "var(--accent-soft-bg)", color: "var(--accent-text)" }}>
+                {o.label}
+                <span role="button" onClick={e => { e.stopPropagation(); onToggle(o.value); }} className="cursor-pointer hover:opacity-70"><X className="w-2.5 h-2.5" /></span>
+              </span>
+            ))}
+        <ChevronDown className="w-3.5 h-3.5 ml-auto shrink-0" style={{ color: "var(--text-muted)" }} />
+      </button>
+      {open && (
+        <div className="absolute left-0 right-0 z-50 mt-1 rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "0 12px 32px rgba(0,0,0,0.18)" }}>
+          {options.length > 6 && (
+            <div className="flex items-center gap-2 px-2.5 py-2" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+              <Search className="w-3.5 h-3.5 shrink-0" style={{ color: "var(--text-muted)" }} />
+              <input autoFocus value={q} onChange={e => setQ(e.target.value)} placeholder="Search…"
+                className="w-full text-sm outline-none bg-transparent" style={{ color: "var(--text-primary)" }} />
+            </div>
+          )}
+          <div className="max-h-52 overflow-y-auto py-1">
+            {filtered.length === 0 ? (
+              <p className="text-xs px-3 py-2" style={{ color: "var(--text-muted)" }}>No matches.</p>
+            ) : filtered.map(o => {
+              const on = selected.includes(o.value);
+              return (
+                <button key={o.value} type="button" onClick={() => onToggle(o.value)}
+                  className="w-full flex items-center justify-between gap-2 px-3 py-1.5 text-sm transition-colors hover:bg-[var(--bg-surface-2)]"
+                  style={{ color: "var(--text-primary)" }}>
+                  <span className="truncate">{o.label}</span>
+                  {on && <Check className="w-3.5 h-3.5 shrink-0" style={{ color: "var(--accent-text)" }} />}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 const HOUR_OPTIONS = Array.from({ length: 19 }, (_, i) => i + 5).map(h => ({ value: String(h), label: formatHour(h) }));
 
 function firstLocationOf(companyId: string): string {
@@ -136,9 +205,11 @@ function cloneSection(section: DispatchSection, src: DispatchSettings): ScopedDi
 // ─── Section ──────────────────────────────────────────────
 export default function CalendarDispatchSection() {
   const [store, setStore] = useState<DispatchStore | null>(null);
-  const [level, setLevel] = useState<ScopeLevel>("org");
-  const [companyId, setCompanyId] = useState(companies[0]?.id ?? "");
-  const [locationId, setLocationId] = useState(firstLocationOf(companies[0]?.id ?? ""));
+  // Scope is managed by the page-level editing scope, not here — these settings
+  // edit the organization defaults; boards are org-wide and scoped by members.
+  const level: ScopeLevel = "org";
+  const companyId = companies[0]?.id ?? "";
+  const locationId = firstLocationOf(companyId);
   const [tab, setTab] = useState<SectionTab>("defaults");
   const [dirty, setDirty] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -147,6 +218,11 @@ export default function CalendarDispatchSection() {
   const [editingView, setEditingView] = useState<string | null>(null);
 
   useEffect(() => { setStore(getStore()); }, []);
+
+  // Publish Save to the shared top-right slot (same as the Pipelines page).
+  function handleSave() { if (store) saveStore(store); setDirty(false); setSaved(true); setTimeout(() => setSaved(false), 2000); }
+  useRegisterSaveAction({ dirty, saved, onSave: handleSave });
+
   if (!store) return <div className="p-6 text-sm" style={{ color: "var(--text-muted)" }}>Loading…</div>;
 
   const scopeKey = scopeKeyOf(level, companyId, locationId);
@@ -197,20 +273,6 @@ export default function CalendarDispatchSection() {
   const blocksVal   = scopeCfg.blocks ?? parent.blocks;
   const layersVal   = scopeCfg.layers ?? parent.layers;
 
-  function handleSave() { if (store) saveStore(store); setDirty(false); setSaved(true); setTimeout(() => setSaved(false), 2000); }
-  function handleReset() { setStore(resetStore()); setEditingBlock(null); setEditingBoard(null); setEditingView(null); setDirty(false); setSaved(false); }
-
-  // ── Scope selector handlers ──
-  function pickLevel(l: ScopeLevel) {
-    setLevel(l); setEditingBlock(null); setEditingBoard(null);
-    if (l !== "org" && !companyId) { const c = companies[0]?.id ?? ""; setCompanyId(c); setLocationId(firstLocationOf(c)); }
-    if (l === "location" && !locations.some(loc => loc.id === locationId && loc.companyId === companyId)) {
-      setLocationId(firstLocationOf(companyId));
-    }
-  }
-  function pickCompany(id: string) { setCompanyId(id); setLocationId(firstLocationOf(id)); setEditingBlock(null); setEditingBoard(null); }
-  function pickLocation(id: string) { setLocationId(id); setEditingBlock(null); setEditingBoard(null); }
-
   // ── Service block ops ──
   const sortedBlocks = [...blocksVal].sort((a, b) => a.order - b.order);
   function moveBlock(id: string, dir: -1 | 1) {
@@ -239,20 +301,15 @@ export default function CalendarDispatchSection() {
   }
 
   // ── Board ops (scoped to the current company/location context) ──
-  const boardsInScope = store.boards.filter(b =>
-    (level === "org" || b.companyId === companyId) &&
-    (level !== "location" || b.locationId === locationId),
-  );
+  const boardsInScope = store.boards;
   function addBoard() {
     const id = newBoardId();
-    const co = level === "org" ? (companies[0]?.id ?? "") : companyId;
-    const loc = level === "location" ? locationId : firstLocationOf(co);
     update(next => {
-      const siblingDefault = next.boards.some(b => b.companyId === co && b.locationId === loc && b.isDefault);
+      // Org-wide board (no company/location); membership is by user and/or role.
       next.boards.push({
-        id, name: "New Board", companyId: co, locationId: loc, boardType: "custom",
-        dispatchers: [], techNames: [], jobTypes: [], serviceAreaIds: [],
-        active: true, isDefault: !siblingDefault,
+        id, name: "New Board", companyId: "", locationId: "", boardType: "custom",
+        dispatchers: [], techNames: [], roleKeys: [], jobTypes: [], serviceAreaIds: [],
+        active: true, isDefault: next.boards.length === 0,
       });
     });
     setEditingBoard(id);
@@ -260,7 +317,7 @@ export default function CalendarDispatchSection() {
   function patchBoard(id: string, patch: Partial<DispatchBoard>) {
     update(next => { const b = next.boards.find(x => x.id === id); if (b) Object.assign(b, patch); });
   }
-  function toggleBoardMember(id: string, field: "dispatchers" | "techNames" | "jobTypes" | "serviceAreaIds", value: string) {
+  function toggleBoardMember(id: string, field: "dispatchers" | "techNames" | "roleKeys" | "jobTypes" | "serviceAreaIds", value: string) {
     update(next => {
       const b = next.boards.find(x => x.id === id); if (!b) return;
       const arr = b[field];
@@ -274,14 +331,11 @@ export default function CalendarDispatchSection() {
     });
   }
   function removeBoard(id: string) {
-    update(next => {
-      const tgt = next.boards.find(b => b.id === id);
-      next.boards = next.boards.filter(b => b.id !== id);
-      if (tgt?.isDefault) {
-        const sib = next.boards.find(b => b.companyId === tgt.companyId && b.locationId === tgt.locationId);
-        if (sib) sib.isDefault = true;
-      }
-    });
+    // The default board is permanent — there's always at least one board so
+    // adding technicians / scheduling never hits a "no board" state.
+    const tgt = store?.boards.find(b => b.id === id);
+    if (!tgt || tgt.isDefault) return;
+    update(next => { next.boards = next.boards.filter(b => b.id !== id); });
     if (editingBoard === id) setEditingBoard(null);
   }
 
@@ -328,57 +382,11 @@ export default function CalendarDispatchSection() {
 
   return (
     <div className="space-y-5">
-      {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h2 className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>Calendar / Dispatch</h2>
-          <p className="text-sm mt-0.5" style={{ color: "var(--text-secondary)" }}>
-            Settings cascade Organization → Company → Location. The dispatch board uses the most specific settings for the current context.
-          </p>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <button onClick={handleReset}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm transition-colors"
-            style={{ border: "1px solid var(--border)", color: "var(--text-secondary)", backgroundColor: "var(--bg-surface)" }}>
-            <RotateCcw className="w-3.5 h-3.5" /> Reset All
-          </button>
-          <button onClick={handleSave} disabled={!dirty && !saved}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-white transition-colors disabled:opacity-50"
-            style={{ backgroundColor: saved ? "#10b981" : "#4f46e5" }}>
-            <Check className="w-3.5 h-3.5" /> {saved ? "Saved" : "Save Changes"}
-          </button>
-        </div>
-      </div>
-
-      {/* Scope selector */}
-      <div className="rounded-xl p-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
-        <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: "var(--text-muted)" }}>Configure settings for</p>
-        <div className="flex flex-wrap items-center gap-3">
-          <Segmented<ScopeLevel> value={level} onChange={pickLevel}
-            options={[
-              { value: "org", label: "Organization Default" },
-              { value: "company", label: "Company" },
-              { value: "location", label: "Company / Location" },
-            ]} />
-          {level !== "org" && (
-            <div className="flex items-center gap-1.5">
-              <Building2 className="w-3.5 h-3.5" style={{ color: "var(--text-muted)" }} />
-              <UiSelect value={companyId} onChange={pickCompany}
-                options={companies.map(c => ({ value: c.id, label: c.name }))} />
-            </div>
-          )}
-          {level === "location" && (
-            <div className="flex items-center gap-1.5">
-              <MapPin className="w-3.5 h-3.5" style={{ color: "var(--text-muted)" }} />
-              <UiSelect value={locationId} onChange={pickLocation}
-                options={locations.filter(l => l.companyId === companyId).map(l => ({ value: l.id, label: l.name }))} />
-            </div>
-          )}
-        </div>
-        <p className="text-[11px] mt-2" style={{ color: "var(--text-muted)" }}>
-          {level === "org"
-            ? "Organization defaults are the fallback for every company and location."
-            : "Unoverridden sections inherit from the parent scope."}
+      {/* Header — Save lives in the shared top-right slot (see SettingsSaveSlot) */}
+      <div>
+        <h2 className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>Calendar / Dispatch</h2>
+        <p className="text-sm mt-0.5" style={{ color: "var(--text-secondary)" }}>
+          Organization defaults for the dispatch board, service blocks, boards, queue views, and calendar layers.
         </p>
       </div>
 
@@ -395,7 +403,7 @@ export default function CalendarDispatchSection() {
           return (
             <button key={t.key} onClick={() => setTab(t.key)}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
-              style={{ backgroundColor: active ? "#4f46e5" : "var(--bg-surface)", color: active ? "#fff" : "var(--text-secondary)", border: `1px solid ${active ? "#4f46e5" : "var(--border)"}` }}>
+              style={{ backgroundColor: active ? "var(--accent-soft-bg)" : "transparent", color: active ? "var(--accent-text)" : "var(--text-muted)", border: `1px solid ${active ? "var(--accent-soft-border)" : "transparent"}` }}>
               <t.icon className="w-3.5 h-3.5" /> {t.label}
             </button>
           );
@@ -527,10 +535,10 @@ export default function CalendarDispatchSection() {
 
       {/* ── DISPATCH BOARDS TAB ── */}
       {tab === "boards" && (
-        <SettingsCard icon={Users} title="Dispatch Boards / Teams" subtitle="Boards belong to a company + location and group dispatchers, techs, and job types."
+        <SettingsCard icon={Users} title="Dispatch Boards / Teams" subtitle="Group dispatchers, technicians, and job types into a board. Assign members by user or by role."
           action={
-            <button onClick={addBoard} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-white" style={{ backgroundColor: "#4f46e5" }}>
-              <Plus className="w-3.5 h-3.5" /> Add Board
+            <button onClick={addBoard} title="Add board" className="flex items-center justify-center w-8 h-8 rounded-lg text-white transition-colors hover:bg-indigo-700" style={{ backgroundColor: "#4f46e5" }}>
+              <Plus className="w-4 h-4" />
             </button>
           }>
           <div className="space-y-3">
@@ -547,7 +555,7 @@ export default function CalendarDispatchSection() {
             ))}
             {boardsInScope.length === 0 && (
               <p className="text-xs py-2" style={{ color: "var(--text-muted)" }}>
-                No dispatch boards {level === "location" ? "for this location" : level === "company" ? "for this company" : "yet"}. Add one to get started.
+                No dispatch boards yet. Add one to get started.
               </p>
             )}
           </div>
@@ -657,28 +665,28 @@ function coName(id: string): string { return companies.find(c => c.id === id)?.n
 function BoardRow({ board, onEdit, onRemove, onSetDefault }: {
   board: DispatchBoard; onEdit: () => void; onRemove: () => void; onSetDefault: () => void;
 }) {
+  const members = [
+    ...board.techNames,
+    ...(board.roleKeys ?? []).map(k => `${getRoleLabel(k)} (role)`),
+  ];
   return (
-    <div className="rounded-xl p-4" style={{ border: board.isDefault ? "1px solid #c7d2fe" : "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)", opacity: board.active ? 1 : 0.55 }}>
+    <div className="rounded-xl p-4" style={{ border: board.isDefault ? "1px solid #c7d2fe" : "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{board.name}</p>
-            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>{BOARD_TYPE_LABELS[board.boardType]}</span>
             {board.isDefault && <span className="flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: "#e0e7ff", color: "#3730a3" }}><Star className="w-2.5 h-2.5" /> Default</span>}
-            {!board.active && <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>Disabled</span>}
           </div>
-          <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>{coName(board.companyId)} · {locName(board.locationId)}</p>
           <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs" style={{ color: "var(--text-secondary)" }}>
             <span><span style={{ color: "var(--text-muted)" }}>Dispatchers:</span> {board.dispatchers.length ? board.dispatchers.join(", ") : "—"}</span>
-            <span><span style={{ color: "var(--text-muted)" }}>Techs:</span> {board.techNames.length ? board.techNames.join(", ") : "All"}</span>
+            <span><span style={{ color: "var(--text-muted)" }}>Members:</span> {members.length ? members.join(", ") : "All technicians"}</span>
             <span><span style={{ color: "var(--text-muted)" }}>Job types:</span> {board.jobTypes.length ? board.jobTypes.join(", ") : "All"}</span>
-            {board.serviceAreaIds.length > 0 && <span><span style={{ color: "var(--text-muted)" }}>Areas:</span> {board.serviceAreaIds.map(id => serviceAreas.find(s => s.id === id)?.name ?? id).join(", ")}</span>}
           </div>
         </div>
         <div className="flex items-center gap-1 shrink-0">
           {!board.isDefault && <button onClick={onSetDefault} title="Set as default" className="p-1.5 rounded-lg hover:bg-[var(--bg-input)]" style={{ color: "var(--text-muted)" }}><Star className="w-3.5 h-3.5" /></button>}
           <button onClick={onEdit} className="p-1.5 rounded-lg hover:bg-[var(--bg-input)]" style={{ color: "var(--text-muted)" }}><Pencil className="w-3.5 h-3.5" /></button>
-          <button onClick={onRemove} className="p-1.5 rounded-lg hover:bg-red-50" style={{ color: "#9ca3af" }}><Trash2 className="w-3.5 h-3.5" /></button>
+          {!board.isDefault && <button onClick={onRemove} className="p-1.5 rounded-lg hover:bg-red-50" style={{ color: "#9ca3af" }}><Trash2 className="w-3.5 h-3.5" /></button>}
         </div>
       </div>
     </div>
@@ -688,65 +696,33 @@ function BoardRow({ board, onEdit, onRemove, onSetDefault }: {
 function BoardEditor({ board, onPatch, onToggleMember, onDone }: {
   board: DispatchBoard;
   onPatch: (p: Partial<DispatchBoard>) => void;
-  onToggleMember: (field: "dispatchers" | "techNames" | "jobTypes" | "serviceAreaIds", value: string) => void;
+  onToggleMember: (field: "dispatchers" | "techNames" | "roleKeys" | "jobTypes" | "serviceAreaIds", value: string) => void;
   onDone: () => void;
 }) {
-  const companyLocations = locations.filter(l => l.companyId === board.companyId);
-  const areaOptions = serviceAreas.filter(s => s.locationId === board.locationId);
+  const roleDefs = getAssignableRoles();
+  const toOpts = (names: string[]) => names.map(n => ({ value: n, label: n }));
   return (
     <div className="rounded-xl p-4 space-y-4" style={{ border: "2px solid #c7d2fe", backgroundColor: "var(--bg-surface)" }}>
-      <div className="grid grid-cols-2 gap-3">
-        <div className="col-span-2">
-          <FieldLabel>Board Name</FieldLabel>
-          <input value={board.name} onChange={e => onPatch({ name: e.target.value })}
-            className="w-full rounded-lg px-3 py-2 text-sm outline-none" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface)", color: "var(--text-primary)" }} />
-        </div>
-        <div>
-          <FieldLabel>Company</FieldLabel>
-          <UiSelect value={board.companyId} onChange={v => {
-            const loc = locations.find(l => l.companyId === v)?.id ?? "";
-            onPatch({ companyId: v, locationId: loc, serviceAreaIds: [] });
-          }} options={companies.map(c => ({ value: c.id, label: c.name }))} />
-        </div>
-        <div>
-          <FieldLabel>Location</FieldLabel>
-          <UiSelect value={board.locationId} onChange={v => onPatch({ locationId: v, serviceAreaIds: [] })}
-            options={companyLocations.map(l => ({ value: l.id, label: l.name }))} />
-        </div>
-        <div>
-          <FieldLabel>Board Type</FieldLabel>
-          <UiSelect value={board.boardType} onChange={v => onPatch({ boardType: v as BoardType })}
-            options={(Object.keys(BOARD_TYPE_LABELS) as BoardType[]).map(t => ({ value: t, label: BOARD_TYPE_LABELS[t] }))} />
-        </div>
-        <div>
-          <FieldLabel>Default View (optional)</FieldLabel>
-          <UiSelect value={board.defaultView ?? "inherit"} onChange={v => onPatch({ defaultView: v === "inherit" ? undefined : v as CalendarViewMode })}
-            options={[{ value: "inherit", label: "Inherit" }, { value: "dispatch", label: "Dispatch Board" }, { value: "day", label: "Day" }, { value: "week", label: "Week" }, { value: "month", label: "Month" }]} />
-        </div>
+      <div>
+        <FieldLabel>Board Name</FieldLabel>
+        <input value={board.name} onChange={e => onPatch({ name: e.target.value })}
+          className="w-full rounded-lg px-3 py-2 text-sm outline-none" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface)", color: "var(--text-primary)" }} />
       </div>
-      <div><FieldLabel>Dispatchers</FieldLabel><ChipMulti all={getDispatcherNames()} selected={board.dispatchers} onToggle={v => onToggleMember("dispatchers", v)} /></div>
-      <div><FieldLabel>Technicians / Crews</FieldLabel><ChipMulti all={getTechnicianNames()} selected={board.techNames} onToggle={v => onToggleMember("techNames", v)} /></div>
+      <div>
+        <FieldLabel>Dispatchers</FieldLabel>
+        <MultiSelect options={toOpts(getDispatcherNames())} selected={board.dispatchers} onToggle={v => onToggleMember("dispatchers", v)} placeholder="Select dispatchers…" />
+      </div>
+      <div>
+        <FieldLabel>Members — assign specific people</FieldLabel>
+        <MultiSelect options={toOpts(getTechnicianNames())} selected={board.techNames} onToggle={v => onToggleMember("techNames", v)} placeholder="Select technicians or crew…" />
+      </div>
+      <div>
+        <FieldLabel>…or assign by role</FieldLabel>
+        <MultiSelect options={roleDefs.map(r => ({ value: r.key, label: r.label }))} selected={board.roleKeys ?? []} onToggle={v => onToggleMember("roleKeys", v)} placeholder="Select roles…" />
+        <p className="text-[11px] mt-1.5" style={{ color: "var(--text-muted)" }}>Anyone holding a selected role joins this board automatically. Leave members and roles empty to include all technicians.</p>
+      </div>
       <div><FieldLabel>Job Types</FieldLabel><ChipMulti all={MOCK_JOB_TYPES} selected={board.jobTypes} onToggle={v => onToggleMember("jobTypes", v)} /></div>
-      {areaOptions.length > 0 && (
-        <div><FieldLabel>Service Areas (optional)</FieldLabel><ChipMulti all={areaOptions.map(a => a.name)}
-          selected={board.serviceAreaIds.map(id => areaOptions.find(a => a.id === id)?.name ?? id)}
-          onToggle={name => { const a = areaOptions.find(x => x.name === name); if (a) onToggleMember("serviceAreaIds", a.id); }} /></div>
-      )}
-      <div className="flex items-center justify-between pt-1">
-        <div className="flex items-center gap-4">
-          <label className="flex items-center gap-2 cursor-pointer">
-            <Toggle on={board.active} onChange={v => onPatch({ active: v })} />
-            <span className="text-sm" style={{ color: "var(--text-secondary)" }}>Active</span>
-          </label>
-          <div className="flex items-center gap-2">
-            <FieldLabel>Mode</FieldLabel>
-            <div className="-mt-1.5">
-              <Segmented<string> value={board.defaultDispatchMode ?? "inherit"}
-                onChange={v => onPatch({ defaultDispatchMode: v === "inherit" ? undefined : v as DispatchMode })}
-                options={[{ value: "inherit", label: "Inherit" }, { value: "hourly", label: "Hourly" }, { value: "blocks", label: "Blocks" }]} />
-            </div>
-          </div>
-        </div>
+      <div className="flex justify-end pt-1">
         <button onClick={onDone} className="px-4 py-1.5 rounded-lg text-sm font-medium text-white" style={{ backgroundColor: "#4f46e5" }}>Done</button>
       </div>
     </div>

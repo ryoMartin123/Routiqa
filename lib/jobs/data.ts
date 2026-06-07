@@ -22,6 +22,7 @@ export interface Job {
   propertyAddress?: string;
   agreementId?: string;
   title: string;
+  description?: string;
   type: JobType;
   status: JobStatus;
   priority: JobPriority;
@@ -187,7 +188,7 @@ export function deleteJobsByCompany(companyId: string): void {
 export interface NewJobInput {
   companyId: string; locationId: string; serviceAreaId?: string;
   accountId: string; customerName: string; customerInitials: string; locationName: string;
-  title: string; type?: JobType; priority?: JobPriority;
+  title: string; description?: string; type?: JobType; priority?: JobPriority;
   propertyAddress?: string; estimatedAmount?: string; projectId?: string;
   scheduledDate?: string; scheduledTime?: string; durationMinutes?: number;
   assignedTo?: string; assignedToInitials?: string;
@@ -202,7 +203,7 @@ export function createJob(input: NewJobInput): Job {
     companyId: input.companyId, locationId: input.locationId, serviceAreaId: input.serviceAreaId,
     projectId: input.projectId, accountId: input.accountId,
     propertyAddress: input.propertyAddress,
-    title: input.title, type: input.type ?? "installation",
+    title: input.title, description: input.description, type: input.type ?? "installation",
     status: input.scheduledDate ? "scheduled" : "new",
     priority: input.priority ?? "normal",
     scheduledDate: input.scheduledDate ?? "", scheduledTime: input.scheduledTime ?? "",
@@ -229,8 +230,60 @@ export function getJobsForProject(projectId: string): Job[] {
   return getAllJobs().filter(j => j.projectId === projectId);
 }
 
+// ─── Work order runtime store (created via the Work Order wizard) ─────
+// One work order per job, keyed by jobId. Session records persist to
+// localStorage and merge over the seed WORK_ORDERS map.
+const WO_KEY = "crm-work-orders";
+let _woByJob: Record<string, WorkOrder> | null = null;
+function woStore(): Record<string, WorkOrder> {
+  if (_woByJob) return _woByJob;
+  if (typeof window === "undefined") return {};
+  try { const r = localStorage.getItem(WO_KEY); _woByJob = r ? JSON.parse(r) : {}; }
+  catch { _woByJob = {}; }
+  return _woByJob!;
+}
+function persistWO() { try { localStorage.setItem(WO_KEY, JSON.stringify(_woByJob ?? {})); } catch { /* ignore */ } }
+
+export interface NewWorkOrderInput {
+  jobId: string;
+  title: string;
+  instructions?: string;
+  templateId?: string;
+  // Checklist labels snapshotted from the chosen template (in order).
+  checklist: string[];
+}
+export function createWorkOrder(input: NewWorkOrderInput): WorkOrder {
+  const wo: WorkOrder = {
+    id: `wo-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`,
+    jobId: input.jobId,
+    title: input.title,
+    instructions: input.instructions ?? "",
+    status: "pending",
+    checklist: input.checklist.map((label, i) => ({
+      id: `ci-${Date.now()}-${i}`, label, isComplete: false, sortOrder: i + 1,
+    })),
+  };
+  _woByJob = { ...woStore(), [input.jobId]: wo };
+  persistWO();
+  return wo;
+}
+export function updateWorkOrder(jobId: string, patch: Partial<WorkOrder>): WorkOrder | undefined {
+  const existing = woStore()[jobId] ?? WORK_ORDERS[jobId];
+  if (!existing) return undefined;
+  const updated = { ...existing, ...patch };
+  _woByJob = { ...woStore(), [jobId]: updated };
+  persistWO();
+  return updated;
+}
+
+// All work orders (seed + session) as [jobId, WorkOrder] entries.
+export function getAllWorkOrders(): { jobId: string; wo: WorkOrder }[] {
+  const merged = { ...WORK_ORDERS, ...woStore() };
+  return Object.entries(merged).map(([jobId, wo]) => ({ jobId, wo }));
+}
+
 export function getWorkOrder(jobId: string): WorkOrder | undefined {
-  return WORK_ORDERS[jobId];
+  return woStore()[jobId] ?? WORK_ORDERS[jobId];
 }
 
 export function getJobNotes(jobId: string): JobNote[] {

@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { ClipboardList, Plus, Search, SlidersHorizontal, CalendarClock, ImageOff, CheckCircle2 } from "lucide-react";
-import { ALL_JOBS, WORK_ORDERS, JOB_STATUS_CONFIG, type WorkOrderStatus } from "@/lib/jobs/data";
+import { getAllJobs, getAllWorkOrders, type WorkOrderStatus } from "@/lib/jobs/data";
+import WorkOrderWizard from "@/components/jobs/WorkOrderWizard";
 import { getFiles } from "@/lib/files/data";
 import { useHierarchy } from "@/components/providers/HierarchyProvider";
 import ModuleSummaryCards, { type SummaryCard } from "@/components/shared/ModuleSummaryCards";
@@ -11,12 +12,6 @@ import ModuleViewToggle, { type ModuleView } from "@/components/shared/ModuleVie
 import StatusTabs from "@/components/shared/StatusTabs";
 
 const TODAY = "May 30, 2026";
-
-const WO_STATUS_CONFIG: Record<WorkOrderStatus, { label: string; bg: string; color: string }> = {
-  pending:     { label: "Pending",     bg: "var(--bg-input)", color: "var(--text-muted)"  },
-  in_progress: { label: "In Progress", bg: "#fef3c7",         color: "#92400e"            },
-  completed:   { label: "Completed",   bg: "#d1fae5",         color: "#065f46"            },
-};
 
 const STATUS_TABS: { key: "all" | WorkOrderStatus; label: string }[] = [
   { key: "all",         label: "All"         },
@@ -30,12 +25,16 @@ export default function WorkOrdersPage() {
   const [tab, setTab]       = useState<"all" | WorkOrderStatus>("all");
   const [search, setSearch] = useState("");
   const [moduleView, setModuleView] = useState<ModuleView>("list");
+  const [version, setVersion]   = useState(0);
+  const [wizardOpen, setWizardOpen] = useState(false);
 
-  // Flatten WORK_ORDERS into a list with job context
-  const woList = Object.entries(WORK_ORDERS).map(([jobId, wo]) => {
-    const job = ALL_JOBS.find(j => j.id === jobId);
-    return { wo, job };
-  }).filter(({ job }) => job !== undefined);
+  // Flatten work orders (seed + session) into a list with job context.
+  const jobsAll = useMemo(() => getAllJobs(), [version]);
+  const woList = useMemo(() =>
+    getAllWorkOrders()
+      .map(({ jobId, wo }) => ({ wo, job: jobsAll.find(j => j.id === jobId) }))
+      .filter(({ job }) => job !== undefined),
+    [jobsAll, version]);
 
   const contextFiltered = woList.filter(({ job }) =>
     (!effectiveCompanyId  || job!.companyId  === effectiveCompanyId) &&
@@ -85,11 +84,16 @@ export default function WorkOrdersPage() {
         </div>
         <ModuleViewToggle view={moduleView} onChange={setModuleView} />
         <div className="flex-1 flex justify-end">
-          <button className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-3 py-2 rounded-lg transition-colors">
+          <button onClick={() => setWizardOpen(true)}
+            className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-3 py-2 rounded-lg transition-colors">
             <Plus className="w-4 h-4" /> New Work Order
           </button>
         </div>
       </div>
+
+      {wizardOpen && (
+        <WorkOrderWizard onClose={() => setWizardOpen(false)} onCreated={() => { setWizardOpen(false); setVersion(v => v + 1); }} />
+      )}
 
       {moduleView === "overview" && (
         <div className="mb-5">
@@ -124,13 +128,11 @@ export default function WorkOrdersPage() {
 
         {/* Column headers */}
         <div className="grid px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider"
-          style={{ gridTemplateColumns: "2.5fr 2fr 1.5fr 1fr 1fr 1fr", color: "var(--text-muted)", borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+          style={{ gridTemplateColumns: "2.5fr 2fr 1.5fr 1fr", color: "var(--text-muted)", borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
           <span>Work Order</span>
           <span>Customer / Job</span>
           <span>Property</span>
           <span>Assigned</span>
-          <span>Job Status</span>
-          <span>WO Status</span>
         </div>
 
         {/* Rows */}
@@ -141,9 +143,6 @@ export default function WorkOrdersPage() {
               <p className="text-sm" style={{ color: "var(--text-muted)" }}>No work orders match the current filter.</p>
             </div>
           ) : displayed.map(({ wo, job }, i) => {
-            const woStyle  = WO_STATUS_CONFIG[wo.status];
-            const jobStyle = job ? JOB_STATUS_CONFIG[job.status] : null;
-
             // Checklist progress
             const done  = wo.checklist.filter(c => c.isComplete).length;
             const total = wo.checklist.length;
@@ -152,7 +151,7 @@ export default function WorkOrdersPage() {
             return (
               <Link key={wo.id} href={`/jobs/${wo.jobId}`}
                 className="grid px-4 py-3 items-center hover:bg-[var(--bg-surface-2)] transition-colors"
-                style={{ gridTemplateColumns: "2.5fr 2fr 1.5fr 1fr 1fr 1fr", borderBottom: i < displayed.length - 1 ? "1px solid var(--border-subtle)" : "none", textDecoration: "none" }}>
+                style={{ gridTemplateColumns: "2.5fr 2fr 1.5fr 1fr", borderBottom: i < displayed.length - 1 ? "1px solid var(--border-subtle)" : "none", textDecoration: "none" }}>
 
                 {/* Work order */}
                 <div className="min-w-0">
@@ -194,20 +193,6 @@ export default function WorkOrdersPage() {
                     <span className="text-sm truncate" style={{ color: "var(--text-secondary)" }}>{job.assignedTo}</span>
                   </div>
                 )}
-
-                {/* Job status */}
-                {jobStyle && (
-                  <span className="inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full"
-                    style={{ backgroundColor: jobStyle.bg, color: jobStyle.color }}>
-                    {jobStyle.label}
-                  </span>
-                )}
-
-                {/* WO status */}
-                <span className="inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full"
-                  style={{ backgroundColor: woStyle.bg, color: woStyle.color }}>
-                  {woStyle.label}
-                </span>
               </Link>
             );
           })}

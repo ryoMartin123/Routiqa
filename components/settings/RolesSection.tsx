@@ -164,8 +164,10 @@ function RoleEditor({ initial, isNew, onCancel, onSaved }: {
   initial: RoleDefinition; isNew: boolean; onCancel: () => void; onSaved: () => void;
 }) {
   const [draft, setDraft] = useState<RoleDefinition>(() => JSON.parse(JSON.stringify(initial)));
+  const [initialKey] = useState(() => JSON.stringify(initial));
   const [errors, setErrors] = useState<string[]>([]);
   const others = useMemo(() => getOrgRoles().filter(r => r.key !== initial.key), [initial.key]);
+  const dirty = JSON.stringify(draft) !== initialKey;
 
   function cellLevel(res: Resource, act: Action): AccessLevel {
     return draft.capabilities[res]?.[act] ?? "none";
@@ -215,7 +217,8 @@ function RoleEditor({ initial, isNew, onCancel, onSaved }: {
         </button>
         <div className="flex items-center gap-2">
           <button onClick={onCancel} className="text-sm font-medium px-3 py-2 rounded-lg" style={{ color: "var(--text-secondary)" }}>Cancel</button>
-          <button onClick={save} className="text-sm font-medium px-4 py-2 rounded-lg text-white" style={{ backgroundColor: "#4f46e5" }}>
+          <button onClick={save} disabled={!dirty}
+            className="text-sm font-medium px-4 py-2 rounded-lg text-white transition-colors disabled:opacity-40" style={{ backgroundColor: "#4f46e5" }}>
             {isNew ? "Create Role" : "Save Role"}
           </button>
         </div>
