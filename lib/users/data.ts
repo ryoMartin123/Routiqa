@@ -44,13 +44,13 @@ function uid(prefix: string): string {
 }
 
 // ─── Seed: the account owner only ─────────────────────────
-// Matches lib/hierarchy currentUser (Marcus Reyes) so "You" lines up.
+// Matches lib/hierarchy currentUser (Ryo Martin) so "You" lines up.
 const SEED: AppUser[] = [
   {
     id: "user_marcus",
-    fullName: "Marcus Reyes",
-    initials: "MR",
-    email: "marcus@northstar.example",
+    fullName: "Ryo Martin",
+    initials: "RM",
+    email: "ryo@northstar.example",
     status: "active",
     isOrgOwner: true,
     assignments: [{ id: "asg-owner", role: "org_owner", level: "org" }],

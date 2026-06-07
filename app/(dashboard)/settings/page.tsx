@@ -7,7 +7,7 @@ import {
   Puzzle, Factory, Sliders, CreditCard, ArrowUpDown,
   TrendingUp, Briefcase, FolderKanban, ClipboardList, Image as ImageIcon,
   FileText, ChevronRight, Plus, Pencil, LayoutDashboard,
-  Settings2, ArrowLeft, CalendarClock,
+  Settings2, ArrowLeft, CalendarClock, ListChecks,
   Package, Tag, Percent, FileStack, FilePen, Lock,
 } from "lucide-react";
 import { useTheme } from "@/components/providers/ThemeProvider";
@@ -29,6 +29,7 @@ const WorkOrderTemplatesSection = dynamic(() => import("@/components/settings/Wo
 const PhotoCategoriesSection    = dynamic(() => import("@/components/settings/PhotoCategoriesSection"),    { loading: SectionLoading, ssr: false });
 const IndustryDefaultsSection   = dynamic(() => import("@/components/settings/IndustryDefaultsSection"),   { loading: SectionLoading, ssr: false });
 const CalendarDispatchSection   = dynamic(() => import("@/components/settings/CalendarDispatchSection"),   { loading: SectionLoading, ssr: false });
+const TasksSettingsSection      = dynamic(() => import("@/components/settings/TasksSettingsSection"),      { loading: SectionLoading, ssr: false });
 const ItemsCategoriesSection    = dynamic(() => import("@/components/settings/ItemsCategoriesSection"),    { loading: SectionLoading, ssr: false });
 const QuoteSettingsSection      = dynamic(() => import("@/components/settings/QuoteSettingsSection"),      { loading: SectionLoading, ssr: false });
 const QuoteTemplatesSection     = dynamic(() => import("@/components/settings/QuoteTemplatesSection"),     { loading: SectionLoading, ssr: false });
@@ -51,12 +52,13 @@ import EditingScopeHeader from "@/components/settings/EditingScopeHeader";
 import { SettingsActionsProvider, SettingsSaveSlot } from "@/components/settings/SettingsActions";
 import type { SectionLayers } from "@/lib/settings-scope/types";
 import HoverInfo, { Pill } from "@/components/shared/HoverInfo";
+import Commentable from "@/components/comments/Commentable";
 
 // ─── Navigation structure ─────────────────────────────────
 type SectionKey =
   | "appearance" | "business_structure"
   | "organization" | "companies" | "locations" | "service_areas"
-  | "pipelines" | "job_types" | "projects" | "work_orders" | "photo_categories" | "calendar_dispatch" | "agreements"
+  | "pipelines" | "job_types" | "projects" | "work_orders" | "tasks" | "photo_categories" | "calendar_dispatch" | "agreements"
   | "items_categories" | "quote_settings" | "quote_templates" | "proposal_builder" | "terms_conditions" | "taxes_fees"
   | "users" | "roles" | "security"
   | "marketing" | "communication"
@@ -118,6 +120,7 @@ const CATEGORIES: Category[] = [
       { key: "job_types",        label: "Job Types & Statuses", description: "Job categories and status labels",               icon: Briefcase },
       { key: "projects",         label: "Projects",             description: "Project pipeline stages, types, templates, and defaults", icon: FolderKanban },
       { key: "work_orders",      label: "Work Orders",          description: "Checklist templates and field instructions",     icon: ClipboardList },
+      { key: "tasks",            label: "Tasks",                description: "Task types and New Task defaults",               icon: ListChecks },
       { key: "photo_categories", label: "Photo Categories",     description: "Categories for job and property photos",         icon: ImageIcon },
       { key: "calendar_dispatch",label: "Calendar / Dispatch",  description: "Default view, hours, service blocks, and boards", icon: CalendarClock },
       { key: "agreements",       label: "Agreements",           description: "Plan templates, types, visit & billing rules, benefits, terms", icon: FileText },
@@ -191,6 +194,7 @@ const SECTION_LAYERS: Record<SectionKey, SectionLayers> = {
   job_types:          ["org", "company", "location"],
   projects:           ["org", "company", "location"],
   work_orders:        ["org", "company"],
+  tasks:              "any",
   photo_categories:   ["org", "company"],
   calendar_dispatch:  ["org", "company", "location"],
   agreements:         ["org", "company"],
@@ -886,6 +890,7 @@ export default function SettingsPage() {
       case "projects":           return <ProjectsSection />;
       case "photo_categories":   return <PhotoCategoriesSection />;
       case "calendar_dispatch":  return <CalendarDispatchSection />;
+      case "tasks":              return <TasksSettingsSection />;
       case "items_categories":   return <ItemsCategoriesSection />;
       case "quote_settings":     return <QuoteSettingsSection />;
       case "quote_templates":    return <QuoteTemplatesSection />;
@@ -957,7 +962,9 @@ export default function SettingsPage() {
         </div>
         <EditingScopeHeader sectionLayers={SECTION_LAYERS[view.section] ?? "any"} />
         <SectionGate layers={SECTION_LAYERS[view.section] ?? "any"} title={item?.label ?? "This setting"}>
-          {renderSection(view.section)}
+          <Commentable anchor={{ recordType: "settings", recordId: view.section, recordLabel: item?.label ?? "Settings" }}>
+            {renderSection(view.section)}
+          </Commentable>
         </SectionGate>
       </div>
     );

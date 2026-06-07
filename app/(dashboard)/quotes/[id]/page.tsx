@@ -18,6 +18,7 @@ import { proposalDocFromQuote } from "@/lib/quotes/proposalDoc";
 import { QUOTE_STATUS_STYLE, type QuoteStatus } from "@/lib/quotes/types";
 import { getCustomer } from "@/lib/customers/data";
 import ProposalDocument from "@/components/quotes/ProposalDocument";
+import Commentable from "@/components/comments/Commentable";
 
 const TABS = ["Details", "Notes", "Activity"];
 
@@ -387,6 +388,7 @@ export default function QuoteDetailPage({ params }: { params: Promise<{ id: stri
               <ArrowLeft className="w-4 h-4" /> Quotes
             </Link>
             <div className="w-px h-5 shrink-0" style={{ backgroundColor: "var(--border)" }} />
+            <Commentable anchor={{ recordType: "quote", recordId: id, recordLabel: quote.quoteNumber }}>
             <div className="flex items-center gap-3 min-w-0">
               <div className="w-9 h-9 rounded-lg bg-indigo-100 flex items-center justify-center shrink-0">
                 <FilePen className="w-4.5 h-4.5 text-indigo-600" />
@@ -405,6 +407,7 @@ export default function QuoteDetailPage({ params }: { params: Promise<{ id: stri
                 </p>
               </div>
             </div>
+            </Commentable>
           </div>
           <div className="shrink-0">
             <QuoteActionBar

@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useState, Suspense } from "react";
 import Link from "next/link";
 import { ArrowLeft, Pencil, CheckCircle, Circle, ChevronRight, MapPin, User, Calendar, DollarSign, Clock, Plus, Trash2, AlertCircle } from "lucide-react";
 import { getProject, getProjectTasks, getProjectProgress, deleteProject, PROJECT_TYPE_LABELS } from "@/lib/projects/data";
@@ -16,7 +16,8 @@ import { getCustomer } from "@/lib/customers/data";
 import { getQuotesForProject, getInvoicesForProject, fmt as fmtCurrency } from "@/lib/quotes/data";
 import { QUOTE_STATUS_STYLE, INVOICE_STATUS_STYLE } from "@/lib/quotes/types";
 import InvoiceWizard from "@/components/quotes/InvoiceWizard";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import Commentable from "@/components/comments/Commentable";
 import QuickCreateQuoteModal from "@/components/quotes/QuickCreateQuoteModal";
 import PhotoGallery from "@/components/files/PhotoGallery";
 
@@ -315,10 +316,16 @@ function StubTab({ label }: { label: string }) {
 }
 
 // ─── Page ─────────────────────────────────────────────────
-export default function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
+function ProjectDetailContent({ params }: { params: Promise<{ id: string }> }) {
   const { id }    = use(params);
   const router    = useRouter();
-  const [tab, setTab] = useState("Overview");
+  const searchParams = useSearchParams();
+  // Tab is URL-synced (?tab=) so comment deep-links land on the right tab.
+  const [tab, setTabState] = useState(() => { const t = searchParams.get("tab"); return t && TABS.includes(t) ? t : "Overview"; });
+  function setTab(t: string) {
+    setTabState(t);
+    router.replace(`/projects/${id}?tab=${encodeURIComponent(t)}`, { scroll: false });
+  }
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [editing, setEditing] = useState(false);
   const [, setRefreshKey] = useState(0);   // bump to re-read after edits / phase→stage changes
@@ -354,6 +361,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
               <ArrowLeft className="w-4 h-4" /> Projects
             </Link>
             <div className="w-px h-5 shrink-0" style={{ backgroundColor: "var(--border)" }} />
+            <Commentable anchor={{ recordType: "project", recordId: id, recordLabel: project.customerName }}>
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <h1 className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>{project.name}</h1>
@@ -363,6 +371,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                 {project.customerName} · {progLabel} complete · {pct}%
               </p>
             </div>
+            </Commentable>
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <ActionsMenu actions={[
@@ -431,4 +440,9 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
       )}
     </div>
   );
+}
+
+export default function ProjectDetailPage(props: { params: Promise<{ id: string }> }) {
+  // Suspense boundary required because the content reads useSearchParams.
+  return <Suspense fallback={null}><ProjectDetailContent {...props} /></Suspense>;
 }

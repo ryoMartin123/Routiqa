@@ -3,6 +3,7 @@
 import React, { use, useState, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import Commentable from "@/components/comments/Commentable";
 import { ArrowLeft, CheckCircle, Circle, ChevronRight, Phone, MapPin, User, Clock, Calendar, DollarSign, Briefcase, AlertTriangle, Camera, ListChecks, Plus, Trash2, Ban, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getJob, updateJob, deleteJob, getWorkOrder, getJobNotes, resolveJobStatus, type JobNoteType } from "@/lib/jobs/data";
@@ -615,7 +616,15 @@ function JobDetailContent({ params }: { params: Promise<{ id: string }> }) {
   // profile's Jobs tab) can pass ?back=<url>&backLabel=<text> to return there.
   const backHref  = searchParams.get("back") || "/jobs";
   const backLabel = searchParams.get("backLabel") || "Jobs";
-  const [tab, setTab] = useState("Overview");
+  // Tab is URL-synced (?tab=) so comment deep-links and back-links land on the
+  // right tab, and the global comment watcher can focus sub-entities within it.
+  const [tab, setTabState] = useState(() => { const t = searchParams.get("tab"); return t && TABS.includes(t) ? t : "Overview"; });
+  function setTab(t: string) {
+    setTabState(t);
+    const sp = new URLSearchParams(searchParams.toString());
+    sp.set("tab", t);
+    router.replace(`/jobs/${id}?${sp.toString()}`, { scroll: false });
+  }
   const [job, setJob] = useState(() => getJob(id));
   const [confirmDelete, setConfirmDelete] = useState(false);
   const refresh = () => setJob(getJob(id));
@@ -660,6 +669,7 @@ function JobDetailContent({ params }: { params: Promise<{ id: string }> }) {
               </>
             )}
             <div className="w-px h-5 shrink-0" style={{ backgroundColor: "var(--border)" }} />
+            <Commentable anchor={{ recordType: "job", recordId: id, recordLabel: job.customerName }}>
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <h1 className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>{job.title}</h1>
@@ -667,6 +677,7 @@ function JobDetailContent({ params }: { params: Promise<{ id: string }> }) {
               </div>
               <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>{job.customerName} · {job.scheduledDate} at {job.scheduledTime}</p>
             </div>
+            </Commentable>
           </div>
           <div className="flex items-center gap-2 shrink-0">
             {/* Every action for this job lives in the ⋮ menu, consistent with the

@@ -35,6 +35,7 @@ import UiSelect from "@/components/ui/Select";
 import PhotoGallery from "@/components/files/PhotoGallery";
 import { getActivityEvents } from "@/lib/activity/data";
 import { type ActivityEvent, type EventType, type FilterCategory, EVENT_FILTER_MAP } from "@/lib/activity/types";
+import Commentable from "@/components/comments/Commentable";
 
 // ─── Badge helpers ────────────────────────────────────────
 function typePill(type: CustomerType) {
@@ -625,7 +626,13 @@ function ContactsTab({ id }: { id: string }) {
 
       <div className="grid grid-cols-2 gap-4">
         {contacts.map(c => (
-          <ContactCard key={c.id} contact={c} onSetPrimary={handleSetPrimary} />
+          <Commentable key={c.id}
+            anchor={{
+              recordType: "customer", recordId: id, recordLabel: getCustomer(id)?.name ?? "Account",
+              section: "Contacts", subId: c.id, subLabel: c.name,
+            }}>
+            <ContactCard contact={c} onSetPrimary={handleSetPrimary} />
+          </Commentable>
         ))}
       </div>
     </div>
@@ -882,7 +889,13 @@ function PropertiesTab({ id }: { id: string }) {
 
       <div className="grid grid-cols-2 gap-4">
         {properties.map(p => (
-          <PropertyCard key={p.id} property={p} onEdit={() => startEdit(p)} />
+          <Commentable key={p.id}
+            anchor={{
+              recordType: "customer", recordId: id, recordLabel: getCustomer(id)?.name ?? "Account",
+              section: "Properties", subId: p.id, subLabel: p.label || p.address,
+            }}>
+            <PropertyCard property={p} onEdit={() => startEdit(p)} />
+          </Commentable>
         ))}
       </div>
     </div>
@@ -1568,6 +1581,7 @@ function CustomerDetailContent({ params }: { params: Promise<{ id: string }> }) 
               <ArrowLeft className="w-4 h-4" /> Customers
             </Link>
             <div className="w-px h-5 shrink-0" style={{ backgroundColor: "var(--border)" }} />
+            <Commentable anchor={{ recordType: "customer", recordId: id, recordLabel: customer.name }}>
             <div className="flex items-center gap-3 min-w-0">
               <div className="w-9 h-9 rounded-full bg-indigo-600 flex items-center justify-center text-white text-sm font-bold shrink-0">
                 {customer.initials}
@@ -1587,6 +1601,7 @@ function CustomerDetailContent({ params }: { params: Promise<{ id: string }> }) 
                 </p>
               </div>
             </div>
+            </Commentable>
           </div>
 
           <div className="relative shrink-0">
@@ -1637,20 +1652,31 @@ function CustomerDetailContent({ params }: { params: Promise<{ id: string }> }) 
         </div>
       </div>
 
-      {/* Tab content — keyed on refreshKey so tabs re-read after an edit */}
+      {/* Tab content — keyed on refreshKey so tabs re-read after an edit.
+          Card-grid tabs (Contacts, Properties, Equipment) comment per-row inside
+          the tab; table/dense tabs get a section-level anchor here. */}
       <div key={refreshKey} className="flex-1 overflow-y-auto p-6" style={{ backgroundColor: "var(--bg-page)" }}>
-        {tab === "Overview"       && <OverviewTab    id={id} />}
-        {tab === "Contacts"       && <ContactsTab    id={id} />}
-        {tab === "Properties"     && <PropertiesTab  id={id} />}
-        {tab === "Equipment"      && <EquipmentTab   id={id} />}
-        {tab === "Jobs"           && <JobsTab        id={id} />}
-        {tab === "Leads"          && <LeadsTab       id={id} />}
-        {tab === "Agreements"     && <AgreementsTab  id={id} />}
-        {tab === "Notes"          && <NotesTab       id={id} />}
-        {tab === "Photos & Files" && <PhotoGallery recordLevel="account" scope={{ accountId: id }} accountName={customer.name} />}
-        {tab === "Communication"  && <StubTab label="Communication" link="/inbox" />}
-        {tab === "Billing"        && <BillingTab id={id} />}
-        {tab === "Timeline"       && <TimelineTab  id={id} />}
+        {(() => {
+          const section = (s: string, node: React.ReactNode) => (
+            <Commentable anchor={{ recordType: "customer", recordId: id, recordLabel: customer.name, section: s }}>{node}</Commentable>
+          );
+          return (
+            <>
+              {tab === "Overview"       && section("Overview", <OverviewTab id={id} />)}
+              {tab === "Contacts"       && <ContactsTab    id={id} />}
+              {tab === "Properties"     && <PropertiesTab  id={id} />}
+              {tab === "Equipment"      && section("Equipment", <EquipmentTab id={id} />)}
+              {tab === "Jobs"           && section("Jobs", <JobsTab id={id} />)}
+              {tab === "Leads"          && section("Leads", <LeadsTab id={id} />)}
+              {tab === "Agreements"     && section("Agreements", <AgreementsTab id={id} />)}
+              {tab === "Notes"          && section("Notes", <NotesTab id={id} />)}
+              {tab === "Photos & Files" && section("Photos & Files", <PhotoGallery recordLevel="account" scope={{ accountId: id }} accountName={customer.name} />)}
+              {tab === "Communication"  && <StubTab label="Communication" link="/inbox" />}
+              {tab === "Billing"        && section("Billing", <BillingTab id={id} />)}
+              {tab === "Timeline"       && section("Timeline", <TimelineTab id={id} />)}
+            </>
+          );
+        })()}
       </div>
 
       {/* Edit account — mounted on open so the form re-seeds from current data */}

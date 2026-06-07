@@ -1,8 +1,10 @@
-import { Bell, ChevronUp } from "lucide-react";
+import { ChevronUp } from "lucide-react";
 import HierarchySelector from "@/components/layout/HierarchySelector";
 import GlobalCreateMenu from "@/components/layout/GlobalCreateMenu";
 import GlobalSearch from "@/components/layout/GlobalSearch";
 import ViewAsMenu from "@/components/layout/ViewAsMenu";
+import NotificationBell from "@/components/layout/NotificationBell";
+import CommentModeToggle from "@/components/layout/CommentModeToggle";
 
 export default function TopBar({ onHide }: { onHide?: () => void }) {
   return (
@@ -29,13 +31,8 @@ export default function TopBar({ onHide }: { onHide?: () => void }) {
       {/* Right — actions */}
       <div className="flex-1 flex items-center justify-end gap-2">
         <ViewAsMenu />
-        <button
-          className="relative p-2 rounded-lg transition-colors hover:bg-[var(--bg-surface-2)]"
-          style={{ color: "var(--text-secondary)" }}
-        >
-          <Bell className="w-5 h-5" />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />
-        </button>
+        <CommentModeToggle />
+        <NotificationBell />
         {onHide && (
           <button onClick={onHide} title="Hide bar"
             className="p-2 rounded-lg transition-colors hover:bg-[var(--bg-surface-2)]"

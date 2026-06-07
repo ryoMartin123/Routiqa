@@ -2,7 +2,7 @@
 // CalendarItem[]. Filtering by hierarchy scope happens here so views stay dumb.
 
 import { ALL_JOBS, getAllJobs, getSessionJobs, WORK_ORDERS, JOB_STATUS_CONFIG, type Job } from "@/lib/jobs/data";
-import { ALL_TASKS } from "@/lib/tasks/data";
+import { getAllTasks } from "@/lib/tasks/data";
 import { getAllAgreements } from "@/lib/agreements/data";
 import { ALL_PROJECTS } from "@/lib/projects/data";
 import { getAllQuotes } from "@/lib/quotes/data";
@@ -92,7 +92,7 @@ export function getCalendarItems(scope: CalendarScope): CalendarItem[] {
   }
 
   // Tasks / follow-ups (all-day)
-  for (const t of ALL_TASKS) {
+  for (const t of getAllTasks()) {
     if (t.status === "completed") continue;
     const day = parseDateTime(t.dueDate);
     if (!day) continue;
@@ -220,7 +220,7 @@ export function getUnscheduledItems(scope: CalendarScope): UnscheduledItem[] {
   }
 
   // Open "schedule"/"call" tasks needing an appointment
-  for (const t of ALL_TASKS) {
+  for (const t of getAllTasks()) {
     if (t.status === "completed") continue;
     if (t.type !== "schedule" && t.type !== "call") continue;
     if (isConverted("tasks", t.id)) continue;

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { use, useState } from "react";
+import React, { use, useState, Suspense } from "react";
 import Link from "next/link";
 import {
   ArrowLeft, Pencil, Plus, Trash2,
@@ -24,8 +24,9 @@ import { companies, locations, serviceAreas } from "@/lib/hierarchy/data";
 import { getCustomer } from "@/lib/customers/data";
 import { getQuotesForLead, fmt as fmtCurrency } from "@/lib/quotes/data";
 import { QUOTE_STATUS_STYLE } from "@/lib/quotes/types";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import QuickCreateQuoteModal from "@/components/quotes/QuickCreateQuoteModal";
+import Commentable from "@/components/comments/Commentable";
 
 const TABS = ["Overview", "Activity", "Quotes", "Tasks", "Notes", "Photos & Files", "Communication", "Convert"];
 
@@ -636,10 +637,16 @@ function StubTab({ label, phase }: { label: string; phase: string }) {
 }
 
 // ─── Page ─────────────────────────────────────────────────
-export default function LeadDetailPage({ params }: { params: Promise<{ id: string }> }) {
+function LeadDetailContent({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
-  const [tab, setTab] = useState("Overview");
+  const searchParams = useSearchParams();
+  // Tab is URL-synced (?tab=) so comment deep-links land on the right tab.
+  const [tab, setTabState] = useState(() => { const t = searchParams.get("tab"); return t && TABS.includes(t) ? t : "Overview"; });
+  function setTab(t: string) {
+    setTabState(t);
+    router.replace(`/leads/${id}?tab=${encodeURIComponent(t)}`, { scroll: false });
+  }
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   const lead = getLead(id);
@@ -667,6 +674,7 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
               <ArrowLeft className="w-4 h-4" /> Leads
             </Link>
             <div className="w-px h-5 shrink-0" style={{ backgroundColor: "var(--border)" }} />
+            <Commentable anchor={{ recordType: "lead", recordId: id, recordLabel: lead.customerName }}>
             <div className="flex items-center gap-3 min-w-0">
               <div className="w-9 h-9 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 text-sm font-bold shrink-0">
                 {lead.customerInitials}
@@ -687,6 +695,7 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
                 </p>
               </div>
             </div>
+            </Commentable>
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
@@ -756,4 +765,9 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
       )}
     </div>
   );
+}
+
+export default function LeadDetailPage(props: { params: Promise<{ id: string }> }) {
+  // Suspense boundary required because the content reads useSearchParams.
+  return <Suspense fallback={null}><LeadDetailContent {...props} /></Suspense>;
 }

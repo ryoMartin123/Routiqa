@@ -1,14 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import Link from "next/link";
-import { CheckSquare, Plus, Search, SlidersHorizontal, Check } from "lucide-react";
+import { CheckSquare, Plus, Search, SlidersHorizontal, Check, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import {
-  ALL_TASKS, TASK_TYPE_LABELS,
+  getAllTasks, toggleTaskComplete, deleteTask,
   type Task, type TaskStatus,
 } from "@/lib/tasks/data";
+import { taskTypeLabel, taskTypeColor, getTaskSettings } from "@/lib/tasks/settings";
 import { useHierarchy } from "@/components/providers/HierarchyProvider";
 import StatusTabs from "@/components/shared/StatusTabs";
+import NewTaskModal from "@/components/tasks/NewTaskModal";
 
 const STATUS_TABS: { key: "all" | TaskStatus; label: string }[] = [
   { key: "all",       label: "All"       },
@@ -29,7 +31,31 @@ export default function TasksPage() {
 
   const [tab, setTab]       = useState<"all" | TaskStatus>("all");
   const [search, setSearch] = useState("");
-  const [tasks, setTasks]   = useState<Task[]>(ALL_TASKS);
+
+  // Re-read the store after a create / edit / delete / toggle.
+  const [refreshKey, setRefreshKey] = useState(0);
+  const refresh = () => setRefreshKey(k => k + 1);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const tasks = useMemo(() => getAllTasks(), [refreshKey]);
+
+  // Display preference from Settings → Tasks.
+  const highlightOverdue = getTaskSettings().highlightOverdue;
+
+  // New / edit modal + per-row action menu.
+  const [modalOpen, setModalOpen]   = useState(false);
+  const [editing, setEditing]       = useState<Task | undefined>(undefined);
+  const [menuId, setMenuId]         = useState<string | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!menuId) return;
+    const onDown = (e: MouseEvent) => { if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuId(null); };
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, [menuId]);
+
+  function openNew()  { setEditing(undefined); setModalOpen(true); }
+  function openEdit(t: Task) { setEditing(t); setModalOpen(true); setMenuId(null); }
+  function removeTask(id: string) { deleteTask(id); setMenuId(null); refresh(); }
 
   const contextFiltered = tasks
     .filter(t => !effectiveCompanyId  || t.companyId  === effectiveCompanyId)
@@ -55,12 +81,8 @@ export default function TasksPage() {
     });
 
   function toggleComplete(taskId: string) {
-    setTasks(prev => prev.map(t => {
-      if (t.id !== taskId) return t;
-      return t.status === "completed"
-        ? { ...t, status: "open" as TaskStatus, completedAt: undefined }
-        : { ...t, status: "completed" as TaskStatus, completedAt: "Just now" };
-    }));
+    toggleTaskComplete(taskId);
+    refresh();
   }
 
   const tabCount = (key: "all" | TaskStatus) =>
@@ -90,7 +112,8 @@ export default function TasksPage() {
             Follow-ups, calls, and scheduled actions across all records
           </p>
         </div>
-        <button className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-3 py-2 rounded-lg transition-colors">
+        <button onClick={openNew}
+          className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-3 py-2 rounded-lg transition-colors">
           <Plus className="w-4 h-4" /> New Task
         </button>
       </div>
@@ -135,12 +158,24 @@ export default function TasksPage() {
           {displayed.length === 0 ? (
             <div className="py-16 text-center">
               <CheckSquare className="w-8 h-8 mx-auto mb-2 opacity-20" style={{ color: "var(--text-muted)" }} />
-              <p className="text-sm" style={{ color: "var(--text-muted)" }}>No tasks match the current filter.</p>
+              <p className="text-sm" style={{ color: "var(--text-muted)" }}>
+                {tasks.length === 0 ? "No tasks yet." : "No tasks match the current filter."}
+              </p>
+              {tasks.length === 0 && (
+                <button onClick={openNew}
+                  className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-lg transition-colors"
+                  style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>
+                  <Plus className="w-3.5 h-3.5" /> Create your first task
+                </button>
+              )}
             </div>
           ) : displayed.map((task, i) => {
-            const isOverdue   = task.status === "overdue";
+            const isOverdue   = task.status === "overdue" && highlightOverdue;
             const isCompleted = task.status === "completed";
-            const lt = task.linkedType ? LINKED_TYPE_STYLE[task.linkedType] : null;
+            // Known record types get their color; anchor-pinned links (quote/item/
+            // dispatch/…) fall back to a neutral pill but still navigate.
+            const lt = (task.linkedType && LINKED_TYPE_STYLE[task.linkedType])
+              || (task.linkedHref ? { bg: "var(--bg-input)", color: "var(--text-secondary)" } : null);
 
             return (
               <div key={task.id}
@@ -181,9 +216,12 @@ export default function TasksPage() {
                 </div>
 
                 {/* Type */}
-                <span className="text-xs" style={{ color: "var(--text-secondary)" }}>
-                  {TASK_TYPE_LABELS[task.type]}
-                </span>
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: taskTypeColor(task.type) }} />
+                  <span className="text-xs truncate" style={{ color: "var(--text-secondary)" }}>
+                    {taskTypeLabel(task.type)}
+                  </span>
+                </div>
 
                 {/* Linked to */}
                 <div className="min-w-0">
@@ -215,7 +253,29 @@ export default function TasksPage() {
                   {task.dueDate}{isOverdue && " ⚠"}
                 </span>
 
-                <div />
+                {/* Row actions */}
+                <div className="flex justify-end relative" ref={menuId === task.id ? menuRef : undefined}>
+                  <button onClick={() => setMenuId(menuId === task.id ? null : task.id)}
+                    className="p-1.5 rounded-lg transition-colors hover:bg-[var(--bg-surface-2)]"
+                    style={{ color: "var(--text-muted)" }} title="Actions">
+                    <MoreHorizontal className="w-4 h-4" />
+                  </button>
+                  {menuId === task.id && (
+                    <div className="absolute right-0 top-full mt-1 z-50 w-36 rounded-xl overflow-hidden py-1"
+                      style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "0 12px 32px rgba(0,0,0,0.18)" }}>
+                      <button onClick={() => openEdit(task)}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors hover:bg-[var(--bg-surface-2)]"
+                        style={{ color: "var(--text-primary)" }}>
+                        <Pencil className="w-3.5 h-3.5" /> Edit
+                      </button>
+                      <button onClick={() => removeTask(task.id)}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors hover:bg-[var(--bg-surface-2)]"
+                        style={{ color: "#dc2626" }}>
+                        <Trash2 className="w-3.5 h-3.5" /> Delete
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             );
           })}
@@ -228,6 +288,15 @@ export default function TasksPage() {
           {contextFiltered.filter(t => t.status === "completed").length} completed
         </div>
       </div>
+
+      {modalOpen && (
+        <NewTaskModal
+          open
+          task={editing}
+          onClose={() => setModalOpen(false)}
+          onSaved={() => { setModalOpen(false); refresh(); }}
+        />
+      )}
     </div>
   );
 }

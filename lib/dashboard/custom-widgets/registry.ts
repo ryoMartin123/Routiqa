@@ -5,7 +5,8 @@
 import { ALL_JOBS, JOB_STATUS_CONFIG, JOB_TYPE_CONFIG } from "@/lib/jobs/data";
 import { ALL_LEADS, LEAD_STAGE_CONFIG, LEAD_SOURCE_LABELS } from "@/lib/leads/data";
 import { ALL_QUOTES, ALL_INVOICES } from "@/lib/quotes/data";
-import { ALL_TASKS, TASK_TYPE_LABELS } from "@/lib/tasks/data";
+import { getAllTasks } from "@/lib/tasks/data";
+import { taskTypeLabel, getTaskTypes } from "@/lib/tasks/settings";
 import type {
   DataSourceKey, FieldDef, CalculationType, VisualizationType,
   ContextBehavior, WidgetRole, WidgetStatus,
@@ -54,7 +55,7 @@ const jobStatusOptions = Object.values(JOB_STATUS_CONFIG).map(s => s.label);
 const jobTypeOptions   = Object.keys(JOB_TYPE_CONFIG);
 const leadStageOptions = Object.values(LEAD_STAGE_CONFIG).map(s => s.label);
 const leadSourceOptions= Object.values(LEAD_SOURCE_LABELS);
-const taskTypeOptions  = Object.values(TASK_TYPE_LABELS);
+const taskTypeOptions  = getTaskTypes().map(t => t.label);
 
 export const SOURCE_FIELDS: Record<DataSourceKey, FieldDef[]> = {
   jobs: [
@@ -130,8 +131,8 @@ export function getRows(source: DataSourceKey): Row[] {
         _label: q.quoteNumber,
       }));
     case "tasks":
-      return ALL_TASKS.map(t => ({
-        status: t.status, type: TASK_TYPE_LABELS[t.type], assignedTo: t.assignedTo,
+      return getAllTasks().map(t => ({
+        status: t.status, type: taskTypeLabel(t.type), assignedTo: t.assignedTo,
         companyId: t.companyId, locationId: t.locationId,
         _label: t.title,
       }));

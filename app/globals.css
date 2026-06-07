@@ -451,3 +451,15 @@ body {
   /* Trim default page margins so the letterhead sits cleanly. */
   @page { margin: 16mm; }
 }
+
+/* ── Comment anchor deep-link flash ──────────────────────────
+   Briefly highlights the element a notification/comment links to so the
+   user's eye lands on the right spot when they arrive. */
+@keyframes anchorFlash {
+  0%   { box-shadow: 0 0 0 3px var(--accent-soft-border); background-color: var(--accent-soft-bg); }
+  100% { box-shadow: 0 0 0 3px transparent; background-color: transparent; }
+}
+.anchor-flash {
+  animation: anchorFlash 1.6s ease-out;
+  border-radius: 12px;
+}

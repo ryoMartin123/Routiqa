@@ -3,7 +3,7 @@
 import Link from "next/link";
 import {
   X, Clock, MapPin, CheckCircle, Circle, ChevronRight, Briefcase,
-  CalendarClock, User, Tag, AlertTriangle, FileText,
+  CalendarClock, User, Tag, AlertTriangle, FileText, MessageSquare,
 } from "lucide-react";
 import Select from "@/components/ui/Select";
 import StatusBadge from "@/components/shared/StatusBadge";
@@ -11,6 +11,22 @@ import { getWorkOrder } from "@/lib/jobs/data";
 import {
   LAYER_CONFIG, PRIORITY_CONFIG, type CalendarItem, type UnscheduledItem,
 } from "@/lib/calendar/types";
+import { useComments } from "@/components/providers/CommentsProvider";
+import { commentCountForAnchorKey, anchorKey, type CommentAnchor, type AnchorRecordType } from "@/lib/comments/data";
+
+// Map a dispatch item's source to a comment anchor. Jobs/quotes/agreements/
+// projects pin to their record (so the thread also shows on that record's page);
+// anything else stays dispatch-scoped.
+const MOD_TO_TYPE: Record<string, AnchorRecordType> = {
+  jobs: "job", quotes: "quote", agreements: "agreement", projects: "project",
+};
+function itemAnchor(item: CalendarItem | UnscheduledItem): CommentAnchor {
+  return {
+    recordType: MOD_TO_TYPE[item.sourceModule] ?? "dispatch",
+    recordId:   item.sourceId,
+    recordLabel: item.customerName ?? item.title,
+  };
+}
 
 function fmtTime(d: Date): string { return d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }); }
 function fmtDate(d: Date): string { return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }); }
@@ -41,6 +57,12 @@ export default function CalendarItemDrawer({
   const cfg = LAYER_CONFIG[item.type];
   const isScheduled = !!scheduled;
   const href = recordHref(item.sourceModule, item.sourceId);
+
+  const { openComposer } = useComments();
+  const anchor = itemAnchor(item);
+  const commentCount = commentCountForAnchorKey(anchorKey(anchor));
+  // Close this drawer and open the comments drawer for the item's anchor.
+  function openComments() { onClose(); openComposer(anchor); }
 
   // Work order summary (scheduled jobs only)
   const wo = isScheduled && scheduled!.sourceModule === "jobs" && scheduled!.type === "job"
@@ -137,6 +159,12 @@ export default function CalendarItemDrawer({
               Schedule
             </button>
           )}
+          <button onClick={openComments}
+            className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
+            style={{ border: "1px solid var(--border)", color: "var(--text-secondary)", backgroundColor: "var(--bg-surface)" }}>
+            <MessageSquare className="w-3.5 h-3.5" />
+            {commentCount > 0 ? `Comments · ${commentCount}` : "Comment"}
+          </button>
           <div className="flex items-center flex-wrap gap-2">
             {isScheduled && <ActionBtn label="Reschedule" />}
             {isScheduled && <ActionBtn label="Mark Confirmed" />}

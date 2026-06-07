@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { AlertTriangle } from "lucide-react";
-import { ALL_TASKS } from "@/lib/tasks/data";
+import { getAllTasks } from "@/lib/tasks/data";
 import { ALL_INVOICES, fmt } from "@/lib/quotes/data";
 import { ALL_JOBS } from "@/lib/jobs/data";
 import { useHierarchy } from "@/components/providers/HierarchyProvider";
@@ -10,7 +10,7 @@ import { useHierarchy } from "@/components/providers/HierarchyProvider";
 export default function UrgentPanel() {
   const { effectiveCompanyId, effectiveLocationId } = useHierarchy();
 
-  const overdueTasks = ALL_TASKS
+  const overdueTasks = getAllTasks()
     .filter(t => t.status === "overdue")
     .filter(t => !effectiveCompanyId  || t.companyId  === effectiveCompanyId)
     .filter(t => !effectiveLocationId || t.locationId === effectiveLocationId);

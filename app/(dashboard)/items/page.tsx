@@ -8,6 +8,7 @@ import ItemFormDrawer from "@/components/items/ItemFormDrawer";
 import IndustryCatalogModal from "@/components/items/IndustryCatalogModal";
 import { getAllItems, getActiveCategoryNames, fmt, type Item } from "@/lib/items/data";
 import { ITEM_TYPES, ITEM_TYPE_CONFIG, type ItemType } from "@/lib/items/types";
+import Commentable from "@/components/comments/Commentable";
 
 const GRID = "2.2fr 1fr 1.2fr 0.9fr 0.7fr 0.7fr 0.8fr 44px";
 
@@ -188,7 +189,8 @@ export default function ItemsPage() {
                   {g.items.map((it, i) => {
                     const tc = ITEM_TYPE_CONFIG[it.type];
                     return (
-                      <div key={it.id} onClick={() => setDrawer({ open: true, item: it })}
+                      <Commentable key={it.id} inset anchor={{ recordType: "item", recordId: it.id, recordLabel: it.name }}>
+                      <div onClick={() => setDrawer({ open: true, item: it })}
                         className="flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-[var(--bg-surface-2)] transition-colors"
                         style={{ borderBottom: i < g.items.length - 1 ? "1px solid var(--border-subtle)" : "none", opacity: it.active ? 1 : 0.55 }}>
                         <span className="text-sm flex-1 truncate" style={{ color: "var(--text-primary)" }}>{it.name}</span>
@@ -196,6 +198,7 @@ export default function ItemsPage() {
                         {!it.active && <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full shrink-0" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>Inactive</span>}
                         <span className="text-sm font-medium w-20 text-right shrink-0" style={{ color: it.unitPrice < 0 ? "#dc2626" : "var(--text-primary)" }}>{fmt(it.unitPrice)}</span>
                       </div>
+                      </Commentable>
                     );
                   })}
                 </div>
@@ -211,7 +214,9 @@ export default function ItemsPage() {
             {tableItems.length === 0 ? (
               <div className="py-16 text-center"><p className="text-sm" style={{ color: "var(--text-muted)" }}>No items match the current filters.</p></div>
             ) : tableItems.map((it, i) => (
-              <ItemRow key={it.id} it={it} last={i === tableItems.length - 1} onClick={() => setDrawer({ open: true, item: it })} />
+              <Commentable key={it.id} inset anchor={{ recordType: "item", recordId: it.id, recordLabel: it.name }}>
+                <ItemRow it={it} last={i === tableItems.length - 1} onClick={() => setDrawer({ open: true, item: it })} />
+              </Commentable>
             ))}
           </>
         )}

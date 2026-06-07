@@ -15,6 +15,7 @@ import CampaignBuilder, { type CampaignBuilderPreset } from "@/components/market
 import ModuleSummaryCards, { type SummaryCard } from "@/components/shared/ModuleSummaryCards";
 import StatusTabs from "@/components/shared/StatusTabs";
 import type { LucideIcon } from "lucide-react";
+import Commentable from "@/components/comments/Commentable";
 
 const TYPE_ICON: Record<CampaignType, LucideIcon> = {
   email: Mail, sms: MessageSquare, review_request: Star, estimate_followup: FilePen,
@@ -96,7 +97,8 @@ export default function MarketingPage() {
             const aud = getAudience(c.audienceKey);
             const openPct = c.stats && c.stats.delivered > 0 ? Math.round((c.stats.opened / c.stats.delivered) * 100) : null;
             return (
-              <div key={c.id} className="grid px-5 py-3 items-center" style={{ gridTemplateColumns: "2.4fr 1.4fr 1.4fr 0.8fr 1.6fr 0.8fr", borderBottom: i < campaigns.length - 1 ? "1px solid var(--border-subtle)" : "none" }}>
+              <Commentable key={c.id} inset anchor={{ recordType: "marketing", recordId: c.id, recordLabel: c.name }}>
+              <div className="grid px-5 py-3 items-center" style={{ gridTemplateColumns: "2.4fr 1.4fr 1.4fr 0.8fr 1.6fr 0.8fr", borderBottom: i < campaigns.length - 1 ? "1px solid var(--border-subtle)" : "none" }}>
                 <div className="min-w-0 pr-2">
                   <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{c.name}</p>
                   <p className="text-[10px] mt-0.5" style={{ color: "var(--text-muted)" }}>{c.sentAt ? `Sent ${c.sentAt}` : `Created ${c.createdAt}`}</p>
@@ -121,6 +123,7 @@ export default function MarketingPage() {
                   <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: sc.bg, color: sc.color }}>{sc.label}</span>
                 </div>
               </div>
+              </Commentable>
             );
           })}
         </div>

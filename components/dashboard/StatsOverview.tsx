@@ -5,7 +5,7 @@ import StatCard from "./StatCard";
 import { useHierarchy } from "@/components/providers/HierarchyProvider";
 import { ALL_JOBS } from "@/lib/jobs/data";
 import { ALL_LEADS } from "@/lib/leads/data";
-import { ALL_TASKS } from "@/lib/tasks/data";
+import { getAllTasks } from "@/lib/tasks/data";
 import { ALL_INVOICES, fmt } from "@/lib/quotes/data";
 
 const TODAY = "May 30, 2026";
@@ -29,8 +29,9 @@ export default function StatsOverview() {
   const taskFilter     = (t: { companyId: string; locationId: string }) =>
     (!effectiveCompanyId  || t.companyId  === effectiveCompanyId) &&
     (!effectiveLocationId || t.locationId === effectiveLocationId);
-  const overdueTasks   = ALL_TASKS.filter(taskFilter).filter(t => t.status === "overdue").length;
-  const openTasks      = ALL_TASKS.filter(taskFilter).filter(t => t.status === "open").length;
+  const allTasks       = getAllTasks();
+  const overdueTasks   = allTasks.filter(taskFilter).filter(t => t.status === "overdue").length;
+  const openTasks      = allTasks.filter(taskFilter).filter(t => t.status === "open").length;
   const outstanding    = ALL_INVOICES.filter(i => !effectiveCompanyId || i.companyId === effectiveCompanyId).filter(i => i.balanceDue > 0).reduce((s, i) => s + i.balanceDue, 0);
   const overdueInvs    = ALL_INVOICES.filter(i => !effectiveCompanyId || i.companyId === effectiveCompanyId).filter(i => i.status === "past_due").length;
 

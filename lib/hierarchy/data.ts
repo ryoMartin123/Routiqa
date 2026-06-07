@@ -71,8 +71,8 @@ export const MODE_PRESETS: Record<OrgSettings["mode"], Omit<OrgSettings, "projec
 // membership to see the selectors collapse for narrower roles.
 export const currentUser: CurrentUser = {
   id: "user_marcus",
-  fullName: "Marcus Reyes",
-  initials: "MR",
+  fullName: "Ryo Martin",
+  initials: "RM",
   organizationId: ORG_ID,
   memberships: [{ organizationId: ORG_ID, role: "org_admin" }],
 };

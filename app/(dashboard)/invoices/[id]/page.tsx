@@ -8,6 +8,7 @@ import { getInvoice, getQuote, fmt, updateInvoiceStatus, recordPayment, duplicat
 import { INVOICE_STATUS_STYLE, type InvoiceStatus } from "@/lib/quotes/types";
 import { getCustomer } from "@/lib/customers/data";
 import InvoicePreview from "@/components/quotes/InvoicePreview";
+import Commentable from "@/components/comments/Commentable";
 import InvoiceWizard from "@/components/quotes/InvoiceWizard";
 import { downloadInvoicePdf } from "@/lib/quotes/pdf";
 
@@ -316,6 +317,7 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
               <ArrowLeft className="w-4 h-4" /> Invoices
             </Link>
             <div className="w-px h-5 shrink-0" style={{ backgroundColor: "var(--border)" }} />
+            <Commentable anchor={{ recordType: "invoice", recordId: id, recordLabel: invoice.invoiceNumber }}>
             <div className="flex items-center gap-3 min-w-0">
               <div className="w-9 h-9 rounded-lg bg-indigo-100 flex items-center justify-center shrink-0">
                 <Receipt className="w-4.5 h-4.5 text-indigo-600" />
@@ -338,6 +340,7 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                 </p>
               </div>
             </div>
+            </Commentable>
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <StatusActions status={invoice.status} onAction={handleAction} />
