@@ -192,8 +192,15 @@ export function HierarchyProvider({ children }: { children: React.ReactNode }) {
     persistSelection({ company: v, location: "all", serviceArea: "all" });
   }
   function setLocation(v: SelectionValue) {
-    setLocationState(v); setServiceAreaState("all");
-    persistSelection({ company, location: v, serviceArea: "all" });
+    // Picking a specific location auto-selects the company it belongs to, so the
+    // viewing context stays coherent (company › location).
+    let co = company;
+    if (v !== "all") {
+      const loc = allLocations.find(l => l.id === v);
+      if (loc) co = loc.companyId;
+    }
+    setCompanyState(co); setLocationState(v); setServiceAreaState("all");
+    persistSelection({ company: co, location: v, serviceArea: "all" });
   }
   function setServiceArea(v: SelectionValue) {
     setServiceAreaState(v);

@@ -6,7 +6,7 @@ import { ALL_TASKS } from "@/lib/tasks/data";
 import { getAllAgreements } from "@/lib/agreements/data";
 import { ALL_PROJECTS } from "@/lib/projects/data";
 import { getAllQuotes } from "@/lib/quotes/data";
-import { getTechnicianUsers } from "@/lib/users/data";
+import { getTechnicianUsers, getStaffedUsers } from "@/lib/users/data";
 import { locations as HIER_LOCATIONS } from "@/lib/hierarchy/data";
 import {
   LAYER_CONFIG, jobStatusToLane, type CalendarItem, type CalendarItemType, type UnscheduledItem,
@@ -314,6 +314,14 @@ export interface TechRosterEntry { name: string; initials: string; status: TechS
 
 export function getTechRoster(): TechRosterEntry[] {
   return getTechnicianUsers().map(u => ({
+    name: u.fullName, initials: u.initials, status: "available" as const,
+  }));
+}
+
+// Everyone on the team — used as the board roster (anyone can be scheduled) and
+// the job-assignee list. A board narrows this via its members/roles.
+export function getStaffRoster(): TechRosterEntry[] {
+  return getStaffedUsers().map(u => ({
     name: u.fullName, initials: u.initials, status: "available" as const,
   }));
 }

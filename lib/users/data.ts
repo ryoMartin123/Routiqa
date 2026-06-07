@@ -180,15 +180,52 @@ export function getTechnicianUsers(): AppUser[] {
 export function getTechnicianNames(): string[] {
   return getTechnicianUsers().map(u => u.fullName);
 }
+// Everyone on the team (invited + active) — anyone can be put on a dispatch board
+// or assigned a job. Role lists above are used only as suggestions.
+export function getStaffedNames(): string[] {
+  return getStaffedUsers().map(u => u.fullName);
+}
 // Users who can run a board — dispatchers plus managers/admins/owner.
 export function getDispatcherNames(): string[] {
   return getStaffedUsers().filter(u => hasRoleIn(u, DISPATCH_ROLES)).map(u => u.fullName);
 }
 
+// ─── Board scope eligibility (down-inclusion) ─────────────
+// A user is eligible for a board if their assignment scope is comparable to the
+// board's scope on the hierarchy path — i.e. the board's node is at or above the
+// user's node (or vice-versa). A location tech is eligible for that location's,
+// their company's, and org boards; never a sibling location or another company.
+function assignmentInScope(a: RoleAssignment, companyId?: string, locationId?: string): boolean {
+  if (!companyId) return true;             // org board → everyone
+  if (!a.companyId) return true;           // org-wide user → eligible anywhere
+  if (a.companyId !== companyId) return false; // different company → no
+  if (!locationId) return true;            // company board → anyone in the company
+  if (!a.locationId) return true;          // company-level user → eligible on its locations
+  return a.locationId === locationId;      // location board → must be this location
+}
+
+// Staffed users eligible for a board at the given company/location scope.
+export function getBoardCandidates(companyId?: string, locationId?: string): AppUser[] {
+  return getStaffedUsers().filter(u => u.assignments.some(a => assignmentInScope(a, companyId, locationId)));
+}
+export function getBoardCandidateNames(companyId?: string, locationId?: string): string[] {
+  return getBoardCandidates(companyId, locationId).map(u => u.fullName);
+}
+// Suggested members / dispatchers within a board's scope (used to sort the picker).
+export function getTechnicianCandidates(companyId?: string, locationId?: string): string[] {
+  return getBoardCandidates(companyId, locationId).filter(u => hasRoleIn(u, TECH_ROLES)).map(u => u.fullName);
+}
+export function getDispatcherCandidates(companyId?: string, locationId?: string): string[] {
+  return getBoardCandidates(companyId, locationId).filter(u => hasRoleIn(u, DISPATCH_ROLES)).map(u => u.fullName);
+}
+
 // Staffed users holding any of the given roles — used by dispatch boards that
-// assign members by role rather than by name.
-export function getUsersByRoles(roleKeys: string[]): AppUser[] {
+// assign members by role. Optionally narrowed to a board's scope so a role only
+// pulls in people who actually belong to that company/location.
+export function getUsersByRoles(roleKeys: string[], companyId?: string, locationId?: string): AppUser[] {
   if (!roleKeys.length) return [];
   const set = new Set(roleKeys);
-  return getStaffedUsers().filter(u => u.assignments.some(a => set.has(a.role)));
+  return getStaffedUsers().filter(u =>
+    u.assignments.some(a => set.has(a.role) && assignmentInScope(a, companyId, locationId)),
+  );
 }

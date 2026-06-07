@@ -3,11 +3,12 @@
 import { useState, useEffect, useRef } from "react";
 import {
   Plus, Pencil, Trash2, Check, ChevronUp, ChevronDown, X,
-  Star, CalendarDays, Clock, LayoutGrid, Users, Layers, Inbox, Search,
+  Star, CalendarDays, CalendarRange, Calendar, Clock, LayoutGrid, Users, Layers, Inbox, Search,
 } from "lucide-react";
 import { useRegisterSaveAction } from "@/components/settings/SettingsActions";
+import { useSettingsScope } from "@/components/providers/SettingsScopeProvider";
 import UiSelect from "@/components/ui/Select";
-import { getDispatcherNames, getTechnicianNames } from "@/lib/users/data";
+import { getBoardCandidateNames, getDispatcherCandidates, getTechnicianCandidates } from "@/lib/users/data";
 import { getAssignableRoles, getRoleLabel } from "@/lib/roles/store";
 import {
   getStore, saveStore, scopeKeyOf, resolveFromStore, resolveParent,
@@ -34,6 +35,14 @@ const DUE_OPTIONS = [
 ];
 
 const LAYER_SWATCHES = ["#4f46e5", "#0891b2", "#059669", "#f59e0b", "#7c3aed"];
+
+// Default-view picker options (icon cards).
+const VIEW_OPTIONS: { value: CalendarViewMode; label: string; icon: typeof Clock; hint: string }[] = [
+  { value: "dispatch", label: "Dispatch", icon: LayoutGrid,   hint: "Tech rows + timeline" },
+  { value: "day",      label: "Day",      icon: CalendarDays,  hint: "Single-day agenda" },
+  { value: "week",     label: "Week",     icon: CalendarRange, hint: "7-day overview" },
+  { value: "month",    label: "Month",    icon: Calendar,      hint: "Month grid" },
+];
 type SectionTab = "defaults" | "blocks" | "boards" | "layers" | "queue";
 const TABS: { key: SectionTab; label: string; icon: typeof Clock }[] = [
   { key: "defaults", label: "Defaults",       icon: CalendarDays },
@@ -116,6 +125,101 @@ function ChipMulti({ all, selected, onToggle, labels }: { all: string[]; selecte
         );
       })}
     </div>
+  );
+}
+
+// One person row inside the PeoplePicker modal.
+function PersonRow({ name, checked, onToggle }: { name: string; checked: boolean; onToggle: () => void }) {
+  return (
+    <button type="button" onClick={onToggle}
+      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors hover:bg-[var(--bg-surface-2)]"
+      style={{ color: "var(--text-primary)" }}>
+      <span className="w-4 h-4 rounded flex items-center justify-center shrink-0"
+        style={{ border: `1.5px solid ${checked ? "#4f46e5" : "var(--border)"}`, backgroundColor: checked ? "#4f46e5" : "transparent" }}>
+        {checked && <Check className="w-3 h-3 text-white" />}
+      </span>
+      <span className="truncate">{name}</span>
+    </button>
+  );
+}
+
+// Search-and-select popup for picking people on a board. Selected names show as
+// removable chips; the "Add" button opens a searchable, checkable modal with the
+// role-appropriate people grouped under "Suggested" — built for big teams.
+function PeoplePicker({ title, allNames, suggested, selected, onToggle, emptyLabel }: {
+  title: string;
+  allNames: string[];
+  suggested: string[];
+  selected: string[];
+  onToggle: (name: string) => void;
+  emptyLabel: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [q, setQ] = useState("");
+  const sug = new Set(suggested);
+  const ql = q.trim().toLowerCase();
+  const match = (n: string) => !ql || n.toLowerCase().includes(ql);
+  const suggestedList = allNames.filter(n => sug.has(n) && match(n)).sort((a, b) => a.localeCompare(b));
+  const othersList = allNames.filter(n => !sug.has(n) && match(n)).sort((a, b) => a.localeCompare(b));
+  const selectedNames = allNames.filter(n => selected.includes(n));
+
+  return (
+    <>
+      <div className="w-full min-h-[38px] rounded-lg px-2.5 py-1.5 flex flex-wrap items-center gap-1.5"
+        style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface)" }}>
+        {selectedNames.length === 0 && <span className="text-sm" style={{ color: "var(--text-muted)" }}>{emptyLabel}</span>}
+        {selectedNames.map(n => (
+          <span key={n} className="flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full" style={{ backgroundColor: "var(--accent-soft-bg)", color: "var(--accent-text)" }}>
+            {n}
+            <span role="button" onClick={() => onToggle(n)} className="cursor-pointer hover:opacity-70"><X className="w-2.5 h-2.5" /></span>
+          </span>
+        ))}
+        <button type="button" onClick={() => { setQ(""); setOpen(true); }}
+          className="ml-auto flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-lg shrink-0"
+          style={{ border: "1px solid var(--border)", color: "var(--accent-text)" }}>
+          <Plus className="w-3 h-3" /> Add
+        </button>
+      </div>
+
+      {open && (
+        <div className="fixed inset-0 z-[60] bg-black/40 flex items-center justify-center p-4" onClick={() => setOpen(false)}>
+          <div className="w-full max-w-md max-h-[80vh] flex flex-col rounded-2xl overflow-hidden" onClick={e => e.stopPropagation()}
+            style={{ backgroundColor: "var(--bg-surface)", boxShadow: "0 16px 48px rgba(0,0,0,0.24)" }}>
+            <div className="flex items-center justify-between px-5 py-3.5 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+              <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{title}</p>
+              <button onClick={() => setOpen(false)} style={{ color: "var(--text-muted)" }}><X className="w-4 h-4" /></button>
+            </div>
+            <div className="px-5 py-2.5 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+              <div className="flex items-center gap-2 rounded-lg px-2.5 py-1.5" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)" }}>
+                <Search className="w-3.5 h-3.5 shrink-0" style={{ color: "var(--text-muted)" }} />
+                <input autoFocus value={q} onChange={e => setQ(e.target.value)} placeholder="Search people…" className="w-full text-sm outline-none bg-transparent" style={{ color: "var(--text-primary)" }} />
+              </div>
+            </div>
+            <div className="flex-1 overflow-y-auto thin-scroll-y px-2 py-2">
+              {suggestedList.length > 0 && (
+                <>
+                  <p className="px-3 pt-1 pb-1 text-[10px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Suggested</p>
+                  {suggestedList.map(n => <PersonRow key={n} name={n} checked={selected.includes(n)} onToggle={() => onToggle(n)} />)}
+                </>
+              )}
+              {othersList.length > 0 && (
+                <>
+                  <p className="px-3 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>{suggestedList.length > 0 ? "Everyone else" : "Team"}</p>
+                  {othersList.map(n => <PersonRow key={n} name={n} checked={selected.includes(n)} onToggle={() => onToggle(n)} />)}
+                </>
+              )}
+              {suggestedList.length === 0 && othersList.length === 0 && (
+                <p className="px-3 py-3 text-xs" style={{ color: "var(--text-muted)" }}>No people match.</p>
+              )}
+            </div>
+            <div className="px-5 py-3 flex items-center justify-between shrink-0" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+              <span className="text-xs" style={{ color: "var(--text-muted)" }}>{selected.length} selected</span>
+              <button onClick={() => setOpen(false)} className="px-4 py-1.5 rounded-lg text-sm font-medium text-white" style={{ backgroundColor: "#4f46e5" }}>Done</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
@@ -205,22 +309,31 @@ function cloneSection(section: DispatchSection, src: DispatchSettings): ScopedDi
 // ─── Section ──────────────────────────────────────────────
 export default function CalendarDispatchSection() {
   const [store, setStore] = useState<DispatchStore | null>(null);
-  // Scope is managed by the page-level editing scope, not here — these settings
-  // edit the organization defaults; boards are org-wide and scoped by members.
-  const level: ScopeLevel = "org";
-  const companyId = companies[0]?.id ?? "";
-  const locationId = firstLocationOf(companyId);
+  // Scope comes from the page-level Editing Scope (org → company → location).
+  // Settings cascade and boards are scoped to the layer being edited.
+  const scope = useSettingsScope();
+  const level: ScopeLevel = scope.activeLayer === "service_area" ? "location" : scope.activeLayer;
+  const companyId = scope.companyId;
+  const locationId = scope.locationId;
   const [tab, setTab] = useState<SectionTab>("defaults");
-  const [dirty, setDirty] = useState(false);
+  const [baseline, setBaseline] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [editingBlock, setEditingBlock] = useState<string | null>(null);
   const [editingBoard, setEditingBoard] = useState<string | null>(null);
   const [editingView, setEditingView] = useState<string | null>(null);
 
-  useEffect(() => { setStore(getStore()); }, []);
+  useEffect(() => { const s = getStore(); setStore(s); setBaseline(JSON.stringify(s)); }, []);
+
+  // Reset open editors when the editing scope changes (avoids editing a board
+  // that isn't in the newly selected scope).
+  useEffect(() => { setEditingBlock(null); setEditingBoard(null); setEditingView(null); }, [level, companyId, locationId]);
+
+  // Dirty is computed against the saved baseline — reverting a change back to its
+  // original value clears it, so toggling something off then on isn't "unsaved".
+  const dirty = !!store && baseline !== null && JSON.stringify(store) !== baseline;
 
   // Publish Save to the shared top-right slot (same as the Pipelines page).
-  function handleSave() { if (store) saveStore(store); setDirty(false); setSaved(true); setTimeout(() => setSaved(false), 2000); }
+  function handleSave() { if (store) { saveStore(store); setBaseline(JSON.stringify(store)); } setSaved(true); setTimeout(() => setSaved(false), 2000); }
   useRegisterSaveAction({ dirty, saved, onSave: handleSave });
 
   if (!store) return <div className="p-6 text-sm" style={{ color: "var(--text-muted)" }}>Loading…</div>;
@@ -234,7 +347,7 @@ export default function CalendarDispatchSection() {
 
   function update(mut: (next: DispatchStore) => void) {
     setStore(prev => { if (!prev) return prev; const next = structuredClone(prev); mut(next); return next; });
-    setDirty(true); setSaved(false);
+    setSaved(false);   // dirty is derived by comparing to the baseline
   }
 
   // Edit a section's content, materializing it from the parent on first touch.
@@ -301,15 +414,29 @@ export default function CalendarDispatchSection() {
   }
 
   // ── Board ops (scoped to the current company/location context) ──
-  const boardsInScope = store.boards;
+  // A board can only be created once the scope node is actually picked, otherwise
+  // it would be saved with an empty company/location id and never match a real
+  // context on the dispatch board.
+  const scopeReady = level === "org" || (level === "company" ? !!companyId : !!companyId && !!locationId);
+  // Boards shown for the layer being edited: org → org-wide boards; company →
+  // that company's boards; location → that location's boards. (Empty scope shows
+  // nothing rather than spuriously matching empty-id boards.)
+  const boardsInScope = !scopeReady ? [] : store.boards.filter(b =>
+    level === "org" ? !b.companyId
+    : level === "company" ? b.companyId === companyId
+    : b.locationId === locationId,
+  );
   function addBoard() {
+    if (!scopeReady) return;
     const id = newBoardId();
+    // Scope the new board to the layer being edited.
+    const co = level === "org" ? "" : companyId;
+    const loc = level === "location" ? locationId : "";
     update(next => {
-      // Org-wide board (no company/location); membership is by user and/or role.
       next.boards.push({
-        id, name: "New Board", companyId: "", locationId: "", boardType: "custom",
+        id, name: "New Board", companyId: co, locationId: loc, boardType: "custom",
         dispatchers: [], techNames: [], roleKeys: [], jobTypes: [], serviceAreaIds: [],
-        active: true, isDefault: next.boards.length === 0,
+        active: true, isDefault: false,
       });
     });
     setEditingBoard(id);
@@ -413,53 +540,76 @@ export default function CalendarDispatchSection() {
       {/* ── DEFAULTS TAB (default view/mode + hourly grid) ── */}
       {tab === "defaults" && (
         <>
-          <SettingsCard icon={CalendarDays} title="Default Calendar Settings" subtitle="The view and dispatch mode the Dispatching module opens with."
+          {/* Default view — icon cards */}
+          <SettingsCard icon={CalendarDays} title="Default View" subtitle="What the Dispatching module opens to."
             action={level !== "org" ? <OverrideToggle on={isOverridden("defaults")} onChange={v => setOverride("defaults", v)} /> : undefined}>
             {!isOverridden("defaults") ? (
-              <InheritedNote scope={scopeNoun} summary={`View: ${labelView(defaultsVal.defaultView)} · Mode: ${defaultsVal.defaultDispatchMode === "hourly" ? "Hourly" : "Service Blocks"}`} />
+              <InheritedNote scope={scopeNoun} summary={`${labelView(defaultsVal.defaultView)} · ${defaultsVal.defaultDispatchMode === "hourly" ? "Hourly" : "Service blocks"}`} />
             ) : (
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <FieldLabel>Default View</FieldLabel>
-                  <UiSelect value={defaultsVal.defaultView} onChange={v => editSection("defaults", sc => { sc.defaults!.defaultView = v as CalendarViewMode; })}
-                    options={[{ value: "dispatch", label: "Dispatch Board" }, { value: "day", label: "Day" }, { value: "week", label: "Week" }, { value: "month", label: "Month" }]} />
+              <>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                  {VIEW_OPTIONS.map(o => {
+                    const active = defaultsVal.defaultView === o.value;
+                    return (
+                      <button key={o.value} onClick={() => editSection("defaults", sc => { sc.defaults!.defaultView = o.value; })}
+                        className="flex flex-col items-center text-center gap-2 rounded-xl py-4 px-2 transition-all"
+                        style={{
+                          border: `1.5px solid ${active ? "var(--accent-soft-border)" : "var(--border)"}`,
+                          backgroundColor: active ? "var(--accent-soft-bg)" : "var(--bg-surface-2)",
+                          color: active ? "var(--accent-text)" : "var(--text-secondary)",
+                        }}>
+                        <o.icon className="w-5 h-5" />
+                        <span className="text-sm font-medium">{o.label}</span>
+                        <span className="text-[10px] leading-tight" style={{ color: "var(--text-muted)" }}>{o.hint}</span>
+                      </button>
+                    );
+                  })}
                 </div>
-                <div>
-                  <FieldLabel>Default Dispatch Mode</FieldLabel>
+                <div className="mt-5 pt-4" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+                  <FieldLabel>Dispatch board mode</FieldLabel>
                   <Segmented<DispatchMode> value={defaultsVal.defaultDispatchMode}
                     onChange={v => editSection("defaults", sc => { sc.defaults!.defaultDispatchMode = v; })}
-                    options={[{ value: "hourly", label: "Hourly" }, { value: "blocks", label: "Service Blocks" }]} />
+                    options={[{ value: "hourly", label: "Hourly grid" }, { value: "blocks", label: "Service blocks" }]} />
                 </div>
-              </div>
+              </>
             )}
           </SettingsCard>
 
-          <SettingsCard icon={Clock} title="Hourly View Settings" subtitle="Visible schedule hours and granularity for the hourly grid."
+          {/* Working hours */}
+          <SettingsCard icon={Clock} title="Working Hours" subtitle="The schedule window and granularity shown on the hourly board."
             action={level !== "org" ? <OverrideToggle on={isOverridden("hourly")} onChange={v => setOverride("hourly", v)} /> : undefined}>
             {!isOverridden("hourly") ? (
               <InheritedNote scope={scopeNoun} summary={`${formatHour(hourlyVal.startHour)} – ${formatHour(hourlyVal.endHour)} · ${hourlyVal.increment} min`} />
             ) : (
               <>
+                <div className="rounded-lg px-3 py-2 mb-4 inline-flex items-center gap-2 text-sm font-medium"
+                  style={{ backgroundColor: "var(--accent-soft-bg)", color: "var(--accent-text)" }}>
+                  <Clock className="w-3.5 h-3.5" />
+                  {formatHour(hourlyVal.startHour)} – {formatHour(hourlyVal.endHour)}
+                  <span style={{ opacity: 0.6 }}>· {hourlyVal.increment}-min slots</span>
+                </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <FieldLabel>Day Start</FieldLabel>
+                    <FieldLabel>Day starts</FieldLabel>
                     <UiSelect value={String(hourlyVal.startHour)} onChange={v => editSection("hourly", sc => { sc.hourly!.startHour = Number(v); })} options={HOUR_OPTIONS} />
                   </div>
                   <div>
-                    <FieldLabel>Day End</FieldLabel>
+                    <FieldLabel>Day ends</FieldLabel>
                     <UiSelect value={String(hourlyVal.endHour)} onChange={v => editSection("hourly", sc => { sc.hourly!.endHour = Number(v); })} options={HOUR_OPTIONS} />
                   </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4 mt-4">
                   <div>
-                    <FieldLabel>Time Increment</FieldLabel>
+                    <FieldLabel>Time increment</FieldLabel>
                     <Segmented<string> value={String(hourlyVal.increment)}
                       onChange={v => editSection("hourly", sc => { sc.hourly!.increment = Number(v) as HourIncrement; })}
-                      options={[{ value: "15", label: "15 min" }, { value: "30", label: "30 min" }, { value: "60", label: "60 min" }]} />
+                      options={[{ value: "15", label: "15m" }, { value: "30", label: "30m" }, { value: "60", label: "60m" }]} />
                   </div>
                   <div>
-                    <FieldLabel>Time Labels</FieldLabel>
+                    <FieldLabel>Time labels</FieldLabel>
                     <Segmented<HourLabelStyle> value={hourlyVal.labelStyle}
                       onChange={v => editSection("hourly", sc => { sc.hourly!.labelStyle = v; })}
-                      options={[{ value: "hours", label: "Hours only" }, { value: "all", label: "Every slot" }]} />
+                      options={[{ value: "hours", label: "Hourly" }, { value: "all", label: "Every slot" }]} />
                   </div>
                 </div>
                 {hourlyVal.endHour <= hourlyVal.startHour && (
@@ -537,26 +687,35 @@ export default function CalendarDispatchSection() {
       {tab === "boards" && (
         <SettingsCard icon={Users} title="Dispatch Boards / Teams" subtitle="Group dispatchers, technicians, and job types into a board. Assign members by user or by role."
           action={
-            <button onClick={addBoard} title="Add board" className="flex items-center justify-center w-8 h-8 rounded-lg text-white transition-colors hover:bg-indigo-700" style={{ backgroundColor: "#4f46e5" }}>
+            <button onClick={addBoard} disabled={!scopeReady} title={scopeReady ? "Add board" : "Select a company / branch first"}
+              className="flex items-center justify-center w-8 h-8 rounded-lg text-white transition-colors hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed" style={{ backgroundColor: "#4f46e5" }}>
               <Plus className="w-4 h-4" />
             </button>
           }>
           <div className="space-y-3">
-            {boardsInScope.map(board => (
-              editingBoard === board.id ? (
-                <BoardEditor key={board.id} board={board}
-                  onPatch={p => patchBoard(board.id, p)}
-                  onToggleMember={(f, v) => toggleBoardMember(board.id, f, v)}
-                  onDone={() => setEditingBoard(null)} />
-              ) : (
-                <BoardRow key={board.id} board={board}
-                  onEdit={() => setEditingBoard(board.id)} onRemove={() => removeBoard(board.id)} onSetDefault={() => setDefaultBoard(board.id)} />
-              )
-            ))}
-            {boardsInScope.length === 0 && (
+            {!scopeReady ? (
               <p className="text-xs py-2" style={{ color: "var(--text-muted)" }}>
-                No dispatch boards yet. Add one to get started.
+                Select a {level === "company" ? "company" : "company and branch"} in the Editing Scope above to add a board for it.
               </p>
+            ) : (
+              <>
+                {boardsInScope.map(board => (
+                  editingBoard === board.id ? (
+                    <BoardEditor key={board.id} board={board}
+                      onPatch={p => patchBoard(board.id, p)}
+                      onToggleMember={(f, v) => toggleBoardMember(board.id, f, v)}
+                      onDone={() => setEditingBoard(null)} />
+                  ) : (
+                    <BoardRow key={board.id} board={board}
+                      onEdit={() => setEditingBoard(board.id)} onRemove={() => removeBoard(board.id)} onSetDefault={() => setDefaultBoard(board.id)} />
+                  )
+                ))}
+                {boardsInScope.length === 0 && (
+                  <p className="text-xs py-2" style={{ color: "var(--text-muted)" }}>
+                    No dispatch boards for {scopeNoun} yet. Add one to get started.
+                  </p>
+                )}
+              </>
             )}
           </div>
         </SettingsCard>
@@ -700,7 +859,11 @@ function BoardEditor({ board, onPatch, onToggleMember, onDone }: {
   onDone: () => void;
 }) {
   const roleDefs = getAssignableRoles();
-  const toOpts = (names: string[]) => names.map(n => ({ value: n, label: n }));
+  // Only people whose assignment scope is within this board's scope are eligible
+  // (down-inclusion); role-appropriate people are suggested first in the picker.
+  const bCo = board.companyId || undefined;
+  const bLoc = board.locationId || undefined;
+  const allStaff = getBoardCandidateNames(bCo, bLoc);
   return (
     <div className="rounded-xl p-4 space-y-4" style={{ border: "2px solid #c7d2fe", backgroundColor: "var(--bg-surface)" }}>
       <div>
@@ -709,17 +872,19 @@ function BoardEditor({ board, onPatch, onToggleMember, onDone }: {
           className="w-full rounded-lg px-3 py-2 text-sm outline-none" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface)", color: "var(--text-primary)" }} />
       </div>
       <div>
-        <FieldLabel>Dispatchers</FieldLabel>
-        <MultiSelect options={toOpts(getDispatcherNames())} selected={board.dispatchers} onToggle={v => onToggleMember("dispatchers", v)} placeholder="Select dispatchers…" />
+        <FieldLabel>Dispatchers — who runs this board</FieldLabel>
+        <PeoplePicker title="Add dispatchers" allNames={allStaff} suggested={getDispatcherCandidates(bCo, bLoc)}
+          selected={board.dispatchers} onToggle={v => onToggleMember("dispatchers", v)} emptyLabel="No dispatchers yet" />
       </div>
       <div>
-        <FieldLabel>Members — assign specific people</FieldLabel>
-        <MultiSelect options={toOpts(getTechnicianNames())} selected={board.techNames} onToggle={v => onToggleMember("techNames", v)} placeholder="Select technicians or crew…" />
+        <FieldLabel>Members — people scheduled on this board</FieldLabel>
+        <PeoplePicker title="Add members" allNames={allStaff} suggested={getTechnicianCandidates(bCo, bLoc)}
+          selected={board.techNames} onToggle={v => onToggleMember("techNames", v)} emptyLabel="No members yet" />
       </div>
       <div>
-        <FieldLabel>…or assign by role</FieldLabel>
+        <FieldLabel>…or add members by role</FieldLabel>
         <MultiSelect options={roleDefs.map(r => ({ value: r.key, label: r.label }))} selected={board.roleKeys ?? []} onToggle={v => onToggleMember("roleKeys", v)} placeholder="Select roles…" />
-        <p className="text-[11px] mt-1.5" style={{ color: "var(--text-muted)" }}>Anyone holding a selected role joins this board automatically. Leave members and roles empty to include all technicians.</p>
+        <p className="text-[11px] mt-1.5" style={{ color: "var(--text-muted)" }}>Anyone holding a selected role is automatically a member. Only members (added by name or role) appear on the board — dispatchers don&apos;t, unless they&apos;re also members.</p>
       </div>
       <div><FieldLabel>Job Types</FieldLabel><ChipMulti all={MOCK_JOB_TYPES} selected={board.jobTypes} onToggle={v => onToggleMember("jobTypes", v)} /></div>
       <div className="flex justify-end pt-1">

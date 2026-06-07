@@ -136,13 +136,15 @@ export function defaultDispatchSettings(): DispatchSettings {
 // seeded by default — a fresh org starts with no boards (the page falls back to
 // the built-in "All Boards" view).
 // The CRM always has at least one board, so adding technicians / scheduling
-// never hits a "no board" edge case. This default board is org-wide, includes
-// all technicians, and can't be deleted.
+// never hits a "no board" edge case. This default board is org-wide and can't be
+// deleted. It's seeded with the field roles so technicians/installers show up on
+// it out of the box (dispatchers/CSRs don't — they aren't schedulable rows).
 export const DEFAULT_BOARD_ID = "board-default";
+const DEFAULT_BOARD_ROLES = ["field_technician", "installer"];
 function defaultBoards(): DispatchBoard[] {
   return [{
     id: DEFAULT_BOARD_ID, name: "Main Board", companyId: "", locationId: "", boardType: "custom",
-    dispatchers: [], techNames: [], roleKeys: [], jobTypes: [], serviceAreaIds: [],
+    dispatchers: [], techNames: [], roleKeys: [...DEFAULT_BOARD_ROLES], jobTypes: [], serviceAreaIds: [],
     active: true, isDefault: true,
   }];
 }
@@ -293,14 +295,14 @@ export function resolveParent(store: DispatchStore, level: ScopeLevel, companyId
 }
 
 // ─── Boards ───────────────────────────────────────────────
-// Boards available for a context. Undefined company/location = no narrowing.
+// Boards visible for the active hierarchy scope: you see boards AT your scope and
+// everything BELOW it, never above. So a location sees only its own boards; a
+// company sees its company-level boards plus all its locations'; org sees all.
 export function getBoardsForContext(companyId?: string, locationId?: string): DispatchBoard[] {
-  // A board with no company/location is org-wide and shows in every context.
-  return getStore().boards.filter(b =>
-    b.active &&
-    (!companyId  || !b.companyId  || b.companyId  === companyId) &&
-    (!locationId || !b.locationId || b.locationId === locationId),
-  );
+  const boards = getStore().boards.filter(b => b.active);
+  if (locationId) return boards.filter(b => b.locationId === locationId);  // this location only
+  if (companyId)  return boards.filter(b => b.companyId === companyId);     // company + its locations
+  return boards;                                                            // org / "All" → every board
 }
 
 // Does a scheduled/unscheduled item belong to a board?  Tech OR job-type match,

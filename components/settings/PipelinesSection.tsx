@@ -45,16 +45,22 @@ export default function PipelinesSection() {
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState<FormState>({ ...EMPTY_FORM });
   const [saved, setSaved] = useState(false);
-  const [dirty, setDirty] = useState(false);
+  const [baseline, setBaseline] = useState<string>(() => JSON.stringify(sortStages(DEFAULT_STAGES)));
 
   // Re-seed the draft whenever the resolved value changes (layer switch, save,
   // override, or reset). Editing the draft is local until "Save Changes".
   useEffect(() => {
-    setStages(sortStages(scoped.value));
-    setDirty(false); setEditingId(null); setShowAdd(false);
+    const next = sortStages(scoped.value);
+    setStages(next);
+    setBaseline(JSON.stringify(next));
+    setEditingId(null); setShowAdd(false);
   }, [scoped.value]);
 
-  function markDirty() { setDirty(true); setSaved(false); }
+  // Dirty is derived by comparing to the baseline — reverting an edit back to its
+  // original value clears it (no phantom "unsaved changes").
+  const dirty = JSON.stringify(sortStages(stages)) !== baseline;
+
+  function markDirty() { setSaved(false); }
 
   // ── Reorder ──
   function move(id: string, dir: -1 | 1) {
@@ -107,8 +113,9 @@ export default function PipelinesSection() {
   }
 
   function handleSave() {
-    scoped.save(reorderStages(stages));   // writes an override at the active layer
-    setDirty(false);
+    const next = reorderStages(stages);
+    scoped.save(next);                       // writes an override at the active layer
+    setBaseline(JSON.stringify(sortStages(next)));
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   }

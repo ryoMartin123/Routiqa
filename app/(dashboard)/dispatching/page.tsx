@@ -13,11 +13,11 @@ import StatusBadge from "@/components/shared/StatusBadge";
 import ScheduleConfirmModal, { type ScheduleDraft } from "@/components/calendar/ScheduleConfirmModal";
 import Select from "@/components/ui/Select";
 import {
-  getCalendarItems, getUnscheduledItems, getUnscheduledJobs, getSessionCalendarItems, getTechnicians, getTechRoster, markSourceScheduled, type CalendarScope, type TechRosterEntry,
+  getCalendarItems, getUnscheduledItems, getUnscheduledJobs, getSessionCalendarItems, getTechnicians, getStaffRoster, markSourceScheduled, type CalendarScope, type TechRosterEntry,
 } from "@/lib/calendar/data";
 import { createJob, updateJob, type JobType } from "@/lib/jobs/data";
 import { getCustomer } from "@/lib/customers/data";
-import { getUsersByRoles } from "@/lib/users/data";
+import { getUsersByRoles, getBoardCandidates } from "@/lib/users/data";
 import {
   getAvailabilityForDay, createAvailability, removeAvailability, techStatusForKind, AVAILABILITY_CONFIG,
   type AvailabilityEvent, type NewAvailabilityInput,
@@ -131,7 +131,7 @@ export default function CalendarPage() {
     const s: CalendarScope = { companyId: effectiveCompanyId, locationId: effectiveLocationId, serviceAreaId: effectiveServiceAreaId };
     setSessionUnscheduled(getUnscheduledJobs(s));
     setSessionItems(getSessionCalendarItems(s));
-    setRoster(getTechRoster());
+    setRoster(getStaffRoster());
   }, [effectiveCompanyId, effectiveLocationId, effectiveServiceAreaId, refreshKey]);
 
   // Availability is per-day — reload when the focused day or data changes.
@@ -181,7 +181,13 @@ export default function CalendarPage() {
   const rawItems    = useMemo(() => getCalendarItems(scope), [effectiveCompanyId, effectiveLocationId, effectiveServiceAreaId]);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const allUnscheduled = useMemo(() => getUnscheduledItems(scope), [effectiveCompanyId, effectiveLocationId, effectiveServiceAreaId]);
-  const technicians = useMemo(() => Array.from(new Set([...roster.map(r => r.name), ...getTechnicians(rawItems)])), [rawItems, roster]);
+  // Technician filter mirrors the viewing scope (down-inclusion), plus anyone
+  // already assigned to an in-scope item.
+  const technicians = useMemo(
+    () => Array.from(new Set([...getBoardCandidates(effectiveCompanyId, effectiveLocationId).map(u => u.fullName), ...getTechnicians(rawItems)])),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [rawItems, effectiveCompanyId, effectiveLocationId],
+  );
   // No technicians on the roster → nothing can be scheduled or created here yet.
   const noTechs = roster.length === 0;
 
@@ -190,14 +196,21 @@ export default function CalendarPage() {
   // rows, scheduled items, and the unscheduled queue to that board.
   const boardOptions = [{ value: "all", label: "All Boards" }, ...boards.map(b => ({ value: b.id, label: b.name }))];
   const activeBoardDef = boards.find(b => b.id === boardId);
-  // A board scopes its rows to specific users (techNames) and/or roles (roleKeys).
-  // No members specified → the full roster.
+  // Board rows are the board's EXPLICIT members only — people added by name plus
+  // holders of the board's assigned roles (within that board's scope). There's no
+  // implicit "everyone", so e.g. dispatchers don't show unless they're members.
+  // "All Boards" shows the union of members across every board in the view.
   const boardRoster = (() => {
-    const roleKeys = activeBoardDef?.roleKeys ?? [];
-    const techNames = activeBoardDef?.techNames ?? [];
-    if (!activeBoardDef || (techNames.length === 0 && roleKeys.length === 0)) return roster;
-    const names = new Set<string>(techNames);
-    getUsersByRoles(roleKeys).forEach(u => names.add(u.fullName));
+    const membersOf = (b: (typeof boards)[number]): string[] => {
+      const bCo = b.companyId || undefined;
+      const bLoc = b.locationId || undefined;
+      const names = new Set<string>(b.techNames);
+      getUsersByRoles(b.roleKeys ?? [], bCo, bLoc).forEach(u => names.add(u.fullName));
+      return Array.from(names);
+    };
+    const names = new Set<string>();
+    if (activeBoardDef) membersOf(activeBoardDef).forEach(n => names.add(n));
+    else boards.forEach(b => membersOf(b).forEach(n => names.add(n)));
     return Array.from(names).map(name =>
       roster.find(r => r.name === name) ?? { name, initials: initials(name), status: "available" as const },
     );
@@ -492,7 +505,7 @@ export default function CalendarPage() {
         <div className="rounded-xl px-4 py-3 flex items-center gap-3" style={{ backgroundColor: "#fef3c7", border: "1px solid #fde68a" }}>
           <Users className="w-4 h-4 shrink-0" style={{ color: "#92400e" }} />
           <p className="text-xs font-medium" style={{ color: "#92400e" }}>
-            No technicians yet — add team members with a Field Technician or Installer role in Settings → Users &amp; Roles before scheduling or creating jobs here.
+            No team members yet — add people in Settings → Users &amp; Roles before scheduling or creating jobs here.
           </p>
         </div>
       )}
@@ -536,7 +549,7 @@ const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v
 
 function DispatchBoard({ focus, mode, items, roster, availability, dayStart, dayEnd, increment, blocks, onSelect, onMoveResize, onRemoveAvailability, onDropItem }: {
   focus: Date; mode: DispatchMode; items: CalendarItem[];
-  roster: ReturnType<typeof getTechRoster>;
+  roster: TechRosterEntry[];
   availability: AvailabilityEvent[];
   dayStart: number; dayEnd: number; increment: number; blocks: SettingsServiceBlock[];
   onSelect: (i: CalendarItem) => void;

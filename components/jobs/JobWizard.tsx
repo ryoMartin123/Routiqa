@@ -7,7 +7,7 @@ import DatePicker from "@/components/ui/DatePicker";
 import TimePicker from "@/components/ui/TimePicker";
 import { getAllCustomers, getProperties, updateCustomer } from "@/lib/customers/data";
 import { createJob, type JobType, type JobPriority } from "@/lib/jobs/data";
-import { getTechRoster } from "@/lib/calendar/data";
+import { getBoardCandidates } from "@/lib/users/data";
 import { AddressAutocomplete, EMPTY_ADDRESS, type ParsedAddress } from "@/components/address/AddressAutocomplete";
 import { todayYMD, isPastDateTime } from "@/lib/utils/schedule";
 
@@ -45,9 +45,6 @@ export default function JobWizard({ preset, onClose, onCreated }: {
   onCreated: (id: string) => void;
 }) {
   const customers = getAllCustomers();
-  // Roster is derived from the user directory (localStorage) — load client-side.
-  const [roster, setRoster] = useState<ReturnType<typeof getTechRoster>>([]);
-  useEffect(() => { setRoster(getTechRoster()); }, []);
 
   const [customerId, setCustomerId] = useState(preset?.customerId ?? customers[0]?.id ?? "");
   const [propertyId, setPropertyId] = useState("");
@@ -59,9 +56,15 @@ export default function JobWizard({ preset, onClose, onCreated }: {
   const [time, setTime]     = useState("");
   const [duration, setDuration] = useState("120");
   const [tech, setTech]     = useState("");
-  const [estimate, setEstimate] = useState("");
 
   const customer = customers.find(c => c.id === customerId);
+  // Assignee candidates respect the account's scope (down-inclusion): people at
+  // its location, its company, or org-wide — not other branches/companies.
+  const roster = useMemo(
+    () => (customer ? getBoardCandidates(customer.companyId, customer.locationId).map(u => ({ name: u.fullName, initials: u.initials })) : []),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [customer?.companyId, customer?.locationId],
+  );
   const properties = useMemo(() => (customerId ? getProperties(customerId) : []), [customerId]);
   // One property → just use it. Multiple → let the user pick which.
   const selectedProperty = properties.find(p => p.id === propertyId) ?? properties[0];
@@ -111,7 +114,6 @@ export default function JobWizard({ preset, onClose, onCreated }: {
       accountId: customer.id, customerName: customer.name, customerInitials: customer.initials, locationName: customer.locationName,
       title: title.trim(), description: description.trim(), type, priority,
       propertyAddress: jobAddress || undefined, projectId: preset?.projectId,
-      estimatedAmount: estimate.trim() ? (estimate.trim().startsWith("$") ? estimate.trim() : `$${estimate.trim()}`) : undefined,
       scheduledDate: date ? fmtDate(date) : undefined,
       scheduledTime: time ? fmtTime(time) : undefined,
       durationMinutes: parseInt(duration) || 120,
@@ -195,11 +197,12 @@ export default function JobWizard({ preset, onClose, onCreated }: {
             </div>
           </div>
 
-          {/* Estimated amount — above scheduling */}
+          {/* Description — required, above scheduling */}
           <div>
-            <label className="block text-xs font-medium mb-1" style={{ color: "var(--text-secondary)" }}>Estimated Amount <span style={{ color: "var(--text-muted)" }}>(optional)</span></label>
-            <input value={estimate} onChange={e => setEstimate(e.target.value)} placeholder="e.g. 285"
-              className="w-full rounded-lg px-3 py-2 text-sm outline-none" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface)", color: "var(--text-primary)" }} />
+            <label className="block text-xs font-medium mb-1" style={{ color: "var(--text-secondary)" }}>Description <span style={{ color: "#ef4444" }}>*</span></label>
+            <textarea value={description} onChange={e => setDescription(e.target.value)} rows={3}
+              placeholder="What needs to be done on this job…"
+              className="w-full rounded-lg px-3 py-2 text-sm outline-none resize-none" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface)", color: "var(--text-primary)" }} />
           </div>
 
           {/* Scheduling */}
@@ -235,12 +238,6 @@ export default function JobWizard({ preset, onClose, onCreated }: {
             </div>
           </div>
 
-          <div>
-            <label className="block text-xs font-medium mb-1" style={{ color: "var(--text-secondary)" }}>Description <span style={{ color: "#ef4444" }}>*</span></label>
-            <textarea value={description} onChange={e => setDescription(e.target.value)} rows={3}
-              placeholder="What needs to be done on this job…"
-              className="w-full rounded-lg px-3 py-2 text-sm outline-none resize-none" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface)", color: "var(--text-primary)" }} />
-          </div>
         </div>
 
         {/* Footer */}

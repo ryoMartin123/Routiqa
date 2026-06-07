@@ -189,7 +189,7 @@ const SECTION_LAYERS: Record<SectionKey, SectionLayers> = {
   job_types:          ["org", "company", "location"],
   work_orders:        ["org", "company"],
   photo_categories:   ["org", "company"],
-  calendar_dispatch:  ["company", "location"],
+  calendar_dispatch:  ["org", "company", "location"],
   agreements:         ["org", "company"],
   items_categories:   ["org", "company"],
   quote_settings:     ["org", "company", "location"],

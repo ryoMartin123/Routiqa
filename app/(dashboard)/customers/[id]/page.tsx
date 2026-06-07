@@ -637,19 +637,16 @@ const PROPERTY_TYPES: PropertyType[] = ["Residential", "Commercial", "Industrial
 interface PropertyFormData {
   label: string;
   parsedAddress: ParsedAddress;
-  type: PropertyType; serviceAreaId: string; sqft: string; yearBuilt: string;
-  accessNotes: string; isPrimary: boolean;
+  type: PropertyType;
+  notes: string; isPrimary: boolean;
 }
 const EMPTY_PROPERTY_FORM: PropertyFormData = {
   label: "", parsedAddress: { ...EMPTY_ADDRESS },
-  type: "Residential", serviceAreaId: "", sqft: "", yearBuilt: "",
-  accessNotes: "", isPrimary: false,
+  type: "Residential",
+  notes: "", isPrimary: false,
 };
 
-function PropertyCard({ property }: { property: Property }) {
-  const saName = property.serviceAreaId
-    ? getAllServiceAreas().find(s => s.id === property.serviceAreaId)?.name
-    : null;
+function PropertyCard({ property, onEdit }: { property: Property; onEdit: () => void }) {
   const statusActive = (property.status ?? "active") === "active";
 
   return (
@@ -674,7 +671,7 @@ function PropertyCard({ property }: { property: Property }) {
             ]} />
           </div>
         </div>
-        <button className="text-xs px-2 py-1 rounded-lg shrink-0 ml-3 transition-colors" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>
+        <button onClick={onEdit} className="text-xs px-2 py-1 rounded-lg shrink-0 ml-3 transition-colors hover:bg-[var(--bg-surface-2)]" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>
           Edit
         </button>
       </div>
@@ -689,32 +686,9 @@ function PropertyCard({ property }: { property: Property }) {
           </div>
         </div>
 
-        {(property.sqft || property.yearBuilt || saName) && (
-          <div className="flex items-center gap-4 pt-1">
-            {property.sqft && (
-              <div>
-                <p className="text-[10px] uppercase tracking-wider font-semibold" style={{ color: "var(--text-muted)" }}>Sq Ft</p>
-                <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{property.sqft.toLocaleString()}</p>
-              </div>
-            )}
-            {property.yearBuilt && (
-              <div>
-                <p className="text-[10px] uppercase tracking-wider font-semibold" style={{ color: "var(--text-muted)" }}>Year Built</p>
-                <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{property.yearBuilt}</p>
-              </div>
-            )}
-            {saName && (
-              <div>
-                <p className="text-[10px] uppercase tracking-wider font-semibold" style={{ color: "var(--text-muted)" }}>Service Area</p>
-                <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{saName}</p>
-              </div>
-            )}
-          </div>
-        )}
-
         {property.accessNotes && (
           <div className="mt-1 pt-3" style={{ borderTop: "1px solid var(--border-subtle)" }}>
-            <p className="text-[10px] font-semibold uppercase tracking-wider mb-1" style={{ color: "var(--text-muted)" }}>Access Notes</p>
+            <p className="text-[10px] font-semibold uppercase tracking-wider mb-1" style={{ color: "var(--text-muted)" }}>Notes</p>
             <p className="text-xs leading-relaxed" style={{ color: "var(--text-secondary)" }}>{property.accessNotes}</p>
           </div>
         )}
@@ -724,18 +698,18 @@ function PropertyCard({ property }: { property: Property }) {
 }
 
 function AddPropertyForm({
-  form, errors, onChange, onSave, onCancel, hasPrimary,
+  form, errors, onChange, onSave, onCancel, isEditing,
 }: {
   form: PropertyFormData;
   errors: Record<string, string>;
   onChange: (k: keyof PropertyFormData, v: PropertyFormData[keyof PropertyFormData]) => void;
   onSave: () => void;
   onCancel: () => void;
-  hasPrimary: boolean;
+  isEditing: boolean;
 }) {
   return (
     <div className="rounded-xl p-4 space-y-3" style={{ backgroundColor: "var(--bg-surface)", border: "2px solid #c7d2fe", boxShadow: "var(--shadow-card)" }}>
-      <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: "#4f46e5" }}>New Property</p>
+      <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: "#4f46e5" }}>{isEditing ? "Edit Property" : "New Property"}</p>
 
       <div className="grid grid-cols-2 gap-3">
         <div>
@@ -765,44 +739,21 @@ function AddPropertyForm({
         />
       </div>
 
-      <div className="grid grid-cols-3 gap-3">
-        <div>
-          <label className="block text-xs font-medium mb-1" style={{ color: "var(--text-secondary)" }}>Sq Ft</label>
-          <input type="number" value={form.sqft} onChange={e => onChange("sqft", e.target.value)} placeholder="1,800"
-            className="w-full rounded-lg px-3 py-2 text-sm outline-none"
-            style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface)", color: "var(--text-primary)" }} />
-        </div>
-        <div>
-          <label className="block text-xs font-medium mb-1" style={{ color: "var(--text-secondary)" }}>Year Built</label>
-          <input type="number" value={form.yearBuilt} onChange={e => onChange("yearBuilt", e.target.value)} placeholder="2005"
-            className="w-full rounded-lg px-3 py-2 text-sm outline-none"
-            style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface)", color: "var(--text-primary)" }} />
-        </div>
-        <div>
-          <label className="block text-xs font-medium mb-1" style={{ color: "var(--text-secondary)" }}>Service Area</label>
-          <UiSelect value={form.serviceAreaId} onChange={v => onChange("serviceAreaId", v)}
-            placeholder="None"
-            options={[{ value: "", label: "None" }, ...getAllServiceAreas().filter(s => s.status === "active").map(s => ({ value: s.id, label: s.name }))]} />
-        </div>
-      </div>
-
       <div>
-        <label className="block text-xs font-medium mb-1" style={{ color: "var(--text-secondary)" }}>Access Notes</label>
-        <textarea value={form.accessNotes} onChange={e => onChange("accessNotes", e.target.value)}
+        <label className="block text-xs font-medium mb-1" style={{ color: "var(--text-secondary)" }}>Notes <span style={{ color: "var(--text-muted)" }}>(optional)</span></label>
+        <textarea value={form.notes} onChange={e => onChange("notes", e.target.value)}
           placeholder="Gate codes, key box locations, parking, contact on site..." rows={2}
           className="w-full rounded-lg px-3 py-2 text-sm outline-none resize-none"
           style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface)", color: "var(--text-primary)" }} />
       </div>
 
       <div className="flex items-center justify-between pt-1">
-        {!hasPrimary && (
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" checked={form.isPrimary} onChange={e => onChange("isPrimary", e.target.checked)}
-              className="w-3.5 h-3.5 accent-indigo-600" />
-            <span className="text-sm" style={{ color: "var(--text-secondary)" }}>Mark as primary property</span>
-          </label>
-        )}
-        <div className="flex gap-2 ml-auto">
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" checked={form.isPrimary} onChange={e => onChange("isPrimary", e.target.checked)}
+            className="w-3.5 h-3.5 accent-indigo-600" />
+          <span className="text-sm" style={{ color: "var(--text-secondary)" }}>Primary property</span>
+        </label>
+        <div className="flex gap-2">
           <button onClick={onCancel}
             className="px-3 py-1.5 rounded-lg text-sm transition-colors"
             style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>
@@ -810,7 +761,7 @@ function AddPropertyForm({
           </button>
           <button onClick={onSave} disabled={!form.parsedAddress.addressLine1.trim()}
             className="px-3 py-1.5 rounded-lg text-sm font-medium bg-indigo-600 hover:bg-indigo-700 text-white disabled:opacity-40 transition-colors">
-            Save Property
+            {isEditing ? "Save Changes" : "Save Property"}
           </button>
         </div>
       </div>
@@ -821,45 +772,63 @@ function AddPropertyForm({
 function PropertiesTab({ id }: { id: string }) {
   const [properties, setProperties] = useState<Property[]>(() => getProperties(id));
   const [showAdd, setShowAdd]       = useState(false);
+  const [editingId, setEditingId]   = useState<string | null>(null);
   const [form, setForm]             = useState<PropertyFormData>({ ...EMPTY_PROPERTY_FORM });
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
+  const isEditing = editingId !== null;
 
   function changeForm(k: keyof PropertyFormData, v: PropertyFormData[keyof PropertyFormData]) {
     setForm(f => ({ ...f, [k]: v }));
     setFormErrors(e => { const n = { ...e }; delete n[k as string]; return n; });
   }
 
-  function handleSave() {
-    const errs: Record<string, string> = {};
-    if (!form.parsedAddress.addressLine1.trim()) errs.address = "Address is required";
-    if (Object.keys(errs).length > 0) { setFormErrors(errs); return; }
+  function closeForm() { setShowAdd(false); setEditingId(null); setForm({ ...EMPTY_PROPERTY_FORM }); setFormErrors({}); }
 
-    const hasPrimary = properties.some(p => p.isPrimary);
-    const newProp: Property = {
-      id: `p-${Date.now()}`,
-      customerId: id,
-      label:        form.label.trim() || undefined,
-      address:      form.parsedAddress.addressLine1,
-      city:         form.parsedAddress.city,
-      state:        form.parsedAddress.state,
-      zip:          form.parsedAddress.postalCode,
-      type:         form.type,
-      sqft:         form.sqft ? parseInt(form.sqft) : undefined,
-      yearBuilt:    form.yearBuilt ? parseInt(form.yearBuilt) : undefined,
-      accessNotes:  form.accessNotes.trim() || undefined,
-      serviceAreaId: form.serviceAreaId || undefined,
-      status:       "active",
-      isPrimary:    form.isPrimary || !hasPrimary,
+  function startEdit(p: Property) {
+    setShowAdd(false);
+    setEditingId(p.id);
+    setForm({
+      label: p.label ?? "",
+      parsedAddress: {
+        ...EMPTY_ADDRESS,
+        addressLine1: p.address, city: p.city, state: p.state || "GA", postalCode: p.zip,
+        formattedAddress: [p.address, p.city, p.state].filter(Boolean).join(", "),
+      },
+      type: p.type,
+      notes: p.accessNotes ?? "",
+      isPrimary: p.isPrimary,
+    });
+    setFormErrors({});
+  }
+
+  function handleSave() {
+    if (!form.parsedAddress.addressLine1.trim()) { setFormErrors({ address: "Address is required" }); return; }
+
+    const fields = {
+      label:       form.label.trim() || undefined,
+      address:     form.parsedAddress.addressLine1,
+      city:        form.parsedAddress.city,
+      state:       form.parsedAddress.state,
+      zip:         form.parsedAddress.postalCode,
+      type:        form.type,
+      accessNotes: form.notes.trim() || undefined,
     };
 
-    setProperties(prev =>
-      newProp.isPrimary
-        ? [newProp, ...prev.map(p => ({ ...p, isPrimary: false }))]
-        : [...prev, newProp]
-    );
-    setShowAdd(false);
-    setForm({ ...EMPTY_PROPERTY_FORM });
-    setFormErrors({});
+    if (editingId) {
+      setProperties(prev => prev.map(p => {
+        if (p.id === editingId) return { ...p, ...fields, isPrimary: form.isPrimary };
+        return form.isPrimary ? { ...p, isPrimary: false } : p;
+      }));
+    } else {
+      const hasPrimary = properties.some(p => p.isPrimary);
+      const newProp: Property = {
+        id: `p-${Date.now()}`, customerId: id, ...fields, status: "active",
+        isPrimary: form.isPrimary || !hasPrimary,
+      };
+      setProperties(prev => newProp.isPrimary ? [newProp, ...prev.map(p => ({ ...p, isPrimary: false }))] : [...prev, newProp]);
+    }
+    closeForm();
   }
 
   const hasPrimary = properties.some(p => p.isPrimary);
@@ -871,27 +840,27 @@ function PropertiesTab({ id }: { id: string }) {
           {properties.length} {properties.length === 1 ? "Property" : "Properties"}
         </p>
         <button
-          onClick={() => { setShowAdd(true); setForm({ ...EMPTY_PROPERTY_FORM, isPrimary: !hasPrimary }); }}
-          disabled={showAdd}
+          onClick={() => { setEditingId(null); setShowAdd(true); setForm({ ...EMPTY_PROPERTY_FORM, isPrimary: !hasPrimary }); }}
+          disabled={showAdd || isEditing}
           className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-medium px-3 py-1.5 rounded-lg transition-colors"
         >
           <Plus className="w-3.5 h-3.5" /> Add Property
         </button>
       </div>
 
-      {showAdd && (
+      {(showAdd || isEditing) && (
         <AddPropertyForm
           form={form} errors={formErrors}
           onChange={changeForm}
           onSave={handleSave}
-          onCancel={() => { setShowAdd(false); setFormErrors({}); }}
-          hasPrimary={hasPrimary}
+          onCancel={closeForm}
+          isEditing={isEditing}
         />
       )}
 
       <div className="grid grid-cols-2 gap-4">
         {properties.map(p => (
-          <PropertyCard key={p.id} property={p} />
+          <PropertyCard key={p.id} property={p} onEdit={() => startEdit(p)} />
         ))}
       </div>
     </div>
