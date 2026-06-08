@@ -8,6 +8,7 @@ import {
   Plus, Briefcase, X, Users, MapPin, Building2,
 } from "lucide-react";
 import { useHierarchy } from "@/components/providers/HierarchyProvider";
+import PageTitle from "@/components/shared/PageTitle";
 import CalendarItemDrawer from "@/components/calendar/CalendarItemDrawer";
 import StatusBadge from "@/components/shared/StatusBadge";
 import ScheduleConfirmModal, { type ScheduleDraft } from "@/components/calendar/ScheduleConfirmModal";
@@ -376,8 +377,7 @@ export default function CalendarPage() {
       {/* Header — title (left) · centered date nav (date above arrows) · Hourly toggle (right) */}
       <div className="flex items-center gap-3">
         <div className="flex-1 min-w-0">
-          <h1 className="text-2xl font-semibold" style={{ color: "var(--text-primary)" }}>Dispatching</h1>
-          <p className="text-sm mt-0.5" style={{ color: "var(--text-secondary)" }}>Dispatch command center — schedule and assign jobs</p>
+          <PageTitle title="Dispatching" description="Dispatch command center — schedule and assign jobs" />
           {boardScopeNotice && (
             <button onClick={() => selectBoard("all")}
               title="Viewing a scoped board — click to return to all boards"

@@ -662,7 +662,7 @@ function JobDetailContent({ params }: { params: Promise<{ id: string }> }) {
             <Link href={backHref} className="flex items-center gap-1.5 text-sm shrink-0" style={{ color: "var(--text-secondary)" }}>
               <ArrowLeft className="w-4 h-4" /> {backLabel}
             </Link>
-            {project && (
+            {project && !backHref.includes(`/projects/${project.id}`) && (
               <>
                 <span style={{ color: "var(--text-muted)" }}>›</span>
                 <Link href={`/projects/${project.id}`} className="text-sm shrink-0 truncate max-w-[160px]" style={{ color: "var(--text-secondary)" }}>{project.name}</Link>

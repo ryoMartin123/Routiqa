@@ -8,9 +8,10 @@
 // while still feeling like "comment anywhere."
 
 import { useMemo } from "react";
-import { MessageSquarePlus } from "lucide-react";
+import { MessageSquarePlus, MessageSquare } from "lucide-react";
 import { useComments } from "@/components/providers/CommentsProvider";
 import { anchorKey, commentCountForAnchorKey, type CommentAnchor } from "@/lib/comments/data";
+import { getCommentSettings } from "@/lib/comments/settings";
 
 export default function Commentable({
   anchor, children, className, badgeCorner = "tr", inset = false,
@@ -24,6 +25,7 @@ export default function Commentable({
   inset?:       boolean;
 }) {
   const { enabled, openComposer, version } = useComments();
+  const showOutlines = getCommentSettings().showCommentableOutlines;
   const key = anchorKey(anchor);
   // version makes the count re-read after any add/resolve.
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -36,11 +38,13 @@ export default function Commentable({
 
   return (
     <div className={`relative ${enabled ? "group/cmt rounded-xl" : ""} ${className ?? ""}`}
-      data-anchor={key}
-      style={enabled ? { outline: "1px dashed transparent", outlineOffset: "3px", transition: "outline-color .15s" } : undefined}>
-      {/* Dashed highlight only while hovering in comment mode */}
-      {enabled && (
-        <span className="pointer-events-none absolute inset-0 rounded-xl opacity-0 group-hover/cmt:opacity-100 transition-opacity"
+      data-anchor={key}>
+      {/* In comment mode, every commentable block gets a persistent soft dashed
+          outline so users can see at a glance what's clickable — no hunting. The
+          outline alone darkens on hover to confirm the target; no fill, so the
+          content underneath stays readable. */}
+      {enabled && showOutlines && (
+        <span className="pointer-events-none absolute inset-0 rounded-xl opacity-40 group-hover/cmt:opacity-100 transition-opacity"
           style={{ outline: "1.5px dashed var(--accent-soft-border)", outlineOffset: "3px" }} />
       )}
 
@@ -50,9 +54,9 @@ export default function Commentable({
         <button
           onClick={e => { e.stopPropagation(); e.preventDefault(); openComposer(anchor); }}
           title={count > 0 ? `${count} comment${count === 1 ? "" : "s"}` : "Add comment"}
-          className={`absolute ${cornerPos} z-20 flex items-center justify-center transition-all ${enabled && count === 0 ? "opacity-0 group-hover/cmt:opacity-100" : "opacity-100"}`}
+          className={`absolute ${cornerPos} z-20 flex items-center justify-center transition-all opacity-100`}
           style={{
-            minWidth: "1.25rem", height: "1.25rem", padding: count > 0 ? "0 0.3rem" : "0",
+            minWidth: "1.25rem", height: "1.25rem", padding: count > 0 ? "0 0.35rem" : "0",
             borderRadius: "999px",
             backgroundColor: count > 0 ? "var(--accent-text)" : "var(--bg-surface)",
             color: count > 0 ? "#fff" : "var(--accent-text)",
@@ -60,7 +64,10 @@ export default function Commentable({
             boxShadow: "0 2px 6px rgba(0,0,0,0.12)",
           }}>
           {count > 0
-            ? <span className="text-[10px] font-bold leading-none">{count}</span>
+            ? <span className="flex items-center gap-0.5 leading-none">
+                <MessageSquare className="w-2.5 h-2.5" />
+                <span className="text-[10px] font-bold">{count}</span>
+              </span>
             : <MessageSquarePlus className="w-3 h-3" />}
         </button>
       )}

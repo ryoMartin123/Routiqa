@@ -276,6 +276,14 @@ export function updateWorkOrder(jobId: string, patch: Partial<WorkOrder>): WorkO
   return updated;
 }
 
+// Remove a job's work order (used when deleting a job, or unloading sample data).
+export function deleteWorkOrder(jobId: string): void {
+  if (!woStore()[jobId]) return;
+  const next = { ...woStore() }; delete next[jobId];
+  _woByJob = next;
+  persistWO();
+}
+
 // All work orders (seed + session) as [jobId, WorkOrder] entries.
 export function getAllWorkOrders(): { jobId: string; wo: WorkOrder }[] {
   const merged = { ...WORK_ORDERS, ...woStore() };

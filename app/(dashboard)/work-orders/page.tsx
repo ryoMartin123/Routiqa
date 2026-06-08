@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ClipboardList, Plus, Search, SlidersHorizontal, CalendarClock, ImageOff, CheckCircle2 } from "lucide-react";
 import { getAllJobs, getAllWorkOrders, type WorkOrderStatus } from "@/lib/jobs/data";
 import WorkOrderWizard from "@/components/jobs/WorkOrderWizard";
+import PageTitle from "@/components/shared/PageTitle";
 import { getFiles } from "@/lib/files/data";
 import { useHierarchy } from "@/components/providers/HierarchyProvider";
 import ModuleSummaryCards, { type SummaryCard } from "@/components/shared/ModuleSummaryCards";
@@ -71,16 +72,7 @@ export default function WorkOrdersPage() {
       {/* Header — title · centered view toggle · action */}
       <div className="flex items-center gap-4 mb-6">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2.5">
-            <h1 className="text-2xl font-semibold" style={{ color: "var(--text-primary)" }}>Work Orders</h1>
-            <span className="text-xs font-bold px-2 py-0.5 rounded-full"
-              style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>
-              {contextFiltered.length}
-            </span>
-          </div>
-          <p className="text-sm mt-0.5" style={{ color: "var(--text-secondary)" }}>
-            Field execution instructions — one work order per job
-          </p>
+          <PageTitle title="Work Orders" count={contextFiltered.length} description="Field execution instructions — one work order per job" />
         </div>
         <ModuleViewToggle view={moduleView} onChange={setModuleView} />
         <div className="flex-1 flex justify-end">

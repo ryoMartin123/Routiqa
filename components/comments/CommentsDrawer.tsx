@@ -215,6 +215,7 @@ export default function CommentsDrawer() {
       detail: body.length > 80 ? body.slice(0, 80) + "…" : body,
       href: anchorHref(scope, threadId),
       anchorKey: anchorKey(scope),
+      threadId,
     });
   }
 

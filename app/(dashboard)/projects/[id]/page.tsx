@@ -8,7 +8,7 @@ import ActionsMenu from "@/components/shared/ActionsMenu";
 import ProjectPhases from "@/components/projects/ProjectPhases";
 import EditProjectModal from "@/components/projects/EditProjectModal";
 import JobWizard from "@/components/jobs/JobWizard";
-import { phaseProgress } from "@/lib/projects/phases";
+import { phaseProgress, getPhases } from "@/lib/projects/phases";
 import { getProjectStages } from "@/lib/projects/settings";
 import { getJobsForProject, JOB_STATUS_CONFIG } from "@/lib/jobs/data";
 import StatusBadge from "@/components/shared/StatusBadge";
@@ -21,10 +21,59 @@ import Commentable from "@/components/comments/Commentable";
 import QuickCreateQuoteModal from "@/components/quotes/QuickCreateQuoteModal";
 import PhotoGallery from "@/components/files/PhotoGallery";
 
-const TABS = ["Overview", "Jobs", "Tasks", "Photos & Files", "Scope", "Estimates", "Invoices", "Notes", "Timeline"];
+const TABS = ["Overview", "Phases", "Jobs", "Tasks", "Photos & Files", "Scope", "Estimates", "Invoices", "Notes", "Timeline"];
+
+// Link to a job opened from this project — carries ?back so the job's Back button
+// returns to this project's Jobs tab instead of the global Jobs list.
+function jobHrefFromProject(jobId: string, projectId: string, projectName: string): string {
+  const back = encodeURIComponent(`/projects/${projectId}?tab=Jobs`);
+  return `/jobs/${jobId}?back=${back}&backLabel=${encodeURIComponent(projectName)}`;
+}
+
+// ─── Current-phase summary (Overview) ─────────────────────
+// Compact read-out of where the project is; the full editable stepper lives on
+// the Phases tab.
+function PhaseSummary({ projectId, onOpenPhases }: { projectId: string; onOpenPhases?: () => void }) {
+  const phases = getPhases(projectId);
+  const prog = phaseProgress(projectId);
+  const current = phases.find(p => p.status === "in_progress") ?? phases.find(p => p.status === "upcoming");
+  const allDone = phases.length > 0 && prog.done === prog.total;
+  return (
+    <div className="rounded-xl p-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>Current Phase</p>
+        {onOpenPhases && (
+          <button onClick={onOpenPhases} className="text-[11px] font-medium hover:underline" style={{ color: "var(--accent-text)" }}>View phases →</button>
+        )}
+      </div>
+      {phases.length === 0 ? (
+        <p className="text-sm" style={{ color: "var(--text-muted)" }}>No phases yet — set them up on the Phases tab.</p>
+      ) : (
+        <>
+          <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{allDone ? "All phases complete" : current?.name ?? "—"}</p>
+          <div className="flex items-center gap-2 mt-2">
+            <div className="flex-1 h-1.5 rounded-full" style={{ backgroundColor: "var(--bg-input)" }}>
+              <div className="h-1.5 rounded-full" style={{ width: `${prog.pct}%`, backgroundColor: allDone ? "#10b981" : "#4f46e5" }} />
+            </div>
+            <span className="text-[10px] shrink-0" style={{ color: "var(--text-muted)" }}>{prog.done}/{prog.total} · {prog.pct}%</span>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ─── Phases tab ───────────────────────────────────────────
+function PhasesTab({ projectId, onChange }: { projectId: string; onChange?: () => void }) {
+  return (
+    <div className="max-w-2xl">
+      <ProjectPhases projectId={projectId} onChange={onChange} />
+    </div>
+  );
+}
 
 // ─── Overview tab ─────────────────────────────────────────
-function OverviewTab({ projectId, onChange }: { projectId: string; onChange?: () => void }) {
+function OverviewTab({ projectId, onChange, onOpenPhases }: { projectId: string; onChange?: () => void; onOpenPhases?: () => void }) {
   const project  = getProject(projectId)!;
   const jobs     = getJobsForProject(projectId);
   const tasks    = getProjectTasks(projectId);
@@ -32,9 +81,9 @@ function OverviewTab({ projectId, onChange }: { projectId: string; onChange?: ()
 
   return (
     <div className="grid grid-cols-3 gap-6">
-      {/* Left: phase stepper + project details */}
+      {/* Left: phase summary + project details */}
       <div className="space-y-4">
-        <ProjectPhases projectId={projectId} onChange={onChange} />
+        <PhaseSummary projectId={projectId} onOpenPhases={onOpenPhases} />
 
         <div className="rounded-xl p-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
           <p className="text-[10px] font-semibold uppercase tracking-widest mb-3" style={{ color: "var(--text-muted)" }}>Project Info</p>
@@ -83,7 +132,7 @@ function OverviewTab({ projectId, onChange }: { projectId: string; onChange?: ()
           {jobs.map((job, i) => {
             const js = JOB_STATUS_CONFIG[job.status];
             return (
-              <Link key={job.id} href={`/jobs/${job.id}`}
+              <Link key={job.id} href={jobHrefFromProject(job.id, projectId, project.name)}
                 className="flex items-center justify-between px-4 py-3 hover:bg-[var(--bg-surface-2)] transition-colors"
                 style={i < jobs.length - 1 ? { borderBottom: "1px solid var(--border-subtle)" } : undefined}>
                 <div>
@@ -134,7 +183,7 @@ function JobsTab({ projectId }: { projectId: string }) {
       {wizard && (
         <JobWizard preset={{ customerId: project.accountId, projectId, lockCustomer: true }}
           onClose={() => setWizard(false)}
-          onCreated={(jid) => { setWizard(false); forceRefresh(n => n + 1); router.push(`/jobs/${jid}`); }} />
+          onCreated={(jid) => { setWizard(false); forceRefresh(n => n + 1); router.push(jobHrefFromProject(jid, projectId, project.name)); }} />
       )}
       <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
         <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Jobs ({jobs.length})</p>
@@ -154,7 +203,7 @@ function JobsTab({ projectId }: { projectId: string }) {
       {jobs.map((job, i) => {
         const s = JOB_STATUS_CONFIG[job.status];
         return (
-          <Link key={job.id} href={`/jobs/${job.id}`}
+          <Link key={job.id} href={jobHrefFromProject(job.id, projectId, project.name)}
             className="grid px-4 py-3 items-center hover:bg-[var(--bg-surface-2)] transition-colors"
             style={{ gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr 1fr", borderBottom: i < jobs.length - 1 ? "1px solid var(--border-subtle)" : "none", textDecoration: "none" }}>
             <span className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{job.title}</span>
@@ -400,7 +449,8 @@ function ProjectDetailContent({ params }: { params: Promise<{ id: string }> }) {
       </div>
 
       <div className="flex-1 overflow-y-auto p-6" style={{ backgroundColor: "var(--bg-page)" }}>
-        {tab === "Overview"      && <OverviewTab projectId={id} onChange={() => setRefreshKey(k => k + 1)} />}
+        {tab === "Overview"      && <OverviewTab projectId={id} onChange={() => setRefreshKey(k => k + 1)} onOpenPhases={() => setTab("Phases")} />}
+        {tab === "Phases"        && <PhasesTab   projectId={id} onChange={() => setRefreshKey(k => k + 1)} />}
         {tab === "Jobs"          && <JobsTab     projectId={id} />}
         {tab === "Tasks"         && <TasksTab    projectId={id} />}
         {tab === "Scope"         && <ScopeTab    projectId={id} />}

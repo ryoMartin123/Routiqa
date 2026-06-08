@@ -8,6 +8,7 @@
 
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import type { CommentAnchor } from "@/lib/comments/data";
+import { getCommentSettings } from "@/lib/comments/settings";
 
 interface DrawerState {
   open:           boolean;
@@ -36,7 +37,12 @@ export function CommentsProvider({ children }: { children: React.ReactNode }) {
   const [drawer, setDrawer] = useState<DrawerState>({ open: false, scope: null });
 
   useEffect(() => {
-    try { if (localStorage.getItem(MODE_KEY) === "1") setEnabledState(true); } catch { /* ignore */ }
+    try {
+      const stored = localStorage.getItem(MODE_KEY);
+      // No explicit per-session choice yet → fall back to the org default.
+      if (stored === "1") setEnabledState(true);
+      else if (stored === null && getCommentSettings().defaultCommentModeOn) setEnabledState(true);
+    } catch { /* ignore */ }
   }, []);
 
   const setEnabled = useCallback((v: boolean) => {

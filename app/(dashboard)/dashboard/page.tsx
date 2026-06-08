@@ -8,7 +8,7 @@ import type { LayoutItem as RGLItem } from "react-grid-layout";
 import DashboardGrid from "@/components/dashboard/DashboardGrid";
 import {
   Settings2, Save, X, RotateCcw,
-  Plus, GripVertical,
+  Plus, GripVertical, Info,
 } from "lucide-react";
 
 import { useHierarchy } from "@/components/providers/HierarchyProvider";
@@ -30,12 +30,16 @@ const CTX_COLORS: Record<ContextLevel, { bg: string; color: string }> = {
   location:     { bg: "#dbeafe", color: "#1e40af" },
   service_area: { bg: "#d1fae5", color: "#065f46" },
 };
+// Shows as a small info icon; hovering reveals the context label pill.
 function ContextBadge({ level }: { level: ContextLevel }) {
   const c = CTX_COLORS[level];
   return (
-    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
-      style={{ backgroundColor: c.bg, color: c.color }}>
-      {CONTEXT_LABELS[level]}
+    <span className="relative inline-flex group/ctx">
+      <Info className="w-4 h-4 cursor-help" style={{ color: c.color }} />
+      <span className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-full mt-1.5 z-30 whitespace-nowrap text-[10px] font-bold px-2 py-0.5 rounded-full opacity-0 group-hover/ctx:opacity-100 transition-opacity"
+        style={{ backgroundColor: c.bg, color: c.color, boxShadow: "0 2px 8px rgba(0,0,0,0.14)" }}>
+        {CONTEXT_LABELS[level]}
+      </span>
     </span>
   );
 }
@@ -381,12 +385,10 @@ export default function DashboardPage() {
         : {}}>
 
       {/* ── Page header ────────────────────────────────── */}
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
-            {GREET_DATE} — good morning, {userName}
-          </p>
-          <div className="flex items-center gap-2 mt-0.5">
+      <div className="flex items-center justify-between gap-4">
+        {/* Left: title + context info */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
             <h1 className="text-2xl font-semibold" style={{ color: "var(--text-primary)" }}>Dashboard</h1>
             <ContextBadge level={contextLevel} />
             {activeScopeLabel !== "All locations" && (
@@ -396,25 +398,34 @@ export default function DashboardPage() {
             )}
           </div>
         </div>
-        {!customizing ? (
-          <button onClick={startCustomize}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm transition-colors hover:bg-[var(--bg-surface-2)]"
-            style={{ border: "1px solid var(--border)", color: "var(--text-secondary)", backgroundColor: "var(--bg-surface)" }}>
-            <Settings2 className="w-3.5 h-3.5" /> Customize
-          </button>
-        ) : (
-          /* Docks inline here by default; pops to free-floating when dragged. */
-          <EditDock
-            contextLevel={contextLevel}
-            showAddPanel={showAddPanel}
-            pos={dockPos}
-            onPosChange={setDockPos}
-            onToggleAdd={() => setShowAddPanel(v => !v)}
-            onSave={handleSave}
-            onCancel={handleCancel}
-            onReset={handleReset}
-          />
-        )}
+
+        {/* Center: greeting */}
+        <p className="flex-1 text-center text-sm" style={{ color: "var(--text-secondary)" }}>
+          {GREET_DATE} — good morning, {userName}
+        </p>
+
+        {/* Right: customize / edit dock */}
+        <div className="flex-1 flex justify-end">
+          {!customizing ? (
+            <button onClick={startCustomize}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm transition-colors hover:bg-[var(--bg-surface-2)]"
+              style={{ border: "1px solid var(--border)", color: "var(--text-secondary)", backgroundColor: "var(--bg-surface)" }}>
+              <Settings2 className="w-3.5 h-3.5" /> Customize
+            </button>
+          ) : (
+            /* Docks inline here by default; pops to free-floating when dragged. */
+            <EditDock
+              contextLevel={contextLevel}
+              showAddPanel={showAddPanel}
+              pos={dockPos}
+              onPosChange={setDockPos}
+              onToggleAdd={() => setShowAddPanel(v => !v)}
+              onSave={handleSave}
+              onCancel={handleCancel}
+              onReset={handleReset}
+            />
+          )}
+        </div>
       </div>
 
       {/* ── Widget grid ─────────────────────────────────── */}

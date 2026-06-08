@@ -9,6 +9,7 @@ import {
 } from "@/lib/tasks/data";
 import { taskTypeLabel, taskTypeColor, getTaskSettings } from "@/lib/tasks/settings";
 import { useHierarchy } from "@/components/providers/HierarchyProvider";
+import PageTitle from "@/components/shared/PageTitle";
 import StatusTabs from "@/components/shared/StatusTabs";
 import NewTaskModal from "@/components/tasks/NewTaskModal";
 
@@ -95,22 +96,10 @@ export default function TasksPage() {
       {/* Header */}
       <div className="flex items-start justify-between mb-6">
         <div>
-          <div className="flex items-center gap-2.5">
-            <h1 className="text-2xl font-semibold" style={{ color: "var(--text-primary)" }}>Tasks</h1>
-            <span className="text-xs font-bold px-2 py-0.5 rounded-full"
-              style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>
-              {contextFiltered.filter(t => t.status !== "completed").length}
-            </span>
-            {overdueCount > 0 && (
-              <span className="text-xs font-bold px-2 py-0.5 rounded-full"
-                style={{ backgroundColor: "#fee2e2", color: "#991b1b" }}>
-                {overdueCount} overdue
-              </span>
-            )}
-          </div>
-          <p className="text-sm mt-0.5" style={{ color: "var(--text-secondary)" }}>
-            Follow-ups, calls, and scheduled actions across all records
-          </p>
+          <PageTitle title="Tasks"
+            count={contextFiltered.filter(t => t.status !== "completed").length}
+            extraRows={overdueCount > 0 ? [{ label: "Overdue", node: <span className="text-xs font-semibold" style={{ color: "#dc2626" }}>{overdueCount}</span> }] : undefined}
+            description="Follow-ups, calls, and scheduled actions across all records" />
         </div>
         <button onClick={openNew}
           className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-3 py-2 rounded-lg transition-colors">

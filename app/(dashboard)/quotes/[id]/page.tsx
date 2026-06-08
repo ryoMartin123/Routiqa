@@ -4,10 +4,11 @@ import React, { use, useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  ArrowLeft, Pencil, Eye, Copy, ChevronRight, ChevronDown, FilePen, FileCheck,
+  ArrowLeft, Pencil, Eye, Copy, ChevronRight, ChevronDown, FileCheck,
   Briefcase, FolderKanban, TrendingUp, Send, X, Download, Printer, Archive, ArchiveRestore,
   Trash2, RotateCcw, Link2, RefreshCw, XCircle, Clock, Receipt,
 } from "lucide-react";
+import HoverInfo, { Pill } from "@/components/shared/HoverInfo";
 import {
   getQuote, fmt, duplicateQuote, updateQuoteStatus, convertQuoteToJob, convertQuoteToProject,
   setQuoteNotes, getQuoteActivity, reopenQuote, resendQuote, archiveQuote, unarchiveQuote, deleteQuote,
@@ -28,7 +29,7 @@ const TABS = ["Details", "Notes", "Activity"];
 // (Archive, Delete) below a divider at the bottom.
 type LucideIcon = typeof Send;
 type MenuEntry = { label: string; icon: LucideIcon; onClick: () => void; danger?: boolean } | "divider";
-type PrimaryBtn = { label: string; icon: LucideIcon; onClick: () => void; color: string };
+type PrimaryBtn = { label: string; icon: LucideIcon; onClick: () => void; color: string; iconOnly?: boolean };
 
 interface ActionHandlers {
   status: QuoteStatus;
@@ -68,6 +69,7 @@ function QuoteActionBar(h: ActionHandlers) {
   }
 
   // Reusable menu entries
+  const PREVIEW: MenuEntry = { label: "Preview", icon: Eye, onClick: h.onPreview };
   const EDIT: MenuEntry = { label: "Edit", icon: Pencil, onClick: h.onEdit };
   const DUP:  MenuEntry = { label: "Duplicate", icon: Copy, onClick: h.onDuplicate };
   const PDF:  MenuEntry = { label: "Download PDF", icon: Download, onClick: h.onDownloadPdf };
@@ -83,14 +85,14 @@ function QuoteActionBar(h: ActionHandlers) {
 
   switch (h.status) {
     case "draft":
-      primary = [{ label: "Send Quote", icon: Send, onClick: h.onSend, color: "#4f46e5" }];
-      menu = [EDIT, DUP, PDF, PRINT, "divider", ARCH, DEL];
+      primary = [{ label: "Send Quote", icon: Send, onClick: h.onSend, color: "#4f46e5", iconOnly: true }];
+      menu = [PREVIEW, EDIT, DUP, PDF, PRINT, "divider", ARCH, DEL];
       break;
     case "sent":
     case "viewed":
       primary = [{ label: "Mark Approved", icon: FileCheck, onClick: h.onApprove, color: "#10b981" }];
       menu = [
-        EDIT, DUP,
+        PREVIEW, EDIT, DUP,
         { label: "Resend Quote", icon: RefreshCw, onClick: h.onResend },
         COPY, PDF, PRINT,
         { label: "Mark Rejected", icon: XCircle, onClick: h.onReject },
@@ -101,7 +103,7 @@ function QuoteActionBar(h: ActionHandlers) {
     case "approved":
       primary = [{ label: "Convert to Job", icon: Briefcase, onClick: h.onConvertJob, color: "#4f46e5" }];
       menu = [
-        DUP, PDF, PRINT, COPY,
+        PREVIEW, DUP, PDF, PRINT, COPY,
         { label: "Convert to Project", icon: FolderKanban, onClick: h.onConvertProject },
         { label: "Create Invoice", icon: Receipt, onClick: h.onCreateInvoice },
         "divider", ARCH,
@@ -110,7 +112,7 @@ function QuoteActionBar(h: ActionHandlers) {
     case "converted":
       primary = [];
       menu = [
-        DUP, PDF, PRINT, COPY,
+        PREVIEW, DUP, PDF, PRINT, COPY,
         { label: "Create Invoice", icon: Receipt, onClick: h.onCreateInvoice },
         "divider", ARCH,
       ];
@@ -119,6 +121,7 @@ function QuoteActionBar(h: ActionHandlers) {
     case "expired":
       primary = [{ label: "Duplicate", icon: Copy, onClick: h.onDuplicate, color: "#4f46e5" }];
       menu = [
+        PREVIEW,
         { label: "Reopen as Draft", icon: RotateCcw, onClick: h.onReopen },
         PDF, PRINT, "divider", ARCH, DEL,
       ];
@@ -128,17 +131,12 @@ function QuoteActionBar(h: ActionHandlers) {
   return (
     <div className="flex items-center gap-2">
       {primary.map(p => (
-        <button key={p.label} onClick={p.onClick}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-white transition-colors hover:opacity-90"
+        <button key={p.label} onClick={p.onClick} title={p.iconOnly ? p.label : undefined}
+          className={`flex items-center gap-1.5 py-1.5 rounded-lg text-sm font-medium text-white transition-colors hover:opacity-90 ${p.iconOnly ? "px-2" : "px-3"}`}
           style={{ backgroundColor: p.color }}>
-          <p.icon className="w-3.5 h-3.5" /> {p.label}
+          <p.icon className="w-3.5 h-3.5" /> {!p.iconOnly && p.label}
         </button>
       ))}
-      <button onClick={h.onPreview}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors hover:bg-[var(--bg-surface-2)]"
-        style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>
-        <Eye className="w-3.5 h-3.5" /> Preview
-      </button>
       <div className="relative" ref={ref}>
         <button onClick={() => setOpen(o => !o)}
           className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm transition-colors hover:bg-[var(--bg-surface-2)]"
@@ -390,12 +388,17 @@ export default function QuoteDetailPage({ params }: { params: Promise<{ id: stri
             <div className="w-px h-5 shrink-0" style={{ backgroundColor: "var(--border)" }} />
             <Commentable anchor={{ recordType: "quote", recordId: id, recordLabel: quote.quoteNumber }}>
             <div className="flex items-center gap-3 min-w-0">
-              <div className="w-9 h-9 rounded-lg bg-indigo-100 flex items-center justify-center shrink-0">
-                <FilePen className="w-4.5 h-4.5 text-indigo-600" />
-              </div>
               <div className="min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <h1 className="text-base font-semibold font-mono" style={{ color: "var(--text-primary)" }}>{quote.quoteNumber}</h1>
+                  <HoverInfo rows={[
+                    { label: "Customer", node: <span className="text-xs font-medium" style={{ color: "var(--text-primary)" }}>{quote.customerName}</span> },
+                    { label: "Title", node: <span className="text-xs" style={{ color: "var(--text-secondary)" }}>{quote.title}</span> },
+                    { label: "Status", node: <Pill text={stageConfig.label} style={{ backgroundColor: stageConfig.bg, color: stageConfig.color }} /> },
+                    ...(quote.total > 0 ? [{ label: "Total", node: <span className="text-xs font-semibold" style={{ color: "var(--text-primary)" }}>{fmt(quote.total)}</span> }] : []),
+                    ...(quote.expiresAt ? [{ label: "Expires", node: <span className="text-xs" style={{ color: "var(--text-secondary)" }}>{quote.expiresAt}</span> }] : []),
+                    ...(quote.createdAt ? [{ label: "Created", node: <span className="text-xs" style={{ color: "var(--text-secondary)" }}>{quote.createdAt}</span> }] : []),
+                  ]} />
                   <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
                     style={{ backgroundColor: stageConfig.bg, color: stageConfig.color }}>{stageConfig.label}</span>
                   {quote.total > 0 && (

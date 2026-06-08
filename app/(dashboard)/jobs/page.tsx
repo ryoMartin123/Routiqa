@@ -1,13 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import JobWizard from "@/components/jobs/JobWizard";
-import { Search, Plus, SlidersHorizontal, ChevronUp, ChevronDown, FolderKanban, Calendar, CalendarClock, Loader, CheckCircle2 } from "lucide-react";
+import { Search, Plus, SlidersHorizontal, ChevronUp, ChevronDown, FolderKanban, Calendar, CalendarClock, Loader, CheckCircle2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ALL_JOBS, getSessionJobs, resolveJobStatus, type Job, type JobType } from "@/lib/jobs/data";
-import { ALL_PROJECTS, getSessionProjects, PROJECT_STATUS_CONFIG, getProjectProgress, type Project, type ProjectStatus } from "@/lib/projects/data";
+import UiSelect from "@/components/ui/Select";
+import PageTitle from "@/components/shared/PageTitle";
+import { ALL_PROJECTS, getSessionProjects, getProjectProgress, type Project } from "@/lib/projects/data";
+import { getProjectStages, projectTypeLabel } from "@/lib/projects/settings";
 import { getJobStatuses } from "@/lib/job-config/data";
 import { useHierarchy } from "@/components/providers/HierarchyProvider";
 import { usePermissions } from "@/components/providers/PermissionProvider";
@@ -34,19 +37,58 @@ function daysAgo(dateStr?: string): number {
 }
 
 // ─── Filter tabs ──────────────────────────────────────────
-// Built per-render so the Today/Scheduled filters track the live "today" string.
+// Built per-render so the Scheduled filter tracks the live "today" string.
+// (The old "Today" tab was removed in favor of the Time filter in the toolbar.)
 function tabsFor(today: string): { key: string; label: string; fn: (j: Job) => boolean }[] {
   const isUnscheduled = (j: Job) => !j.scheduledDate?.trim() && !DONE_STATUSES.has(j.status);
   return [
-    { key: "today",       label: "Today",       fn: (j) => (today !== "" && j.scheduledDate === today && j.status !== "canceled") || j.status === "in_progress" || j.status === "en_route" },
+    { key: "all",         label: "All",         fn: (j) => j.status !== "canceled" },
     { key: "unscheduled", label: "Unscheduled", fn: isUnscheduled },
     { key: "scheduled",   label: "Scheduled",   fn: (j) => j.status === "scheduled" && j.scheduledDate !== today },
     { key: "in_progress", label: "In Progress", fn: (j) => j.status === "in_progress" || j.status === "en_route" },
     { key: "completed",   label: "Completed",   fn: (j) => j.status === "completed" },
     { key: "canceled",    label: "Canceled",    fn: (j) => j.status === "canceled" },
-    { key: "all",         label: "All",         fn: (j) => j.status !== "canceled" },
     { key: "projects",    label: "Projects",    fn: () => false }, // special view
   ];
+}
+
+// Job types (the Job.type enum) with readable labels for the Type filter.
+const JOB_TYPE_VALUES: JobType[] = [
+  "maintenance", "repair", "installation", "inspection",
+  "emergency", "estimate", "warranty", "replacement", "other",
+];
+function jobTypeLabel(t: JobType): string { return t.charAt(0).toUpperCase() + t.slice(1); }
+
+// ─── Time (scheduled-date) filter ─────────────────────────
+type TimeFilter = "any" | "today" | "week" | "month" | "overdue" | "unscheduled";
+const TIME_OPTIONS: { key: TimeFilter; label: string }[] = [
+  { key: "any",         label: "Any time"    },
+  { key: "today",       label: "Today"       },
+  { key: "week",        label: "This week"   },
+  { key: "month",       label: "This month"  },
+  { key: "overdue",     label: "Overdue"     },
+  { key: "unscheduled", label: "Unscheduled" },
+];
+
+function matchesTime(j: Job, window: TimeFilter, today: string): boolean {
+  if (window === "any") return true;
+  const hasDate = !!j.scheduledDate?.trim();
+  if (window === "unscheduled") return !hasDate && !DONE_STATUSES.has(j.status);
+  if (!hasDate) return false;
+  if (window === "today") return j.scheduledDate === today;
+  const d = new Date(j.scheduledDate!);
+  if (isNaN(d.getTime())) return false;
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  if (window === "overdue") return d < startOfToday && !DONE_STATUSES.has(j.status);
+  if (window === "month")   return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+  if (window === "week") {
+    // Current week, Sunday→Saturday around today.
+    const startOfWeek = new Date(startOfToday); startOfWeek.setDate(startOfToday.getDate() - startOfToday.getDay());
+    const endOfWeek = new Date(startOfWeek); endOfWeek.setDate(startOfWeek.getDate() + 7);
+    return d >= startOfWeek && d < endOfWeek;
+  }
+  return true;
 }
 
 type SortField = "customerName" | "type" | "status" | "scheduledDate" | "assignedTo";
@@ -56,6 +98,10 @@ function ProjectsInline({ projects, companyId, locationId }: { projects: Project
   const filtered = projects
     .filter(p => !companyId  || p.companyId  === companyId)
     .filter(p => !locationId || p.locationId === locationId);
+
+  // Use the configured project stages (name + color) so the status pill matches
+  // the Projects module exactly, rather than the coarse status enum.
+  const stageMap = new Map(getProjectStages({ companyId, locationId }).map(st => [st.key, st]));
 
   return (
     <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
@@ -74,7 +120,7 @@ function ProjectsInline({ projects, companyId, locationId }: { projects: Project
       </div>
 
       {filtered.map((p, i) => {
-        const s = PROJECT_STATUS_CONFIG[p.status];
+        const st = stageMap.get(p.stage ?? "");
         const prog = getProjectProgress(p.id);
         const pct = prog.total > 0 ? Math.round((prog.completed / prog.total) * 100) : 0;
         return (
@@ -89,11 +135,11 @@ function ProjectsInline({ projects, companyId, locationId }: { projects: Project
                 <p className="text-[10px] truncate" style={{ color: "var(--text-muted)" }}>{p.customerName}</p>
               </div>
             </div>
-            <span className="text-sm" style={{ color: "var(--text-secondary)" }}>{p.type.charAt(0).toUpperCase() + p.type.slice(1)}</span>
-            <StatusBadge label={s.label} color={s.color} />
+            <span className="text-sm" style={{ color: "var(--text-secondary)" }}>{projectTypeLabel(p.type)}</span>
+            <StatusBadge label={st?.name ?? "—"} color={st?.color ?? "#6b7280"} />
             <span className="text-sm" style={{ color: "var(--text-secondary)" }}>{p.targetDate ?? "—"}</span>
             <div className="flex items-center gap-2">
-              <div className="flex-1 h-1.5 rounded-full" style={{ backgroundColor: "var(--bg-input)" }}>
+              <div className="w-16 h-1.5 rounded-full shrink-0" style={{ backgroundColor: "var(--bg-input)" }}>
                 <div className="h-1.5 rounded-full bg-indigo-500" style={{ width: `${pct}%` }} />
               </div>
               <span className="text-[10px] shrink-0" style={{ color: "var(--text-muted)" }}>{prog.completed}/{prog.total}</span>
@@ -102,6 +148,16 @@ function ProjectsInline({ projects, companyId, locationId }: { projects: Project
           </Link>
         );
       })}
+    </div>
+  );
+}
+
+// ─── Filter popover primitives ────────────────────────────
+function FilterField({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <p className="text-[11px] font-semibold mb-1" style={{ color: "var(--text-secondary)" }}>{label}</p>
+      {children}
     </div>
   );
 }
@@ -120,8 +176,21 @@ export default function JobsPage() {
 
   const router = useRouter();
   const [showCreate, setShowCreate] = useState(false);
-  const [tab, setTab]         = useState("today");
+  const [tab, setTab]         = useState("all");
   const [moduleView, setModuleView] = useState<ModuleView>("list");
+
+  // Toolbar filters (popover). All default to "any" so first render is unfiltered.
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [timeFilter, setTimeFilter] = useState<TimeFilter>("any");
+  const [typeFilter, setTypeFilter] = useState<JobType | "any">("any");
+  const [assigneeFilter, setAssigneeFilter] = useState<string>("any");
+  const filterRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!filterOpen) return;
+    const onDown = (e: MouseEvent) => { if (filterRef.current && !filterRef.current.contains(e.target as Node)) setFilterOpen(false); };
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, [filterOpen]);
 
   // "Today" resolves client-side so it matches the dispatch board's real date
   // (empty on first paint → Today shows only active jobs until this fills in).
@@ -162,8 +231,16 @@ export default function JobsPage() {
 
   const tabFn = TABS.find(t => t.key === tab)?.fn ?? (() => true);
 
+  // Assignee options derived from the jobs currently in context.
+  const assigneeOptions = Array.from(new Set(contextFiltered.map(j => j.assignedTo).filter(Boolean))).sort();
+  const activeFilterCount = (timeFilter !== "any" ? 1 : 0) + (typeFilter !== "any" ? 1 : 0) + (assigneeFilter !== "any" ? 1 : 0);
+  function clearFilters() { setTimeFilter("any"); setTypeFilter("any"); setAssigneeFilter("any"); }
+
   const displayed = contextFiltered
     .filter(tabFn)
+    .filter(j => matchesTime(j, timeFilter, today))
+    .filter(j => typeFilter === "any" || j.type === typeFilter)
+    .filter(j => assigneeFilter === "any" || j.assignedTo === assigneeFilter)
     .filter(j => {
       if (!search) return true;
       const q = search.toLowerCase();
@@ -189,11 +266,7 @@ export default function JobsPage() {
       {/* Header — title · centered view toggle · action */}
       <div className="flex items-center gap-4 mb-6">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2.5">
-            <h1 className="text-2xl font-semibold" style={{ color: "var(--text-primary)" }}>Jobs</h1>
-            <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>{contextFiltered.length}</span>
-          </div>
-          <p className="text-sm mt-0.5" style={{ color: "var(--text-secondary)" }}>Daily operations — all scheduled and active work</p>
+          <PageTitle title="Jobs" count={contextFiltered.length} description="Daily operations — all scheduled and active work" />
         </div>
         <ModuleViewToggle view={moduleView} onChange={setModuleView} />
         <div className="flex-1 flex justify-end">
@@ -231,10 +304,54 @@ export default function JobsPage() {
                 <input type="text" placeholder="Search jobs..." value={search} onChange={e => setSearch(e.target.value)}
                   className="bg-transparent text-sm outline-none w-44" style={{ color: "var(--text-primary)" }} />
               </div>
-              <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm"
-                style={{ border: "1px solid var(--border)", color: "var(--text-secondary)", backgroundColor: "var(--bg-surface)" }}>
-                <SlidersHorizontal className="w-3.5 h-3.5" /> Filter
-              </button>
+              <div className="relative" ref={filterRef}>
+                <button onClick={() => setFilterOpen(o => !o)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm"
+                  style={{
+                    border: `1px solid ${activeFilterCount > 0 ? "var(--accent-soft-border)" : "var(--border)"}`,
+                    color: activeFilterCount > 0 ? "var(--accent-text)" : "var(--text-secondary)",
+                    backgroundColor: activeFilterCount > 0 ? "var(--accent-soft-bg)" : "var(--bg-surface)",
+                  }}>
+                  <SlidersHorizontal className="w-3.5 h-3.5" /> Filter
+                  {activeFilterCount > 0 && (
+                    <span className="ml-0.5 text-[10px] font-bold px-1.5 rounded-full text-white" style={{ backgroundColor: "var(--accent-text)" }}>{activeFilterCount}</span>
+                  )}
+                </button>
+
+                {filterOpen && (
+                  <div className="absolute right-0 top-full mt-1.5 w-72 rounded-xl z-30 p-3.5 space-y-3.5"
+                    style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "0 12px 32px rgba(0,0,0,0.18)" }}>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>Filters</span>
+                      {activeFilterCount > 0 && (
+                        <button onClick={clearFilters} className="flex items-center gap-1 text-[11px] font-medium hover:underline" style={{ color: "var(--accent-text)" }}>
+                          <X className="w-3 h-3" /> Clear all
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Time */}
+                    <FilterField label="Time">
+                      <UiSelect size="sm" value={timeFilter} onChange={v => setTimeFilter(v as TimeFilter)}
+                        options={TIME_OPTIONS.map(o => ({ value: o.key, label: o.label }))} />
+                    </FilterField>
+
+                    {/* Type */}
+                    <FilterField label="Type">
+                      <UiSelect size="sm" value={typeFilter} onChange={v => setTypeFilter(v as JobType | "any")}
+                        options={[{ value: "any", label: "Any type" }, ...JOB_TYPE_VALUES.map(t => ({ value: t, label: jobTypeLabel(t) }))]} />
+                    </FilterField>
+
+                    {/* Assigned To */}
+                    {assigneeOptions.length > 0 && (
+                      <FilterField label="Assigned To">
+                        <UiSelect size="sm" value={assigneeFilter} onChange={setAssigneeFilter}
+                          options={[{ value: "any", label: "Anyone" }, ...assigneeOptions.map(a => ({ value: a, label: a }))]} />
+                      </FilterField>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>

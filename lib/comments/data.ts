@@ -7,6 +7,9 @@
 // Future DB: a `comments` table keyed by organization_id with anchor columns
 // (record_type, record_id, section, sub_id) + a self-referential parent_id.
 
+import { clearNotificationsForThread } from "@/lib/notifications/data";
+import { getCommentSettings } from "@/lib/comments/settings";
+
 export type AnchorRecordType =
   | "customer" | "lead" | "job" | "project"
   | "quote" | "invoice" | "agreement" | "workorder"
@@ -175,10 +178,16 @@ export function addReply(threadId: string, input: NewCommentInput): Comment | un
 export function resolveThread(threadId: string, resolved: boolean): void {
   _cache = all().map(c => c.id === threadId ? { ...c, resolved } : c);
   persist();
+  // Resolving clears the thread's open state, so (by default) drop its mention
+  // notifications too — configurable in Settings → Tasks & Comments.
+  if (resolved && getCommentSettings().clearNotificationsOnResolve) clearNotificationsForThread(threadId);
 }
 
 // Delete a comment; deleting a root removes its whole thread.
 export function deleteComment(id: string): void {
+  // If `id` is a thread root, its mention notifications should die with the thread.
+  const removingThread = all().some(c => c.id === id && !c.parentId);
   _cache = all().filter(c => c.id !== id && c.threadId !== id);
   persist();
+  if (removingThread && getCommentSettings().clearNotificationsOnDelete) clearNotificationsForThread(id);
 }

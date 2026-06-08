@@ -12,6 +12,7 @@ type QuoteTab = "all" | "archived" | QuoteStatus;
 import QuickCreateQuoteModal from "@/components/quotes/QuickCreateQuoteModal";
 import { useHierarchy } from "@/components/providers/HierarchyProvider";
 import ModuleSummaryCards, { type SummaryCard } from "@/components/shared/ModuleSummaryCards";
+import PageTitle from "@/components/shared/PageTitle";
 import ModuleViewToggle, { type ModuleView } from "@/components/shared/ModuleViewToggle";
 import StatusTabs from "@/components/shared/StatusTabs";
 import StatusBadge from "@/components/shared/StatusBadge";
@@ -29,9 +30,9 @@ const STATUS_TABS: { key: QuoteTab; label: string }[] = [
   { key: "sent",      label: "Sent"      },
   { key: "viewed",    label: "Viewed"    },
   { key: "approved",  label: "Approved"  },
-  { key: "rejected",  label: "Rejected"  },
-  { key: "expired",   label: "Expired"   },
   { key: "converted", label: "Converted" },
+  { key: "rejected",  label: "Declined"  },
+  { key: "expired",   label: "Expired"   },
   { key: "archived",  label: "Archived"  },
 ];
 
@@ -123,15 +124,7 @@ export default function QuotesPage() {
     <div className="p-6">
       <div className="flex items-center gap-4 mb-6">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2.5">
-            <h1 className="text-2xl font-semibold" style={{ color: "var(--text-primary)" }}>Quotes</h1>
-            <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>
-              {contextFiltered.length}
-            </span>
-          </div>
-          <p className="text-sm mt-0.5" style={{ color: "var(--text-secondary)" }}>
-            Estimates and proposals — track, follow up, and convert
-          </p>
+          <PageTitle title="Quotes" count={contextFiltered.length} description="Estimates and proposals — track, follow up, and convert" />
         </div>
         <ModuleViewToggle view={moduleView} onChange={setModuleView} />
         <div className="flex-1 flex justify-end">
@@ -153,7 +146,7 @@ export default function QuotesPage() {
         {/* Tabs + search */}
         <div className="flex items-center justify-between flex-wrap gap-2 px-4 py-3" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
           <StatusTabs active={tab} onChange={k => setTab(k as QuoteTab)}
-            tabs={STATUS_TABS.filter(t => t.key === "all" || t.key === "archived" || tabCount(t.key) > 0).map(t => ({ key: t.key, label: t.label, count: tabCount(t.key) }))} />
+            tabs={STATUS_TABS.map(t => ({ key: t.key, label: t.label, count: tabCount(t.key) }))} />
           <div className="flex items-center gap-2 shrink-0">
             <div className="flex items-center gap-2 rounded-lg px-3 py-1.5" style={{ backgroundColor: "var(--bg-input)" }}>
               <Search className="w-3.5 h-3.5 shrink-0" style={{ color: "var(--text-muted)" }} />

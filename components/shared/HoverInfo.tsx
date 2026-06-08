@@ -15,7 +15,18 @@ export function Pill({ text, style }: { text: string; style: React.CSSProperties
   );
 }
 
-export function HoverInfo({ rows }: { rows: { label: string; node: React.ReactNode }[] }) {
+export function HoverInfo({ rows, placement = "right" }: {
+  rows: { label: string; node: React.ReactNode }[];
+  // "right" (default) opens beside the trigger — fine mid-page. "bottom" opens
+  // downward, used in page headers where opening up/right would be clipped by the
+  // scrollable content area's top edge (under the nav).
+  placement?: "right" | "bottom";
+}) {
+  // Each variant includes a transparent "bridge" (pl-2 / pt-2) so the cursor can
+  // travel from the trigger into the panel without it closing.
+  const pos = placement === "bottom"
+    ? "top-full left-0 pt-2"
+    : "left-full top-1/2 -translate-y-1/2 pl-2";
   return (
     <span className="relative inline-flex group/info align-middle shrink-0">
       <button
@@ -26,17 +37,16 @@ export function HoverInfo({ rows }: { rows: { label: string; node: React.ReactNo
       >
         <Info className="w-3 h-3" />
       </button>
-      {/* Opens to the RIGHT of the trigger; pl-2 is a hover "bridge" so moving the
-          cursor into the panel keeps it open. */}
       <span
         role="tooltip"
         className={cn(
-          "absolute left-full top-1/2 -translate-y-1/2 pl-2 z-30 opacity-0 invisible transition-opacity duration-150",
+          "absolute z-50 opacity-0 invisible transition-opacity duration-150",
+          pos,
           "group-hover/info:opacity-100 group-hover/info:visible group-focus-within/info:opacity-100 group-focus-within/info:visible",
         )}
       >
         <span
-          className="flex flex-col divide-y rounded-xl overflow-hidden min-w-[200px]"
+          className="flex flex-col divide-y rounded-xl overflow-hidden min-w-[200px] w-max"
           style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "0 12px 32px rgba(0,0,0,0.18)", borderColor: "var(--border-subtle)" }}
         >
           {rows.map(r => (

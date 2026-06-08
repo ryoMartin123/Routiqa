@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { Package, Plus, Search, Layers, LayoutList, EyeOff, SlidersHorizontal } from "lucide-react";
 import { useHierarchy } from "@/components/providers/HierarchyProvider";
+import PageTitle from "@/components/shared/PageTitle";
 import UiSelect from "@/components/ui/Select";
 import ItemFormDrawer from "@/components/items/ItemFormDrawer";
 import IndustryCatalogModal from "@/components/items/IndustryCatalogModal";
@@ -103,11 +104,7 @@ export default function ItemsPage() {
       {/* Header */}
       <div className="flex items-center gap-4 mb-6">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2.5">
-            <h1 className="text-2xl font-semibold" style={{ color: "var(--text-primary)" }}>Items &amp; Services</h1>
-            <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>{contextItems.length}</span>
-          </div>
-          <p className="text-sm mt-0.5" style={{ color: "var(--text-secondary)" }}>Reusable catalog items for quotes and invoices</p>
+          <PageTitle title="Items & Services" count={contextItems.length} description="Reusable catalog items for quotes and invoices" />
         </div>
 
         <div className="flex items-center gap-2 shrink-0">

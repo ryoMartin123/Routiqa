@@ -14,6 +14,7 @@ import {
 } from "@/lib/quotes/data";
 import { getAllItems, itemToQuoteLine, getItemDefaults, createItem, type Item } from "@/lib/items/data";
 import { LINE_ITEM_CATEGORIES, type LineItemCategory } from "@/lib/quotes/types";
+import { useHierarchy } from "@/components/providers/HierarchyProvider";
 
 export interface InvoiceWizardPreset {
   customerId?: string;
@@ -59,8 +60,24 @@ export default function InvoiceWizard({ preset, editInvoice, onClose, onCreated 
   onClose: () => void;
   onCreated: (id: string) => void;
 }) {
-  const customers = getAllCustomers();
+  const { effectiveCompanyId, effectiveLocationId } = useHierarchy();
   const e = editInvoice;
+
+  // Scope the customer picker to the active company/location so a new invoice is
+  // created under the context you're viewing. The preset/edited customer is always
+  // kept in the list even if it falls outside the current scope.
+  const customers = useMemo(() => {
+    const all = getAllCustomers();
+    const scoped = all.filter(c =>
+      (!effectiveCompanyId  || c.companyId  === effectiveCompanyId) &&
+      (!effectiveLocationId || c.locationId === effectiveLocationId));
+    const forcedId = e?.customerId ?? preset?.customerId;
+    if (forcedId && !scoped.some(c => c.id === forcedId)) {
+      const forced = all.find(c => c.id === forcedId);
+      if (forced) return [forced, ...scoped];
+    }
+    return scoped;
+  }, [effectiveCompanyId, effectiveLocationId, e?.customerId, preset?.customerId]);
 
   const [step, setStep] = useState(1);
   const [customerId, setCustomerId] = useState(e?.customerId ?? preset?.customerId ?? customers[0]?.id ?? "");

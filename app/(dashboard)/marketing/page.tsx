@@ -12,6 +12,7 @@ import {
 } from "@/lib/marketing/data";
 import { enabledAudiences } from "@/lib/marketing/settings";
 import CampaignBuilder, { type CampaignBuilderPreset } from "@/components/marketing/CampaignBuilder";
+import PageTitle from "@/components/shared/PageTitle";
 import ModuleSummaryCards, { type SummaryCard } from "@/components/shared/ModuleSummaryCards";
 import StatusTabs from "@/components/shared/StatusTabs";
 import type { LucideIcon } from "lucide-react";
@@ -61,8 +62,7 @@ export default function MarketingPage() {
     <div className="p-6 space-y-5">
       <div className="flex items-center gap-4">
         <div className="flex-1 min-w-0">
-          <h1 className="text-2xl font-semibold" style={{ color: "var(--text-primary)" }}>Marketing</h1>
-          <p className="text-sm mt-0.5" style={{ color: "var(--text-secondary)" }}>Campaigns, templates, and audiences built from your CRM data</p>
+          <PageTitle title="Marketing" description="Campaigns, templates, and audiences built from your CRM data" />
         </div>
         <button onClick={() => setBuilder({})}
           className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-3 py-2 rounded-lg transition-colors">

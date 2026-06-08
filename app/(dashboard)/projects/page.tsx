@@ -12,6 +12,7 @@ import { phaseProgress } from "@/lib/projects/phases";
 import { PROJECT_LENSES, bucketOf, statusBucket, healthBucket, type LensKey } from "@/lib/projects/lenses";
 import { useHierarchy } from "@/components/providers/HierarchyProvider";
 import ModuleSummaryCards, { type SummaryCard } from "@/components/shared/ModuleSummaryCards";
+import PageTitle from "@/components/shared/PageTitle";
 import StatusBadge from "@/components/shared/StatusBadge";
 
 function parseMoney(s?: string): number {
@@ -130,11 +131,7 @@ export default function ProjectsPage() {
     <div className="p-6">
       <div className="flex items-center gap-4 mb-6">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2.5">
-            <h1 className="text-2xl font-semibold" style={{ color: "var(--text-primary)" }}>Projects</h1>
-            <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>{contextFiltered.length}</span>
-          </div>
-          <p className="text-sm mt-0.5" style={{ color: "var(--text-secondary)" }}>Multi-phase and larger scope work</p>
+          <PageTitle title="Projects" count={contextFiltered.length} description="Multi-phase and larger scope work" />
         </div>
         <div className="flex items-center rounded-lg overflow-hidden shrink-0" style={{ border: "1px solid var(--border)" }}>
           {VIEW_TABS.map(v => {

@@ -17,6 +17,7 @@ import { getStages, type PipelineStage, type StageCategory } from "@/lib/pipelin
 import { useHierarchy } from "@/components/providers/HierarchyProvider";
 import Select from "@/components/ui/Select";
 import ModuleSummaryCards, { type SummaryCard } from "@/components/shared/ModuleSummaryCards";
+import PageTitle from "@/components/shared/PageTitle";
 
 // ─── Lead value + status helpers ──────────────────────────
 function parseLeadValue(l: Lead): number {
@@ -382,15 +383,7 @@ export default function LeadsPage() {
       {/* Header — title · centered view tabs · stages + action */}
       <div className="flex items-center gap-4 mb-6">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2.5">
-            <h1 className="text-2xl font-semibold" style={{ color: "var(--text-primary)" }}>Leads</h1>
-            <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>
-              {contextFiltered.length}
-            </span>
-          </div>
-          <p className="text-sm mt-0.5" style={{ color: "var(--text-secondary)" }}>
-            Sales pipeline — track, follow up, and convert
-          </p>
+          <PageTitle title="Leads" count={contextFiltered.length} description="Sales pipeline — track, follow up, and convert" />
         </div>
         <div className="flex items-center rounded-lg overflow-hidden" style={{ border: "1px solid var(--border)" }}>
           {([

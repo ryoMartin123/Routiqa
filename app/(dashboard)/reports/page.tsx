@@ -6,6 +6,7 @@ import { getAllQuotes, getAllInvoices, fmt, type QuoteRecord, type InvoiceRecord
 import { getAllJobs, JOB_STATUS_CONFIG, type Job, type JobStatus } from "@/lib/jobs/data";
 import { QUOTE_STATUS_STYLE, INVOICE_STATUS_STYLE, type QuoteStatus, type InvoiceStatus } from "@/lib/quotes/types";
 import { useHierarchy } from "@/components/providers/HierarchyProvider";
+import PageTitle from "@/components/shared/PageTitle";
 import ModuleSummaryCards, { type SummaryCard } from "@/components/shared/ModuleSummaryCards";
 
 // ─── Date helpers ─────────────────────────────────────────
@@ -121,8 +122,7 @@ export default function ReportsPage() {
   return (
     <div className="p-6 space-y-5">
       <div>
-        <h1 className="text-2xl font-semibold" style={{ color: "var(--text-primary)" }}>Reports</h1>
-        <p className="text-sm mt-0.5" style={{ color: "var(--text-secondary)" }}>Revenue, receivables, pipeline, and operations — for the current scope</p>
+        <PageTitle title="Reports" description="Revenue, receivables, pipeline, and operations — for the current scope" />
       </div>
 
       <ModuleSummaryCards moduleKey="reports" cards={cards} />

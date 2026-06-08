@@ -10,13 +10,13 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { Bell, CheckSquare, FileText, Flame, Clock, Check, AtSign, ListChecks } from "lucide-react";
+import { Bell, CheckSquare, FileText, Flame, Clock, Check, AtSign, ListChecks, X } from "lucide-react";
 import { useHierarchy } from "@/components/providers/HierarchyProvider";
 import { usePermissionContext } from "@/components/providers/PermissionProvider";
 import { getAllTasks } from "@/lib/tasks/data";
 import { ALL_INVOICES, fmt } from "@/lib/quotes/data";
 import { ALL_JOBS } from "@/lib/jobs/data";
-import { getNotificationsForUser, markAllReadForUser } from "@/lib/notifications/data";
+import { getNotificationsForUser, markAllReadForUser, clearNotification, clearAllNotificationsForUser } from "@/lib/notifications/data";
 
 type NotifKind = "mention" | "assigned" | "overdue_task" | "due_task" | "invoice" | "emergency";
 
@@ -124,6 +124,21 @@ export default function NotificationBell() {
     }
   }
 
+  // Dismiss a single stored event (mentions/assignments). Derived urgent items
+  // can't be cleared — they regenerate from live data — so only stored rows get a ✕.
+  function dismissOne(id: string) {
+    clearNotification(id);
+    setTick(t => t + 1);
+  }
+
+  function clearAll() {
+    clearAllNotificationsForUser(userId);
+    markAllSeen();
+    setTick(t => t + 1);
+  }
+
+  const hasStored = stored.length > 0;
+
   return (
     <div className="relative" ref={ref}>
       <button onClick={handleToggle}
@@ -143,9 +158,18 @@ export default function NotificationBell() {
           style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "0 12px 32px rgba(0,0,0,0.18)" }}>
           <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
             <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Notifications</p>
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>
-              {items.length}
-            </span>
+            <div className="flex items-center gap-2">
+              {hasStored && (
+                <button onClick={clearAll}
+                  className="text-[11px] font-medium transition-colors hover:underline"
+                  style={{ color: "var(--text-muted)" }}>
+                  Clear all
+                </button>
+              )}
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>
+                {items.length}
+              </span>
+            </div>
           </div>
 
           <div className="max-h-[22rem] overflow-y-auto">
@@ -159,7 +183,7 @@ export default function NotificationBell() {
               const isUnread = n.stored ? !n.read : !seen.has(n.id);
               return (
                 <Link key={`${n.id}-${n.kind}`} href={n.href} onClick={() => setOpen(false)}
-                  className="flex items-start gap-3 px-4 py-3 transition-colors hover:bg-[var(--bg-surface-2)]"
+                  className="group/notif flex items-start gap-3 px-4 py-3 transition-colors hover:bg-[var(--bg-surface-2)]"
                   style={{ borderBottom: i < items.length - 1 ? "1px solid var(--border-subtle)" : "none", textDecoration: "none", backgroundColor: isUnread ? "var(--accent-soft-bg)" : undefined }}>
                   <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5" style={{ backgroundColor: meta.bg }}>
                     <meta.icon className="w-3.5 h-3.5" style={{ color: meta.color }} />
@@ -168,7 +192,17 @@ export default function NotificationBell() {
                     <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{n.title}</p>
                     <p className="text-xs mt-0.5 truncate" style={{ color: "var(--text-muted)" }}>{n.detail}</p>
                   </div>
-                  {isUnread && <span className="w-2 h-2 rounded-full shrink-0 mt-1.5" style={{ backgroundColor: "var(--accent-text)" }} />}
+                  {n.stored ? (
+                    <button
+                      onClick={e => { e.preventDefault(); e.stopPropagation(); dismissOne(n.id); }}
+                      title="Dismiss"
+                      className="shrink-0 mt-0.5 p-1 rounded-md opacity-0 group-hover/notif:opacity-100 transition-opacity hover:bg-[var(--bg-surface)]"
+                      style={{ color: "var(--text-muted)" }}>
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  ) : (
+                    isUnread && <span className="w-2 h-2 rounded-full shrink-0 mt-1.5" style={{ backgroundColor: "var(--accent-text)" }} />
+                  )}
                 </Link>
               );
             })}

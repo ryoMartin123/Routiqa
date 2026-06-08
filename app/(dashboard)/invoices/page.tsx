@@ -13,6 +13,7 @@ import ModuleSummaryCards, { type SummaryCard } from "@/components/shared/Module
 import ModuleViewToggle, { type ModuleView } from "@/components/shared/ModuleViewToggle";
 import StatusBadge from "@/components/shared/StatusBadge";
 import StatusTabs from "@/components/shared/StatusTabs";
+import PageTitle from "@/components/shared/PageTitle";
 
 const NOW = new Date();
 function daysUntil(dateStr?: string): number {
@@ -28,15 +29,13 @@ function isThisMonth(dateStr?: string): boolean {
 }
 
 const STATUS_TABS: { key: "all" | InvoiceStatus; label: string }[] = [
-  { key: "all",            label: "All"            },
-  { key: "draft",          label: "Draft"          },
-  { key: "sent",           label: "Sent"           },
-  { key: "viewed",         label: "Viewed"         },
-  { key: "partially_paid", label: "Partially Paid" },
-  { key: "paid",           label: "Paid"           },
-  { key: "past_due",       label: "Past Due"       },
-  { key: "void",           label: "Void"           },
-  { key: "canceled",       label: "Canceled"       },
+  { key: "all",            label: "All"     },
+  { key: "draft",          label: "Draft"   },
+  { key: "sent",           label: "Sent"    },
+  { key: "viewed",         label: "Viewed"  },
+  { key: "partially_paid", label: "Partial" },
+  { key: "paid",           label: "Paid"    },
+  { key: "void",           label: "Void"    },
 ];
 
 type SortField = "invoiceNumber" | "customerName" | "status" | "total" | "balanceDue" | "dueDate";
@@ -121,17 +120,10 @@ export default function InvoicesPage() {
     <div className="p-6">
       <div className="flex items-center gap-4 mb-6">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2.5">
-            <h1 className="text-2xl font-semibold" style={{ color: "var(--text-primary)" }}>Invoices</h1>
-            <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>
-              {contextFiltered.length}
-            </span>
-          </div>
-          <p className="text-sm mt-0.5" style={{ color: "var(--text-secondary)" }}>
-            {totalOutstanding > 0
+          <PageTitle title="Invoices" count={contextFiltered.length}
+            description={totalOutstanding > 0
               ? `${fmt(totalOutstanding)} outstanding across ${contextFiltered.filter(i => i.balanceDue > 0).length} invoices`
-              : "All invoices up to date"}
-          </p>
+              : "All invoices up to date"} />
         </div>
         <ModuleViewToggle view={moduleView} onChange={setModuleView} />
         <div className="flex-1 flex justify-end">
@@ -152,7 +144,7 @@ export default function InvoicesPage() {
         {/* Tabs + search */}
         <div className="flex items-center justify-between flex-wrap gap-2 px-4 py-3" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
           <StatusTabs active={tab} onChange={k => setTab(k as "all" | InvoiceStatus)}
-            tabs={STATUS_TABS.filter(t => t.key === "all" || tabCount(t.key) > 0).map(t => ({ key: t.key, label: t.label, count: tabCount(t.key) }))} />
+            tabs={STATUS_TABS.map(t => ({ key: t.key, label: t.label, count: tabCount(t.key) }))} />
           <div className="flex items-center gap-2 shrink-0">
             <div className="flex items-center gap-2 rounded-lg px-3 py-1.5" style={{ backgroundColor: "var(--bg-input)" }}>
               <Search className="w-3.5 h-3.5 shrink-0" style={{ color: "var(--text-muted)" }} />

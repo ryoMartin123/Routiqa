@@ -5,6 +5,7 @@ import GlobalSearch from "@/components/layout/GlobalSearch";
 import ViewAsMenu from "@/components/layout/ViewAsMenu";
 import NotificationBell from "@/components/layout/NotificationBell";
 import CommentModeToggle from "@/components/layout/CommentModeToggle";
+import SampleDataPanel from "@/components/dev/SampleDataPanel";
 
 export default function TopBar({ onHide }: { onHide?: () => void }) {
   return (
@@ -31,6 +32,7 @@ export default function TopBar({ onHide }: { onHide?: () => void }) {
       {/* Right — actions */}
       <div className="flex-1 flex items-center justify-end gap-2">
         <ViewAsMenu />
+        <SampleDataPanel />
         <CommentModeToggle />
         <NotificationBell />
         {onHide && (

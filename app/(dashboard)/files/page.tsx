@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Images, FileText, UploadCloud, ImageOff, Upload } from "lucide-react";
 import PhotoGallery from "@/components/files/PhotoGallery";
+import PageTitle from "@/components/shared/PageTitle";
 import ModuleSummaryCards, { type SummaryCard } from "@/components/shared/ModuleSummaryCards";
 import ModuleViewToggle, { type ModuleView } from "@/components/shared/ModuleViewToggle";
 import { getFiles } from "@/lib/files/data";
@@ -47,15 +48,7 @@ export default function FilesPage() {
     <div className="p-6 space-y-5">
       <div className="flex items-center gap-4">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2.5">
-            <h1 className="text-2xl font-semibold" style={{ color: "var(--text-primary)" }}>Photos &amp; Files</h1>
-            <span className="text-xs font-medium px-2 py-0.5 rounded-full" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>
-              {fileCount} file{fileCount === 1 ? "" : "s"}
-            </span>
-          </div>
-          <p className="text-sm mt-0.5" style={{ color: "var(--text-secondary)" }}>
-            Global media library — search across accounts, properties, jobs, projects, and more
-          </p>
+          <PageTitle title="Photos & Files" count={fileCount} description="Global media library — search across accounts, properties, jobs, projects, and more" />
         </div>
         <ModuleViewToggle view={moduleView} onChange={setModuleView} listLabel="Library" />
         <div className="flex-1 flex justify-end">

@@ -189,6 +189,13 @@ export function _addToStore(customer: Customer): void {
   _extra = [..._extra, customer];
 }
 
+// Add a runtime customer AND persist it (the provider's addCustomer also persists,
+// but callers outside React — e.g. the sample-data loader — need this directly).
+export function addCustomerPersisted(customer: Customer): void {
+  _addToStore(customer);
+  try { localStorage.setItem("crm-extra-customers", JSON.stringify(_extra)); } catch { /* ignore */ }
+}
+
 // A persisted record is only usable if it has the string fields the list/detail
 // pages read directly (name, address, etc. are called with .toLowerCase()/sort).
 // Dropping malformed/legacy records here keeps one bad entry from white-screening

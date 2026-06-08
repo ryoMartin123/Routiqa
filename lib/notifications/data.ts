@@ -15,6 +15,7 @@ export interface StoredNotification {
   detail:      string;
   href:        string;       // deep-link to the exact spot
   anchorKey?:  string;
+  threadId?:   string;       // comment thread that spawned this (mention/reply) — lets us clear it when that thread is deleted/resolved
   createdAt:   string;       // ISO
   read:        boolean;
 }
@@ -42,6 +43,7 @@ export interface NewNotificationInput {
   detail:      string;
   href:        string;
   anchorKey?:  string;
+  threadId?:   string;
 }
 
 export function addNotification(input: NewNotificationInput): StoredNotification {
@@ -80,5 +82,18 @@ export function markAllReadForUser(userId: string): void {
 
 export function clearNotification(id: string): void {
   _cache = all().filter(n => n.id !== id);
+  persist();
+}
+
+// Dismiss every stored notification addressed to a user (the bell's "Clear all").
+export function clearAllNotificationsForUser(userId: string): void {
+  _cache = all().filter(n => n.recipientId !== userId);
+  persist();
+}
+
+// Remove every notification spawned by a comment thread — called when that thread
+// is deleted or resolved so mention alerts don't linger after the reason is gone.
+export function clearNotificationsForThread(threadId: string): void {
+  _cache = all().filter(n => n.threadId !== threadId);
   persist();
 }

@@ -120,7 +120,7 @@ const CATEGORIES: Category[] = [
       { key: "job_types",        label: "Job Types & Statuses", description: "Job categories and status labels",               icon: Briefcase },
       { key: "projects",         label: "Projects",             description: "Project pipeline stages, types, templates, and defaults", icon: FolderKanban },
       { key: "work_orders",      label: "Work Orders",          description: "Checklist templates and field instructions",     icon: ClipboardList },
-      { key: "tasks",            label: "Tasks",                description: "Task types and New Task defaults",               icon: ListChecks },
+      { key: "tasks",            label: "Tasks & Comments",     description: "Task types, defaults, and contextual-comment behavior", icon: ListChecks },
       { key: "photo_categories", label: "Photo Categories",     description: "Categories for job and property photos",         icon: ImageIcon },
       { key: "calendar_dispatch",label: "Calendar / Dispatch",  description: "Default view, hours, service blocks, and boards", icon: CalendarClock },
       { key: "agreements",       label: "Agreements",           description: "Plan templates, types, visit & billing rules, benefits, terms", icon: FileText },

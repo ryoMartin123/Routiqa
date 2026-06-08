@@ -14,6 +14,7 @@ import {
 } from "@/lib/agreements/data";
 import AgreementBuilder from "@/components/agreements/AgreementBuilder";
 import ModuleSummaryCards from "@/components/shared/ModuleSummaryCards";
+import PageTitle from "@/components/shared/PageTitle";
 import ModuleViewToggle, { type ModuleView } from "@/components/shared/ModuleViewToggle";
 import StatusBadge from "@/components/shared/StatusBadge";
 import StatusTabs from "@/components/shared/StatusTabs";
@@ -174,20 +175,7 @@ export default function AgreementsPage() {
       {/* Page header — title · centered view toggle · actions */}
       <div className="flex items-center gap-4">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2.5">
-            <h1 className="text-2xl font-semibold" style={{ color: "var(--text-primary)" }}>
-              Agreements
-            </h1>
-            <span
-              className="text-xs font-bold px-2 py-0.5 rounded-full"
-              style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}
-            >
-              {agreements.length}
-            </span>
-          </div>
-          <p className="text-sm mt-0.5" style={{ color: "var(--text-secondary)" }}>
-            Maintenance plans, service agreements, renewals, and recurring visits
-          </p>
+          <PageTitle title="Agreements" count={agreements.length} description="Maintenance plans, service agreements, renewals, and recurring visits" />
         </div>
         <ModuleViewToggle view={moduleView} onChange={setModuleView} />
         <div className="flex-1 flex items-center justify-end gap-2">

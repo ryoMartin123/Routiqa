@@ -6,12 +6,16 @@
 // reads/writes lib/tasks/settings.
 
 import { useState, useEffect } from "react";
-import { Plus, Pencil, ChevronUp, ChevronDown, Trash2, Check, RotateCcw } from "lucide-react";
+import { Plus, Pencil, ChevronUp, ChevronDown, Trash2, Check, RotateCcw, ListChecks, MessageSquare } from "lucide-react";
 import {
   getTaskSettings, saveTaskSettings, resetTaskSettings,
   TASK_TYPE_COLORS, ttId, ttSlug,
   type TaskSettings, type TaskTypeDef, type DefaultAssignee,
 } from "@/lib/tasks/settings";
+import {
+  getCommentSettings, saveCommentSettings, resetCommentSettings,
+  type CommentSettings,
+} from "@/lib/comments/settings";
 import UiSelect from "@/components/ui/Select";
 
 function Toggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void }) {
@@ -37,7 +41,7 @@ function Card({ children }: { children: React.ReactNode }) {
 type FormState = { name: string; key: string; color: string; active: boolean };
 const EMPTY: FormState = { name: "", key: "", color: TASK_TYPE_COLORS[0], active: true };
 
-export default function TasksSettingsSection() {
+function TasksTab() {
   const [s, setS] = useState<TaskSettings | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showAdd, setShowAdd] = useState(false);
@@ -252,6 +256,131 @@ export default function TasksSettingsSection() {
         Task types drive the type picker in the New Task modal and the labels shown across the Tasks list,
         dashboard, and calendar. The keys <span className="font-mono">schedule</span> and <span className="font-mono">call</span> also feed dispatch triage.
       </p>
+    </div>
+  );
+}
+
+// ─── Comments tab ─────────────────────────────────────────
+// Behavior for the contextual-comments layer: comment-mode default, the
+// commentable outlines, and whether mention notifications auto-clear when a
+// thread is resolved or deleted. Reads/writes lib/comments/settings.
+function CommentsToggleRow({ title, description, on, onChange }: {
+  title: string; description: string; on: boolean; onChange: (v: boolean) => void;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-4 py-3" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+      <div className="min-w-0">
+        <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{title}</p>
+        <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>{description}</p>
+      </div>
+      <Toggle on={on} onChange={onChange} />
+    </div>
+  );
+}
+
+function CommentsTab() {
+  const [c, setC] = useState<CommentSettings | null>(null);
+  const [dirty, setDirty] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => { setC(getCommentSettings()); }, []);
+
+  if (!c) return <div className="p-6 text-sm" style={{ color: "var(--text-muted)" }}>Loading…</div>;
+
+  function setField<K extends keyof CommentSettings>(k: K, v: CommentSettings[K]) {
+    setC(prev => prev && { ...prev, [k]: v }); setDirty(true); setSaved(false);
+  }
+  function save() { saveCommentSettings(c!); setDirty(false); setSaved(true); setTimeout(() => setSaved(false), 2000); }
+  function reset() { setC(resetCommentSettings()); setDirty(false); }
+
+  return (
+    <div className="space-y-5">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h2 className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>Comments</h2>
+          <p className="text-sm mt-0.5" style={{ color: "var(--text-secondary)" }}>
+            How contextual comments behave — comment mode, the commentable outlines, and notification cleanup.
+          </p>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <button onClick={reset} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm transition-colors"
+            style={{ border: "1px solid var(--border)", color: "var(--text-secondary)", backgroundColor: "var(--bg-surface)" }}>
+            <RotateCcw className="w-3.5 h-3.5" /> Reset Defaults
+          </button>
+          <button onClick={save} disabled={!dirty && !saved}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-white transition-colors disabled:opacity-50" style={{ backgroundColor: saved ? "#10b981" : "#4f46e5" }}>
+            <Check className="w-3.5 h-3.5" /> {saved ? "Saved" : "Save Changes"}
+          </button>
+        </div>
+      </div>
+
+      {dirty && <div className="rounded-lg px-3 py-2 text-xs" style={{ backgroundColor: "#fef3c7", color: "#92400e" }}>You have unsaved changes.</div>}
+
+      <Card>
+        <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: "var(--text-muted)" }}>Comment Mode</p>
+        <p className="text-xs mb-2" style={{ color: "var(--text-muted)" }}>Controls the click-to-comment overlay toggled from the top bar.</p>
+        <div className="divide-y-0">
+          <CommentsToggleRow
+            title="Start with comment mode on"
+            description="Begin each session with comment mode enabled instead of opt-in. The top-bar toggle still overrides this."
+            on={c.defaultCommentModeOn} onChange={v => setField("defaultCommentModeOn", v)} />
+          <CommentsToggleRow
+            title="Outline commentable areas"
+            description="While comment mode is on, show a soft dashed outline around every block you can comment on, so they're easy to spot."
+            on={c.showCommentableOutlines} onChange={v => setField("showCommentableOutlines", v)} />
+        </div>
+      </Card>
+
+      <Card>
+        <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: "var(--text-muted)" }}>Notifications</p>
+        <p className="text-xs mb-2" style={{ color: "var(--text-muted)" }}>Keep teammates&apos; notification bells from piling up with stale mention alerts.</p>
+        <div className="divide-y-0">
+          <CommentsToggleRow
+            title="Clear notifications when a thread is resolved"
+            description="Resolving a comment thread removes the @mention notifications it created."
+            on={c.clearNotificationsOnResolve} onChange={v => setField("clearNotificationsOnResolve", v)} />
+          <CommentsToggleRow
+            title="Clear notifications when a thread is deleted"
+            description="Deleting a comment thread removes the @mention notifications it created."
+            on={c.clearNotificationsOnDelete} onChange={v => setField("clearNotificationsOnDelete", v)} />
+        </div>
+      </Card>
+
+      <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+        Comments attach to a record + section, support @mentions and replies, and can be turned into tasks.
+        These preferences apply across every module that supports commenting.
+      </p>
+    </div>
+  );
+}
+
+// ─── Tabbed wrapper: Tasks · Comments ─────────────────────
+export default function TasksSettingsSection() {
+  const [tab, setTab] = useState<"tasks" | "comments">("tasks");
+  const TABS = [
+    { key: "tasks" as const,    label: "Tasks",    icon: ListChecks },
+    { key: "comments" as const, label: "Comments", icon: MessageSquare },
+  ];
+  return (
+    <div className="space-y-5">
+      <div className="flex items-center gap-1 p-1 rounded-xl w-fit"
+        style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border-subtle)" }}>
+        {TABS.map(t => {
+          const active = tab === t.key;
+          return (
+            <button key={t.key} onClick={() => setTab(t.key)}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-medium transition-colors"
+              style={{
+                backgroundColor: active ? "var(--bg-surface)" : "transparent",
+                color: active ? "#4f46e5" : "var(--text-secondary)",
+                boxShadow: active ? "var(--shadow-card)" : "none",
+              }}>
+              <t.icon className="w-3.5 h-3.5" /> {t.label}
+            </button>
+          );
+        })}
+      </div>
+      {tab === "tasks" ? <TasksTab /> : <CommentsTab />}
     </div>
   );
 }
