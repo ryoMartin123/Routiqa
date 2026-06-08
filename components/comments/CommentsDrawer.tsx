@@ -13,7 +13,7 @@ import { useComments } from "@/components/providers/CommentsProvider";
 import { usePermissionContext } from "@/components/providers/PermissionProvider";
 import { getStaffedUsers } from "@/lib/users/data";
 import {
-  getThreadsForRecord, addComment, addReply, resolveThread, deleteComment,
+  getThreadsForRecord, getThreadsForPath, addComment, addReply, resolveThread, deleteComment,
   anchorHref, anchorLabel, anchorKey,
   type CommentAnchor, type CommentThread, type Comment,
 } from "@/lib/comments/data";
@@ -45,7 +45,7 @@ function renderBody(body: string, users: MentionUser[]): React.ReactNode {
     }
     if (hitAt === -1) { out.push(rest); break; }
     if (hitAt > 0) out.push(rest.slice(0, hitAt));
-    out.push(<span key={k++} className="font-semibold" style={{ color: "var(--accent-text)" }}>@{hitName}</span>);
+    out.push(<span key={k++} className="font-semibold" style={{ color: "var(--warning-text)" }}>@{hitName}</span>);
     rest = rest.slice(hitAt + 1 + hitName.length);
   }
   return out;
@@ -72,6 +72,13 @@ function Composer({ users, placeholder, autoFocus, onSubmit }: {
   const ref = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => { if (autoFocus) ref.current?.focus(); }, [autoFocus]);
+
+  // Auto-grow with content (Enter adds a line) up to a max height, then scroll.
+  useEffect(() => {
+    const el = ref.current; if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
+  }, [value]);
 
   const matches = menu
     ? users.filter(u => u.name.toLowerCase().includes(menu.query.toLowerCase())).slice(0, 6)
@@ -119,8 +126,8 @@ function Composer({ users, placeholder, autoFocus, onSubmit }: {
           onChange={e => onChange(e.target.value, e.target.selectionStart ?? e.target.value.length)}
           onKeyDown={onKeyDown}
           placeholder={placeholder}
-          className="w-full rounded-lg px-3 py-2 text-sm outline-none resize-none"
-          style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface)", color: "var(--text-primary)" }} />
+          className="w-full rounded-lg px-3 py-2 text-sm outline-none resize-none thin-scroll-y"
+          style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface)", color: "var(--text-primary)", minHeight: "3.5rem", maxHeight: "10rem", overflowY: "auto" }} />
 
         {/* Opens downward, anchored under the textarea, so it stays on-screen. */}
         {menu && matches.length > 0 && (
@@ -143,8 +150,8 @@ function Composer({ users, placeholder, autoFocus, onSubmit }: {
           <AtSign className="w-3 h-3" /> to mention · ⌘↵ to send
         </span>
         <button onClick={submit} disabled={!value.trim()}
-          className="px-3 py-1.5 rounded-lg text-xs font-medium text-white transition-colors disabled:opacity-40"
-          style={{ backgroundColor: "var(--accent-text)" }}>
+          className="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors disabled:opacity-40"
+          style={{ backgroundColor: "#2a2415", color: "#d8b566" }}>
           Comment
         </button>
       </div>
@@ -178,10 +185,14 @@ export default function CommentsDrawer() {
 
   const scope = drawer.scope;
 
+  // Path scope (pins + page comments) lists every thread on the route; otherwise
+  // we stay record-scoped (e.g. a comment opened from the calendar item drawer).
   const threads = useMemo(
-    () => (scope ? getThreadsForRecord(scope.recordType, scope.recordId) : []),
+    () => (drawer.pathScope
+      ? getThreadsForPath(drawer.pathScope, drawer.tabScope ?? "")
+      : scope ? getThreadsForRecord(scope.recordType, scope.recordId) : []),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [scope?.recordType, scope?.recordId, version],
+    [drawer.pathScope, drawer.tabScope, scope?.recordType, scope?.recordId, version],
   );
 
   // Scroll to / highlight a thread opened from a deep-link.
@@ -242,18 +253,18 @@ export default function CommentsDrawer() {
 
   return (
     <>
-      {/* Backdrop */}
-      <div className="fixed inset-0 z-40" style={{ backgroundColor: "rgba(0,0,0,0.25)" }} onClick={closeDrawer} />
+      {/* Backdrop — data-comment-ui so clicking it closes (not drops a pin) in comment mode */}
+      <div data-comment-ui className="fixed inset-0 z-[65]" style={{ backgroundColor: "rgba(0,0,0,0.25)" }} onClick={closeDrawer} />
 
       {/* Panel */}
-      <div className="fixed top-0 right-0 bottom-0 z-50 w-full max-w-md flex flex-col"
+      <div data-comment-ui className="fixed top-0 right-0 bottom-0 z-[70] w-full max-w-md flex flex-col"
         style={{ backgroundColor: "var(--bg-surface)", borderLeft: "1px solid var(--border)", boxShadow: "-16px 0 48px rgba(0,0,0,0.18)" }}>
 
         {/* Header */}
         <div className="flex items-start justify-between gap-3 px-5 py-4 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <MessageSquare className="w-4 h-4" style={{ color: "var(--accent-text)" }} />
+              <MessageSquare className="w-4 h-4" style={{ color: "var(--warning-icon)" }} />
               <h2 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Comments</h2>
             </div>
             <p className="text-xs mt-0.5 truncate" style={{ color: "var(--text-muted)" }}>{anchorLabel(scope)}</p>

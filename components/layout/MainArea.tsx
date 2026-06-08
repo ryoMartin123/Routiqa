@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { ChevronDown } from "lucide-react";
 import TopBar from "@/components/layout/TopBar";
+import CommentPinsLayer from "@/components/comments/CommentPinsLayer";
 
 // Wraps the top bar + page content and lets the user hide the top bar
 // (search, location selector, notifications, Create) to reclaim vertical space.
@@ -33,7 +34,14 @@ export default function MainArea({ children }: { children: React.ReactNode }) {
           <ChevronDown className="w-3.5 h-3.5" /> Show search &amp; location bar
         </button>
       )}
-      <main className="flex-1 overflow-y-auto">{children}</main>
+      <main className="flex-1 overflow-y-auto">
+        {/* Positioned wrapper so comment pins can anchor to page coordinates and
+            scroll with the content. */}
+        <div className="relative min-h-full" data-comment-region>
+          {children}
+          <Suspense fallback={null}><CommentPinsLayer /></Suspense>
+        </div>
+      </main>
     </div>
   );
 }

@@ -187,7 +187,7 @@ export default function Sidebar() {
   }
 
   return (
-    <div className={cn("flex flex-col shrink-0 transition-[width] duration-150", collapsed ? "w-16" : "w-56")} style={{ backgroundColor: "var(--sidebar-bg)" }}>
+    <div data-app-nav className={cn("flex flex-col shrink-0 transition-[width] duration-150", collapsed ? "w-16" : "w-56")} style={{ backgroundColor: "var(--sidebar-bg)" }}>
       {/* Org / Location header */}
       <div className={cn("flex items-center px-4 py-4", collapsed ? "justify-center" : "justify-between")} style={{ borderBottom: "1px solid var(--sidebar-border)" }}>
         {!collapsed && (

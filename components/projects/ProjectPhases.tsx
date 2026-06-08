@@ -94,7 +94,7 @@ export default function ProjectPhases({ projectId, onChange }: {
           <button onClick={() => setAdding(true)} className="text-xs font-medium" style={{ color: "var(--accent-text)" }}>+ Add a phase manually</button>
         </div>
       ) : (
-        <div className="relative">
+        <div className="flex items-start overflow-x-auto thin-scroll-y pb-1 -mx-1 px-1">
           {phases.map((ph, i) => {
             const last = i === phases.length - 1;
             const node = ph.status === "done"
@@ -103,12 +103,12 @@ export default function ProjectPhases({ projectId, onChange }: {
               ? { bg: "#4f46e5", border: "#4f46e5" }
               : { bg: "var(--bg-surface)", border: "var(--border)" };
             return (
-              <div key={ph.id} className="relative flex gap-3 group" style={{ paddingBottom: last ? 0 : "18px" }}>
-                {/* connecting rail */}
-                {!last && <span className="absolute left-[13px] top-7 w-px" style={{ bottom: 0, backgroundColor: "var(--border)" }} />}
+              <div key={ph.id} className="relative flex flex-col items-center group shrink-0" style={{ width: "8.5rem" }}>
+                {/* connecting rail to the next node (sits behind, centered on the node row) */}
+                {!last && <span className="absolute top-[13px] left-1/2 right-[-50%] h-0.5" style={{ backgroundColor: ph.status === "done" ? "#10b981" : "var(--border)" }} />}
                 {/* node */}
                 <button onClick={() => cycle(ph.id)} title="Click to advance status"
-                  className="relative z-10 w-7 h-7 rounded-full flex items-center justify-center shrink-0 transition-transform hover:scale-105"
+                  className="relative z-10 w-7 h-7 rounded-full flex items-center justify-center transition-transform hover:scale-105"
                   style={{ backgroundColor: node.bg, border: `2px solid ${node.border}` }}>
                   {ph.status === "done"
                     ? <Check className="w-3.5 h-3.5 text-white" />
@@ -116,16 +116,16 @@ export default function ProjectPhases({ projectId, onChange }: {
                     ? <span className="w-2 h-2 rounded-full bg-white" />
                     : <span className="w-2 h-2 rounded-full" style={{ backgroundColor: "var(--text-muted)" }} />}
                 </button>
-                {/* content */}
-                <div className="flex-1 min-w-0 pt-1">
-                  <div className="flex items-center gap-2">
+                {/* content (centered under the node) */}
+                <div className="mt-2 w-full px-1.5 text-center">
+                  <div className="relative flex items-center justify-center">
                     <input value={ph.name}
                       onChange={e => rename(ph.id, e.target.value)} onBlur={rememberRename}
                       onKeyDown={e => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
-                      className="flex-1 min-w-0 text-sm font-medium bg-transparent outline-none"
+                      className="w-full text-sm font-medium bg-transparent outline-none text-center"
                       style={{ color: ph.status === "done" ? "var(--text-muted)" : "var(--text-primary)", textDecoration: ph.status === "done" ? "line-through" : "none" }} />
-                    <button onClick={() => remove(ph.id)} className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-red-50 shrink-0" style={{ color: "#9ca3af" }}>
-                      <Trash2 className="w-3.5 h-3.5" />
+                    <button onClick={() => remove(ph.id)} className="absolute -right-1 -top-1 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-red-50" style={{ color: "#9ca3af" }}>
+                      <Trash2 className="w-3 h-3" />
                     </button>
                   </div>
                   <p className="text-[11px] mt-0.5" style={{ color: "var(--text-muted)" }}>

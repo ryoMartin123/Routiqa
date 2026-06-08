@@ -12,7 +12,9 @@ import { getCommentSettings } from "@/lib/comments/settings";
 
 interface DrawerState {
   open:           boolean;
-  scope:          CommentAnchor | null;  // record + compose target
+  scope:          CommentAnchor | null;  // compose target (a pin, page, or record anchor)
+  pathScope?:     string;                // when set, the drawer lists ALL threads on this route + tab
+  tabScope?:      string;                // the sub-tab (`?tab=`) the scope is pinned to
   focusThreadId?: string;
 }
 
@@ -24,6 +26,8 @@ interface CommentsContextValue {
   drawer:     DrawerState;
   openComposer: (anchor: CommentAnchor) => void;
   openThread:   (scope: CommentAnchor, threadId: string) => void;
+  // Open the drawer showing every comment on a route + sub-tab (optionally focused).
+  openPath:     (path: string, label?: string, focusThreadId?: string, tab?: string) => void;
   closeDrawer:  () => void;
 }
 
@@ -51,12 +55,24 @@ export function CommentsProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const bump = useCallback(() => setVersion(v => v + 1), []);
-  const openComposer = useCallback((anchor: CommentAnchor) => setDrawer({ open: true, scope: anchor, focusThreadId: undefined }), []);
-  const openThread   = useCallback((scope: CommentAnchor, threadId: string) => setDrawer({ open: true, scope, focusThreadId: threadId }), []);
+  // A pin/page anchor carries `path` → the drawer lists the whole page; a record
+  // anchor (e.g. from the calendar) has no path → it stays record-scoped.
+  const openComposer = useCallback((anchor: CommentAnchor) =>
+    setDrawer({ open: true, scope: anchor, pathScope: anchor.path, tabScope: anchor.section ?? "", focusThreadId: undefined }), []);
+  const openThread   = useCallback((scope: CommentAnchor, threadId: string) =>
+    setDrawer({ open: true, scope, pathScope: scope.path, tabScope: scope.section ?? "", focusThreadId: threadId }), []);
+  const openPath     = useCallback((path: string, label?: string, focusThreadId?: string, tab = "") =>
+    setDrawer({
+      open: true,
+      scope: { recordType: "page", recordId: path, recordLabel: label ?? "This page", kind: "page", path, section: tab || undefined },
+      pathScope: path,
+      tabScope: tab,
+      focusThreadId,
+    }), []);
   const closeDrawer  = useCallback(() => setDrawer(d => ({ ...d, open: false })), []);
 
   return (
-    <CommentsContext.Provider value={{ enabled, setEnabled, version, bump, drawer, openComposer, openThread, closeDrawer }}>
+    <CommentsContext.Provider value={{ enabled, setEnabled, version, bump, drawer, openComposer, openThread, openPath, closeDrawer }}>
       {children}
     </CommentsContext.Provider>
   );

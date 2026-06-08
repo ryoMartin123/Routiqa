@@ -325,9 +325,9 @@ function CommentsTab() {
             description="Begin each session with comment mode enabled instead of opt-in. The top-bar toggle still overrides this."
             on={c.defaultCommentModeOn} onChange={v => setField("defaultCommentModeOn", v)} />
           <CommentsToggleRow
-            title="Outline commentable areas"
-            description="While comment mode is on, show a soft dashed outline around every block you can comment on, so they're easy to spot."
-            on={c.showCommentableOutlines} onChange={v => setField("showCommentableOutlines", v)} />
+            title="Show resolved comments"
+            description="While comment mode is on, show resolved comment pins (dimmed). Turn off to see only open threads."
+            on={c.showResolvedComments} onChange={v => setField("showResolvedComments", v)} />
         </div>
       </Card>
 

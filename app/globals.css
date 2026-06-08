@@ -463,3 +463,67 @@ body {
   animation: anchorFlash 1.6s ease-out;
   border-radius: 12px;
 }
+
+/* ─── Task completion ─── */
+/* A brief green sweep over the row + a check-mark pop before the task re-sorts
+   to the bottom, so completing a task feels rewarding rather than abrupt. */
+@keyframes taskCompleteSweep {
+  0%   { background-color: rgba(16, 185, 129, 0); }
+  25%  { background-color: rgba(16, 185, 129, 0.16); }
+  100% { background-color: rgba(16, 185, 129, 0); }
+}
+.task-completing {
+  animation: taskCompleteSweep 0.6s ease-out;
+}
+@keyframes checkPop {
+  0%   { transform: scale(0.5); }
+  55%  { transform: scale(1.3); }
+  100% { transform: scale(1); }
+}
+.check-pop {
+  animation: checkPop 0.4s ease-out;
+}
+
+/* ─── Comment mode ─── */
+/* Constant crosshair across the whole content surface — even over clickable
+   elements, so the cursor never changes back to a pointer while in the mode. */
+body[data-comment-mode="1"] [data-comment-region],
+body[data-comment-mode="1"] [data-comment-region] * {
+  cursor: crosshair !important;
+}
+/* Comment UI itself (pins) keeps a pointer so it reads as interactive. */
+body[data-comment-mode="1"] [data-comment-ui],
+body[data-comment-mode="1"] [data-comment-ui] * {
+  cursor: pointer !important;
+}
+
+/* Static amber frame around the viewport + a single amber flash on entry, so
+   it's unmistakable the app is in comment mode. */
+@keyframes commentFrameFlash {
+  0%   { box-shadow: inset 0 0 0 3px #cca54e, inset 0 0 0 100vmax rgba(204, 165, 78, 0.16); }
+  100% { box-shadow: inset 0 0 0 3px #cca54e, inset 0 0 0 0    rgba(204, 165, 78, 0); }
+}
+.comment-mode-frame {
+  box-shadow: inset 0 0 0 3px #cca54e;
+  animation: commentFrameFlash 0.6s ease-out;
+}
+@keyframes commentBannerIn {
+  from { transform: translateY(-120%); opacity: 0; }
+  to   { transform: translateY(0);     opacity: 1; }
+}
+.comment-mode-banner {
+  animation: commentBannerIn 0.28s ease-out;
+}
+body[data-comment-mode="1"] [data-app-nav] {
+  opacity: 0.45;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+/* Top bar stays bright but inert (its comment toggle is re-enabled below). */
+body[data-comment-mode="1"] [data-app-lock] {
+  pointer-events: none;
+}
+/* Comment UI (toggle, banner, drawer, pins) is always interactive in comment mode. */
+body[data-comment-mode="1"] [data-comment-ui] {
+  pointer-events: auto;
+}

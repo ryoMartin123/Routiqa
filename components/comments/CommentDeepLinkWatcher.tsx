@@ -8,13 +8,14 @@
 // to wrap its commentable blocks; this handles arrival from anywhere.
 
 import { useEffect, useRef } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, usePathname } from "next/navigation";
 import { useComments } from "@/components/providers/CommentsProvider";
 import type { AnchorRecordType } from "@/lib/comments/data";
 
 export default function CommentDeepLinkWatcher() {
   const params = useSearchParams();
-  const { openThread } = useComments();
+  const pathname = usePathname();
+  const { openThread, openPath, setEnabled } = useComments();
   const handled = useRef("");
 
   useEffect(() => {
@@ -30,6 +31,15 @@ export default function CommentDeepLinkWatcher() {
     if (handled.current === sig) return;
     handled.current = sig;
 
+    // Pin / page comments are route + sub-tab scoped — turn comment mode ON so the
+    // pin is visible, then open the page drawer (on the right tab) focused on the
+    // thread the user was tagged in. The page's own ?tab= sync switches the tab.
+    if (focus && (focus.startsWith("pin:") || focus.startsWith("page:"))) {
+      setEnabled(true);
+      openPath(pathname, undefined, thread ?? undefined, params.get("tab") ?? "");
+      return;
+    }
+
     if (thread && ct && cid) {
       openThread({ recordType: ct as AnchorRecordType, recordId: cid, recordLabel: clabel }, thread);
     }
@@ -44,7 +54,7 @@ export default function CommentDeepLinkWatcher() {
       }, 400);
       return () => clearTimeout(tmr);
     }
-  }, [params, openThread]);
+  }, [params, pathname, openThread, openPath, setEnabled]);
 
   return null;
 }

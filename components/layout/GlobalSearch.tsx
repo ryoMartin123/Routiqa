@@ -6,12 +6,13 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Search, Users, Briefcase, TrendingUp, FileText, Receipt, FolderKanban, FileCheck } from "lucide-react";
+import { Search, Users, Briefcase, TrendingUp, FileText, Receipt, FolderKanban, FileCheck, MessageSquare } from "lucide-react";
 import { searchAll, type SearchGroup, type SearchResult } from "@/lib/search/global";
 
 const GROUP_ICON: Record<SearchGroup, typeof Users> = {
   Customers: Users, Jobs: Briefcase, Leads: TrendingUp,
   Quotes: FileText, Invoices: Receipt, Projects: FolderKanban, Agreements: FileCheck,
+  Comments: MessageSquare,
 };
 
 export default function GlobalSearch() {
@@ -69,7 +70,7 @@ export default function GlobalSearch() {
           onChange={e => { setQuery(e.target.value); setOpen(true); }}
           onFocus={() => setOpen(true)}
           onKeyDown={onKeyDown}
-          placeholder="Search customers, jobs, quotes, leads…"
+          placeholder="Search for anything…"
           className="bg-transparent text-sm outline-none flex-1 min-w-0"
           style={{ color: "var(--text-primary)" }}
         />

@@ -65,11 +65,7 @@ function PhaseSummary({ projectId, onOpenPhases }: { projectId: string; onOpenPh
 
 // ─── Phases tab ───────────────────────────────────────────
 function PhasesTab({ projectId, onChange }: { projectId: string; onChange?: () => void }) {
-  return (
-    <div className="max-w-2xl">
-      <ProjectPhases projectId={projectId} onChange={onChange} />
-    </div>
-  );
+  return <ProjectPhases projectId={projectId} onChange={onChange} />;
 }
 
 // ─── Overview tab ─────────────────────────────────────────

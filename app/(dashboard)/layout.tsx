@@ -6,6 +6,7 @@ import { PermissionProvider } from "@/components/providers/PermissionProvider";
 import { Suspense } from "react";
 import { CommentsProvider } from "@/components/providers/CommentsProvider";
 import CommentsDrawer from "@/components/comments/CommentsDrawer";
+import CommentModeController from "@/components/comments/CommentModeController";
 import CommentDeepLinkWatcher from "@/components/comments/CommentDeepLinkWatcher";
 
 export default function DashboardLayout({
@@ -23,6 +24,7 @@ export default function DashboardLayout({
         <MainArea>{children}</MainArea>
       </div>
       <CommentsDrawer />
+      <Suspense fallback={null}><CommentModeController /></Suspense>
       <Suspense fallback={null}><CommentDeepLinkWatcher /></Suspense>
       </CommentsProvider>
       </PermissionProvider>

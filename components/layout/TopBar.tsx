@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { ChevronUp } from "lucide-react";
 import HierarchySelector from "@/components/layout/HierarchySelector";
 import GlobalCreateMenu from "@/components/layout/GlobalCreateMenu";
@@ -10,6 +11,7 @@ import SampleDataPanel from "@/components/dev/SampleDataPanel";
 export default function TopBar({ onHide }: { onHide?: () => void }) {
   return (
     <div
+      data-app-lock
       className="flex items-center gap-4 px-6 py-3 shrink-0"
       style={{
         backgroundColor: "var(--topbar-bg)",
@@ -33,7 +35,7 @@ export default function TopBar({ onHide }: { onHide?: () => void }) {
       <div className="flex-1 flex items-center justify-end gap-2">
         <ViewAsMenu />
         <SampleDataPanel />
-        <CommentModeToggle />
+        <Suspense fallback={null}><CommentModeToggle /></Suspense>
         <NotificationBell />
         {onHide && (
           <button onClick={onHide} title="Hide bar"

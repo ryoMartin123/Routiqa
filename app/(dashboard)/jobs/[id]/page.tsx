@@ -3,7 +3,6 @@
 import React, { use, useState, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import Commentable from "@/components/comments/Commentable";
 import { ArrowLeft, CheckCircle, Circle, ChevronRight, Phone, MapPin, User, Clock, Calendar, DollarSign, Briefcase, AlertTriangle, Camera, ListChecks, Plus, Trash2, Ban, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getJob, updateJob, deleteJob, getWorkOrder, getJobNotes, resolveJobStatus, type JobNoteType } from "@/lib/jobs/data";
@@ -669,7 +668,6 @@ function JobDetailContent({ params }: { params: Promise<{ id: string }> }) {
               </>
             )}
             <div className="w-px h-5 shrink-0" style={{ backgroundColor: "var(--border)" }} />
-            <Commentable anchor={{ recordType: "job", recordId: id, recordLabel: job.customerName }}>
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <h1 className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>{job.title}</h1>
@@ -677,7 +675,6 @@ function JobDetailContent({ params }: { params: Promise<{ id: string }> }) {
               </div>
               <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>{job.customerName} · {job.scheduledDate} at {job.scheduledTime}</p>
             </div>
-            </Commentable>
           </div>
           <div className="flex items-center gap-2 shrink-0">
             {/* Every action for this job lives in the ⋮ menu, consistent with the

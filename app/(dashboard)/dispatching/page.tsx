@@ -128,11 +128,15 @@ export default function CalendarPage() {
   // Technician roster is derived from the user directory (localStorage-backed),
   // so load it client-side here rather than during render.
   const [roster, setRoster] = useState<TechRosterEntry[]>([]);
+  // The roster loads in an effect (localStorage), so guard the "no technicians"
+  // empty state until that first load completes — otherwise it flashes on mount.
+  const [rosterReady, setRosterReady] = useState(false);
   useEffect(() => {
     const s: CalendarScope = { companyId: effectiveCompanyId, locationId: effectiveLocationId, serviceAreaId: effectiveServiceAreaId };
     setSessionUnscheduled(getUnscheduledJobs(s));
     setSessionItems(getSessionCalendarItems(s));
     setRoster(getStaffRoster());
+    setRosterReady(true);
   }, [effectiveCompanyId, effectiveLocationId, effectiveServiceAreaId, refreshKey]);
 
   // Availability is per-day — reload when the focused day or data changes.
@@ -190,7 +194,8 @@ export default function CalendarPage() {
     [rawItems, effectiveCompanyId, effectiveLocationId],
   );
   // No technicians on the roster → nothing can be scheduled or created here yet.
-  const noTechs = roster.length === 0;
+  // Only after the first roster load, so the empty state doesn't flash on mount.
+  const noTechs = rosterReady && roster.length === 0;
 
   // Dispatch board / team selector — boards belong to a company + location and
   // are scoped to the current context. Selecting a board filters the technician

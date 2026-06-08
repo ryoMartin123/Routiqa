@@ -13,7 +13,8 @@ import { getCommentSettings } from "@/lib/comments/settings";
 export type AnchorRecordType =
   | "customer" | "lead" | "job" | "project"
   | "quote" | "invoice" | "agreement" | "workorder"
-  | "item" | "dispatch" | "calendar" | "report" | "marketing" | "settings";
+  | "item" | "dispatch" | "calendar" | "report" | "marketing" | "settings"
+  | "page";   // route-scoped comments (pins + general page comments)
 
 export interface CommentAnchor {
   recordType:  AnchorRecordType;
@@ -22,6 +23,13 @@ export interface CommentAnchor {
   section?:    string;       // tab key, e.g. "Properties"
   subId?:      string;       // sub-entity id, e.g. a property id
   subLabel?:   string;       // human label of the sub-entity ("123 Main St")
+  // ─── Comment-mode (route-scoped) fields ───
+  // "anchor" = the legacy semantic anchor above; "pin" = a positional marker
+  // dropped anywhere on a page; "page" = a general comment on the page itself.
+  kind?:       "anchor" | "pin" | "page";
+  path?:       string;       // route the comment lives on (drives the page indicator)
+  pinId?:      string;       // stable id for a pin thread
+  pin?:        { xPct: number; yPct: number };  // position within the page's comment region
 }
 
 export interface Comment {
@@ -49,6 +57,7 @@ const ROUTE: Record<AnchorRecordType, string> = {
   quote: "quotes", invoice: "invoices", agreement: "agreements", workorder: "work-orders",
   item: "items", dispatch: "dispatching", calendar: "calendar",
   report: "reports", marketing: "marketing", settings: "settings",
+  page: "",   // page comments carry their own `path`; never routed via ROUTE
 };
 
 // Record types that have a per-id detail page (route/{id}); the rest are
@@ -59,6 +68,8 @@ const DETAIL_TYPES = new Set<AnchorRecordType>([
 
 // Stable key for matching/badge lookup + scroll target: customer:cust-1/§Properties/#p-2
 export function anchorKey(a: CommentAnchor): string {
+  if (a.kind === "pin"  && a.pinId) return `pin:${a.pinId}`;
+  if (a.kind === "page" && a.path)  return `page:${a.path}`;
   let k = `${a.recordType}:${a.recordId}`;
   if (a.section) k += `/§${a.section}`;
   if (a.subId)   k += `/#${a.subId}`;
@@ -69,6 +80,15 @@ export function anchorKey(a: CommentAnchor): string {
 // scope (ct/cid/clabel) + scroll target (focus = anchorKey) so the global
 // CommentDeepLinkWatcher can open the thread and flash the spot on any page.
 export function anchorHref(a: CommentAnchor, threadId?: string): string {
+  // Page/pin comments live on a concrete route + sub-tab — link straight back,
+  // restoring the tab so the pin lands on the exact section it was left on.
+  if ((a.kind === "pin" || a.kind === "page") && a.path) {
+    const p = new URLSearchParams();
+    if (a.section) p.set("tab", a.section);
+    p.set("focus", anchorKey(a));
+    if (threadId) p.set("thread", threadId);
+    return `${a.path}?${p.toString()}`;
+  }
   const base = DETAIL_TYPES.has(a.recordType) ? `/${ROUTE[a.recordType]}/${a.recordId}` : `/${ROUTE[a.recordType]}`;
   const p = new URLSearchParams();
   if (a.section) p.set("tab", a.section);
@@ -137,6 +157,39 @@ export function commentCountForAnchorKey(key: string): number {
   return all().filter(c => !c.parentId && !c.resolved && anchorKey(c.anchor) === key).length;
 }
 
+// ─── Page-scoped reads (comment-mode pins + general page comments) ───
+// Scope = route path + the active sub-tab (`?tab=`). A comment left on the
+// Properties tab of a customer is tied to that exact tab, so it only shows there
+// and its deep-link restores that tab.
+function inScope(a: CommentAnchor, path: string, tab: string): boolean {
+  return a.path === path && (a.section ?? "") === tab;
+}
+
+export function getThreadsForPath(path: string, tab = ""): CommentThread[] {
+  const scoped = all().filter(c => inScope(c.anchor, path, tab)).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+  return toThreads(scoped).sort((a, b) => lastActivity(b).localeCompare(lastActivity(a)));
+}
+
+// Pin threads only (for rendering positioned markers on the page).
+export function getPinThreadsForPath(path: string, tab = ""): CommentThread[] {
+  return getThreadsForPath(path, tab).filter(t => t.root.anchor.kind === "pin");
+}
+
+// Open thread count for the current route + tab — drives the page indicator.
+export function commentCountForPath(path: string, tab = ""): number {
+  return all().filter(c => !c.parentId && !c.resolved && inScope(c.anchor, path, tab)).length;
+}
+
+// Every thread across the CRM, newest activity first — for the Tasks › Comments tab.
+export function getAllThreads(): CommentThread[] {
+  return toThreads([...all()].sort((a, b) => a.createdAt.localeCompare(b.createdAt)))
+    .sort((a, b) => lastActivity(b).localeCompare(lastActivity(a)));
+}
+
+export function pinId(): string {
+  return `pin-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
+}
+
 // ─── Writes ───────────────────────────────────────────────
 export interface NewCommentInput {
   anchor:         CommentAnchor;
@@ -173,6 +226,14 @@ export function addReply(threadId: string, input: NewCommentInput): Comment | un
   _cache = [...all(), reply];
   persist();
   return reply;
+}
+
+// Edit a comment's text (and re-derive its mentions from the new body).
+export function updateCommentBody(id: string, body: string, mentions: string[]): Comment | undefined {
+  let updated: Comment | undefined;
+  _cache = all().map(c => c.id === id ? (updated = { ...c, body: body.trim(), mentions }) : c);
+  persist();
+  return updated;
 }
 
 export function resolveThread(threadId: string, resolved: boolean): void {

@@ -8,9 +8,9 @@ export interface CommentSettings {
   // Start each session with comment mode already on (otherwise it's opt-in via
   // the top-bar toggle). The toggle still overrides this within a session.
   defaultCommentModeOn:        boolean;
-  // Show the soft dashed outline around every commentable block while comment
-  // mode is on, so users can see what's clickable without hunting.
-  showCommentableOutlines:     boolean;
+  // Show resolved comment pins (dimmed) while in comment mode. Off hides them so
+  // only open threads are visible.
+  showResolvedComments:        boolean;
   // When a thread is resolved, drop the mention notifications it spawned so the
   // recipients' bells don't pile up with stale alerts.
   clearNotificationsOnResolve: boolean;
@@ -20,7 +20,7 @@ export interface CommentSettings {
 
 export const DEFAULT_COMMENT_SETTINGS: CommentSettings = {
   defaultCommentModeOn:        false,
-  showCommentableOutlines:     true,
+  showResolvedComments:        true,
   clearNotificationsOnResolve: true,
   clearNotificationsOnDelete:  true,
 };

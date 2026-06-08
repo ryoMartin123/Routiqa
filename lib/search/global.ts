@@ -8,9 +8,10 @@ import { getAllQuotes, getAllInvoices } from "@/lib/quotes/data";
 import { getAllLeads } from "@/lib/leads/data";
 import { getAllProjects } from "@/lib/projects/data";
 import { getAllAgreements } from "@/lib/agreements/data";
+import { getAllThreads, anchorHref, anchorLabel } from "@/lib/comments/data";
 
 export type SearchGroup =
-  | "Customers" | "Jobs" | "Leads" | "Quotes" | "Invoices" | "Projects" | "Agreements";
+  | "Customers" | "Jobs" | "Leads" | "Quotes" | "Invoices" | "Projects" | "Agreements" | "Comments";
 
 export interface SearchResult {
   id: string;
@@ -53,6 +54,9 @@ export function searchAll(query: string, perGroup = 5): SearchResult[] {
 
   const agreements = getAllAgreements().filter(a => has(q, a.type, a.customer, a.location)).slice(0, perGroup);
   for (const a of agreements) out.push({ id: a.id, group: "Agreements", title: a.type, subtitle: sub(a.customer, a.location), href: `/agreements/${a.id}`, initials: a.customerInitials });
+
+  const threads = getAllThreads().filter(t => has(q, t.root.body, t.root.authorName, anchorLabel(t.root.anchor))).slice(0, perGroup);
+  for (const t of threads) out.push({ id: t.root.id, group: "Comments", title: t.root.body, subtitle: sub(t.root.authorName, anchorLabel(t.root.anchor)), href: anchorHref(t.root.anchor, t.root.threadId), initials: t.root.authorInitials });
 
   return out;
 }
