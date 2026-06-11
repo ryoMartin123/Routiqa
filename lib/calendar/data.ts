@@ -3,7 +3,7 @@
 
 import { ALL_JOBS, getAllJobs, getSessionJobs, WORK_ORDERS, JOB_STATUS_CONFIG, type Job } from "@/lib/jobs/data";
 import { getAllTasks } from "@/lib/tasks/data";
-import { getAllAgreements } from "@/lib/agreements/data";
+import { getAllAgreements, getVisitsToSchedule, type CustomerAgreement, type AgreementVisit } from "@/lib/agreements/data";
 import { ALL_PROJECTS } from "@/lib/projects/data";
 import { getAllQuotes } from "@/lib/quotes/data";
 import { getTechnicianUsers, getStaffedUsers } from "@/lib/users/data";
@@ -115,6 +115,10 @@ export function getCalendarItems(scope: CalendarScope): CalendarItem[] {
     const loc = resolveAgreementLocation(a.location);
     for (const v of a.visits) {
       if (v.status !== "scheduled") continue;
+      // A booked visit is materialized into a Job and already renders via jobToItem;
+      // skip it here so it isn't drawn twice (and so the Job stays its single source
+      // of truth — moving the job is what reschedules the visit).
+      if (v.jobId) continue;
       const day = parseDateTime(v.scheduled);
       if (!day) continue;
       const start = new Date(day); start.setHours(9, 0, 0, 0); // default morning slot
@@ -257,6 +261,22 @@ export function getUnscheduledItems(scope: CalendarScope): UnscheduledItem[] {
   // Priority sort: urgent → high → normal → low
   const rank: Record<ItemPriority, number> = { urgent: 0, high: 1, normal: 2, low: 3 };
   return out.sort((x, y) => rank[x.priority] - rank[y.priority]);
+}
+
+// Planned agreement visits awaiting a job, scoped to the viewing context. Feeds the
+// dispatch board's "Schedule Agreement Visit" picker — each is still a plan entry and
+// becomes a Job only when scheduled (materializeVisitJob). Unlike the due-soon queue
+// above, this lists EVERY planned visit regardless of date, so a visit can be booked
+// early/ad-hoc whenever the customer wants it.
+export interface SchedulableVisit { agreement: CustomerAgreement; visit: AgreementVisit; companyId: string; locationId: string }
+export function getSchedulableVisits(scope: CalendarScope): SchedulableVisit[] {
+  const out: SchedulableVisit[] = [];
+  for (const { agreement, visit } of getVisitsToSchedule()) {
+    const loc = resolveAgreementLocation(agreement.location);
+    if (!inScope({ companyId: loc.companyId, locationId: loc.locationId }, scope)) continue;
+    out.push({ agreement, visit, companyId: loc.companyId, locationId: loc.locationId });
+  }
+  return out;
 }
 
 // Scheduled jobs created in-session (e.g. via the New Job form). The board/

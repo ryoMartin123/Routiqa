@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import {
-  X, Check, ChevronLeft, ChevronRight, Plus, Trash2, Star, FileText, Send,
+  X, Check, ChevronLeft, ChevronRight, Plus, Trash2, Star, FileText, Send, SlidersHorizontal,
 } from "lucide-react";
 import UiSelect from "@/components/ui/Select";
 import DatePicker from "@/components/ui/DatePicker";
@@ -11,7 +11,7 @@ import AgreementDocumentPreview, { type AgreementDocData } from "@/components/ag
 import { getAllCustomers, getProperties } from "@/lib/customers/data";
 import { getJobTypes } from "@/lib/job-config/data";
 import {
-  getAgreementTypes, getVisitRules, getBillingRules, getBenefits,
+  getVisitRules, getBillingRules, getBenefits, getAgreementServices,
 } from "@/lib/agreements/settings";
 import {
   getPlanTemplates, getPlanTemplate, ALL_SECTIONS,
@@ -25,8 +25,12 @@ import {
 // Create flow is intentionally short: pick the customer + a template (everything
 // else is baked into the template). Customizing for one customer happens in EDIT
 // mode, which exposes the full adjust steps against an existing agreement.
-const STEPS_CREATE = ["Customer", "Template"];
-const STEPS_EDIT   = ["Services", "Visits", "Billing", "Benefits", "Terms"];
+// Quick path = pick a template and go. "Customize" (or starting from a blank/Custom
+// template) expands the create flow into the full adjust steps so billing + the
+// visit schedule are fully editable before activation.
+const STEPS_CREATE      = ["Customer", "Template"];
+const STEPS_CREATE_FULL = ["Customer", "Template", "Services", "Visits", "Billing", "Benefits", "Terms"];
+const STEPS_EDIT        = ["Services", "Visits", "Billing", "Benefits", "Terms"];
 
 let _seq = 0;
 const uid = (p: string) => `${p}-${Date.now()}-${_seq++}`;
@@ -50,11 +54,12 @@ export default function AgreementBuilder({ preset, editAgreement, onClose, onCre
   onCreated: (id: string) => void;
 }) {
   const isEdit = Boolean(editAgreement);
-  const STEPS = isEdit ? STEPS_EDIT : STEPS_CREATE;
+  const [customize, setCustomize] = useState(false);   // create: expand into the full adjust steps
+  const STEPS = isEdit ? STEPS_EDIT : (customize ? STEPS_CREATE_FULL : STEPS_CREATE);
   const firstStep = isEdit ? 3 : 1;    // edit jumps straight to the adjust steps
-  const lastStep  = isEdit ? 7 : 2;
+  const lastStep  = isEdit ? 7 : (customize ? 7 : 2);
   const customers = getAllCustomers();
-  const types = useMemo(() => getAgreementTypes().filter(t => t.active), []);
+  const serviceLib = useMemo(() => getAgreementServices().filter(s => s.active), []);
   const visitRules = useMemo(() => getVisitRules().filter(r => r.active), []);
   const billingRules = useMemo(() => getBillingRules().filter(r => r.active), []);
   const benefitLib = useMemo(() => getBenefits().filter(b => b.active), []);
@@ -73,10 +78,8 @@ export default function AgreementBuilder({ preset, editAgreement, onClose, onCre
   const [termMonths, setTermMonths] = useState("12");
   const [endDate, setEndDate] = useState("");
 
-  // Step 2 — template & type
-  const [typeKey, setTypeKey] = useState("");
+  // Step 2 — template (the template defines the kind of agreement)
   const [templateId, setTemplateId] = useState("");
-  const [planLevel, setPlanLevel] = useState("");
 
   // Steps 3-6 — seeded from template
   const [services, setServices] = useState<DraftService[]>([]);
@@ -101,13 +104,19 @@ export default function AgreementBuilder({ preset, editAgreement, onClose, onCre
     ? `${selProperty.label ? selProperty.label + " — " : ""}${selProperty.address}, ${selProperty.city}`
     : undefined;
 
+  // A property is required. Auto-select the primary (or first) whenever the
+  // customer changes or the current selection is no longer in the list.
+  useEffect(() => {
+    if (properties.length && !properties.some(p => p.id === propertyId)) {
+      setPropertyId((properties.find(p => p.isPrimary) ?? properties[0]).id);
+    }
+  }, [properties, propertyId]);
+
   // ── Template selection seeds the editable steps (snapshot copy) ──
   function chooseTemplate(id: string) {
     setTemplateId(id);
     const t = getPlanTemplate(id);
     if (!t) return;
-    if (!typeKey) setTypeKey(t.typeKey);
-    setPlanLevel(t.planLevel ?? "");
     setTitle(prev => prev || t.name);
     setServices(t.services.map(s => ({
       id: uid("s"), name: s.name, description: s.description ?? "",
@@ -128,7 +137,12 @@ export default function AgreementBuilder({ preset, editAgreement, onClose, onCre
   }
 
   // ── Service ops ──
-  const addService = () => setServices(p => [...p, { id: uid("s"), name: "", description: "", quantity: "1", included: true, discountPct: "0" }]);
+  const availableServices = serviceLib.filter(lib => !services.some(s => s.name === lib.name));
+  const addServiceFromLib = (libId: string) => {
+    const lib = serviceLib.find(s => s.id === libId);
+    if (!lib) return;
+    setServices(p => [...p, { id: uid("s"), name: lib.name, description: lib.description ?? "", quantity: "1", included: true, discountPct: "0" }]);
+  };
   const setService = (id: string, patch: Partial<DraftService>) => setServices(p => p.map(s => s.id === id ? { ...s, ...patch } : s));
   const removeService = (id: string) => setServices(p => p.filter(s => s.id !== id));
 
@@ -200,11 +214,10 @@ export default function AgreementBuilder({ preset, editAgreement, onClose, onCre
   }, [endDate, startDate, termMonths]);
 
   const tmpl = templateId ? getPlanTemplate(templateId) : undefined;
-  const agreementType = types.find(t => t.key === typeKey);
 
   // Document data for the preview.
   const docData: AgreementDocData = {
-    sections, title: title || tmpl?.name || "Service Agreement", planLevel: planLevel || undefined,
+    sections, title: title || tmpl?.name || "Service Agreement",
     customerName: customer?.name ?? "—", contactName: contactName || undefined,
     propertyLabel, locationName: customer?.locationName,
     startDate: parseInput(startDate) ? fmtHuman(parseInput(startDate)!) : undefined,
@@ -240,13 +253,13 @@ export default function AgreementBuilder({ preset, editAgreement, onClose, onCre
       customer: customer.name, customerInitials: customer.initials,
       location: customer.locationName.replace(/ Branch$/, ""),
       assignedTo: "Unassigned",
-      type: agreementType?.name ?? tmpl?.name ?? "Service Agreement",
-      industry: (agreementType?.industry ?? tmpl?.industry ?? "General") as Industry,
-      templateId, templateKey: tmpl?.key, planLevel: planLevel || undefined,
+      type: (title.trim() || tmpl?.name) ?? "Service Agreement",
+      industry: (tmpl?.industry ?? "General") as Industry,
+      templateId, templateKey: tmpl?.key,
       startDate: start ? fmtHuman(start) : startDate,
       endDate: endDate && parseInput(endDate) ? fmtHuman(parseInput(endDate)!) : undefined,
       renewalDate,
-      propertyLabel, contactName: contactName || undefined,
+      propertyId, propertyLabel, contactName: contactName || undefined,
       coverage: coverage.length ? coverage : undefined,
       services: docData.services.map(s => s.name),
       servicesDetailed: docData.services,
@@ -269,7 +282,6 @@ export default function AgreementBuilder({ preset, editAgreement, onClose, onCre
     if (!ea) return;
     setCustomerId(ea.customerId ?? customers.find(c => c.name === ea.customer)?.id ?? "");
     setTitle(ea.type ?? "");
-    setPlanLevel(ea.planLevel ?? "");
     setTemplateId(ea.templateId ?? "");
     setCoverage(ea.coverage ?? []);
     setServices((ea.servicesDetailed ?? []).map(s => ({
@@ -289,7 +301,6 @@ export default function AgreementBuilder({ preset, editAgreement, onClose, onCre
     setExclusions(ea.exclusions ?? "");
     setSections(ea.sections ?? ALL_SECTIONS.map(s => s.key));
     setTerms((ea.terms ?? []).map(t => ({ ...t })));
-    if (ea.planLevel) setPlanLevel(ea.planLevel);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -298,7 +309,6 @@ export default function AgreementBuilder({ preset, editAgreement, onClose, onCre
     if (!editAgreement) return;
     updateAgreement(editAgreement.id, {
       type: title || editAgreement.type,
-      planLevel: planLevel || undefined,
       services: docData.services.map(s => s.name),
       servicesDetailed: docData.services,
       visitPlan: docData.visits,
@@ -315,8 +325,8 @@ export default function AgreementBuilder({ preset, editAgreement, onClose, onCre
 
   // ── Step gating ──
   const canNext =
-    step === 1 ? Boolean(customerId && startDate) :
-    step === 2 ? Boolean(templateId && typeKey) :
+    step === 1 ? Boolean(customerId && propertyId && startDate) :
+    step === 2 ? Boolean(templateId) :
     step === 5 ? Boolean(billingKey) :
     true;
 
@@ -360,9 +370,9 @@ export default function AgreementBuilder({ preset, editAgreement, onClose, onCre
                   onChange={v => { setCustomerId(v); setPropertyId(""); }} disabled={Boolean(preset?.lockCustomer)} />
               </Field>
               <div className="grid grid-cols-2 gap-3">
-                <Field label="Service Location / Property" hint="optional">
-                  <UiSelect value={propertyId} onChange={setPropertyId} placeholder="No specific property"
-                    options={[{ value: "", label: "No specific property" }, ...properties.map(p => ({ value: p.id, label: `${p.label ? p.label + " — " : ""}${p.address}, ${p.city}` }))]} />
+                <Field label="Service Location / Property *">
+                  <UiSelect value={propertyId} onChange={setPropertyId} placeholder="Select a property"
+                    options={properties.map(p => ({ value: p.id, label: `${p.label ? p.label + " — " : ""}${p.address}, ${p.city}` }))} />
                 </Field>
                 <Field label="Contact Person" hint="optional">
                   <input value={contactName} onChange={e => setContactName(e.target.value)} placeholder="e.g. property manager"
@@ -396,24 +406,21 @@ export default function AgreementBuilder({ preset, editAgreement, onClose, onCre
             </div>
           )}
 
-          {/* ── Step 2: Template & Type ── */}
+          {/* ── Step 2: Choose a starting point ── */}
           {step === 2 && (
             <div className="space-y-4">
-              <Field label="Agreement Type *">
-                <UiSelect value={typeKey} onChange={setTypeKey} placeholder="Select a type…"
-                  options={types.map(t => ({ value: t.key, label: `${t.name} · ${t.industry}` }))} />
-              </Field>
               <div>
-                <p className="text-xs font-medium mb-2" style={{ color: "var(--text-secondary)" }}>Template *</p>
+                <p className="text-xs font-medium mb-2" style={{ color: "var(--text-secondary)" }}>Start from a template</p>
                 <div className="grid grid-cols-2 gap-3">
                   {planTemplates.map(t => {
                     const active = templateId === t.id;
+                    const blank = t.visits.length === 0;
                     return (
                       <button key={t.id} onClick={() => chooseTemplate(t.id)} className="text-left rounded-xl p-4 transition-all"
                         style={{ border: `2px solid ${active ? "#4f46e5" : "var(--border)"}`, backgroundColor: active ? "var(--accent-soft-bg)" : "var(--bg-surface-2)" }}>
-                        <div className="flex items-center justify-between mb-1">
-                          <p className="text-sm font-semibold" style={{ color: active ? "var(--accent-text-strong)" : "var(--text-primary)" }}>{t.name}</p>
-                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>{t.industry}</span>
+                        <div className="flex items-center justify-between mb-1 gap-2">
+                          <p className="text-sm font-semibold truncate" style={{ color: active ? "var(--accent-text-strong)" : "var(--text-primary)" }}>{t.name}</p>
+                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full shrink-0" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>{blank ? "Blank" : t.industry}</span>
                         </div>
                         <p className="text-[11px]" style={{ color: "var(--text-secondary)" }}>{t.description}</p>
                         <p className="text-[10px] mt-2" style={{ color: "var(--text-muted)" }}>{t.services.length} services · {t.visits.length} visit type(s)</p>
@@ -422,56 +429,68 @@ export default function AgreementBuilder({ preset, editAgreement, onClose, onCre
                   })}
                 </div>
               </div>
-              <Field label="Plan Level" hint="optional">
-                <input value={planLevel} onChange={e => setPlanLevel(e.target.value)} placeholder="e.g. Silver, Gold"
-                  className="w-full rounded-lg px-3 py-2 text-sm outline-none" style={inputStyle} />
-              </Field>
 
-              {/* Create directly from the template — everything is built in. */}
-              {templateId && (
+              {/* Actions for the selected template */}
+              {templateId && !customize && ((tmpl?.visits.length ?? 0) > 0 ? (
                 <div className="rounded-xl p-4 space-y-3" style={cardStyle}>
                   <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-                    This creates the agreement from the template ({tmpl?.services.length ?? 0} services · {tmpl?.visits.length ?? 0} visit type(s) · ${tmpl?.billing.amount ?? 0} {tmpl?.billing.frequencyKey}). You can customize it for this customer afterward from the agreement page.
+                    Use <span style={{ fontWeight: 600, color: "var(--text-secondary)" }}>{tmpl?.name}</span> as-is ({tmpl?.services.length ?? 0} services · {tmpl?.visits.length ?? 0} visit type(s) · ${tmpl?.billing.amount ?? 0} {tmpl?.billing.frequencyKey}), or customize billing, the visit schedule, and more for this customer.
                   </p>
-                  <div className="grid grid-cols-2 gap-3">
-                    <button onClick={() => save(false)} className="flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium"
+                  <div className="grid grid-cols-3 gap-2">
+                    <button onClick={() => save(false)} className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-medium"
                       style={{ border: "1px solid var(--border)", color: "var(--text-secondary)", backgroundColor: "var(--bg-surface)" }}>
-                      <FileText className="w-4 h-4" /> Save as Draft
+                      <FileText className="w-4 h-4" /> Draft
                     </button>
-                    <button onClick={() => save(true)} className="flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium text-white" style={{ backgroundColor: "#4f46e5" }}>
-                      <Send className="w-4 h-4" /> Activate Agreement
+                    <button onClick={() => save(true)} className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-medium text-white" style={{ backgroundColor: "#4f46e5" }}>
+                      <Send className="w-4 h-4" /> Activate
+                    </button>
+                    <button onClick={() => { setCustomize(true); setStep(3); }} className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-medium"
+                      style={{ border: "1px solid var(--accent-soft-border)", color: "var(--accent-text-strong)", backgroundColor: "var(--accent-soft-bg)" }}>
+                      <SlidersHorizontal className="w-4 h-4" /> Customize
                     </button>
                   </div>
                 </div>
-              )}
+              ) : (
+                <div className="rounded-xl p-4 flex items-center justify-between gap-3" style={cardStyle}>
+                  <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+                    A blank starting point — add the visit schedule and billing to build this agreement out.
+                  </p>
+                  <button onClick={() => { setCustomize(true); setStep(3); }} className="shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-white" style={{ backgroundColor: "#4f46e5" }}>
+                    <SlidersHorizontal className="w-4 h-4" /> Customize <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
             </div>
           )}
 
-          {/* ── Step 3: Included Services ── */}
+          {/* ── Step 3: Included Services (from your library) ── */}
           {step === 3 && (
             <div className="space-y-3">
-              <Header label="Included Services" onAdd={addService} addLabel="Add service" />
-              {services.length === 0 && <Empty>No services yet. Add the work this plan includes.</Empty>}
+              <label className="text-xs font-semibold uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>Included Services</label>
+              {serviceLib.length === 0 ? (
+                <div className="rounded-xl p-4 text-center" style={cardStyle}>
+                  <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>No services in your library yet</p>
+                  <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
+                    Add services under <span style={{ color: "var(--accent-text)", fontWeight: 600 }}>Settings → Agreements → Services</span>, then load them here.
+                  </p>
+                </div>
+              ) : (
+                <div className="max-w-xs">
+                  <UiSelect size="sm" value="" placeholder="+ Add a service…" onChange={addServiceFromLib}
+                    options={availableServices.map(s => ({ value: s.id, label: s.name }))} />
+                </div>
+              )}
+              {services.length === 0 && serviceLib.length > 0 && <Empty>No services added yet. Load one from your library above.</Empty>}
               {services.map(s => (
-                <div key={s.id} className="rounded-xl p-3 space-y-2" style={cardStyle}>
-                  <div className="flex items-center gap-2">
-                    <input value={s.name} onChange={e => setService(s.id, { name: e.target.value })} placeholder="Service name"
-                      className="flex-1 rounded-lg px-2.5 py-1.5 text-sm outline-none" style={inputStyle} />
-                    <div className="flex items-center gap-1"><span className="text-[10px]" style={{ color: "var(--text-muted)" }}>Qty</span>
-                      <input type="number" min={1} value={s.quantity} onChange={e => setService(s.id, { quantity: e.target.value })}
-                        className="w-14 rounded-lg px-2 py-1 text-xs outline-none" style={inputStyle} /></div>
-                    <button onClick={() => removeService(s.id)} className="p-1.5 rounded-lg shrink-0" style={{ color: "var(--text-muted)" }}><Trash2 className="w-3.5 h-3.5" /></button>
+                <div key={s.id} className="rounded-xl p-3 flex items-center gap-3" style={cardStyle}>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{s.name}</p>
+                    {s.description && <p className="text-[11px] truncate" style={{ color: "var(--text-muted)" }}>{s.description}</p>}
                   </div>
-                  <input value={s.description} onChange={e => setService(s.id, { description: e.target.value })} placeholder="Description (optional)"
-                    className="w-full rounded-lg px-2.5 py-1.5 text-xs outline-none" style={inputStyle} />
-                  <div className="flex items-center gap-3">
-                    <Seg options={[{ k: "inc", label: "Included" }, { k: "disc", label: "Discounted" }]} value={s.included ? "inc" : "disc"} onChange={k => setService(s.id, { included: k === "inc" })} />
-                    {!s.included && (
-                      <div className="flex items-center gap-1"><span className="text-[10px]" style={{ color: "var(--text-muted)" }}>Discount</span>
-                        <input type="number" min={0} max={100} value={s.discountPct} onChange={e => setService(s.id, { discountPct: e.target.value })}
-                          className="w-14 rounded-lg px-2 py-1 text-xs outline-none" style={inputStyle} /><span className="text-[10px]" style={{ color: "var(--text-muted)" }}>%</span></div>
-                    )}
-                  </div>
+                  <div className="flex items-center gap-1 shrink-0"><span className="text-[10px]" style={{ color: "var(--text-muted)" }}>Qty</span>
+                    <input type="number" min={1} value={s.quantity} onChange={e => setService(s.id, { quantity: e.target.value })}
+                      className="w-14 rounded-lg px-2 py-1 text-xs outline-none" style={inputStyle} /></div>
+                  <button onClick={() => removeService(s.id)} className="p-1.5 rounded-lg shrink-0" style={{ color: "var(--text-muted)" }}><Trash2 className="w-3.5 h-3.5" /></button>
                 </div>
               ))}
             </div>
@@ -610,12 +629,19 @@ export default function AgreementBuilder({ preset, editAgreement, onClose, onCre
                     style={{ border: "1px solid var(--border)", color: "var(--text-secondary)", backgroundColor: "var(--bg-surface)" }}>
                     <FileText className="w-4 h-4" /> Save as Draft
                   </button>
-                  <button onClick={() => save(true)} className="flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-medium text-white" style={{ backgroundColor: "#4f46e5" }}>
+                  <button onClick={() => save(true)} disabled={generatedVisits.length === 0}
+                    className="flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-medium text-white disabled:opacity-40" style={{ backgroundColor: "#4f46e5" }}>
                     <Send className="w-4 h-4" /> Activate Agreement
                   </button>
                 </div>
               )}
-              {!isEdit && <p className="text-[11px] text-center" style={{ color: "var(--text-muted)" }}>No e-signature is sent — “Activate” sets the agreement live and schedules its visits.</p>}
+              {!isEdit && (
+                <p className="text-[11px] text-center" style={{ color: generatedVisits.length === 0 ? "#dc2626" : "var(--text-muted)" }}>
+                  {generatedVisits.length === 0
+                    ? "Add at least one visit (Visits step) before activating."
+                    : "No e-signature is sent — “Activate” sets the agreement live and schedules its visits."}
+                </p>
+              )}
             </div>
           )}
         </div>
@@ -665,17 +691,4 @@ function Header({ label, onAdd, addLabel }: { label: string; onAdd: () => void; 
 }
 function Empty({ children }: { children: React.ReactNode }) {
   return <p className="text-sm text-center py-6" style={{ color: "var(--text-muted)" }}>{children}</p>;
-}
-function Seg({ options, value, onChange }: { options: { k: string; label: string }[]; value: string; onChange: (k: string) => void }) {
-  return (
-    <div className="flex items-center rounded-lg overflow-hidden w-fit" style={{ border: "1px solid var(--border)" }}>
-      {options.map(o => {
-        const active = value === o.k;
-        return (
-          <button key={o.k} onClick={() => onChange(o.k)} className="px-3 py-1 text-xs font-medium transition-colors"
-            style={{ backgroundColor: active ? "#4f46e5" : "var(--bg-surface)", color: active ? "#fff" : "var(--text-secondary)" }}>{o.label}</button>
-        );
-      })}
-    </div>
-  );
 }

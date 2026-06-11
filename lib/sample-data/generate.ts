@@ -4,7 +4,7 @@
 // returns the created entity (when a child may need it as a parent) plus a
 // manifest entry describing what was made and what it depends on.
 
-import { addCustomerPersisted, saveProperties, type Customer, type AccountType, type CustomerType, type Property } from "@/lib/customers/data";
+import { addCustomerPersisted, saveProperties, getProperties, type Customer, type AccountType, type CustomerType, type Property } from "@/lib/customers/data";
 import { createJob, createWorkOrder, updateJob, type JobType, type Job } from "@/lib/jobs/data";
 import { createProject, type Project } from "@/lib/projects/data";
 import { createQuote, createInvoice, type LineItem } from "@/lib/quotes/data";
@@ -216,8 +216,12 @@ export function genAgreement(ctx: GenCtx, customer: Customer): { entry: SampleEn
     status: "planned",
     tech: "Unassigned",
   }));
+  const props = getProperties(customer.id);
+  const property = props.find(p => p.isPrimary) ?? props[0];
   const ag = createAgreement({
     customerId: customer.id, customer: customer.name, customerInitials: customer.initials,
+    propertyId: property.id,
+    propertyLabel: `${property.label ? property.label + " — " : ""}${property.address}, ${property.city}`,
     location: ctx.locationName, assignedTo: pick(TECHS),
     type: "HVAC Residential Maintenance Plan", industry: "HVAC", templateId: "t1",
     startDate: dateOffset(-Math.floor(Math.random() * 60)), renewalDate: dateOffset(300 + Math.floor(Math.random() * 60)),

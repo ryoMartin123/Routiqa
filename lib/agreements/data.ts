@@ -240,6 +240,7 @@ import type { TemplateService, TemplateVisit, TemplateTerm, SectionKey } from ".
 export interface AgreementBuilderSnapshot {
   number?: string;
   customerId?: string;
+  propertyId?: string;                 // the linked service location/property
   propertyLabel?: string;
   contactName?: string;
   endDate?: string;
@@ -329,7 +330,7 @@ export interface NewAgreementInput {
   type: string; industry: Industry; templateId: string; templateKey?: string;
   planLevel?: string;
   startDate: string; endDate?: string; renewalDate: string;
-  propertyLabel?: string; contactName?: string;
+  propertyId: string; propertyLabel?: string; contactName?: string;
   coverage?: string[];
   services: string[];                  // short labels (legacy display)
   servicesDetailed?: TemplateService[];
@@ -373,7 +374,7 @@ export function createAgreement(input: NewAgreementInput): CustomerAgreement {
     services: input.services,
     servicesDetailed: input.servicesDetailed,
     visitPlan: input.visitPlan,
-    propertyLabel: input.propertyLabel, contactName: input.contactName,
+    propertyId: input.propertyId, propertyLabel: input.propertyLabel, contactName: input.contactName,
     coverage: input.coverage, planLevel: input.planLevel,
     benefits: input.benefits, terms: input.terms, exclusions: input.exclusions,
     sections: input.sections, renewal: input.renewal,
@@ -404,6 +405,7 @@ function nextPlannedDate(visits: AgreementVisit[]): string | null {
 export interface MaterializeVisitCtx {
   companyId: string; locationId: string; serviceAreaId?: string;
   scheduledDate?: string; scheduledTime?: string; assignedTo?: string;
+  durationMinutes?: number;
 }
 
 // Turn a planned visit into a dispatchable job and link the two.
@@ -424,7 +426,7 @@ export function materializeVisitJob(agreementId: string, visitId: string, ctx: M
     locationName: agreement.location,
     title: `${agreement.type} — ${visit.label}`,
     type: "maintenance",
-    scheduledDate: date, scheduledTime: ctx.scheduledTime,
+    scheduledDate: date, scheduledTime: ctx.scheduledTime, durationMinutes: ctx.durationMinutes,
     assignedTo: tech, assignedToInitials: tech ? visitInitials(tech) : "",
     dispatchType: "agreement_visit", sourceModule: "agreements", sourceRefId: visitId,
   });
@@ -438,6 +440,27 @@ export function materializeVisitJob(agreementId: string, visitId: string, ctx: M
   );
   updateAgreement(agreementId, { visits, nextVisit: nextPlannedDate(visits) });
   return { job };
+}
+
+// Keep a booked visit's plan date in step with its job. When an agreement-sourced
+// job is moved or reassigned on the dispatch board, mirror the new date + tech onto
+// the linked visit (only while it's still open/scheduled — completed/missed visits
+// are historical). No-op for plain jobs (no agreementId/sourceRefId), so callers can
+// fire it after any updateJob unconditionally.
+export function syncAgreementVisitFromJob(job: { agreementId?: string; sourceRefId?: string; scheduledDate?: string; assignedTo?: string }): void {
+  if (!job.agreementId || !job.sourceRefId) return;
+  const agreement = getAgreement(job.agreementId);
+  if (!agreement) return;
+  let changed = false;
+  const visits = agreement.visits.map(v => {
+    if (v.id !== job.sourceRefId || v.status !== "scheduled") return v;
+    const scheduled = job.scheduledDate || v.scheduled;
+    const tech = job.assignedTo || v.tech;
+    if (scheduled === v.scheduled && tech === v.tech) return v;
+    changed = true;
+    return { ...v, scheduled, tech };
+  });
+  if (changed) updateAgreement(job.agreementId, { visits, nextVisit: nextPlannedDate(visits) });
 }
 
 // Called by the job lifecycle when an agreement-sourced job completes: flips the

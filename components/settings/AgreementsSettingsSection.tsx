@@ -2,12 +2,12 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import {
-  Plus, Pencil, Copy, Trash2, Check, FileText, Tag, CalendarClock,
+  Plus, Pencil, Copy, Trash2, Check, FileText, Wrench, CalendarClock,
   DollarSign, Star, ScrollText, RefreshCw, Hash,
 } from "lucide-react";
 import UiSelect from "@/components/ui/Select";
 import {
-  getAgreementTypes, saveAgreementTypes,
+  getAgreementServices, saveAgreementServices,
   getVisitRules, saveVisitRules,
   getBillingRules, saveBillingRules,
   getBenefits, saveBenefits,
@@ -15,14 +15,13 @@ import {
   getRenewalRules, saveRenewalRules,
   getNumbering, saveNumbering,
   BENEFIT_KIND_LABELS, agrId, agrSlug,
-  type AgreementType, type VisitRule, type BillingRule,
+  type AgreementService, type VisitRule, type BillingRule,
   type Benefit, type TermsBlock, type RenewalRule, type BenefitKind,
 } from "@/lib/agreements/settings";
 import {
   getPlanTemplates, savePlanTemplates, blankPlanTemplate, type PlanTemplate,
 } from "@/lib/agreements/templates";
-
-const INDUSTRIES = ["HVAC", "Roofing", "Plumbing", "Property Maintenance", "Consulting", "General"] as const;
+import TemplateEditorModal from "@/components/agreements/TemplateEditorModal";
 
 // Lets each tab report its save handler + dirty/saved state up to the header.
 type Saver = (save: () => void, dirty: boolean, saved: boolean) => void;
@@ -169,9 +168,7 @@ function TemplatesTab({ register }: { register: Saver }) {
   function startAdd() { setEditing(blankPlanTemplate()); setAdding(true); }
   function startEdit(t: PlanTemplate) { setEditing({ ...t }); setAdding(false); }
   function cancel() { setEditing(null); setAdding(false); }
-  function commit() {
-    if (!editing) return;
-    const t = { ...editing, key: editing.key || agrSlug(editing.name) };
+  function handleSaved(t: PlanTemplate) {
     if (adding) setItems(p => [...p, t]); else setItems(p => p.map(x => x.id === t.id ? t : x));
     cancel(); mark();
   }
@@ -182,60 +179,20 @@ function TemplatesTab({ register }: { register: Saver }) {
 
   useEffect(() => { register(doSave, dirty, saved); });
 
-  function setField<K extends keyof PlanTemplate>(key: K, val: PlanTemplate[K]) { setEditing(d => d ? { ...d, [key]: val } : d); }
-
-  function Form() {
-    if (!editing) return null;
-    return (
-      <div className="rounded-xl p-4 space-y-3" style={{ backgroundColor: "var(--bg-surface)", border: "2px solid #c7d2fe", boxShadow: "var(--shadow-card)" }}>
-        <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: "#4f46e5" }}>{adding ? "New Template" : "Edit Template"}</p>
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="block text-xs font-medium mb-1" style={{ color: "var(--text-secondary)" }}>Name *</label>
-            <input value={editing.name} onChange={e => setField("name", e.target.value)} className="w-full rounded-lg px-3 py-2 text-sm outline-none" style={inputStyle} />
-          </div>
-          <div>
-            <label className="block text-xs font-medium mb-1" style={{ color: "var(--text-secondary)" }}>Industry</label>
-            <UiSelect value={editing.industry} onChange={v => setField("industry", v as PlanTemplate["industry"])} options={INDUSTRIES.map(i => ({ value: i, label: i }))} />
-          </div>
-          <div className="col-span-2">
-            <label className="block text-xs font-medium mb-1" style={{ color: "var(--text-secondary)" }}>Description</label>
-            <input value={editing.description} onChange={e => setField("description", e.target.value)} className="w-full rounded-lg px-3 py-2 text-sm outline-none" style={inputStyle} />
-          </div>
-          <div>
-            <label className="block text-xs font-medium mb-1" style={{ color: "var(--text-secondary)" }}>Plan Level</label>
-            <input value={editing.planLevel ?? ""} onChange={e => setField("planLevel", e.target.value)} placeholder="optional" className="w-full rounded-lg px-3 py-2 text-sm outline-none" style={inputStyle} />
-          </div>
-          <div>
-            <label className="block text-xs font-medium mb-1" style={{ color: "var(--text-secondary)" }}>Status</label>
-            <UiSelect value={editing.status} onChange={v => setField("status", v as PlanTemplate["status"])} options={[{ value: "active", label: "Active" }, { value: "draft", label: "Draft" }, { value: "archived", label: "Archived" }]} />
-          </div>
-        </div>
-        <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>Services, visits, billing, benefits, and document sections are configured per agreement in the Agreement Builder, seeded from this template.</p>
-        <div className="flex items-center justify-end gap-2">
-          <button onClick={cancel} className="px-3 py-1.5 rounded-lg text-sm" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>Cancel</button>
-          <button onClick={commit} disabled={!editing.name.trim()} className="px-4 py-1.5 rounded-lg text-sm font-medium text-white disabled:opacity-40" style={{ backgroundColor: "#4f46e5" }}>{adding ? "Add Template" : "Update"}</button>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-4">
-      {adding && Form()}
+      {editing && <TemplateEditorModal template={editing} isNew={adding} onCancel={cancel} onSave={handleSaved} />}
       <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
         <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
           <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Agreement Templates
             <span className="ml-2 text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>{items.length}</span></p>
-          {!adding && <button onClick={startAdd} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-white" style={{ backgroundColor: "#4f46e5" }}><Plus className="w-3.5 h-3.5" /> Add Template</button>}
+          <button onClick={startAdd} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-white" style={{ backgroundColor: "#4f46e5" }}><Plus className="w-3.5 h-3.5" /> Add Template</button>
         </div>
         <div className="grid px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider"
           style={{ gridTemplateColumns: "2.2fr 1fr 0.8fr 0.8fr 0.7fr auto", gap: "0.75rem", color: "var(--text-muted)", borderBottom: "1px solid var(--border-subtle)" }}>
           <span>Template</span><span>Industry</span><span>Services</span><span>Visits</span><span>Status</span><span />
         </div>
-        {items.map((t, i) => editing && !adding && editing.id === t.id ? (
-          <div key={t.id} className="p-4" style={{ borderBottom: i < items.length - 1 ? "1px solid var(--border-subtle)" : "none" }}>{Form()}</div>
-        ) : (
+        {items.map((t, i) => (
           <div key={t.id} className="grid px-4 py-3 items-center hover:bg-[var(--bg-surface-2)] transition-colors"
             style={{ gridTemplateColumns: "2.2fr 1fr 0.8fr 0.8fr 0.7fr auto", gap: "0.75rem", borderBottom: i < items.length - 1 ? "1px solid var(--border-subtle)" : "none", opacity: t.active ? 1 : 0.5 }}>
             <div className="min-w-0"><p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{t.name}</p><p className="text-[11px] truncate" style={{ color: "var(--text-muted)" }}>{t.description}</p></div>
@@ -273,7 +230,7 @@ function TemplatesTab({ register }: { register: Saver }) {
 // ═══ Main section ═════════════════════════════════════════
 const TABS = [
   { key: "templates", label: "Templates",    icon: FileText },
-  { key: "types",     label: "Types",        icon: Tag },
+  { key: "services",  label: "Services",     icon: Wrench },
   { key: "visits",    label: "Visit Rules",  icon: CalendarClock },
   { key: "billing",   label: "Billing Rules",icon: DollarSign },
   { key: "benefits",  label: "Benefits",     icon: Star },
@@ -324,16 +281,15 @@ export default function AgreementsSettingsSection() {
       </div>
 
       {tab === "templates" && <TemplatesTab register={register} />}
-      {tab === "types" && (
-        <SimpleCrud<AgreementType> title="Agreement Type" get={getAgreementTypes} save={saveAgreementTypes} register={register}
+      {tab === "services" && (
+        <SimpleCrud<AgreementService> title="Service" get={getAgreementServices} save={saveAgreementServices} register={register}
           primaryKey="name" subtitleKey="description"
           fields={[
             { key: "name", label: "Name", type: "text" },
-            { key: "industry", label: "Industry", type: "select", options: INDUSTRIES.map(i => ({ value: i, label: i })) },
             { key: "description", label: "Description", type: "text", full: true },
             { key: "active", label: "Active", type: "toggle" },
           ]}
-          makeNew={() => ({ id: agrId("at"), name: "", key: "", industry: "General", description: "", active: true, order: 999 })} />
+          makeNew={() => ({ id: agrId("as"), name: "", description: "", active: true, order: 999 })} />
       )}
       {tab === "visits" && (
         <SimpleCrud<VisitRule> title="Visit Rule" get={getVisitRules} save={saveVisitRules} register={register}

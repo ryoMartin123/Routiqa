@@ -16,6 +16,13 @@ export interface AgreementType {
   active: boolean; order: number;
 }
 
+// A reusable agreement service — the library you load into a template's
+// "Included Services". Templates snapshot the name/description at build time.
+export interface AgreementService {
+  id: string; name: string; description?: string;
+  active: boolean; order: number;
+}
+
 // A visit cadence. visitsPerYear drives how many visits the builder seeds.
 export interface VisitRule {
   id: string; name: string; key: string;
@@ -73,6 +80,19 @@ const DEFAULT_TYPES: AgreementType[] = [
   { id: "at-6", name: "Service Agreement",        key: "service_agreement",       industry: "General",             description: "General recurring service agreement.",                active: true, order: 6 },
 ];
 
+const DEFAULT_SERVICES: AgreementService[] = [
+  { id: "as-1", name: "Spring Tune-up",       description: "Seasonal inspection, cleaning, and performance check.", active: true, order: 1 },
+  { id: "as-2", name: "Fall Tune-up",         description: "Pre-winter inspection, cleaning, and safety check.",    active: true, order: 2 },
+  { id: "as-3", name: "Filter Replacement",   description: "Replace standard air filters.",                         active: true, order: 3 },
+  { id: "as-4", name: "Quarterly Inspection", description: "Routine inspection of covered equipment/systems.",       active: true, order: 4 },
+  { id: "as-5", name: "Coil Cleaning",        description: "Clean evaporator and condenser coils.",                  active: true, order: 5 },
+  { id: "as-6", name: "Drain Cleaning",       description: "Clear and flush primary drain lines.",                   active: true, order: 6 },
+  { id: "as-7", name: "Water Heater Check",   description: "Inspect and test water heater operation.",               active: true, order: 7 },
+  { id: "as-8", name: "Gutter Cleaning",      description: "Clear gutters and downspouts; check flow.",              active: true, order: 8 },
+  { id: "as-9", name: "Photo Report",         description: "Documented photo report of the visit.",                  active: true, order: 9 },
+  { id: "as-10", name: "Priority Dispatch",   description: "Front-of-queue scheduling for service calls.",           active: true, order: 10 },
+];
+
 const DEFAULT_VISIT_RULES: VisitRule[] = [
   { id: "vr-1", name: "Monthly",      key: "monthly",      visitsPerYear: 12, defaultDurationMin: 60, active: true, order: 1 },
   { id: "vr-2", name: "Quarterly",    key: "quarterly",    visitsPerYear: 4,  defaultDurationMin: 90, active: true, order: 2 },
@@ -115,6 +135,7 @@ const DEFAULT_NUMBERING: NumberingSettings = { prefix: "AGR", nextSeq: 1001, pad
 
 // ─── Storage ──────────────────────────────────────────────
 const TYPE_KEY    = "crm-agr-types";
+const SERVICE_KEY = "crm-agr-services";
 const VISIT_KEY   = "crm-agr-visit-rules";
 const BILL_KEY    = "crm-agr-billing-rules";
 const BENEFIT_KEY = "crm-agr-benefits";
@@ -141,6 +162,7 @@ function writeObj<T>(key: string, value: T): void {
 
 // Cached runtime lists
 let _types: AgreementType[] | null = null;
+let _services: AgreementService[] | null = null;
 let _visit: VisitRule[] | null = null;
 let _bill: BillingRule[] | null = null;
 let _benefits: Benefit[] | null = null;
@@ -153,6 +175,10 @@ const reorder = <T extends { order: number }>(l: T[]) => sortOrder(l).map((x, i)
 // Types
 export function getAgreementTypes(): AgreementType[] { if (!_types) _types = read(TYPE_KEY, DEFAULT_TYPES); return sortOrder(_types); }
 export function saveAgreementTypes(list: AgreementType[]): void { _types = reorder(list); write(TYPE_KEY, _types); }
+
+// Services (the library loaded into template "Included Services")
+export function getAgreementServices(): AgreementService[] { if (!_services) _services = read(SERVICE_KEY, DEFAULT_SERVICES); return sortOrder(_services); }
+export function saveAgreementServices(list: AgreementService[]): void { _services = reorder(list); write(SERVICE_KEY, _services); }
 
 // Visit rules
 export function getVisitRules(): VisitRule[] { if (!_visit) _visit = read(VISIT_KEY, DEFAULT_VISIT_RULES); return sortOrder(_visit); }

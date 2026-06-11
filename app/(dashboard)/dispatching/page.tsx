@@ -12,11 +12,13 @@ import PageTitle from "@/components/shared/PageTitle";
 import CalendarItemDrawer from "@/components/calendar/CalendarItemDrawer";
 import StatusBadge from "@/components/shared/StatusBadge";
 import ScheduleConfirmModal, { type ScheduleDraft } from "@/components/calendar/ScheduleConfirmModal";
+import ScheduleVisitModal, { type VisitScheduleDraft } from "@/components/calendar/ScheduleVisitModal";
 import Select from "@/components/ui/Select";
 import {
-  getCalendarItems, getUnscheduledItems, getUnscheduledJobs, getSessionCalendarItems, getTechnicians, getStaffRoster, markSourceScheduled, type CalendarScope, type TechRosterEntry,
+  getCalendarItems, getUnscheduledItems, getUnscheduledJobs, getSessionCalendarItems, getTechnicians, getStaffRoster, markSourceScheduled, getSchedulableVisits, type CalendarScope, type TechRosterEntry, type SchedulableVisit,
 } from "@/lib/calendar/data";
 import { createJob, updateJob, getJob, resolveJobTypeColor, type JobType } from "@/lib/jobs/data";
+import { syncAgreementVisitFromJob, materializeVisitJob } from "@/lib/agreements/data";
 import JobStageControl from "@/components/jobs/JobStageControl";
 import { getCustomer } from "@/lib/customers/data";
 import { getUsersByRoles, getBoardCandidates } from "@/lib/users/data";
@@ -120,12 +122,17 @@ export default function CalendarPage() {
   const [timeOffOpen, setTimeOffOpen]   = useState(false);
   const [createMenuOpen, setCreateMenuOpen] = useState(false);
   const [showJobWizard, setShowJobWizard]   = useState(false);
+  const [showVisitScheduler, setShowVisitScheduler] = useState(false);
+  const [visitSchedErr, setVisitSchedErr] = useState<string | null>(null);
 
   // Jobs created in-session (New Job form / quote conversion) live in the session
   // store; load them client-side so they merge into the queue (unscheduled) and
   // the board/calendar (scheduled) without a hydration gap.
   const [sessionUnscheduled, setSessionUnscheduled] = useState<UnscheduledItem[]>([]);
   const [sessionItems, setSessionItems] = useState<CalendarItem[]>([]);
+  // Planned agreement visits available to book from the board (client-side: reads
+  // the localStorage-backed agreements store).
+  const [schedulable, setSchedulable] = useState<SchedulableVisit[]>([]);
   // Technician roster is derived from the user directory (localStorage-backed),
   // so load it client-side here rather than during render.
   const [roster, setRoster] = useState<TechRosterEntry[]>([]);
@@ -136,6 +143,7 @@ export default function CalendarPage() {
     const s: CalendarScope = { companyId: effectiveCompanyId, locationId: effectiveLocationId, serviceAreaId: effectiveServiceAreaId };
     setSessionUnscheduled(getUnscheduledJobs(s));
     setSessionItems(getSessionCalendarItems(s));
+    setSchedulable(getSchedulableVisits(s));
     setRoster(getStaffRoster());
     setRosterReady(true);
   }, [effectiveCompanyId, effectiveLocationId, effectiveServiceAreaId, refreshKey]);
@@ -284,7 +292,8 @@ export default function CalendarPage() {
     if (!selScheduled) return;
     // Jobs persist to the store; other sources (tasks/agreements) stay board-local.
     if (selScheduled.sourceModule === "jobs" && selScheduled.sourceId) {
-      updateJob(selScheduled.sourceId, { assignedTo: tech, assignedToInitials: initials(tech) });
+      const updated = updateJob(selScheduled.sourceId, { assignedTo: tech, assignedToInitials: initials(tech) });
+      if (updated) syncAgreementVisitFromJob(updated);
       setRefreshKey(k => k + 1);
     } else {
       setEdits(e => ({ ...e, [selScheduled.id]: { ...e[selScheduled.id], assignedTo: tech } }));
@@ -295,10 +304,13 @@ export default function CalendarPage() {
   function applyMoveResize(id: string, start: Date, durationMinutes: number, tech?: string) {
     const item = items.find(i => i.id === id);
     if (item?.sourceModule === "jobs" && item.sourceId) {
-      updateJob(item.sourceId, {
+      const updated = updateJob(item.sourceId, {
         scheduledDate: jobDateStr(start), scheduledTime: jobTimeStr(start), durationMinutes,
         ...(tech ? { assignedTo: tech, assignedToInitials: initials(tech) } : {}),
       });
+      // If this job is a booked agreement visit, mirror the new date/tech back onto
+      // the linked visit so the agreement's plan stays in step (no-op for plain jobs).
+      if (updated) syncAgreementVisitFromJob(updated);
       setRefreshKey(k => k + 1);
       return;
     }
@@ -373,6 +385,24 @@ export default function CalendarPage() {
     setRemoved(r => new Set(r).add(u.id));             // instant hide before the reload
     setRefreshKey(k => k + 1);
     setConfirm(null);
+  }
+
+  // Book a planned agreement visit from the Create menu. Materializes it into a Job
+  // (it counts as a visit on the agreement) and drops it onto the board.
+  function confirmScheduleVisit(d: VisitScheduleDraft) {
+    const entry = schedulable.find(s => s.agreement.id === d.agreementId && s.visit.id === d.visitId);
+    const start = new Date(`${d.date}T${d.time}`);
+    const res = materializeVisitJob(d.agreementId, d.visitId, {
+      companyId: entry?.companyId || effectiveCompanyId || "",
+      locationId: entry?.locationId || effectiveLocationId || "",
+      serviceAreaId: effectiveServiceAreaId ?? undefined,
+      scheduledDate: jobDateStr(start), scheduledTime: jobTimeStr(start),
+      assignedTo: d.tech || undefined,
+      durationMinutes: d.durationMinutes,
+    });
+    if (res.error) { setVisitSchedErr(res.error); return; }
+    setShowVisitScheduler(false);
+    setRefreshKey(k => k + 1);
   }
 
   // ── Availability ──
@@ -483,6 +513,13 @@ export default function CalendarPage() {
                     </div>
                     <div className="min-w-0"><p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>New Job</p><p className="text-[11px]" style={{ color: "var(--text-muted)" }}>Schedulable work</p></div>
                   </button>
+                  <button onClick={() => { setCreateMenuOpen(false); setVisitSchedErr(null); setShowVisitScheduler(true); }}
+                    className="w-full flex items-center gap-3 px-3 py-2 text-left transition-colors hover:bg-[var(--bg-surface-2)]">
+                    <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: "var(--accent-soft-bg)" }}>
+                      <CalendarDays className="w-4 h-4" style={{ color: "var(--accent-text)" }} />
+                    </div>
+                    <div className="min-w-0"><p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>Agreement Visit</p><p className="text-[11px]" style={{ color: "var(--text-muted)" }}>Book a planned visit</p></div>
+                  </button>
                   <button onClick={() => { setCreateMenuOpen(false); setTimeOffOpen(true); }}
                     className="w-full flex items-center gap-3 px-3 py-2 text-left transition-colors hover:bg-[var(--bg-surface-2)]">
                     <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: "var(--accent-soft-bg)" }}>
@@ -583,6 +620,17 @@ export default function CalendarPage() {
 
       {/* Create a job straight from the board — refreshes so it lands on the grid / queue */}
       {showJobWizard && <JobWizard onClose={() => setShowJobWizard(false)} onCreated={() => { setShowJobWizard(false); setRefreshKey(k => k + 1); }} />}
+
+      {/* Book a planned agreement visit → materializes into a Job on the board */}
+      {showVisitScheduler && (
+        <ScheduleVisitModal
+          visits={schedulable} technicians={technicians}
+          defaultDate={ymd(focus)} dayStart={hourly.startHour} dayEnd={hourly.endHour}
+          checkOverlap={slotConflict} error={visitSchedErr}
+          onConfirm={confirmScheduleVisit}
+          onClose={() => setShowVisitScheduler(false)}
+        />
+      )}
     </div>
   );
 }

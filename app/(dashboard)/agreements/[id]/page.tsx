@@ -9,7 +9,7 @@ import {
   CheckCircle, AlertCircle, Circle, ChevronRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import StatusBadge from "@/components/shared/StatusBadge";
+import HoverInfo, { Pill } from "@/components/shared/HoverInfo";
 import DetailTabs from "@/components/shared/DetailTabs";
 import AgreementBuilder from "@/components/agreements/AgreementBuilder";
 import {
@@ -522,13 +522,12 @@ export default function AgreementDetailPage({
                   <h1 className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>
                     {agreement.customer}
                   </h1>
-                  <span
-                    className="inline-block text-[10px] font-medium px-2 py-0.5 rounded"
-                    style={{ backgroundColor: "var(--bg-input)", color: "var(--text-secondary)" }}
-                  >
-                    {agreement.type}
-                  </span>
-                  <StatusBadge label={s.label} color={s.color} />
+                  <HoverInfo placement="bottom" rows={[
+                    { label: "Type", node: <span className="text-xs font-medium" style={{ color: "var(--text-primary)" }}>{agreement.type}</span> },
+                    { label: "Status", node: <Pill text={s.label} style={{ backgroundColor: s.bg, color: s.color }} /> },
+                    ...(agreement.propertyLabel ? [{ label: "Property", node: <span className="text-xs" style={{ color: "var(--text-secondary)" }}>{agreement.propertyLabel}</span> }] : []),
+                    { label: "Assigned To", node: <span className="text-xs" style={{ color: "var(--text-secondary)" }}>{agreement.assignedTo}</span> },
+                  ]} />
                 </div>
                 <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
                   {agreement.location} · {formatValue(agreement)} · {agreement.visitFrequency}

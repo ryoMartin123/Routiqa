@@ -11,7 +11,7 @@
 // whose name already exists.
 
 import {
-  getAllCustomers, saveProperties, type Customer, type AccountType, type CustomerStatus, type CustomerType, type Property,
+  getAllCustomers, saveProperties, getProperties, type Customer, type AccountType, type CustomerStatus, type CustomerType, type Property,
 } from "@/lib/customers/data";
 import { getAllLocations } from "@/lib/hierarchy/data";
 import { createJob, type JobType } from "@/lib/jobs/data";
@@ -133,9 +133,13 @@ export function seedTestData(addCustomer: (c: Customer) => void): number {
     // Give the first account an agreement + a quote so Billing / Agreements /
     // Timeline all have something to show.
     if (idx === 0) {
+      const agProps = getProperties(customer.id);
+      const agProperty = agProps.find(p => p.isPrimary) ?? agProps[0];
       createAgreement({
         customerId: customer.id,
         customer: customer.name, customerInitials: ini,
+        propertyId: agProperty.id,
+        propertyLabel: `${agProperty.label ? agProperty.label + " — " : ""}${agProperty.address}, ${agProperty.city}`,
         location: locationName, assignedTo: spec.job.tech,
         type: "HVAC Residential Maintenance Plan", industry: "HVAC",
         templateId: "t1",
