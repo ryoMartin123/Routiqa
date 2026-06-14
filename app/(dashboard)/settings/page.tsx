@@ -72,7 +72,10 @@ type CategoryKey =
 type View =
   | { mode: "home" }
   | { mode: "category"; category: CategoryKey }
-  | { mode: "section"; category: CategoryKey; section: SectionKey };
+  | { mode: "section"; category: CategoryKey; section: SectionKey; sub?: { key: string; label: string } | null };
+
+// Props the Agreements hub section needs to drive its module sub-navigation.
+type AgreementsProps = { activeModule: string | null; onOpen: (key: string, label: string) => void; onBack: () => void };
 
 interface SettingItem {
   key:         SectionKey;
@@ -874,10 +877,10 @@ export default function SettingsPage() {
   // ── Navigation helpers ────────────────────────────────────
   function goHome()                                             { setView({ mode: "home" }); }
   function goCategory(c: CategoryKey)                          { setView({ mode: "category", category: c }); }
-  function goSection(c: CategoryKey, s: SectionKey)            { setView({ mode: "section", category: c, section: s }); }
+  function goSection(c: CategoryKey, s: SectionKey)            { setView({ mode: "section", category: c, section: s, sub: null }); }
 
   // ── Section renderer ──────────────────────────────────────
-  function renderSection(s: SectionKey) {
+  function renderSection(s: SectionKey, agProps?: AgreementsProps) {
     switch (s) {
       case "appearance":         return <AppearanceSection />;
       case "business_structure": return <BusinessStructureSection />;
@@ -900,7 +903,10 @@ export default function SettingsPage() {
       case "dashboards":         return <DashboardsSettingsSection />;
       case "custom_fields":      return <CustomFieldsSection />;
       case "work_orders":    return <WorkOrderTemplatesSection />;
-      case "agreements":     return <AgreementsSettingsSection />;
+      case "agreements":     return <AgreementsSettingsSection
+        activeModule={agProps?.activeModule ?? null}
+        onOpen={agProps?.onOpen ?? (() => {})}
+        onBack={agProps?.onBack ?? (() => {})} />;
       case "users":          return <UsersSection />;
       case "roles":          return <RolesSection />;
       case "security":       return <ComingSoon label="Security" phase="Phase 1"
@@ -939,6 +945,14 @@ export default function SettingsPage() {
     // Section view — with breadcrumb
     const cat = CATEGORIES.find(c => c.key === view.category)!;
     const item = cat.items.find(i => i.key === view.section)!;
+    const sub = view.sub ?? null;
+    const clearSub = () => setView(v => v.mode === "section" ? { ...v, sub: null } : v);
+    // Agreements is a hub: its modules add a 4th breadcrumb level + dedicated page.
+    const agProps: AgreementsProps | undefined = view.section === "agreements" ? {
+      activeModule: sub?.key ?? null,
+      onOpen: (key, label) => setView(v => v.mode === "section" ? { ...v, sub: { key, label } } : v),
+      onBack: clearSub,
+    } : undefined;
     return (
       <div className="space-y-5">
         {/* Breadcrumb row — Save action sits inline on the right */}
@@ -956,14 +970,22 @@ export default function SettingsPage() {
               {cat.label}
             </button>
             <ChevronRight className="w-3.5 h-3.5 shrink-0" />
-            <span className="truncate" style={{ color: "var(--text-primary)" }}>{item?.label}</span>
+            {sub ? (
+              <>
+                <button onClick={clearSub} className="hover:underline transition-colors truncate" style={{ color: "var(--text-secondary)" }}>{item?.label}</button>
+                <ChevronRight className="w-3.5 h-3.5 shrink-0" />
+                <span className="truncate" style={{ color: "var(--text-primary)" }}>{sub.label}</span>
+              </>
+            ) : (
+              <span className="truncate" style={{ color: "var(--text-primary)" }}>{item?.label}</span>
+            )}
           </div>
           <SettingsSaveSlot />
         </div>
         <EditingScopeHeader sectionLayers={SECTION_LAYERS[view.section] ?? "any"} />
         <SectionGate layers={SECTION_LAYERS[view.section] ?? "any"} title={item?.label ?? "This setting"}>
           <Commentable anchor={{ recordType: "settings", recordId: view.section, recordLabel: item?.label ?? "Settings" }}>
-            {renderSection(view.section)}
+            {renderSection(view.section, agProps)}
           </Commentable>
         </SectionGate>
       </div>

@@ -66,17 +66,17 @@ export default function AgreementBuilderShell({ mode, agreementId, initialTempla
         <div className="flex items-center gap-2 shrink-0">
           {isEdit ? (
             <button onClick={() => persist(false)} disabled={!d.completeness.basic}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-40" style={{ backgroundColor: "#4f46e5" }}>
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-40 cursor-pointer transition hover:brightness-110 disabled:cursor-not-allowed disabled:hover:brightness-100" style={{ backgroundColor: "#4f46e5" }}>
               <Check className="w-4 h-4" /> Save Changes
             </button>
           ) : (
             <>
               <button onClick={() => persist(false)} disabled={!d.completeness.basic}
-                className="px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-40" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)", backgroundColor: "var(--bg-surface)" }}>
+                className="px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-40 cursor-pointer transition hover:brightness-95 disabled:cursor-not-allowed disabled:hover:brightness-100" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)", backgroundColor: "var(--bg-surface)" }}>
                 Save Draft
               </button>
               <button onClick={() => persist(true)} disabled={!canActivate}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-40" style={{ backgroundColor: "#4f46e5" }}>
+                className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-40 cursor-pointer transition hover:brightness-110 disabled:cursor-not-allowed disabled:hover:brightness-100" style={{ backgroundColor: "#4f46e5" }}>
                 <Send className="w-4 h-4" /> Activate
               </button>
             </>
@@ -119,12 +119,12 @@ export default function AgreementBuilderShell({ mode, agreementId, initialTempla
           {/* Prev / Next */}
           <div className="flex items-center justify-between mt-4">
             <button onClick={() => setActive(SECTIONS[Math.max(0, idx - 1)].key)} disabled={idx === 0}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm disabled:opacity-40" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm disabled:opacity-40 cursor-pointer transition hover:bg-[var(--bg-surface-2)] disabled:cursor-not-allowed disabled:hover:bg-transparent" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>
               <ChevronLeft className="w-4 h-4" /> Back
             </button>
             {idx < SECTIONS.length - 1 && (
               <button onClick={() => setActive(SECTIONS[idx + 1].key)}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-white" style={{ backgroundColor: "#4f46e5" }}>
+                className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-white cursor-pointer transition hover:brightness-110" style={{ backgroundColor: "#4f46e5" }}>
                 Next <ChevronRight className="w-4 h-4" />
               </button>
             )}

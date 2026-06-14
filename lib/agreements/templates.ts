@@ -44,6 +44,7 @@ export interface TemplateService {
   limit?: number;               // usage cap (allowances / add-ons)
   itemId?: string;              // linked catalog item (lib/items)
   workOrderTemplateId?: string; // linked checklist / work-order item
+  visitId?: string;             // assigned visit (TemplateVisit.id); empty = whole agreement
 }
 
 // Visit Schedule item ("when we go").
@@ -169,8 +170,8 @@ export const DEFAULT_PLAN_TEMPLATES: PlanTemplate[] = [
     id: "pt-1", name: "HVAC Residential Maintenance", key: "hvac_residential_maintenance",
     industry: "HVAC", typeKey: "residential_maintenance",
     description: "Spring and fall tune-ups with filter changes and priority dispatch for residential HVAC systems.",
-    services: [svc("Spring tune-up"), svc("Fall tune-up"), svc("Filter replacement"), svc("Repair discount", false, 1, 15)],
-    visits: [vis("Spring Tune-up", "semi_annual", 90, "Spring"), vis("Fall Tune-up", "semi_annual", 90, "Fall")],
+    services: [svc("Inspect outdoor coil"), svc("Check refrigerant performance"), svc("Inspect electrical components"), svc("Clear condensate drain"), svc("Test thermostat"), svc("Filter replacement"), svc("Repair discount", false, 1, 15)],
+    visits: [vis("Spring Cooling Tune-Up", "semi_annual", 90, "Spring"), vis("Fall Heating Tune-Up", "semi_annual", 90, "Fall")],
     billing: { frequencyKey: "annual", amount: 349, taxable: false },
     benefits: ["Priority Scheduling", "Repair Discount", "No Overtime Fee"],
     terms: STD_TERMS, renewal: STD_RENEWAL,
@@ -181,7 +182,7 @@ export const DEFAULT_PLAN_TEMPLATES: PlanTemplate[] = [
     id: "pt-2", name: "HVAC Commercial Quarterly PM", key: "hvac_commercial_quarterly_pm",
     industry: "HVAC", typeKey: "commercial_pm",
     description: "Quarterly preventive maintenance for commercial HVAC systems with detailed service reports.",
-    services: [svc("Quarterly inspection"), svc("Filter changes"), svc("Coil cleaning"), svc("Refrigerant check"), svc("Service reporting")],
+    services: [svc("Inspect & test equipment"), svc("Filter changes"), svc("Coil cleaning"), svc("Refrigerant check"), svc("Service reporting")],
     visits: [vis("Quarterly PM", "quarterly", 120, "Each quarter")],
     billing: { frequencyKey: "quarterly", amount: 300, taxable: false },
     benefits: ["Priority Scheduling", "No Overtime Fee", "Repair Discount"],
@@ -193,7 +194,7 @@ export const DEFAULT_PLAN_TEMPLATES: PlanTemplate[] = [
     id: "pt-3", name: "Roofing Annual Inspection", key: "roofing_annual_inspection",
     industry: "Roofing", typeKey: "inspection_plan",
     description: "Annual roof inspection with gutter cleaning, a photo report, and minor repair coverage.",
-    services: [svc("Annual inspection"), svc("Gutter cleaning"), svc("Photo report"), svc("Minor repairs (1 hr)")],
+    services: [svc("Roof surface inspection"), svc("Flashing & seal check"), svc("Gutter cleaning"), svc("Photo report"), svc("Minor repairs (1 hr)")],
     visits: [vis("Annual Inspection", "annual", 120, "Spring", "inspection")],
     billing: { frequencyKey: "annual", amount: 599, taxable: false },
     benefits: ["Storm Damage Priority", "Repair Discount"],
@@ -205,7 +206,7 @@ export const DEFAULT_PLAN_TEMPLATES: PlanTemplate[] = [
     id: "pt-4", name: "Plumbing Membership", key: "plumbing_membership",
     industry: "Plumbing", typeKey: "membership",
     description: "Quarterly plumbing inspections, drain cleaning, and water-heater checks with emergency priority.",
-    services: [svc("Quarterly inspection"), svc("Drain cleaning"), svc("Water heater check"), svc("Repair discount", false, 1, 15)],
+    services: [svc("Fixture & supply inspection"), svc("Drain cleaning"), svc("Water heater check"), svc("Leak check"), svc("Repair discount", false, 1, 15)],
     visits: [vis("Quarterly Inspection", "quarterly", 60, "Each quarter", "inspection")],
     billing: { frequencyKey: "quarterly", amount: 75, taxable: false },
     benefits: ["Emergency Priority", "Repair Discount", "Waived Trip Charge"],
@@ -216,7 +217,7 @@ export const DEFAULT_PLAN_TEMPLATES: PlanTemplate[] = [
     id: "pt-5", name: "Property Maintenance Agreement", key: "property_maintenance_agreement",
     industry: "Property Maintenance", typeKey: "maintenance_contract",
     description: "Monthly property walkthroughs, minor repairs, seasonal prep, and a 24-hour emergency line.",
-    services: [svc("Monthly walkthrough"), svc("Minor repairs included"), svc("Seasonal prep"), svc("Quarterly property report")],
+    services: [svc("Exterior & grounds check"), svc("Minor repairs included"), svc("Seasonal prep"), svc("Property condition report")],
     visits: [vis("Monthly Walkthrough", "monthly", 60, "Each month")],
     billing: { frequencyKey: "monthly", amount: 200, taxable: false },
     benefits: ["24hr Emergency Line", "Dedicated Account Manager", "Priority Scheduling"],
@@ -227,7 +228,7 @@ export const DEFAULT_PLAN_TEMPLATES: PlanTemplate[] = [
     id: "pt-6", name: "General Service Agreement", key: "general_service_agreement",
     industry: "General", typeKey: "service_agreement",
     description: "A flexible recurring service agreement for any trade — configure visits, billing, and benefits.",
-    services: [svc("Scheduled service visit")],
+    services: [svc("Routine service tasks")],
     visits: [vis("Service Visit", "quarterly", 90, "Each quarter", "maintenance")],
     billing: { frequencyKey: "quarterly", amount: 150, taxable: false },
     benefits: ["Priority Scheduling", "Repair Discount"],

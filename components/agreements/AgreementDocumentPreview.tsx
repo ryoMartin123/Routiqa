@@ -96,20 +96,26 @@ export default function AgreementDocumentPreview({ data }: { data: AgreementDocD
           <div>
             <SectionTitle icon={CheckCircle2}>Included Services</SectionTitle>
             <div className="space-y-1.5">
-              {data.services.map(s => (
+              {data.services.map(s => {
+                const visitName = s.visitId ? data.visits.find(v => v.id === s.visitId)?.name : undefined;
+                return (
                 <div key={s.id} className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2 min-w-0">
                     <CheckCircle2 className="w-3.5 h-3.5 shrink-0" style={{ color: s.included ? "#10b981" : "var(--text-muted)" }} />
                     <span className="text-sm truncate" style={{ color: "var(--text-primary)" }}>
                       {s.quantity > 1 ? `${s.quantity}× ` : ""}{s.name}
                     </span>
+                    {visitName && (
+                      <span className="text-[10px] shrink-0 px-1.5 py-0.5 rounded-full" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>{visitName}</span>
+                    )}
                   </div>
                   <span className="text-[11px] shrink-0 font-medium px-2 py-0.5 rounded-full"
                     style={{ backgroundColor: s.included ? "#d1fae5" : "#fef3c7", color: s.included ? "#065f46" : "#92400e" }}>
                     {s.included ? "Included" : `${s.discountPct ?? 0}% off`}
                   </span>
                 </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}

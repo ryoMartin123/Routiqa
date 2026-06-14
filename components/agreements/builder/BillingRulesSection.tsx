@@ -33,11 +33,11 @@ export default function BillingRulesSection({ d }: { d: UseAgreementDraft }) {
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
                 <Mini label="Billing Frequency"><UiSelect size="sm" value={b.frequencyKey} onChange={k => d.setBilling(b.id, { frequencyKey: k })} options={d.billingRules.map(r => ({ value: r.key, label: r.name }))} /></Mini>
-                {b.frequencyKey !== "custom" && <Mini label="Amount per period"><NumberStepper size="sm" min={0} step={0.01} value={b.amount} onChange={v => d.setBilling(b.id, { amount: v })} /></Mini>}
+                {b.frequencyKey !== "custom" && <Mini label="Amount per period"><NumberStepper size="sm" min={0} step={1} value={b.amount} onChange={v => d.setBilling(b.id, { amount: v })} /></Mini>}
                 {b.frequencyKey !== "custom" && <Field label="Billing Start" hint="optional"><DatePicker value={b.startDate} onChange={v => d.setBilling(b.id, { startDate: v })} placeholder="On agreement start" /></Field>}
                 <Field label="Billing End" hint="optional"><DatePicker value={b.endDate} onChange={v => d.setBilling(b.id, { endDate: v })} placeholder="None" /></Field>
                 <Mini label="Payment Terms"><UiSelect size="sm" value={b.paymentTermsKey} onChange={k => d.setBilling(b.id, { paymentTermsKey: k })} options={d.paymentTerms.map(p => ({ value: p.key, label: p.label }))} /></Mini>
-                {b.frequencyKey !== "custom" && <Mini label="Deposit (optional)"><NumberStepper size="sm" min={0} step={0.01} value={b.deposit} onChange={v => d.setBilling(b.id, { deposit: v })} placeholder="None" /></Mini>}
+                {b.frequencyKey !== "custom" && <Mini label="Deposit (optional)"><NumberStepper size="sm" min={0} step={1} value={b.deposit} onChange={v => d.setBilling(b.id, { deposit: v })} placeholder="None" /></Mini>}
               </div>
               {b.frequencyKey === "custom" && (
                 <CustomBillingBuilder config={b.customBilling} onChange={cfg => d.setBilling(b.id, { customBilling: cfg, amount: String(representativeBillingAmount(cfg)) })} />

@@ -17,7 +17,7 @@ import { locations as HIER_LOCATIONS } from "@/lib/hierarchy/data";
 import { getJob } from "@/lib/jobs/data";
 import { getProject } from "@/lib/projects/data";
 
-type RecordLevel = "account" | "property" | "job" | "project" | "work_order" | "global";
+type RecordLevel = "account" | "property" | "job" | "project" | "work_order" | "agreement" | "global";
 type ViewMode = "grid" | "list" | "group_account" | "group_job";
 
 interface Props {
@@ -69,6 +69,8 @@ function buildScopeOptions(level: RecordLevel, scope: FileScope): { key: string;
   if (level === "project"    && scope.projectId)    out.push({ key: "record", label: "This Project", scope: { projectId: scope.projectId } });
   if (level === "work_order" && scope.workOrderId)  out.push({ key: "record", label: "This Work Order", scope: { workOrderId: scope.workOrderId } });
   if (level === "property"   && scope.propertyId)   out.push({ key: "record", label: "This Property", scope: { propertyId: scope.propertyId } });
+  if (level === "agreement"  && scope.agreementId)  out.push({ key: "record", label: "This Agreement", scope: { agreementId: scope.agreementId } });
+  if (level === "agreement"  && scope.propertyId)   out.push({ key: "property", label: "This Property", scope: { propertyId: scope.propertyId } });
   if ((level === "job" || level === "work_order" || level === "project") && scope.propertyId)
     out.push({ key: "property", label: "This Property", scope: { propertyId: scope.propertyId } });
   if (scope.accountId) out.push({ key: "account", label: "This Account", scope: { accountId: scope.accountId } });

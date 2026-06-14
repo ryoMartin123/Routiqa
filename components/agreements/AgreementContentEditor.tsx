@@ -13,7 +13,8 @@
 import { useMemo } from "react";
 import { Plus, Trash2, Star, X } from "lucide-react";
 import UiSelect from "@/components/ui/Select";
-import { getVisitRules, getBillingRules, getBenefits, getTermsBlocks, getAgreementServices, agrId } from "@/lib/agreements/settings";
+import { getVisitRules, getBillingRules, getBenefits, getTermsBlocks, agrId } from "@/lib/agreements/settings";
+import { getServiceScopeTemplates } from "@/lib/agreements/template-library";
 import { getJobTypes } from "@/lib/job-config/data";
 import { ALL_SECTIONS, type TemplateService, type TemplateVisit, type TemplateBilling, type TemplateTerm, type SectionKey } from "@/lib/agreements/templates";
 
@@ -31,7 +32,7 @@ export default function AgreementContentEditor({ value, onChange }: {
   value: AgreementContent;
   onChange: (patch: Partial<AgreementContent>) => void;
 }) {
-  const serviceLib  = useMemo(() => getAgreementServices().filter(s => s.active), []);
+  const serviceScopes = useMemo(() => getServiceScopeTemplates().filter(t => t.active), []);
   const visitRules  = useMemo(() => getVisitRules().filter(r => r.active), []);
   const billingRules = useMemo(() => getBillingRules().filter(r => r.active), []);
   const benefitLib  = useMemo(() => getBenefits().filter(b => b.active), []);
@@ -40,12 +41,15 @@ export default function AgreementContentEditor({ value, onChange }: {
 
   const { services, visits, billing, benefits, terms, exclusions, sections } = value;
 
-  // ── Services (loaded from the library) ──
-  const availableServices = serviceLib.filter(lib => !services.some(s => s.name === lib.name));
-  const addServiceFromLib = (id: string) => {
-    const lib = serviceLib.find(s => s.id === id);
-    if (!lib) return;
-    onChange({ services: [...services, { id: agrId("ts"), name: lib.name, description: lib.description, quantity: 1, included: true, discountPct: 0 }] });
+  // ── Services (loaded from a Service Scope Template) ──
+  const loadServiceScope = (id: string) => {
+    const t = serviceScopes.find(x => x.id === id);
+    if (!t) return;
+    onChange({ services: [...services, ...t.services.map(s => ({
+      id: agrId("ts"), name: s.name, description: s.description, quantity: s.quantity ?? 1,
+      included: s.included ?? true, discountPct: s.discountPct, scopeType: s.scopeType, applies: s.applies,
+      limit: s.limit, itemId: s.itemId, workOrderTemplateId: s.workOrderTemplateId,
+    }))] });
   };
   const setService = (id: string, patch: Partial<TemplateService>) => onChange({ services: services.map(s => s.id === id ? { ...s, ...patch } : s) });
   const removeService = (id: string) => onChange({ services: services.filter(s => s.id !== id) });
@@ -87,23 +91,23 @@ export default function AgreementContentEditor({ value, onChange }: {
 
   return (
     <div className="space-y-6">
-      {/* ── Services (loaded from the library) ── */}
+      {/* ── Services (loaded from a Service Scope Template) ── */}
       <div className="space-y-2.5">
         <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>Included Services</p>
-        {serviceLib.length === 0 ? (
+        {serviceScopes.length === 0 ? (
           <div className="rounded-xl p-4 text-center" style={cardStyle}>
-            <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>No services in your library yet</p>
+            <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>No service scopes yet</p>
             <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
-              Add services under <span style={{ color: "var(--accent-text)", fontWeight: 600 }}>Settings → Agreements → Services</span>, then load them here.
+              Create reusable service groups under <span style={{ color: "var(--accent-text)", fontWeight: 600 }}>Settings → Agreements → Service Scope Templates</span>, then load them here.
             </p>
           </div>
         ) : (
           <div className="max-w-xs">
-            <UiSelect size="sm" value="" placeholder="+ Add a service…" onChange={addServiceFromLib}
-              options={availableServices.map(s => ({ value: s.id, label: s.name }))} />
+            <UiSelect size="sm" value="" placeholder="+ Load a service scope…" onChange={loadServiceScope}
+              options={serviceScopes.map(t => ({ value: t.id, label: t.name }))} />
           </div>
         )}
-        {services.length === 0 && serviceLib.length > 0 && <Empty>No services added yet. Load one from your library above.</Empty>}
+        {services.length === 0 && serviceScopes.length > 0 && <Empty>No services added yet. Load a service scope above.</Empty>}
         {services.map(s => (
           <div key={s.id} className="rounded-xl p-3 flex items-center gap-3" style={cardStyle}>
             <div className="min-w-0 flex-1">

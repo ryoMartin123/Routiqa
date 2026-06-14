@@ -38,7 +38,7 @@ export default function RenewalsSection({ d }: { d: UseAgreementDraft }) {
           <div className="grid grid-cols-2 gap-3">
             <Mini label="Type"><UiSelect size="sm" value={r.priceIncreaseType} onChange={k => d.setRenewal({ priceIncreaseType: k as "pct" | "flat" })} options={INC_OPTIONS} /></Mini>
             <Mini label={r.priceIncreaseType === "flat" ? "Amount ($)" : "Amount (%)"}>
-              <NumberStepper size="sm" min={0} step={0.01} value={r.priceIncreasePct} onChange={v => d.setRenewal({ priceIncreasePct: v })} disabled={r.renewalType === "no_renewal"} />
+              <NumberStepper size="sm" min={0} step={1} value={r.priceIncreasePct} onChange={v => d.setRenewal({ priceIncreasePct: v })} disabled={r.renewalType === "no_renewal"} />
             </Mini>
           </div>
           {!showIncrease && (parseFloat(r.priceIncreasePct) || 0) > 0 && (

@@ -9,11 +9,14 @@ import { useEffect, useMemo, useState, useCallback } from "react";
 import { getAllCustomers, getProperties } from "@/lib/customers/data";
 import { getJobTypes } from "@/lib/job-config/data";
 import {
-  getVisitRules, getBillingRules, getBenefits, getAgreementServices,
+  getVisitRules, getBillingRules, getBenefits,
   getTermsBlocks, getRenewalRules, PAYMENT_TERMS,
   type ServiceScopeType, type ServiceApplies, type BenefitKind,
   type TermType, type RenewalType,
 } from "@/lib/agreements/settings";
+import {
+  getVisitScheduleTemplates, getServiceScopeTemplates,
+} from "@/lib/agreements/template-library";
 import {
   getPlanTemplate, ALL_SECTIONS,
   type SectionKey, type TemplateService, type TemplateVisit,
@@ -42,6 +45,7 @@ export interface DraftService {
   id: string; name: string; description: string; scopeType: ServiceScopeType;
   applies: ServiceApplies; quantity: string; limit: string;
   itemId: string; workOrderTemplateId: string;
+  visitId: string;             // assigned visit id; "" = applies to the whole agreement
 }
 export interface DraftBilling {
   id: string; frequencyKey: string; amount: string; taxable: boolean;
@@ -81,7 +85,8 @@ export interface UseAgreementDraft {
   mode: BuilderMode;
   // libraries
   customers: ReturnType<typeof getAllCustomers>;
-  serviceLib: ReturnType<typeof getAgreementServices>;
+  scheduleTemplates: ReturnType<typeof getVisitScheduleTemplates>;
+  serviceScopeTemplates: ReturnType<typeof getServiceScopeTemplates>;
   visitRules: ReturnType<typeof getVisitRules>;
   billingRules: ReturnType<typeof getBillingRules>;
   benefitLib: ReturnType<typeof getBenefits>;
@@ -101,8 +106,8 @@ export interface UseAgreementDraft {
   templateId: string; chooseTemplate: (id: string) => void;
   sections: SectionKey[]; toggleSection: (k: SectionKey) => void;
   // collections
-  visits: DraftVisit[]; addVisit: () => void; setVisit: (id: string, p: Partial<DraftVisit>) => void; removeVisit: (id: string) => void;
-  services: DraftService[]; addServiceFromLib: (libId: string) => void; addBlankService: () => void; setService: (id: string, p: Partial<DraftService>) => void; removeService: (id: string) => void;
+  visits: DraftVisit[]; addVisit: () => void; setVisit: (id: string, p: Partial<DraftVisit>) => void; removeVisit: (id: string) => void; loadVisitSchedule: (templateId: string) => void;
+  services: DraftService[]; loadServiceScope: (templateId: string) => void; addBlankService: () => void; setService: (id: string, p: Partial<DraftService>) => void; removeService: (id: string) => void;
   billings: DraftBilling[]; addBilling: () => void; setBilling: (id: string, p: Partial<DraftBilling>) => void; removeBilling: (id: string) => void;
   benefits: DraftBenefit[]; addBenefitFromLib: (libId: string) => void; addCustomBenefit: (label: string) => void; setBenefit: (id: string, p: Partial<DraftBenefit>) => void; removeBenefit: (id: string) => void;
   terms: DraftTerm[]; addTermFromLib: (libId: string) => void; addBlankTerm: () => void; setTerm: (id: string, p: Partial<DraftTerm>) => void; removeTerm: (id: string) => void;
@@ -122,7 +127,8 @@ export interface UseAgreementDraft {
 
 export function useAgreementDraft(opts: { mode: BuilderMode; agreementId?: string; initialTemplateId?: string; initialCustomerId?: string }): UseAgreementDraft {
   const customers = getAllCustomers();
-  const serviceLib = useMemo(() => getAgreementServices().filter(s => s.active), []);
+  const scheduleTemplates = useMemo(() => getVisitScheduleTemplates().filter(t => t.active), []);
+  const serviceScopeTemplates = useMemo(() => getServiceScopeTemplates().filter(t => t.active), []);
   const visitRules = useMemo(() => getVisitRules().filter(r => r.active), []);
   const billingRules = useMemo(() => getBillingRules().filter(r => r.active), []);
   const benefitLib = useMemo(() => getBenefits().filter(b => b.active), []);
@@ -174,6 +180,7 @@ export function useAgreementDraft(opts: { mode: BuilderMode; agreementId?: strin
       applies: s.applies ?? "per_visit", quantity: String(s.quantity ?? 1),
       limit: s.limit != null ? String(s.limit) : "",
       itemId: s.itemId ?? "", workOrderTemplateId: s.workOrderTemplateId ?? "",
+      visitId: s.visitId ?? "",
     })));
     setVisits(t.visits.map(v => ({
       id: uid("v"), name: v.name, frequencyKey: v.frequencyKey, preferredWindow: v.preferredWindow ?? "",
@@ -227,6 +234,7 @@ export function useAgreementDraft(opts: { mode: BuilderMode; agreementId?: strin
         scopeType: s.scopeType ?? (s.included ? "included" : "discounted"),
         applies: s.applies ?? "per_visit", quantity: String(s.quantity ?? 1),
         limit: s.limit != null ? String(s.limit) : "", itemId: s.itemId ?? "", workOrderTemplateId: s.workOrderTemplateId ?? "",
+        visitId: s.visitId ?? "",
       })));
       setVisits((ea.visitPlan ?? []).map(v => ({
         id: uid("v"), name: v.name, frequencyKey: v.frequencyKey, preferredWindow: v.preferredWindow ?? "",
@@ -283,13 +291,29 @@ export function useAgreementDraft(opts: { mode: BuilderMode; agreementId?: strin
   const addVisit = () => setVisits(p => [...p, { id: uid("v"), name: "", frequencyKey: visitRules[0]?.key ?? "quarterly", preferredWindow: "", dueWindowDays: "", durationMin: "90", jobTypeKey: jobTypes[0]?.key ?? "", workOrderTemplateId: "", dispatchBoardId: "", requirePhotos: false, requireChecklist: false, autoGenerate: true }]);
   const setVisit = (id: string, patch: Partial<DraftVisit>) => setVisits(p => p.map(v => v.id === id ? { ...v, ...patch } : v));
   const removeVisit = (id: string) => setVisits(p => p.filter(v => v.id !== id));
+  // Load a Visit Schedule Template — append its visits ("when we go").
+  const loadVisitSchedule = (templateId: string) => {
+    const t = scheduleTemplates.find(x => x.id === templateId); if (!t) return;
+    setVisits(p => [...p, ...t.visits.map(v => ({
+      id: uid("v"), name: v.name, frequencyKey: v.frequencyKey, preferredWindow: v.preferredWindow ?? "",
+      dueWindowDays: v.dueWindowDays != null ? String(v.dueWindowDays) : "", durationMin: String(v.durationMin),
+      jobTypeKey: v.jobTypeKey ?? "", workOrderTemplateId: v.workOrderTemplateId ?? "", dispatchBoardId: v.dispatchBoardId ?? "",
+      requirePhotos: !!v.requirePhotos, requireChecklist: !!v.requireChecklist, autoGenerate: v.autoGenerate ?? true,
+      customVisit: v.customVisit,
+    }))]);
+  };
 
   // ── Service ops ──
-  const addServiceFromLib = (libId: string) => {
-    const lib = serviceLib.find(s => s.id === libId); if (!lib) return;
-    setServices(p => [...p, { id: uid("s"), name: lib.name, description: lib.description ?? "", scopeType: lib.scopeType ?? "included", applies: lib.applies ?? "per_visit", quantity: String(lib.defaultQuantity ?? 1), limit: lib.limit != null ? String(lib.limit) : "", itemId: lib.itemId ?? "", workOrderTemplateId: lib.workOrderTemplateId ?? "" }]);
+  // Load a Service Scope Template — append its services ("what we do").
+  const loadServiceScope = (templateId: string) => {
+    const t = serviceScopeTemplates.find(x => x.id === templateId); if (!t) return;
+    setServices(p => [...p, ...t.services.map(s => ({
+      id: uid("s"), name: s.name, description: s.description ?? "", scopeType: s.scopeType ?? "included",
+      applies: s.applies ?? "per_visit", quantity: String(s.quantity ?? 1), limit: s.limit != null ? String(s.limit) : "",
+      itemId: s.itemId ?? "", workOrderTemplateId: s.workOrderTemplateId ?? "", visitId: s.visitId ?? "",
+    }))]);
   };
-  const addBlankService = () => setServices(p => [...p, { id: uid("s"), name: "", description: "", scopeType: "included", applies: "per_visit", quantity: "1", limit: "", itemId: "", workOrderTemplateId: "" }]);
+  const addBlankService = () => setServices(p => [...p, { id: uid("s"), name: "", description: "", scopeType: "included", applies: "per_visit", quantity: "1", limit: "", itemId: "", workOrderTemplateId: "", visitId: "" }]);
   const setService = (id: string, patch: Partial<DraftService>) => setServices(p => p.map(s => s.id === id ? { ...s, ...patch } : s));
   const removeService = (id: string) => setServices(p => p.filter(s => s.id !== id));
 
@@ -403,6 +427,7 @@ export function useAgreementDraft(opts: { mode: BuilderMode; agreementId?: strin
     quantity: parseFloat(s.quantity) || 1, included: s.scopeType === "included" || s.scopeType === "covered_item",
     scopeType: s.scopeType, applies: s.applies,
     limit: s.limit ? parseFloat(s.limit) : undefined, itemId: s.itemId || undefined, workOrderTemplateId: s.workOrderTemplateId || undefined,
+    visitId: s.visitId || undefined,
   })), [services]);
 
   const visitPlan = useMemo<TemplateVisit[]>(() => visits.filter(v => v.name.trim()).map(v => ({
@@ -508,12 +533,12 @@ export function useAgreementDraft(opts: { mode: BuilderMode; agreementId?: strin
   };
 
   return {
-    mode: opts.mode, customers, serviceLib, visitRules, billingRules, benefitLib, termsLib, renewalLib, jobTypes, paymentTerms: PAYMENT_TERMS,
+    mode: opts.mode, customers, scheduleTemplates, serviceScopeTemplates, visitRules, billingRules, benefitLib, termsLib, renewalLib, jobTypes, paymentTerms: PAYMENT_TERMS,
     customerId, setCustomerId, propertyId, setPropertyId, contactName, setContactName,
     coverage, addCoverage, removeCoverage, startDate, setStartDate, termMonths, setTermMonths, endDate, setEndDate,
     title, setTitle, templateId, chooseTemplate, sections, toggleSection,
-    visits, addVisit, setVisit, removeVisit,
-    services, addServiceFromLib, addBlankService, setService, removeService,
+    visits, addVisit, setVisit, removeVisit, loadVisitSchedule,
+    services, loadServiceScope, addBlankService, setService, removeService,
     billings, addBilling, setBilling, removeBilling,
     benefits, addBenefitFromLib, addCustomBenefit, setBenefit, removeBenefit,
     terms, addTermFromLib, addBlankTerm, setTerm, removeTerm,

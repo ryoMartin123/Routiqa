@@ -17,23 +17,13 @@ export interface AgreementType {
 }
 
 // ─── Service Scope (engine: "what we do") ─────────────────
+// The vocabulary for individual services. Reusable service *groups* live in
+// lib/agreements/template-library.ts (ServiceScopeTemplate); the service line
+// shape itself is TemplateService in lib/agreements/templates.ts.
 export type ServiceScopeType =
   | "included" | "discounted" | "optional_addon"
   | "covered_item" | "excluded" | "allowance";
 export type ServiceApplies = "per_visit" | "per_term";
-
-// A reusable agreement service — the library you load into a template's
-// "Service Scope". Templates snapshot these at build time.
-export interface AgreementService {
-  id: string; name: string; description?: string;
-  scopeType?: ServiceScopeType;        // included / discounted / add-on / covered / excluded / allowance
-  applies?: ServiceApplies;            // per visit or per agreement term
-  defaultQuantity?: number;            // qty or limit seeded into a template
-  limit?: number;                      // usage cap (allowances/add-ons)
-  itemId?: string;                     // linked catalog item (lib/items)
-  workOrderTemplateId?: string;        // linked checklist / work-order item
-  active: boolean; order: number;
-}
 
 // ─── Visit Schedule (engine: "when we go") ────────────────
 export type VisitCadence =
@@ -162,19 +152,6 @@ const DEFAULT_TYPES: AgreementType[] = [
   { id: "at-6", name: "Service Agreement",        key: "service_agreement",       industry: "General",             description: "General recurring service agreement.",                active: true, order: 6 },
 ];
 
-const DEFAULT_SERVICES: AgreementService[] = [
-  { id: "as-1", name: "Spring Tune-up",       description: "Seasonal inspection, cleaning, and performance check.", scopeType: "included",   applies: "per_visit", active: true, order: 1 },
-  { id: "as-2", name: "Fall Tune-up",         description: "Pre-winter inspection, cleaning, and safety check.",    scopeType: "included",   applies: "per_visit", active: true, order: 2 },
-  { id: "as-3", name: "Filter Replacement",   description: "Replace standard air filters.",                         scopeType: "included",   applies: "per_visit", active: true, order: 3 },
-  { id: "as-4", name: "Quarterly Inspection", description: "Routine inspection of covered equipment/systems.",       scopeType: "included",   applies: "per_visit", active: true, order: 4 },
-  { id: "as-5", name: "Coil Cleaning",        description: "Clean evaporator and condenser coils.",                  scopeType: "included",   applies: "per_visit", active: true, order: 5 },
-  { id: "as-6", name: "Drain Cleaning",       description: "Clear and flush primary drain lines.",                   scopeType: "included",   applies: "per_visit", active: true, order: 6 },
-  { id: "as-7", name: "Water Heater Check",   description: "Inspect and test water heater operation.",               scopeType: "included",   applies: "per_visit", active: true, order: 7 },
-  { id: "as-8", name: "Gutter Cleaning",      description: "Clear gutters and downspouts; check flow.",              scopeType: "included",   applies: "per_visit", active: true, order: 8 },
-  { id: "as-9", name: "Photo Report",         description: "Documented photo report of the visit.",                  scopeType: "included",   applies: "per_visit", active: true, order: 9 },
-  { id: "as-10", name: "Repair Discount",     description: "Member discount on out-of-scope repairs.",               scopeType: "discounted", applies: "per_term",  active: true, order: 10 },
-];
-
 const DEFAULT_VISIT_RULES: VisitRule[] = [
   { id: "vr-1", name: "No Visits",    key: "no_visits",    cadenceKind: "no_visits",   visitsPerYear: 0,  defaultDurationMin: 0,  active: true, order: 1 },
   { id: "vr-2", name: "One-time",     key: "one_time",     cadenceKind: "one_time",    visitsPerYear: 1,  defaultDurationMin: 90, active: true, order: 2 },
@@ -224,7 +201,6 @@ const DEFAULT_NUMBERING: NumberingSettings = { prefix: "AGR", nextSeq: 1001, pad
 
 // ─── Storage ──────────────────────────────────────────────
 const TYPE_KEY    = "crm-agr-types";
-const SERVICE_KEY = "crm-agr-services";
 const VISIT_KEY   = "crm-agr-visit-rules";
 const BILL_KEY    = "crm-agr-billing-rules";
 const BENEFIT_KEY = "crm-agr-benefits";
@@ -251,7 +227,6 @@ function writeObj<T>(key: string, value: T): void {
 
 // Cached runtime lists
 let _types: AgreementType[] | null = null;
-let _services: AgreementService[] | null = null;
 let _visit: VisitRule[] | null = null;
 let _bill: BillingRule[] | null = null;
 let _benefits: Benefit[] | null = null;
@@ -265,11 +240,9 @@ const reorder = <T extends { order: number }>(l: T[]) => sortOrder(l).map((x, i)
 export function getAgreementTypes(): AgreementType[] { if (!_types) _types = read(TYPE_KEY, DEFAULT_TYPES); return sortOrder(_types); }
 export function saveAgreementTypes(list: AgreementType[]): void { _types = reorder(list); write(TYPE_KEY, _types); }
 
-// Services (the library loaded into template "Included Services")
-export function getAgreementServices(): AgreementService[] { if (!_services) _services = read(SERVICE_KEY, DEFAULT_SERVICES); return sortOrder(_services); }
-export function saveAgreementServices(list: AgreementService[]): void { _services = reorder(list); write(SERVICE_KEY, _services); }
-
-// Visit rules
+// Visit rules — the internal frequency-type list (cadence → visits/year) that
+// powers visit generation. No longer a user-editable tab; surfaced as the
+// "frequency" options inside Visit Schedule Templates and the Agreement Builder.
 export function getVisitRules(): VisitRule[] { if (!_visit) _visit = read(VISIT_KEY, DEFAULT_VISIT_RULES); return sortOrder(_visit); }
 export function saveVisitRules(list: VisitRule[]): void { _visit = reorder(list); write(VISIT_KEY, _visit); }
 

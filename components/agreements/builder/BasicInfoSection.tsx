@@ -45,7 +45,7 @@ export default function BasicInfoSection({ d, lockCustomer }: { d: UseAgreementD
         </Field>
 
         <Field label="Customer / Account *">
-          <AccountSearchSelect customers={d.customers} value={d.customerId} onChange={v => { d.setCustomerId(v); d.setPropertyId(""); }} disabled={lockCustomer} />
+          <AccountSearchSelect customers={d.customers} value={d.customerId} onChange={v => { d.setCustomerId(v); d.setPropertyId(""); }} disabled={lockCustomer} forceDown />
         </Field>
 
         <div className="grid grid-cols-2 gap-3">

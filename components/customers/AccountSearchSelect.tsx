@@ -10,6 +10,7 @@ interface AccountSearchSelectProps {
   onChange: (id: string) => void;
   disabled?: boolean;
   placeholder?: string;
+  forceDown?: boolean;   // always open the popover below the field (skip auto flip-up)
 }
 
 // Modern searchable account picker (combobox).
@@ -18,7 +19,7 @@ interface AccountSearchSelectProps {
 // search-as-you-type popover that matches name, location, city, email,
 // phone, or tags. Themed via CSS variables, full keyboard navigation.
 export default function AccountSearchSelect({
-  customers, value, onChange, disabled, placeholder = "Search accounts…",
+  customers, value, onChange, disabled, placeholder = "Search accounts…", forceDown,
 }: AccountSearchSelectProps) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -68,7 +69,9 @@ export default function AccountSearchSelect({
   useEffect(() => { setActiveIdx(0); }, [query]);
 
   // Open upward when the popover (search box + ~300px list) would run off-screen.
+  // Skipped entirely when forceDown is set — the popover always opens below.
   useLayoutEffect(() => {
+    if (forceDown) { setDropUp(false); return; }
     if (!open || !btnRef.current) return;
     const measure = () => {
       const rect = btnRef.current!.getBoundingClientRect();
@@ -82,7 +85,7 @@ export default function AccountSearchSelect({
       window.removeEventListener("resize", measure);
       window.removeEventListener("scroll", measure, true);
     };
-  }, [open]);
+  }, [open, forceDown]);
 
   function choose(id: string) {
     onChange(id);

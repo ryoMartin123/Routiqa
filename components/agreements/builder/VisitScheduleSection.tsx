@@ -8,7 +8,7 @@ import { getBoardsForContext } from "@/lib/calendar/settings";
 import { summarizeCustomVisit } from "@/lib/agreements/custom-rules";
 import type { UseAgreementDraft } from "./useAgreementDraft";
 import CustomVisitBuilder from "./CustomVisitBuilder";
-import { SectionHead, AddButton, SummaryCard, Empty, Field, Mini, TextInput, ToggleRow } from "./ui";
+import { SectionHead, SummaryCard, Empty, Field, Mini, TextInput, ToggleRow } from "./ui";
 
 export default function VisitScheduleSection({ d }: { d: UseAgreementDraft }) {
   const [open, setOpen] = useState<string | null>(null);
@@ -19,7 +19,16 @@ export default function VisitScheduleSection({ d }: { d: UseAgreementDraft }) {
   return (
     <div>
       <SectionHead title="Visit Schedule" subtitle="When we go — the recurring visits this agreement generates."
-        action={<AddButton onClick={() => { d.addVisit(); }} label="Add visit" />} />
+        action={
+          d.scheduleTemplates.length > 0 ? (
+            <div className="w-56">
+              <UiSelect size="sm" value="" placeholder="+ Load a schedule…" onChange={(id) => { if (id) d.loadVisitSchedule(id); }}
+                options={d.scheduleTemplates.map(t => ({ value: t.id, label: t.name }))} />
+            </div>
+          ) : undefined
+        } />
+
+      <button onClick={() => { d.addVisit(); }} className="text-xs font-medium mb-3" style={{ color: "#4f46e5" }}>+ Add a custom visit</button>
 
       <p className="text-[11px] mb-3" style={{ color: "var(--text-muted)" }}>
         This plan generates <span style={{ color: "var(--accent-text)", fontWeight: 600 }}>{d.generatedVisits.length}</span> visit{d.generatedVisits.length === 1 ? "" : "s"} in the first year.
