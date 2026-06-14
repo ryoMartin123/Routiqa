@@ -8,6 +8,8 @@
 
 import type { Industry } from "./data";
 import { agrId, agrSlug } from "./settings";
+import type { ServiceScopeType, ServiceApplies, RenewalType } from "./settings";
+import type { CustomVisitConfig, CustomBillingConfig } from "./custom-rules";
 
 // ─── Document sections (Step 7 — customer-facing) ─────────
 export type SectionKey =
@@ -30,30 +32,77 @@ export const ALL_SECTIONS: { key: SectionKey; label: string }[] = [
 ];
 
 // ─── Building blocks ──────────────────────────────────────
+// Service Scope item ("what we do"). `included`/`discountPct` are kept for the
+// existing document preview and are derived from `scopeType` on new templates.
 export interface TemplateService {
   id: string; name: string; description?: string;
   quantity: number;
-  included: boolean;            // included vs. discounted add-on
+  included: boolean;            // included vs. discounted add-on (legacy/preview)
   discountPct?: number;        // when not fully included
-  workOrderTemplateId?: string;
+  scopeType?: ServiceScopeType; // included / discounted / add-on / covered / excluded / allowance
+  applies?: ServiceApplies;     // per visit or per agreement term
+  limit?: number;               // usage cap (allowances / add-ons)
+  itemId?: string;              // linked catalog item (lib/items)
+  workOrderTemplateId?: string; // linked checklist / work-order item
 }
 
+// Visit Schedule item ("when we go").
 export interface TemplateVisit {
   id: string; name: string;
   frequencyKey: string;        // → VisitRule.key (lib/agreements/settings)
   preferredWindow?: string;    // e.g. "Spring", "March", "Q1"
+  dueWindowDays?: number;      // ± window the visit is due within
   durationMin: number;
   jobTypeKey?: string;         // job type created when scheduled
-  workOrderTemplateId?: string;
+  workOrderTemplateId?: string;// work-order template applied to the created job
+  dispatchBoardId?: string;    // optional preferred dispatch board
+  requirePhotos?: boolean;     // required photos on the visit
+  requireChecklist?: boolean;  // required checklist on the visit
+  autoGenerate?: boolean;      // auto-create planned visits (default true)
+  customVisit?: CustomVisitConfig; // structured config when frequencyKey === "custom"
 }
 
-export interface TemplateBilling {
+// Billing Rules item ("how customer pays"). Templates carry an array; the legacy
+// single `billing` mirrors billingRules[0] so existing list/detail views work.
+export interface TemplateBillingRule {
+  id?: string;
   frequencyKey: string;        // → BillingRule.key
   amount: number;              // amount per billing period
   taxable: boolean;
+  startDate?: string;          // billing start (defaults to agreement start)
+  endDate?: string;            // optional billing end
+  autoRenew?: boolean;
+  paymentTermsKey?: string;    // → PAYMENT_TERMS.key
+  deposit?: number;            // optional upfront deposit
+  customBilling?: CustomBillingConfig; // structured config when frequencyKey === "custom"
 }
 
-export interface TemplateTerm { title: string; body: string }
+// Legacy single-billing shape (kept; mirrors billingRules[0]).
+export interface TemplateBilling {
+  frequencyKey: string;
+  amount: number;
+  taxable: boolean;
+}
+
+export interface TemplateTerm {
+  title: string; body: string;
+  termType?: string;           // → TermType (lib/agreements/settings)
+  required?: boolean;
+  editable?: boolean;
+}
+
+export interface TemplateRenewal {
+  renewalType?: RenewalType;
+  autoRenew: boolean;
+  termMonths: number;
+  noticeDays: number;
+  reminderDays?: number;
+  priceIncreasePct: number;
+  priceIncreaseType?: "pct" | "flat";
+  approvalRequired?: boolean;
+  generateTask?: boolean;
+  generateQuote?: boolean;
+}
 
 export interface PlanTemplate {
   id: string; name: string; key: string;
@@ -62,10 +111,11 @@ export interface PlanTemplate {
   planLevel?: string;          // e.g. "Silver" / "Gold" (optional)
   services: TemplateService[];
   visits: TemplateVisit[];
-  billing: TemplateBilling;
+  billing: TemplateBilling;        // legacy primary (mirrors billingRules[0])
+  billingRules?: TemplateBillingRule[];
   benefits: string[];          // benefit labels (snapshot-friendly)
   terms: TemplateTerm[];       // snapshot of terms blocks
-  renewal: { autoRenew: boolean; termMonths: number; noticeDays: number; priceIncreasePct: number };
+  renewal: TemplateRenewal;
   exclusions?: string;
   sections: SectionKey[];      // enabled customer-facing sections (in order)
   status: "active" | "draft" | "archived";
@@ -75,9 +125,10 @@ export interface PlanTemplate {
 
 const DEFAULT_SECTIONS: SectionKey[] = ALL_SECTIONS.map(s => s.key);
 const svc = (name: string, included = true, quantity = 1, discountPct?: number): TemplateService =>
-  ({ id: agrId("ts"), name, quantity, included, discountPct });
+  ({ id: agrId("ts"), name, quantity, included, discountPct,
+     scopeType: included ? "included" : "discounted", applies: "per_visit" });
 const vis = (name: string, frequencyKey: string, durationMin: number, preferredWindow?: string, jobTypeKey = "maintenance"): TemplateVisit =>
-  ({ id: agrId("tv"), name, frequencyKey, durationMin, preferredWindow, jobTypeKey });
+  ({ id: agrId("tv"), name, frequencyKey, durationMin, preferredWindow, jobTypeKey, autoGenerate: true });
 
 const STD_TERMS: TemplateTerm[] = [
   { title: "Scope of Coverage", body: "This agreement covers the services and visits listed for the covered equipment/systems at the service location." },
@@ -85,7 +136,32 @@ const STD_TERMS: TemplateTerm[] = [
   { title: "Cancellation",      body: "Either party may cancel with 30 days written notice. Prepaid unused visits are refunded pro-rata." },
   { title: "Renewal",           body: "Renews automatically for successive terms unless canceled. Pricing may be adjusted at renewal." },
 ];
-const STD_RENEWAL = { autoRenew: true, termMonths: 12, noticeDays: 30, priceIncreasePct: 0 };
+const STD_RENEWAL: TemplateRenewal = {
+  renewalType: "auto_same", autoRenew: true, termMonths: 12, noticeDays: 30,
+  reminderDays: 45, priceIncreasePct: 0, priceIncreaseType: "pct",
+  approvalRequired: false, generateTask: true, generateQuote: false,
+};
+
+// Mirror a template's legacy single `billing` into the billingRules[] array
+// (and back-fill the legacy field from rules[0]). Also ensures renewal carries a
+// renewalType. Run on every read so old localStorage templates upgrade in place.
+function normalizeTemplate(t: PlanTemplate): PlanTemplate {
+  const billingRules: TemplateBillingRule[] =
+    t.billingRules && t.billingRules.length
+      ? t.billingRules
+      : [{ id: agrId("tbr"), frequencyKey: t.billing.frequencyKey, amount: t.billing.amount, taxable: t.billing.taxable }];
+  const primary = billingRules[0];
+  const renewal: TemplateRenewal = {
+    ...t.renewal,
+    renewalType: t.renewal.renewalType ?? (t.renewal.autoRenew ? (t.renewal.priceIncreasePct ? "auto_increase" : "auto_same") : "manual"),
+  };
+  return {
+    ...t,
+    billingRules,
+    billing: { frequencyKey: primary.frequencyKey, amount: primary.amount, taxable: primary.taxable },
+    renewal,
+  };
+}
 
 // ─── 7 industry seed templates ────────────────────────────
 export const DEFAULT_PLAN_TEMPLATES: PlanTemplate[] = [
@@ -183,7 +259,7 @@ function write(list: PlanTemplate[]): void {
 }
 
 export function getPlanTemplates(): PlanTemplate[] {
-  if (!_templates) _templates = read();
+  if (!_templates) _templates = read().map(normalizeTemplate);
   return [..._templates].sort((a, b) => a.order - b.order);
 }
 export function getPlanTemplate(id: string): PlanTemplate | undefined {
@@ -206,6 +282,7 @@ export function blankPlanTemplate(): PlanTemplate {
     id: agrId("pt"), name: "", key: "", industry: "General", typeKey: "service_agreement",
     description: "", services: [], visits: [],
     billing: { frequencyKey: "annual", amount: 0, taxable: false },
+    billingRules: [{ id: agrId("tbr"), frequencyKey: "annual", amount: 0, taxable: false }],
     benefits: [], terms: STD_TERMS, renewal: STD_RENEWAL,
     sections: DEFAULT_SECTIONS, status: "draft", active: true, order: max + 1,
   };

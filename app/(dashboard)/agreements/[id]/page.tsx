@@ -11,7 +11,6 @@ import {
 import { cn } from "@/lib/utils";
 import HoverInfo, { Pill } from "@/components/shared/HoverInfo";
 import DetailTabs from "@/components/shared/DetailTabs";
-import AgreementBuilder from "@/components/agreements/AgreementBuilder";
 import {
   AGREEMENTS, TEMPLATES, formatValue, getAgreement, deleteAgreement, updateAgreement, materializeVisitJob, renewAgreement,
   type AgreementStatus, type VisitStatus, type CustomerAgreement,
@@ -457,7 +456,6 @@ export default function AgreementDetailPage({
   const { id } = use(params);
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("Overview");
-  const [editing, setEditing] = useState(false);
   const [actionsOpen, setActionsOpen] = useState(false);
 
   function handleDelete() {
@@ -548,7 +546,7 @@ export default function AgreementDetailPage({
                 <button aria-hidden tabIndex={-1} onClick={() => setActionsOpen(false)} className="fixed inset-0 z-40 cursor-default" />
                 <div className="absolute right-0 top-full mt-1.5 z-50 w-44 rounded-xl overflow-hidden py-1"
                   style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "0 12px 32px rgba(0,0,0,0.18)" }}>
-                  <button onClick={() => { setActionsOpen(false); setEditing(true); }}
+                  <button onClick={() => { setActionsOpen(false); router.push(`/agreements/${id}/edit`); }}
                     className="flex items-center gap-2 w-full px-3 py-2 text-sm transition-colors hover:bg-[var(--bg-surface-2)]" style={{ color: "var(--text-primary)" }}>
                     <Pencil className="w-3.5 h-3.5" /> Edit
                   </button>
@@ -596,14 +594,6 @@ export default function AgreementDetailPage({
         {activeTab === "Communication"     && <StubTab label="Communication" />}
       </div>
 
-      {/* Customize this customer's agreement */}
-      {editing && (
-        <AgreementBuilder
-          editAgreement={agreement}
-          onClose={() => setEditing(false)}
-          onCreated={() => { setEditing(false); setAgreement(getAgreement(id)); }}
-        />
-      )}
     </div>
   );
 }

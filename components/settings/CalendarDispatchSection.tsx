@@ -423,7 +423,7 @@ export default function CalendarDispatchSection() {
   // nothing rather than spuriously matching empty-id boards.)
   const boardsInScope = !scopeReady ? [] : store.boards.filter(b =>
     level === "org" ? !b.companyId
-    : level === "company" ? b.companyId === companyId
+    : level === "company" ? b.companyId === companyId && !b.locationId
     : b.locationId === locationId,
   );
   function addBoard() {

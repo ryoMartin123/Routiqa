@@ -17,9 +17,8 @@ import LeadWizard from "@/components/leads/LeadWizard";
 import ProjectWizard from "@/components/projects/ProjectWizard";
 import QuickCreateQuoteModal from "@/components/quotes/QuickCreateQuoteModal";
 import InvoiceWizard from "@/components/quotes/InvoiceWizard";
-import AgreementBuilder from "@/components/agreements/AgreementBuilder";
 
-type ModalKind = "customer" | "lead" | "job" | "project" | "quote" | "invoice" | "agreement";
+type ModalKind = "customer" | "lead" | "job" | "project" | "quote" | "invoice";
 
 const MODAL_ITEMS: { kind: ModalKind; label: string; sublabel: string; icon: typeof UserPlus }[] = [
   { kind: "customer",  label: "Customer",         sublabel: "Account or prospect",  icon: UserPlus },
@@ -28,11 +27,11 @@ const MODAL_ITEMS: { kind: ModalKind; label: string; sublabel: string; icon: typ
   { kind: "project",   label: "Project",          sublabel: "Multi-job work",       icon: FolderKanban },
   { kind: "quote",     label: "Quote / Estimate", sublabel: "Build a proposal",     icon: FileText },
   { kind: "invoice",   label: "Invoice",          sublabel: "Bill a customer",      icon: Receipt },
-  { kind: "agreement", label: "Agreement",        sublabel: "Maintenance plan",     icon: FileCheck },
 ];
 
 const NAV_ITEMS: { label: string; sublabel: string; href: string; icon: typeof UserPlus }[] = [
-  { label: "Task",    sublabel: "Follow-up / to-do", href: "/tasks",    icon: ListChecks },
+  { label: "Agreement", sublabel: "Maintenance plan",  href: "/agreements/new", icon: FileCheck },
+  { label: "Task",      sublabel: "Follow-up / to-do", href: "/tasks",          icon: ListChecks },
 ];
 
 export default function GlobalCreateMenu() {
@@ -112,9 +111,6 @@ export default function GlobalCreateMenu() {
       )}
       {active === "invoice" && (
         <InvoiceWizard onClose={() => setActive(null)} onCreated={(id) => { setActive(null); router.push(`/invoices/${id}`); }} />
-      )}
-      {active === "agreement" && (
-        <AgreementBuilder onClose={() => setActive(null)} onCreated={(id) => { setActive(null); router.push(`/agreements/${id}`); }} />
       )}
     </>
   );

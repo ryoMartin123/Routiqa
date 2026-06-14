@@ -1,12 +1,15 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import {
-  Plus, Pencil, Copy, Trash2, Check, FileText, Wrench, CalendarClock,
-  DollarSign, Star, ScrollText, RefreshCw, Hash,
+  Plus, Pencil, Copy, Trash2, FileText, Wrench, CalendarClock,
+  DollarSign, Star, ScrollText, RefreshCw, Hash, Tag,
 } from "lucide-react";
 import UiSelect from "@/components/ui/Select";
+import StatusTabs from "@/components/shared/StatusTabs";
+import { useRegisterSaveAction } from "@/components/settings/SettingsActions";
 import {
+  getAgreementTypes, saveAgreementTypes,
   getAgreementServices, saveAgreementServices,
   getVisitRules, saveVisitRules,
   getBillingRules, saveBillingRules,
@@ -14,10 +17,17 @@ import {
   getTermsBlocks, saveTermsBlocks,
   getRenewalRules, saveRenewalRules,
   getNumbering, saveNumbering,
-  BENEFIT_KIND_LABELS, agrId, agrSlug,
-  type AgreementService, type VisitRule, type BillingRule,
+  BENEFIT_KIND_LABELS, SERVICE_SCOPE_LABELS, SERVICE_APPLIES_LABELS,
+  VISIT_CADENCE_LABELS, TERM_TYPE_LABELS, RENEWAL_TYPE_LABELS,
+  agrId, agrSlug,
+  type AgreementType, type AgreementService, type VisitRule, type BillingRule,
   type Benefit, type TermsBlock, type RenewalRule, type BenefitKind,
+  type ServiceScopeType, type ServiceApplies, type VisitCadence,
+  type TermType, type RenewalType,
 } from "@/lib/agreements/settings";
+import { getTemplates as getWorkOrderTemplates } from "@/lib/work-order-templates/data";
+import { getAllItems } from "@/lib/items/data";
+import type { Industry } from "@/lib/agreements/data";
 import {
   getPlanTemplates, savePlanTemplates, blankPlanTemplate, type PlanTemplate,
 } from "@/lib/agreements/templates";
@@ -230,7 +240,8 @@ function TemplatesTab({ register }: { register: Saver }) {
 // ═══ Main section ═════════════════════════════════════════
 const TABS = [
   { key: "templates", label: "Templates",    icon: FileText },
-  { key: "services",  label: "Services",     icon: Wrench },
+  { key: "types",     label: "Types",        icon: Tag },
+  { key: "services",  label: "Service Templates", icon: Wrench },
   { key: "visits",    label: "Visit Rules",  icon: CalendarClock },
   { key: "billing",   label: "Billing Rules",icon: DollarSign },
   { key: "benefits",  label: "Benefits",     icon: Star },
@@ -239,8 +250,24 @@ const TABS = [
 ] as const;
 type TabKey = typeof TABS[number]["key"];
 
+// Option lists shared by the Service Templates form (linked item / work order).
+const INDUSTRY_OPTIONS: { value: Industry; label: string }[] = [
+  { value: "HVAC", label: "HVAC" }, { value: "Roofing", label: "Roofing" },
+  { value: "Plumbing", label: "Plumbing" }, { value: "Property Maintenance", label: "Property Maintenance" },
+  { value: "Consulting", label: "Consulting" }, { value: "General", label: "General" },
+];
+const SCOPE_OPTIONS = (Object.keys(SERVICE_SCOPE_LABELS) as ServiceScopeType[]).map(k => ({ value: k, label: SERVICE_SCOPE_LABELS[k] }));
+const APPLIES_OPTIONS = (Object.keys(SERVICE_APPLIES_LABELS) as ServiceApplies[]).map(k => ({ value: k, label: SERVICE_APPLIES_LABELS[k] }));
+const CADENCE_OPTIONS = (Object.keys(VISIT_CADENCE_LABELS) as VisitCadence[]).map(k => ({ value: k, label: VISIT_CADENCE_LABELS[k] }));
+const TERM_TYPE_OPTIONS = (Object.keys(TERM_TYPE_LABELS) as TermType[]).map(k => ({ value: k, label: TERM_TYPE_LABELS[k] }));
+const RENEWAL_TYPE_OPTIONS = (Object.keys(RENEWAL_TYPE_LABELS) as RenewalType[]).map(k => ({ value: k, label: RENEWAL_TYPE_LABELS[k] }));
+const PRICE_INC_OPTIONS = [{ value: "pct", label: "Percentage" }, { value: "flat", label: "Flat amount" }];
+
 export default function AgreementsSettingsSection() {
   const [tab, setTab] = useState<TabKey>("templates");
+  // Linked-item / work-order-template option lists for the Service Templates tab.
+  const woOptions = useMemo(() => [{ value: "", label: "None" }, ...getWorkOrderTemplates().filter(t => t.active).map(t => ({ value: t.id, label: t.name }))], []);
+  const itemOptions = useMemo(() => [{ value: "", label: "None" }, ...getAllItems().map(i => ({ value: i.id, label: i.name }))], []);
 
   const saverRef = useRef<() => void>(() => {});
   const [hdr, setHdr] = useState<{ dirty: boolean; saved: boolean }>({ dirty: false, saved: false });
@@ -250,57 +277,63 @@ export default function AgreementsSettingsSection() {
   }, []);
   function switchTab(next: TabKey) { setTab(next); setHdr({ dirty: false, saved: false }); }
 
+  // Publish Save to the shared top-right settings slot (same as Pipelines /
+  // Calendar-Dispatch) instead of a local button inside the section.
+  useRegisterSaveAction({ dirty: hdr.dirty, saved: hdr.saved, onSave: () => saverRef.current() });
+
   return (
     <div className="space-y-5">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h2 className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>Agreements</h2>
-          <p className="text-sm mt-0.5" style={{ color: "var(--text-secondary)" }}>
-            Reusable defaults for service plans — templates, types, visit &amp; billing rules, benefits, terms, and renewals.
-          </p>
-        </div>
-        <button onClick={() => saverRef.current()} disabled={!hdr.dirty && !hdr.saved}
-          className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-white transition-colors disabled:opacity-50 shrink-0"
-          style={{ backgroundColor: hdr.saved ? "#10b981" : "#4f46e5" }}>
-          <Check className="w-3.5 h-3.5" /> {hdr.saved ? "Saved" : "Save Changes"}
-        </button>
+      <div>
+        <h2 className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>Agreements</h2>
+        <p className="text-sm mt-0.5" style={{ color: "var(--text-secondary)" }}>
+          Reusable defaults for service plans — templates, types, visit &amp; billing rules, benefits, terms, and renewals.
+        </p>
       </div>
 
-      <div className="flex items-center gap-1 border-b overflow-x-auto" style={{ borderColor: "var(--border-subtle)" }}>
-        {TABS.map(t => {
-          const active = tab === t.key; const Icon = t.icon;
-          return (
-            <button key={t.key} onClick={() => switchTab(t.key)}
-              className="relative flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium transition-colors whitespace-nowrap"
-              style={{ color: active ? "#4f46e5" : "var(--text-muted)" }}>
-              <Icon className="w-3.5 h-3.5 shrink-0" /> {t.label}
-              {active && <span className="absolute bottom-0 left-0 right-0 h-0.5 rounded-t bg-indigo-600" />}
-            </button>
-          );
-        })}
+      <div className="overflow-x-auto">
+        <StatusTabs active={tab} onChange={k => switchTab(k as TabKey)}
+          tabs={TABS.map(t => ({ key: t.key, label: t.label, icon: t.icon }))} />
       </div>
 
       {tab === "templates" && <TemplatesTab register={register} />}
+      {tab === "types" && (
+        <SimpleCrud<AgreementType> title="Agreement Type" get={getAgreementTypes} save={saveAgreementTypes} register={register}
+          primaryKey="name" subtitleKey="description"
+          fields={[
+            { key: "name", label: "Name", type: "text" },
+            { key: "industry", label: "Industry", type: "select", options: INDUSTRY_OPTIONS },
+            { key: "description", label: "Description", type: "text", full: true },
+            { key: "active", label: "Active", type: "toggle" },
+          ]}
+          makeNew={() => ({ id: agrId("at"), name: "", key: "", industry: "General", description: "", active: true, order: 999 })} />
+      )}
       {tab === "services" && (
-        <SimpleCrud<AgreementService> title="Service" get={getAgreementServices} save={saveAgreementServices} register={register}
+        <SimpleCrud<AgreementService> title="Service Template" get={getAgreementServices} save={saveAgreementServices} register={register}
           primaryKey="name" subtitleKey="description"
           fields={[
             { key: "name", label: "Name", type: "text" },
             { key: "description", label: "Description", type: "text", full: true },
+            { key: "scopeType", label: "Service Type", type: "select", options: SCOPE_OPTIONS },
+            { key: "applies", label: "Applies", type: "select", options: APPLIES_OPTIONS },
+            { key: "defaultQuantity", label: "Default Qty / Limit", type: "number", min: 0 },
+            { key: "limit", label: "Usage Limit", type: "number", min: 0 },
+            { key: "itemId", label: "Linked Item", type: "select", options: itemOptions },
+            { key: "workOrderTemplateId", label: "Linked Work Order", type: "select", options: woOptions },
             { key: "active", label: "Active", type: "toggle" },
           ]}
-          makeNew={() => ({ id: agrId("as"), name: "", description: "", active: true, order: 999 })} />
+          makeNew={() => ({ id: agrId("as"), name: "", description: "", scopeType: "included", applies: "per_visit", active: true, order: 999 })} />
       )}
       {tab === "visits" && (
         <SimpleCrud<VisitRule> title="Visit Rule" get={getVisitRules} save={saveVisitRules} register={register}
           primaryKey="name" subtitleKey="key"
           fields={[
             { key: "name", label: "Name", type: "text" },
+            { key: "cadenceKind", label: "Cadence", type: "select", options: CADENCE_OPTIONS },
             { key: "visitsPerYear", label: "Visits / Year", type: "number", min: 0 },
             { key: "defaultDurationMin", label: "Default Duration (min)", type: "number", min: 0 },
             { key: "active", label: "Active", type: "toggle" },
           ]}
-          makeNew={() => ({ id: agrId("vr"), name: "", key: "", visitsPerYear: 1, defaultDurationMin: 90, active: true, order: 999 })} />
+          makeNew={() => ({ id: agrId("vr"), name: "", key: "", cadenceKind: "custom", visitsPerYear: 1, defaultDurationMin: 90, active: true, order: 999 })} />
       )}
       {tab === "billing" && (
         <SimpleCrud<BillingRule> title="Billing Rule" get={getBillingRules} save={saveBillingRules} register={register}
@@ -317,34 +350,46 @@ export default function AgreementsSettingsSection() {
           primaryKey="label" subtitleKey="value"
           fields={[
             { key: "label", label: "Label", type: "text" },
-            { key: "kind", label: "Kind", type: "select", options: (Object.keys(BENEFIT_KIND_LABELS) as BenefitKind[]).map(k => ({ value: k, label: BENEFIT_KIND_LABELS[k] })) },
-            { key: "value", label: "Value", type: "text" },
+            { key: "kind", label: "Benefit Type", type: "select", options: (Object.keys(BENEFIT_KIND_LABELS) as BenefitKind[]).map(k => ({ value: k, label: BENEFIT_KIND_LABELS[k] })) },
+            { key: "description", label: "Description", type: "text", full: true },
+            { key: "value", label: "Value / Discount", type: "text" },
+            { key: "appliesTo", label: "Applies To", type: "text" },
+            { key: "limit", label: "Limit", type: "text" },
             { key: "active", label: "Active", type: "toggle" },
           ]}
-          makeNew={() => ({ id: agrId("bn"), label: "", kind: "custom", value: "", active: true, order: 999 })} />
+          makeNew={() => ({ id: agrId("bn"), label: "", kind: "custom", description: "", value: "", appliesTo: "", limit: "", active: true, order: 999 })} />
       )}
       {tab === "terms" && (
         <SimpleCrud<TermsBlock> title="Terms Block" get={getTermsBlocks} save={saveTermsBlocks} register={register}
           primaryKey="title" subtitleKey="body"
           fields={[
-            { key: "title", label: "Title", type: "text" },
-            { key: "body", label: "Body", type: "textarea" },
+            { key: "title", label: "Term Name", type: "text" },
+            { key: "termType", label: "Term Type", type: "select", options: TERM_TYPE_OPTIONS },
+            { key: "body", label: "Default Text", type: "textarea" },
+            { key: "required", label: "Required", type: "toggle" },
+            { key: "editable", label: "Editable", type: "toggle" },
             { key: "active", label: "Active", type: "toggle" },
           ]}
-          makeNew={() => ({ id: agrId("tb"), title: "", body: "", active: true, order: 999 })} />
+          makeNew={() => ({ id: agrId("tb"), title: "", body: "", termType: "custom", required: false, editable: true, active: true, order: 999 })} />
       )}
       {tab === "renewals" && (
         <SimpleCrud<RenewalRule> title="Renewal Rule" get={getRenewalRules} save={saveRenewalRules} register={register}
           primaryKey="name"
           fields={[
             { key: "name", label: "Name", type: "text" },
-            { key: "autoRenew", label: "Auto-renew", type: "toggle" },
-            { key: "termMonths", label: "Term (months)", type: "number", min: 1 },
+            { key: "renewalType", label: "Renewal Type", type: "select", options: RENEWAL_TYPE_OPTIONS },
+            { key: "termMonths", label: "Term Length (months)", type: "number", min: 1 },
+            { key: "reminderDays", label: "Reminder (days before)", type: "number", min: 0 },
             { key: "noticeDays", label: "Notice (days)", type: "number", min: 0 },
-            { key: "priceIncreasePct", label: "Price Increase %", type: "number", min: 0 },
+            { key: "priceIncreaseType", label: "Price Increase Rule", type: "select", options: PRICE_INC_OPTIONS },
+            { key: "priceIncreasePct", label: "Price Increase Amount", type: "number", min: 0 },
+            { key: "approvalRequired", label: "Approval Required", type: "toggle" },
+            { key: "generateTask", label: "Generate Renewal Task", type: "toggle" },
+            { key: "generateQuote", label: "Generate Renewal Quote", type: "toggle" },
+            { key: "autoRenew", label: "Auto-renew", type: "toggle" },
             { key: "active", label: "Active", type: "toggle" },
           ]}
-          makeNew={() => ({ id: agrId("rr"), name: "", autoRenew: true, termMonths: 12, noticeDays: 30, priceIncreasePct: 0, active: true, order: 999 })} />
+          makeNew={() => ({ id: agrId("rr"), name: "", renewalType: "auto_same", autoRenew: true, termMonths: 12, noticeDays: 30, reminderDays: 45, priceIncreasePct: 0, priceIncreaseType: "pct", approvalRequired: false, generateTask: true, generateQuote: false, active: true, order: 999 })} />
       )}
     </div>
   );

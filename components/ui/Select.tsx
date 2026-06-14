@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { ChevronDown, Check } from "lucide-react";
 
 export interface SelectOption {
@@ -26,7 +26,11 @@ export default function Select({
 }: SelectProps) {
   const [open, setOpen] = useState(false);
   const [activeIdx, setActiveIdx] = useState<number>(-1);
+  // Flip the popup above the trigger (and cap its height) when there isn't
+  // enough room below — keeps it on-screen inside scrolling drawers/wizards.
+  const [placement, setPlacement] = useState<{ dropUp: boolean; maxH: number }>({ dropUp: false, maxH: 260 });
   const wrapRef = useRef<HTMLDivElement>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
 
   const selected = options.find(o => o.value === value);
   const pad = size === "sm" ? "px-2.5 py-1.5 text-xs" : "px-3 py-2 text-sm";
@@ -45,6 +49,26 @@ export default function Select({
   useEffect(() => {
     if (open) setActiveIdx(options.findIndex(o => o.value === value));
   }, [open, value, options]);
+
+  // Decide drop direction + max height from the room around the trigger.
+  useLayoutEffect(() => {
+    if (!open || !btnRef.current) return;
+    const GAP = 6, MARGIN = 8, IDEAL = 260;
+    const measure = () => {
+      const rect = btnRef.current!.getBoundingClientRect();
+      const below = window.innerHeight - rect.bottom - GAP - MARGIN;
+      const above = rect.top - GAP - MARGIN;
+      const dropUp = below < Math.min(IDEAL, options.length * 38 + 8) && above > below;
+      setPlacement({ dropUp, maxH: Math.max(120, Math.min(IDEAL, dropUp ? above : below)) });
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    window.addEventListener("scroll", measure, true);
+    return () => {
+      window.removeEventListener("resize", measure);
+      window.removeEventListener("scroll", measure, true);
+    };
+  }, [open, options.length]);
 
   function choose(v: string) {
     onChange(v);
@@ -75,6 +99,7 @@ export default function Select({
     <div ref={wrapRef} className={`relative ${className ?? "w-full"}`}>
       {/* Trigger */}
       <button
+        ref={btnRef}
         type="button"
         disabled={disabled}
         onClick={() => !disabled && setOpen(o => !o)}
@@ -97,12 +122,13 @@ export default function Select({
       {/* Popup */}
       {open && (
         <div
-          className="absolute left-0 right-0 z-50 mt-1.5 p-1 rounded-xl overflow-y-auto"
+          className="absolute left-0 right-0 z-50 p-1 rounded-xl overflow-y-auto"
           style={{
             backgroundColor: "var(--bg-surface)",
             border: "1px solid var(--border)",
             boxShadow: "0 12px 32px rgba(0,0,0,0.16)",
-            maxHeight: "260px",
+            maxHeight: placement.maxH,
+            ...(placement.dropUp ? { bottom: "100%", marginBottom: 6 } : { top: "100%", marginTop: 6 }),
           }}
           role="listbox"
         >

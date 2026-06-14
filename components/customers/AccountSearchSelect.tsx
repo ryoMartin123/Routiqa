@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Search, Check, ChevronDown, X, Building2, Home } from "lucide-react";
 import type { Customer } from "@/lib/customers/data";
 
@@ -23,7 +23,10 @@ export default function AccountSearchSelect({
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [activeIdx, setActiveIdx] = useState(0);
+  // Flip the popover above the trigger when there isn't enough room below.
+  const [dropUp, setDropUp] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const selected = customers.find(c => c.id === value);
@@ -64,6 +67,23 @@ export default function AccountSearchSelect({
   // Keep the highlighted row in view
   useEffect(() => { setActiveIdx(0); }, [query]);
 
+  // Open upward when the popover (search box + ~300px list) would run off-screen.
+  useLayoutEffect(() => {
+    if (!open || !btnRef.current) return;
+    const measure = () => {
+      const rect = btnRef.current!.getBoundingClientRect();
+      const below = window.innerHeight - rect.bottom;
+      setDropUp(below < 360 && rect.top > below);
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    window.addEventListener("scroll", measure, true);
+    return () => {
+      window.removeEventListener("resize", measure);
+      window.removeEventListener("scroll", measure, true);
+    };
+  }, [open]);
+
   function choose(id: string) {
     onChange(id);
     setOpen(false);
@@ -90,6 +110,7 @@ export default function AccountSearchSelect({
     <div ref={wrapRef} className="relative w-full">
       {/* Trigger */}
       <button
+        ref={btnRef}
         type="button"
         disabled={disabled}
         onClick={() => !disabled && setOpen(o => !o)}
@@ -120,11 +141,12 @@ export default function AccountSearchSelect({
       {/* Popover */}
       {open && (
         <div
-          className="absolute left-0 right-0 z-50 mt-1.5 rounded-xl overflow-hidden"
+          className="absolute left-0 right-0 z-50 rounded-xl overflow-hidden"
           style={{
             backgroundColor: "var(--bg-surface)",
             border: "1px solid var(--border)",
             boxShadow: "0 12px 32px rgba(0,0,0,0.16)",
+            ...(dropUp ? { bottom: "100%", marginBottom: 6 } : { top: "100%", marginTop: 6 }),
           }}
         >
           {/* Search field */}

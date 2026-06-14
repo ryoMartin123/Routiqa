@@ -16,46 +16,96 @@ export interface AgreementType {
   active: boolean; order: number;
 }
 
+// ─── Service Scope (engine: "what we do") ─────────────────
+export type ServiceScopeType =
+  | "included" | "discounted" | "optional_addon"
+  | "covered_item" | "excluded" | "allowance";
+export type ServiceApplies = "per_visit" | "per_term";
+
 // A reusable agreement service — the library you load into a template's
-// "Included Services". Templates snapshot the name/description at build time.
+// "Service Scope". Templates snapshot these at build time.
 export interface AgreementService {
   id: string; name: string; description?: string;
+  scopeType?: ServiceScopeType;        // included / discounted / add-on / covered / excluded / allowance
+  applies?: ServiceApplies;            // per visit or per agreement term
+  defaultQuantity?: number;            // qty or limit seeded into a template
+  limit?: number;                      // usage cap (allowances/add-ons)
+  itemId?: string;                     // linked catalog item (lib/items)
+  workOrderTemplateId?: string;        // linked checklist / work-order item
   active: boolean; order: number;
 }
+
+// ─── Visit Schedule (engine: "when we go") ────────────────
+export type VisitCadence =
+  | "no_visits" | "one_time" | "monthly" | "quarterly" | "semi_annual"
+  | "annual" | "seasonal" | "on_demand" | "custom";
 
 // A visit cadence. visitsPerYear drives how many visits the builder seeds.
 export interface VisitRule {
   id: string; name: string; key: string;
-  visitsPerYear: number;        // monthly 12 · quarterly 4 · semi-annual 2 · annual 1 · custom 0
+  cadenceKind?: VisitCadence;   // semantic cadence (no_visits/one_time/…/on_demand/custom)
+  visitsPerYear: number;        // monthly 12 · quarterly 4 · semi-annual 2 · annual 1 · one-time 1 · none/on-demand 0
   defaultDurationMin: number;
   active: boolean; order: number;
 }
 
+// ─── Billing Rules (engine: "how customer pays") ──────────
 // A billing cadence. periodsPerYear drives the per-period amount display.
 export interface BillingRule {
   id: string; name: string; key: string;
-  periodsPerYear: number;       // monthly 12 · quarterly 4 · annual 1 · per-visit/upfront/custom 0
+  periodsPerYear: number;       // monthly 12 · quarterly 4 · annual 1 · per-visit/upfront/one-time/no-billing/custom 0
   active: boolean; order: number;
 }
 
-export type BenefitKind = "priority" | "discount" | "fee_waiver" | "diagnostic" | "custom";
+// Payment terms — a small fixed list (constant, not full CRUD yet).
+export const PAYMENT_TERMS: { key: string; label: string }[] = [
+  { key: "due_on_receipt", label: "Due on receipt" },
+  { key: "net_15",         label: "Net 15" },
+  { key: "net_30",         label: "Net 30" },
+];
+
+// ─── Benefits ─────────────────────────────────────────────
+export type BenefitKind =
+  | "discount" | "priority" | "fee_waiver" | "included_report"
+  | "warranty" | "credit_allowance" | "access_membership" | "custom";
 export interface Benefit {
   id: string; label: string; kind: BenefitKind;
+  description?: string;
   value?: string;               // e.g. "15%", "$0 diagnostic"
+  appliesTo?: string;           // e.g. "All visits", "Repairs"
+  limit?: string;               // e.g. "2 per year"
   active: boolean; order: number;
 }
 
+// ─── Terms (engine: reusable legal/customer-facing blocks) ─
+export type TermType =
+  | "payment" | "renewal" | "cancellation" | "exclusions" | "warranty"
+  | "access" | "scheduling" | "liability" | "customer_responsibility" | "custom";
 export interface TermsBlock {
   id: string; title: string; body: string;
+  termType?: TermType;
+  appliesToTypeKeys?: string[]; // which agreement types this applies to (empty = all)
+  required?: boolean;           // must appear on the agreement
+  editable?: boolean;           // can be edited per-agreement (default true)
   active: boolean; order: number;
 }
 
+// ─── Renewals (engine: what happens at term end) ──────────
+export type RenewalType =
+  | "no_renewal" | "manual" | "auto_same"
+  | "auto_increase" | "quote_required" | "month_to_month";
 export interface RenewalRule {
   id: string; name: string;
-  autoRenew: boolean;
+  renewalType?: RenewalType;
+  autoRenew: boolean;           // derived from renewalType (auto_same/auto_increase/month_to_month)
   termMonths: number;           // length of each term
   noticeDays: number;           // cancellation/renewal notice window
+  reminderDays?: number;        // when to remind ahead of renewal
   priceIncreasePct: number;     // applied on renewal
+  priceIncreaseType?: "pct" | "flat";
+  approvalRequired?: boolean;
+  generateTask?: boolean;       // create a renewal task
+  generateQuote?: boolean;      // create a renewal quote/agreement
   active: boolean; order: number;
 }
 
@@ -65,9 +115,41 @@ export interface NumberingSettings {
   padding: number;              // zero-pad width
 }
 
+// ─── Label maps (shared by settings UI + builder) ─────────
 export const BENEFIT_KIND_LABELS: Record<BenefitKind, string> = {
-  priority: "Priority Scheduling", discount: "Repair Discount",
-  fee_waiver: "Fee Waiver", diagnostic: "Diagnostic", custom: "Custom",
+  discount: "Discount", priority: "Priority", fee_waiver: "Fee Waiver",
+  included_report: "Included Report", warranty: "Warranty",
+  credit_allowance: "Credit / Allowance", access_membership: "Access / Membership Perk",
+  custom: "Custom",
+};
+
+export const SERVICE_SCOPE_LABELS: Record<ServiceScopeType, string> = {
+  included: "Included Service", discounted: "Discounted Service",
+  optional_addon: "Optional Add-on", covered_item: "Covered Item / System",
+  excluded: "Excluded Service", allowance: "Allowance / Credit",
+};
+
+export const SERVICE_APPLIES_LABELS: Record<ServiceApplies, string> = {
+  per_visit: "Per visit", per_term: "Per agreement term",
+};
+
+export const VISIT_CADENCE_LABELS: Record<VisitCadence, string> = {
+  no_visits: "No Visits", one_time: "One-time", monthly: "Monthly",
+  quarterly: "Quarterly", semi_annual: "Semi-annual", annual: "Annual",
+  seasonal: "Seasonal", on_demand: "On-demand", custom: "Custom Schedule",
+};
+
+export const TERM_TYPE_LABELS: Record<TermType, string> = {
+  payment: "Payment", renewal: "Renewal", cancellation: "Cancellation",
+  exclusions: "Exclusions", warranty: "Warranty", access: "Access",
+  scheduling: "Scheduling", liability: "Liability",
+  customer_responsibility: "Customer Responsibility", custom: "Custom",
+};
+
+export const RENEWAL_TYPE_LABELS: Record<RenewalType, string> = {
+  no_renewal: "No renewal / expires", manual: "Manual renewal",
+  auto_same: "Auto-renew same terms", auto_increase: "Auto-renew with price increase",
+  quote_required: "Renewal quote required", month_to_month: "Month-to-month after term",
 };
 
 // ─── Seed defaults ────────────────────────────────────────
@@ -81,54 +163,61 @@ const DEFAULT_TYPES: AgreementType[] = [
 ];
 
 const DEFAULT_SERVICES: AgreementService[] = [
-  { id: "as-1", name: "Spring Tune-up",       description: "Seasonal inspection, cleaning, and performance check.", active: true, order: 1 },
-  { id: "as-2", name: "Fall Tune-up",         description: "Pre-winter inspection, cleaning, and safety check.",    active: true, order: 2 },
-  { id: "as-3", name: "Filter Replacement",   description: "Replace standard air filters.",                         active: true, order: 3 },
-  { id: "as-4", name: "Quarterly Inspection", description: "Routine inspection of covered equipment/systems.",       active: true, order: 4 },
-  { id: "as-5", name: "Coil Cleaning",        description: "Clean evaporator and condenser coils.",                  active: true, order: 5 },
-  { id: "as-6", name: "Drain Cleaning",       description: "Clear and flush primary drain lines.",                   active: true, order: 6 },
-  { id: "as-7", name: "Water Heater Check",   description: "Inspect and test water heater operation.",               active: true, order: 7 },
-  { id: "as-8", name: "Gutter Cleaning",      description: "Clear gutters and downspouts; check flow.",              active: true, order: 8 },
-  { id: "as-9", name: "Photo Report",         description: "Documented photo report of the visit.",                  active: true, order: 9 },
-  { id: "as-10", name: "Priority Dispatch",   description: "Front-of-queue scheduling for service calls.",           active: true, order: 10 },
+  { id: "as-1", name: "Spring Tune-up",       description: "Seasonal inspection, cleaning, and performance check.", scopeType: "included",   applies: "per_visit", active: true, order: 1 },
+  { id: "as-2", name: "Fall Tune-up",         description: "Pre-winter inspection, cleaning, and safety check.",    scopeType: "included",   applies: "per_visit", active: true, order: 2 },
+  { id: "as-3", name: "Filter Replacement",   description: "Replace standard air filters.",                         scopeType: "included",   applies: "per_visit", active: true, order: 3 },
+  { id: "as-4", name: "Quarterly Inspection", description: "Routine inspection of covered equipment/systems.",       scopeType: "included",   applies: "per_visit", active: true, order: 4 },
+  { id: "as-5", name: "Coil Cleaning",        description: "Clean evaporator and condenser coils.",                  scopeType: "included",   applies: "per_visit", active: true, order: 5 },
+  { id: "as-6", name: "Drain Cleaning",       description: "Clear and flush primary drain lines.",                   scopeType: "included",   applies: "per_visit", active: true, order: 6 },
+  { id: "as-7", name: "Water Heater Check",   description: "Inspect and test water heater operation.",               scopeType: "included",   applies: "per_visit", active: true, order: 7 },
+  { id: "as-8", name: "Gutter Cleaning",      description: "Clear gutters and downspouts; check flow.",              scopeType: "included",   applies: "per_visit", active: true, order: 8 },
+  { id: "as-9", name: "Photo Report",         description: "Documented photo report of the visit.",                  scopeType: "included",   applies: "per_visit", active: true, order: 9 },
+  { id: "as-10", name: "Repair Discount",     description: "Member discount on out-of-scope repairs.",               scopeType: "discounted", applies: "per_term",  active: true, order: 10 },
 ];
 
 const DEFAULT_VISIT_RULES: VisitRule[] = [
-  { id: "vr-1", name: "Monthly",      key: "monthly",      visitsPerYear: 12, defaultDurationMin: 60, active: true, order: 1 },
-  { id: "vr-2", name: "Quarterly",    key: "quarterly",    visitsPerYear: 4,  defaultDurationMin: 90, active: true, order: 2 },
-  { id: "vr-3", name: "Semi-annual",  key: "semi_annual",  visitsPerYear: 2,  defaultDurationMin: 90, active: true, order: 3 },
-  { id: "vr-4", name: "Annual",       key: "annual",       visitsPerYear: 1,  defaultDurationMin: 120,active: true, order: 4 },
-  { id: "vr-5", name: "Custom",       key: "custom",       visitsPerYear: 0,  defaultDurationMin: 90, active: true, order: 5 },
+  { id: "vr-1", name: "No Visits",    key: "no_visits",    cadenceKind: "no_visits",   visitsPerYear: 0,  defaultDurationMin: 0,  active: true, order: 1 },
+  { id: "vr-2", name: "One-time",     key: "one_time",     cadenceKind: "one_time",    visitsPerYear: 1,  defaultDurationMin: 90, active: true, order: 2 },
+  { id: "vr-3", name: "Monthly",      key: "monthly",      cadenceKind: "monthly",     visitsPerYear: 12, defaultDurationMin: 60, active: true, order: 3 },
+  { id: "vr-4", name: "Quarterly",    key: "quarterly",    cadenceKind: "quarterly",   visitsPerYear: 4,  defaultDurationMin: 90, active: true, order: 4 },
+  { id: "vr-5", name: "Semi-annual",  key: "semi_annual",  cadenceKind: "semi_annual", visitsPerYear: 2,  defaultDurationMin: 90, active: true, order: 5 },
+  { id: "vr-6", name: "Annual",       key: "annual",       cadenceKind: "annual",      visitsPerYear: 1,  defaultDurationMin: 120,active: true, order: 6 },
+  { id: "vr-7", name: "Seasonal",     key: "seasonal",     cadenceKind: "seasonal",    visitsPerYear: 2,  defaultDurationMin: 90, active: true, order: 7 },
+  { id: "vr-8", name: "On-demand",    key: "on_demand",    cadenceKind: "on_demand",   visitsPerYear: 0,  defaultDurationMin: 90, active: true, order: 8 },
+  { id: "vr-9", name: "Custom",       key: "custom",       cadenceKind: "custom",      visitsPerYear: 0,  defaultDurationMin: 90, active: true, order: 9 },
 ];
 
 const DEFAULT_BILLING_RULES: BillingRule[] = [
-  { id: "br-1", name: "Monthly",   key: "monthly",   periodsPerYear: 12, active: true, order: 1 },
-  { id: "br-2", name: "Quarterly", key: "quarterly", periodsPerYear: 4,  active: true, order: 2 },
-  { id: "br-3", name: "Annual",    key: "annual",    periodsPerYear: 1,  active: true, order: 3 },
-  { id: "br-4", name: "Per Visit", key: "per_visit", periodsPerYear: 0,  active: true, order: 4 },
-  { id: "br-5", name: "Upfront",   key: "upfront",   periodsPerYear: 0,  active: true, order: 5 },
-  { id: "br-6", name: "Custom",    key: "custom",    periodsPerYear: 0,  active: true, order: 6 },
+  { id: "br-1", name: "No Billing", key: "no_billing", periodsPerYear: 0,  active: true, order: 1 },
+  { id: "br-2", name: "One-time",   key: "one_time",   periodsPerYear: 0,  active: true, order: 2 },
+  { id: "br-3", name: "Monthly",    key: "monthly",    periodsPerYear: 12, active: true, order: 3 },
+  { id: "br-4", name: "Quarterly",  key: "quarterly",  periodsPerYear: 4,  active: true, order: 4 },
+  { id: "br-5", name: "Annual",     key: "annual",     periodsPerYear: 1,  active: true, order: 5 },
+  { id: "br-6", name: "Per Visit",  key: "per_visit",  periodsPerYear: 0,  active: true, order: 6 },
+  { id: "br-7", name: "Upfront",    key: "upfront",    periodsPerYear: 0,  active: true, order: 7 },
+  { id: "br-8", name: "Custom",     key: "custom",     periodsPerYear: 0,  active: true, order: 8 },
 ];
 
 const DEFAULT_BENEFITS: Benefit[] = [
-  { id: "bn-1", label: "Priority Scheduling",      kind: "priority",   value: "Front of queue", active: true, order: 1 },
-  { id: "bn-2", label: "Repair Discount",          kind: "discount",   value: "15%",            active: true, order: 2 },
-  { id: "bn-3", label: "No Overtime Fee",          kind: "fee_waiver", value: "Waived",         active: true, order: 3 },
-  { id: "bn-4", label: "Free Diagnostic",          kind: "diagnostic", value: "$0",             active: true, order: 4 },
-  { id: "bn-5", label: "Waived Trip Charge",       kind: "fee_waiver", value: "Waived",         active: true, order: 5 },
+  { id: "bn-1", label: "Priority Scheduling",      kind: "priority",         value: "Front of queue", appliesTo: "All service calls", active: true, order: 1 },
+  { id: "bn-2", label: "Repair Discount",          kind: "discount",         value: "15%",            appliesTo: "Repairs",            active: true, order: 2 },
+  { id: "bn-3", label: "No Overtime Fee",          kind: "fee_waiver",       value: "Waived",         appliesTo: "After-hours",        active: true, order: 3 },
+  { id: "bn-4", label: "Free Diagnostic",          kind: "fee_waiver",       value: "$0",             appliesTo: "Service calls",      active: true, order: 4 },
+  { id: "bn-5", label: "Waived Trip Charge",       kind: "fee_waiver",       value: "Waived",         appliesTo: "Service calls",      active: true, order: 5 },
+  { id: "bn-6", label: "Annual Inspection Report", kind: "included_report",  value: "Included",       appliesTo: "Annually",           active: true, order: 6 },
 ];
 
 const DEFAULT_TERMS: TermsBlock[] = [
-  { id: "tb-1", title: "Scope of Coverage",   body: "This agreement covers the services and visits listed herein for the covered equipment/systems at the service location identified above.", active: true, order: 1 },
-  { id: "tb-2", title: "Exclusions",          body: "Parts, refrigerant, and repairs beyond the included scope are billed separately at the member discount rate. Pre-existing conditions are excluded.", active: true, order: 2 },
-  { id: "tb-3", title: "Cancellation",        body: "Either party may cancel with 30 days written notice. Prepaid, unused visits are refundable on a pro-rata basis.", active: true, order: 3 },
-  { id: "tb-4", title: "Renewal",             body: "This agreement renews automatically for successive terms unless canceled per the cancellation terms. Pricing may be adjusted at renewal.", active: true, order: 4 },
+  { id: "tb-1", title: "Scope of Coverage",   termType: "custom",       required: true,  editable: true, body: "This agreement covers the services and visits listed herein for the covered equipment/systems at the service location identified above.", active: true, order: 1 },
+  { id: "tb-2", title: "Exclusions",          termType: "exclusions",   required: false, editable: true, body: "Parts, refrigerant, and repairs beyond the included scope are billed separately at the member discount rate. Pre-existing conditions are excluded.", active: true, order: 2 },
+  { id: "tb-3", title: "Cancellation",        termType: "cancellation", required: true,  editable: true, body: "Either party may cancel with 30 days written notice. Prepaid, unused visits are refundable on a pro-rata basis.", active: true, order: 3 },
+  { id: "tb-4", title: "Renewal",             termType: "renewal",      required: true,  editable: true, body: "This agreement renews automatically for successive terms unless canceled per the cancellation terms. Pricing may be adjusted at renewal.", active: true, order: 4 },
 ];
 
 const DEFAULT_RENEWAL_RULES: RenewalRule[] = [
-  { id: "rr-1", name: "Auto-renew Annually", autoRenew: true,  termMonths: 12, noticeDays: 30, priceIncreasePct: 0, active: true, order: 1 },
-  { id: "rr-2", name: "Manual Renewal",      autoRenew: false, termMonths: 12, noticeDays: 30, priceIncreasePct: 0, active: true, order: 2 },
-  { id: "rr-3", name: "Auto-renew + 5%",     autoRenew: true,  termMonths: 12, noticeDays: 30, priceIncreasePct: 5, active: true, order: 3 },
+  { id: "rr-1", name: "Auto-renew Annually", renewalType: "auto_same",     autoRenew: true,  termMonths: 12, noticeDays: 30, reminderDays: 45, priceIncreasePct: 0, priceIncreaseType: "pct", approvalRequired: false, generateTask: true,  generateQuote: false, active: true, order: 1 },
+  { id: "rr-2", name: "Manual Renewal",      renewalType: "manual",        autoRenew: false, termMonths: 12, noticeDays: 30, reminderDays: 45, priceIncreasePct: 0, priceIncreaseType: "pct", approvalRequired: true,  generateTask: true,  generateQuote: false, active: true, order: 2 },
+  { id: "rr-3", name: "Auto-renew + 5%",     renewalType: "auto_increase", autoRenew: true,  termMonths: 12, noticeDays: 30, reminderDays: 45, priceIncreasePct: 5, priceIncreaseType: "pct", approvalRequired: false, generateTask: true,  generateQuote: false, active: true, order: 3 },
 ];
 
 const DEFAULT_NUMBERING: NumberingSettings = { prefix: "AGR", nextSeq: 1001, padding: 4 };

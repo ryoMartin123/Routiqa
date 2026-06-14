@@ -4,7 +4,7 @@ import { ChevronUp, ChevronDown } from "lucide-react";
 
 // Number input with the CRM's own up/down chevron stepper instead of the browser's
 // default spinner. String value to match the wizards' string-backed number fields.
-export default function NumberStepper({ value, onChange, min, max, step = 1, disabled, size = "md", className = "" }: {
+export default function NumberStepper({ value, onChange, min, max, step = 1, disabled, size = "md", className = "", placeholder }: {
   value: string;
   onChange: (value: string) => void;
   min?: number;
@@ -13,6 +13,7 @@ export default function NumberStepper({ value, onChange, min, max, step = 1, dis
   disabled?: boolean;
   size?: "sm" | "md";
   className?: string;
+  placeholder?: string;
 }) {
   const clamp = (n: number) => {
     if (min != null && n < min) n = min;
@@ -25,7 +26,7 @@ export default function NumberStepper({ value, onChange, min, max, step = 1, dis
   return (
     <div className={`flex items-stretch rounded-lg overflow-hidden ${className}`}
       style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface)", opacity: disabled ? 0.5 : 1 }}>
-      <input type="number" inputMode="numeric" value={value} disabled={disabled} min={min} max={max} step={step}
+      <input type="number" inputMode="numeric" value={value} disabled={disabled} min={min} max={max} step={step} placeholder={placeholder}
         onChange={e => onChange(e.target.value)}
         className={`no-spinner flex-1 min-w-0 outline-none bg-transparent ${pad}`} style={{ color: "var(--text-primary)" }} />
       <div className="flex flex-col shrink-0" style={{ borderLeft: "1px solid var(--border)" }}>

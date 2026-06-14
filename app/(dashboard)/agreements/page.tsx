@@ -12,7 +12,6 @@ import {
   AGREEMENTS, TEMPLATES, AGREEMENT_STATS, formatValue, getAllAgreements,
   type AgreementStatus, type CustomerAgreement, type AgreementTemplate,
 } from "@/lib/agreements/data";
-import AgreementBuilder from "@/components/agreements/AgreementBuilder";
 import ModuleSummaryCards from "@/components/shared/ModuleSummaryCards";
 import PageTitle from "@/components/shared/PageTitle";
 import ModuleViewToggle, { type ModuleView } from "@/components/shared/ModuleViewToggle";
@@ -118,11 +117,10 @@ export default function AgreementsPage() {
   const [sortField, setSort]  = useState<SortField>("customer");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [moduleView, setModuleView] = useState<ModuleView>("list");
-  const [showBuilder, setShowBuilder] = useState(false);
 
   // Merge in session-created agreements client-side (avoids a hydration gap).
   const [agreements, setAgreements] = useState<CustomerAgreement[]>(AGREEMENTS);
-  useEffect(() => { setAgreements(getAllAgreements()); }, [showBuilder]);
+  useEffect(() => { setAgreements(getAllAgreements()); }, []);
 
   const isTemplates = tab === "templates";
   const tabFn = TABS.find((t) => t.key === tab)?.fn ?? (() => true);
@@ -187,7 +185,7 @@ export default function AgreementsPage() {
             <LayoutTemplate className="w-4 h-4" />
             Templates
           </button>
-          <button onClick={() => setShowBuilder(true)}
+          <button onClick={() => router.push("/agreements/new")}
             className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-3 py-2 rounded-lg transition-colors">
             <Plus className="w-4 h-4" />
             New Agreement
@@ -422,12 +420,6 @@ export default function AgreementsPage() {
       </div>
       )}
 
-      {showBuilder && (
-        <AgreementBuilder
-          onClose={() => setShowBuilder(false)}
-          onCreated={(id) => { setShowBuilder(false); router.push(`/agreements/${id}`); }}
-        />
-      )}
     </div>
   );
 }

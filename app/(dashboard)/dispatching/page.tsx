@@ -113,6 +113,15 @@ export default function CalendarPage() {
   const [edits, setEdits]         = useState<Record<string, { start?: Date; durationMinutes?: number; assignedTo?: string }>>({});
   const [boardId, setBoardId]     = useState("all");
 
+  // The board currently selected in the board picker (undefined = "All Boards").
+  const activeBoardDef = boards.find(b => b.id === boardId);
+  // Dispatch settings (hour window, increments, layers) follow the active board's
+  // scope when it's narrower than the hierarchy selector — so a location board
+  // reflects that location's overrides even when viewed from a broader org/company
+  // scope. Falls back to the hierarchy scope when no specific board is selected.
+  const settingsCompanyId  = effectiveCompanyId  || activeBoardDef?.companyId  || undefined;
+  const settingsLocationId = effectiveLocationId || activeBoardDef?.locationId || undefined;
+
   // Scheduling state
   const [removed, setRemoved]     = useState<Set<string>>(new Set());
   const [confirm, setConfirm]     = useState<{ item: UnscheduledItem; draft: ScheduleDraft } | null>(null);
@@ -158,7 +167,8 @@ export default function CalendarPage() {
   // current view/mode/board. Fixes "changed the dispatch time but the board
   // didn't update".
   useEffect(() => {
-    const reread = () => { setSettings(resolveDispatchSettings(effectiveCompanyId, effectiveLocationId)); setAgreementLeadDays(getAgreementLeadDays()); };
+    const reread = () => { setSettings(resolveDispatchSettings(settingsCompanyId, settingsLocationId)); setAgreementLeadDays(getAgreementLeadDays()); };
+    reread();   // re-resolve now when the board scope changes, not only on focus
     window.addEventListener("focus", reread);
     window.addEventListener("storage", reread);
     document.addEventListener("visibilitychange", reread);
@@ -167,7 +177,7 @@ export default function CalendarPage() {
       window.removeEventListener("storage", reread);
       document.removeEventListener("visibilitychange", reread);
     };
-  }, [effectiveCompanyId, effectiveLocationId]);
+  }, [settingsCompanyId, settingsLocationId]);
 
   // Selection (drawer)
   const [selScheduled, setSelScheduled]     = useState<CalendarItem | null>(null);
@@ -213,7 +223,6 @@ export default function CalendarPage() {
   // are scoped to the current context. Selecting a board filters the technician
   // rows, scheduled items, and the unscheduled queue to that board.
   const boardOptions = [{ value: "all", label: "All Boards" }, ...boards.map(b => ({ value: b.id, label: b.name }))];
-  const activeBoardDef = boards.find(b => b.id === boardId);
   // When the chosen board is narrower than the current viewing scope (e.g. org-wide
   // viewer picks Augusta's board), surface a quiet reminder that they're looking at
   // a location/company-specific board even though their global scope is broader.

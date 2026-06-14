@@ -233,7 +233,18 @@ export function formatValue(a: CustomerAgreement): string {
 // template edits never change an existing active/signed agreement.
 
 import { nextAgreementNumber } from "./settings";
-import type { TemplateService, TemplateVisit, TemplateTerm, SectionKey } from "./templates";
+import type { TemplateService, TemplateVisit, TemplateTerm, TemplateBillingRule, TemplateRenewal, SectionKey } from "./templates";
+
+// A snapshot-friendly benefit (the builder can store richer benefit data than the
+// legacy `benefits: string[]` label list, which is kept for display/back-compat).
+export interface AgreementBenefit {
+  label: string;
+  kind?: string;
+  description?: string;
+  value?: string;
+  appliesTo?: string;
+  limit?: string;
+}
 
 // Optional, additive fields populated by the Agreement Builder. Existing seed
 // records (and the list/detail/calendar views) keep working without them.
@@ -250,14 +261,16 @@ export interface AgreementBuilderSnapshot {
   servicesDetailed?: TemplateService[];
   visitPlan?: TemplateVisit[];
   benefits?: string[];
+  benefitsDetailed?: AgreementBenefit[]; // richer benefit snapshot (kind/value/applies/limit)
   terms?: TemplateTerm[];
   exclusions?: string;
   sections?: SectionKey[];
-  billingLabel?: string;               // true billing cadence label (e.g. "Per Visit")
+  billingLabel?: string;               // true billing cadence label (e.g. "Per Visit") — mirrors billingRules[0]
   billingAmount?: number;              // amount per billing period
   billingTaxable?: boolean;
   firstBillingDate?: string;
-  renewal?: { autoRenew: boolean; termMonths: number; noticeDays: number; priceIncreasePct: number };
+  billingRules?: TemplateBillingRule[]; // full billing-rules snapshot
+  renewal?: TemplateRenewal;
 }
 
 // Augment the record type with the optional snapshot fields.
@@ -342,12 +355,14 @@ export interface NewAgreementInput {
   billingAmount?: number;
   billingTaxable?: boolean;
   firstBillingDate?: string;
+  billingRules?: TemplateBillingRule[];
   annualValue: number;
   benefits?: string[];
+  benefitsDetailed?: AgreementBenefit[];
   terms?: TemplateTerm[];
   exclusions?: string;
   sections?: SectionKey[];
-  renewal?: { autoRenew: boolean; termMonths: number; noticeDays: number; priceIncreasePct: number };
+  renewal?: TemplateRenewal;
   status?: AgreementStatus;
   notes?: string;
 }
@@ -369,14 +384,14 @@ export function createAgreement(input: NewAgreementInput): CustomerAgreement {
     nextVisit,
     billingFrequency: input.billingFrequency, visitFrequency: input.visitFrequency,
     billingLabel: input.billingLabel, billingAmount: input.billingAmount, billingTaxable: input.billingTaxable,
-    firstBillingDate: input.firstBillingDate,
+    firstBillingDate: input.firstBillingDate, billingRules: input.billingRules,
     annualValue: input.annualValue,
     services: input.services,
     servicesDetailed: input.servicesDetailed,
     visitPlan: input.visitPlan,
     propertyId: input.propertyId, propertyLabel: input.propertyLabel, contactName: input.contactName,
     coverage: input.coverage, planLevel: input.planLevel,
-    benefits: input.benefits, terms: input.terms, exclusions: input.exclusions,
+    benefits: input.benefits, benefitsDetailed: input.benefitsDetailed, terms: input.terms, exclusions: input.exclusions,
     sections: input.sections, renewal: input.renewal,
     notes: input.notes ?? "",
     visits,
