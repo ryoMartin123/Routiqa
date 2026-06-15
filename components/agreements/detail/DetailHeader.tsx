@@ -9,8 +9,8 @@ import {
   ArrowLeft, MoreVertical, Calendar, FileText, RefreshCw, Copy, Eye,
   Pencil, Upload, Download, XCircle, Archive, Trash2,
 } from "lucide-react";
-import { type CustomerAgreement } from "@/lib/agreements/data";
-import { AGREEMENT_STATUS } from "./shared";
+import { AGREEMENT_STATUS_META, type CustomerAgreement } from "@/lib/agreements/data";
+import StatusBadge from "@/components/shared/StatusBadge";
 
 export interface HeaderActions {
   scheduleVisit: () => void;
@@ -34,8 +34,8 @@ function primaryFor(status: CustomerAgreement["status"], a: HeaderActions): { la
       return { label: "Renew Agreement", icon: RefreshCw, run: a.renew, secondary: { label: "Renewal Quote", icon: FileText, run: a.createRenewalQuote } };
     case "canceled":
       return { label: "Duplicate", icon: Copy, run: a.duplicate, secondary: { label: "Preview", icon: Eye, run: a.preview } };
-    default: // active / due_soon
-      return { label: "Schedule Next Visit", icon: Calendar, run: a.scheduleVisit, secondary: { label: "Create Invoice", icon: FileText, run: a.createInvoice } };
+    default: // active / due_soon — Create Invoice lives in the More menu, not as a button
+      return { label: "Schedule Next Visit", icon: Calendar, run: a.scheduleVisit };
   }
 }
 
@@ -45,7 +45,7 @@ export default function DetailHeader({ agreement, actions, menuOpen, setMenuOpen
   menuOpen: boolean;
   setMenuOpen: (v: boolean) => void;
 }) {
-  const s = AGREEMENT_STATUS[agreement.status];
+  const s = AGREEMENT_STATUS_META[agreement.status] ?? AGREEMENT_STATUS_META.active;
   const primary = primaryFor(agreement.status, actions);
   const term = [agreement.startDate, agreement.endDate || agreement.renewalDate].filter(Boolean).join(" → ");
 
@@ -71,7 +71,7 @@ export default function DetailHeader({ agreement, actions, menuOpen, setMenuOpen
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <h1 className="text-lg font-semibold truncate" style={{ color: "var(--text-primary)" }}>{agreement.type}</h1>
-              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: s.bg, color: s.color }}>{s.label}</span>
+              <StatusBadge label={s.label} color={s.color} />
             </div>
             <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
               {agreement.number ? `${agreement.number} · ` : ""}{agreement.customer}{term ? ` · ${term}` : ""}
@@ -106,6 +106,7 @@ export default function DetailHeader({ agreement, actions, menuOpen, setMenuOpen
                 <button aria-hidden tabIndex={-1} onClick={() => setMenuOpen(false)} className="fixed inset-0 z-40 cursor-default" />
                 <div className="absolute right-0 top-full mt-1.5 z-50 w-52 rounded-xl overflow-hidden py-1"
                   style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "0 12px 32px rgba(0,0,0,0.18)" }}>
+                  {agreement.status !== "canceled" && menuItem(FileText, "Create Invoice", actions.createInvoice)}
                   {menuItem(Pencil, "Edit Agreement", actions.edit)}
                   {menuItem(Copy, "Duplicate", actions.duplicate)}
                   {menuItem(Upload, "Upload Document", actions.uploadDocument)}

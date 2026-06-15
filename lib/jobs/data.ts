@@ -6,6 +6,7 @@
 //   projects, jobs, work_orders, checklist_items, job_notes
 
 import { getJobTypes } from "@/lib/job-config/data";
+import { revertAgreementVisitForJob } from "@/lib/agreements/data";
 
 // ─── Types ────────────────────────────────────────────────
 export type JobStatus      = "new" | "scheduled" | "en_route" | "in_progress" | "waiting_on_parts" | "waiting_on_customer" | "completed" | "invoiced" | "closed" | "canceled" | "no_show";
@@ -202,6 +203,9 @@ export function updateJob(id: string, patch: Partial<Job>): Job | undefined {
 // Permanently remove a job (session record + any override). Used by the
 // "Delete" action — distinct from "Cancel" (a reversible status change).
 export function deleteJob(id: string): void {
+  // Capture the job first — if it was a materialized agreement visit we need its
+  // agreementId/sourceRefId to return the visit to the schedule queue.
+  const job = getJob(id);
   if (extraJobs().some(j => j.id === id)) {
     _extraJobs = extraJobs().filter(j => j.id !== id);
     try { localStorage.setItem(JOBS_KEY, JSON.stringify(_extraJobs)); } catch { /* ignore */ }
@@ -211,6 +215,8 @@ export function deleteJob(id: string): void {
     _jobOverrides = all;
     try { localStorage.setItem(JOBS_OV_KEY, JSON.stringify(all)); } catch { /* ignore */ }
   }
+  // Don't orphan the agreement visit when its job is deleted.
+  if (job?.sourceModule === "agreements") revertAgreementVisitForJob(job);
 }
 
 // Delete every job under a company (hierarchy cascade).

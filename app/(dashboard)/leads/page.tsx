@@ -18,6 +18,7 @@ import { useHierarchy } from "@/components/providers/HierarchyProvider";
 import Select from "@/components/ui/Select";
 import ModuleSummaryCards, { type SummaryCard } from "@/components/shared/ModuleSummaryCards";
 import PageTitle from "@/components/shared/PageTitle";
+import StatusBadge from "@/components/shared/StatusBadge";
 
 // ─── Lead value + status helpers ──────────────────────────
 function parseLeadValue(l: Lead): number {
@@ -592,10 +593,7 @@ export default function LeadsPage() {
                   {/* Stage — wrapped so the pill hugs its content (grid items
                       otherwise stretch to fill the column) */}
                   <div>
-                    <span className="inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full"
-                      style={{ backgroundColor: s.bg, color: s.color }}>
-                      {s.label}
-                    </span>
+                    <StatusBadge label={s.label} color={s.color} />
                   </div>
 
                   {/* Source */}

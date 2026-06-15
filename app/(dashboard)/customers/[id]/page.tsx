@@ -7,7 +7,7 @@ import {
   Phone, Mail, MapPin, Building2, Calendar,
   CheckCircle, Circle, AlertCircle,
   ChevronRight, Plus, MessageSquare, Info, MoreVertical,
-  UserPlus, User, Home, TrendingUp,
+  UserPlus, User, Home, TrendingUp, Tag, Layers,
   Briefcase, ClipboardList, FilePen, FileCheck,
   Receipt, DollarSign, FileText, RefreshCw,
   Image as ImageIcon, Paperclip, Smartphone, CheckSquare,
@@ -20,9 +20,9 @@ import {
   type JobStatus, type LeadStatus, type NoteType, type EquipmentStatus, type PropertyType,
   type CustomerNote,
 } from "@/lib/customers/data";
-import { getAllCompanies, getAllLocations, getAllServiceAreas } from "@/lib/hierarchy/data";
+import { getAllCompanies, getAllLocations } from "@/lib/hierarchy/data";
 import { formatPhone, validatePhone, validateEmail } from "@/lib/utils/validation";
-import { getAgreementsForCustomer } from "@/lib/agreements/data";
+import { getAgreementsForCustomer, AGREEMENT_STATUS_META } from "@/lib/agreements/data";
 import { QUOTE_STATUS_STYLE, INVOICE_STATUS_STYLE } from "@/lib/quotes/types";
 import { getQuotesForCustomer, getInvoicesForCustomer, fmt as fmtCurrency } from "@/lib/quotes/data";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -38,17 +38,16 @@ import { type ActivityEvent, type EventType, type FilterCategory, EVENT_FILTER_M
 import Commentable from "@/components/comments/Commentable";
 import DetailTabs from "@/components/shared/DetailTabs";
 import AgreementSummaryCard from "@/components/agreements/AgreementSummaryCard";
+import JobWizard from "@/components/jobs/JobWizard";
+import { getWorkOrder, type WorkOrder, type WorkOrderStatus } from "@/lib/jobs/data";
 
 // ─── Badge helpers ────────────────────────────────────────
-function typePill(type: CustomerType) {
-  return type === "Commercial"
-    ? { backgroundColor: "#fef3c7", color: "#92400e" }
-    : { backgroundColor: "var(--bg-input)", color: "var(--text-secondary)" };
+// Saturated dot colors for the shared StatusBadge (dot + text) indicator.
+function typeDot(type: CustomerType) {
+  return type === "Commercial" ? "#f59e0b" : "#6b7280";
 }
-function statusPill(status: CustomerStatus) {
-  return status === "Customer"
-    ? { backgroundColor: "#d1fae5", color: "#065f46" }
-    : { backgroundColor: "#e0e7ff", color: "#3730a3" };
+function statusDot(status: CustomerStatus) {
+  return status === "Customer" ? "#10b981" : "#6366f1";
 }
 function jobStatusStyle(s: JobStatus) {
   if (s === "Completed")   return { bg: "#d1fae5", color: "#065f46" };
@@ -65,6 +64,11 @@ function leadStatusStyle(s: LeadStatus) {
 }
 const NOTE_ICON: Record<NoteType, typeof MessageSquare> = {
   note: MessageSquare, call: Phone, email: Mail, visit: MapPin,
+};
+const WO_STATUS_STYLE: Record<WorkOrderStatus, { label: string; bg: string; color: string }> = {
+  pending:     { label: "Pending",     bg: "var(--bg-input)", color: "var(--text-muted)" },
+  in_progress: { label: "In Progress", bg: "#fef3c7",         color: "#92400e" },
+  completed:   { label: "Completed",   bg: "#d1fae5",         color: "#065f46" },
 };
 
 const TABS = ["Overview", "Contacts", "Properties", "Equipment", "Jobs", "Leads", "Agreements", "Photos & Files", "Notes", "Communication", "Billing", "Timeline"];
@@ -102,12 +106,12 @@ function HoverInfo({ rows }: {
       >
         <Info className="w-3 h-3" />
       </button>
-      {/* Opens to the RIGHT of the trigger; pl-2 is a hover "bridge" so moving the
+      {/* Opens BELOW the trigger; pt-2 is a hover "bridge" so moving the
           cursor into the panel keeps it open. */}
       <span
         role="tooltip"
         className={cn(
-          "absolute left-full top-1/2 -translate-y-1/2 pl-2 z-30 opacity-0 invisible transition-opacity duration-150",
+          "absolute top-full left-0 pt-2 z-30 opacity-0 invisible transition-opacity duration-150",
           "group-hover/info:opacity-100 group-hover/info:visible group-focus-within/info:opacity-100 group-focus-within/info:visible",
         )}
       >
@@ -128,254 +132,215 @@ function HoverInfo({ rows }: {
 }
 
 // ─── Overview tab ─────────────────────────────────────────
-function OverviewTab({ id }: { id: string }) {
+function OverviewTab({ id, onTab }: { id: string; onTab: (tab: string) => void }) {
   const customer    = getCustomer(id)!;
   const contacts    = getContacts(id);
   const properties  = getProperties(id);
   const jobs        = getJobs(id);
-  const leads       = getLeads(id);
-  const notes       = getNotes(id);
   const tasks       = getTasks(id);
   const agreements  = getAgreementsForCustomer(id, customer.name);
+  const quotes      = getQuotesForCustomer(id);
   const invoices    = getInvoicesForCustomer(id);
-
-  const primary     = contacts.find(c => c.isPrimary) ?? contacts[0];
-  const primaryProp = properties.find(p => p.isPrimary) ?? properties[0];
-  const openJobs    = jobs.filter(j => j.status === "Scheduled" || j.status === "In Progress");
-  const openLeads   = leads.filter(l => l.status !== "Won" && l.status !== "Lost");
-  const openTasks   = tasks.filter(t => t.status !== "completed");
-
-  // Snapshot metrics — meaningful at-a-glance figures rather than raw counts.
-  const lifetime    = invoices.reduce((s, i) => s + i.total, 0);
-  const outstanding = invoices.filter(i => i.balanceDue > 0).reduce((s, i) => s + i.balanceDue, 0);
-  const earliest = (vals: (string | null | undefined)[]) =>
-    vals.filter(Boolean).map(s => ({ s: s as string, t: new Date(s as string).getTime() }))
-      .filter(x => !isNaN(x.t)).sort((a, b) => a.t - b.t)[0]?.s ?? null;
-  const latest = (vals: (string | null | undefined)[]) =>
-    vals.filter(Boolean).map(s => ({ s: s as string, t: new Date(s as string).getTime() }))
-      .filter(x => !isNaN(x.t)).sort((a, b) => b.t - a.t)[0]?.s ?? null;
-  const nextVisit   = earliest(agreements.map(a => a.nextVisit));
-  const lastService = latest(jobs.filter(j => j.status === "Completed").map(j => j.date));
-
-  const snapshot: { label: string; value: string; accent?: string }[] = [
-    { label: "Lifetime value", value: fmtCurrency(lifetime) },
-    { label: "Open balance",   value: outstanding > 0 ? fmtCurrency(outstanding) : "Paid up", accent: outstanding > 0 ? "#dc2626" : "#10b981" },
-    { label: "Next visit",     value: nextVisit ?? "—" },
-    { label: "Last service",   value: lastService ?? "—" },
-    { label: "Customer since", value: customer.since },
-  ];
+  const events      = getActivityEvents(id);
 
   const company     = getAllCompanies().find(c => c.id === customer.companyId);
   const location    = getAllLocations().find(l => l.id === customer.locationId);
-  const serviceArea = customer.serviceAreaId
-    ? getAllServiceAreas().find(s => s.id === customer.serviceAreaId)
-    : null;
+
+  const primary     = contacts.find(c => c.isPrimary) ?? contacts[0];
+  const primaryProp = properties.find(p => p.isPrimary) ?? properties[0];
+
+  const openJobs    = jobs.filter(j => j.status === "Scheduled" || j.status === "In Progress");
+  const scheduledJobs = jobs.filter(j => j.status === "Scheduled");
+  const inProgress  = jobs.filter(j => j.status === "In Progress");
+  const openTasks   = tasks.filter(t => t.status !== "completed");
+  const openQuotes  = quotes.filter(q => !["accepted", "converted", "declined", "expired", "paid"].includes(q.status));
+  const openInvoices = invoices.filter(i => i.balanceDue > 0);
+  const pastDue     = invoices.filter(i => i.status === "past_due");
+
+  const quoteValue  = openQuotes.reduce((s, q) => s + q.total, 0);
+  const outstanding = openInvoices.reduce((s, i) => s + i.balanceDue, 0);
+
+  // Active agreements (everything except canceled) for the left-column summary.
+  const activeAgreements = agreements.filter(a => a.status !== "canceled");
+
+  // Work orders live on the jobs module, keyed by job id; surface the ones tied
+  // to this account's jobs that still need attention (not yet completed).
+  const workOrders = jobs
+    .map(j => { const wo = getWorkOrder(j.id); return wo ? { job: j, wo } : null; })
+    .filter((w): w is { job: typeof jobs[number]; wo: WorkOrder } => w !== null);
+  const attentionWOs = workOrders.filter(w => w.wo.status !== "completed");
+
+  const ts = (s?: string | null) => { if (!s) return Infinity; const t = new Date(s).getTime(); return isNaN(t) ? Infinity : t; };
+  const nextApptJob  = [...scheduledJobs].sort((a, b) => ts(a.date) - ts(b.date))[0] ?? null;
+  const nextVisitStr = agreements.map(a => a.nextVisit).filter(Boolean).sort((a, b) => ts(a) - ts(b))[0] ?? null;
+  const nextTask     = [...openTasks].sort((a, b) => ts(a.dueDate) - ts(b.dueDate))[0] ?? null;
+  const lastService  = [...jobs.filter(j => j.status === "Completed")].sort((a, b) => ts(b.date) - ts(a.date))[0]?.date ?? null;
+
+  const nextActionItems = ([
+    nextApptJob  ? { label: nextApptJob.title, date: nextApptJob.date, t: ts(nextApptJob.date) } : null,
+    nextVisitStr ? { label: "Agreement visit", date: nextVisitStr, t: ts(nextVisitStr) } : null,
+    nextTask     ? { label: nextTask.title, date: nextTask.dueDate, t: ts(nextTask.dueDate) } : null,
+  ].filter(Boolean) as { label: string; date: string; t: number }[]).sort((a, b) => a.t - b.t);
+  const nextAction = nextActionItems[0] ?? null;
+
+  const summary: { icon: typeof Briefcase; label: string; value: string; sub?: string; accent?: string }[] = [
+    { icon: CheckCircle, label: "Status",      value: customer.status, sub: customer.type },
+    { icon: Briefcase,   label: "Open Work",   value: String(openJobs.length), sub: `${inProgress.length} active · ${scheduledJobs.length} scheduled` },
+    { icon: FilePen,     label: "Open Quotes", value: String(openQuotes.length), sub: quoteValue > 0 ? `${fmtCurrency(quoteValue)} value` : "$0 value" },
+    { icon: DollarSign,  label: "Balance",     value: outstanding > 0 ? fmtCurrency(outstanding) : "Paid up", accent: outstanding > 0 ? "#dc2626" : "#10b981", sub: `${openInvoices.length} open invoice${openInvoices.length === 1 ? "" : "s"}${pastDue.length ? ` · ${pastDue.length} past due` : ""}` },
+    { icon: Calendar,    label: "Next Action", value: nextAction ? nextAction.date : "—", sub: nextAction ? nextAction.label : "Nothing scheduled" },
+  ];
+
+  // Open jobs minus the highlighted "next scheduled" so it isn't shown twice.
+  const otherOpenJobs = openJobs.filter(j => j.id !== nextApptJob?.id);
 
   return (
-    <div className="space-y-6">
-      {/* ── Snapshot strip ──────────────────────────── */}
-      <div className="rounded-xl px-5 py-4 grid grid-cols-2 sm:grid-cols-5 gap-x-4 gap-y-3"
-        style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
-        {snapshot.map((m, i) => (
-          <div key={m.label} className="min-w-0"
-            style={{ borderLeft: i > 0 ? "1px solid var(--border-subtle)" : undefined, paddingLeft: i > 0 ? "1rem" : undefined }}>
-            <p className="text-lg font-semibold leading-none truncate" style={{ color: m.accent ?? "var(--text-primary)" }}>{m.value}</p>
-            <p className="text-[11px] mt-1 truncate" style={{ color: "var(--text-muted)" }}>{m.label}</p>
+    <div className="h-full flex flex-col gap-5">
+      {/* ── Summary cards (compact) ─────────────────── */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2.5 shrink-0">
+        {summary.map(c => (
+          <div key={c.label} className="rounded-xl px-3 py-2.5" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+            <div className="flex items-center gap-1.5 mb-1">
+              <c.icon className="w-3 h-3" style={{ color: c.accent ?? "var(--text-muted)" }} />
+              <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>{c.label}</p>
+            </div>
+            <p className="text-sm font-bold leading-tight truncate" style={{ color: c.accent ?? "var(--text-primary)" }}>{c.value}</p>
+            {c.sub && <p className="text-[11px] mt-0.5 truncate" style={{ color: "var(--text-muted)" }}>{c.sub}</p>}
           </div>
         ))}
       </div>
 
-      <div className="grid grid-cols-2 gap-6">
+      {/* ── Snapshot grid: wide account (left) · current work (right) ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 shrink-0">
+        {/* LEFT — one wide account container (matches Agreement Overview) */}
+        <Card title="Account" className="lg:col-span-2 h-full">
+            {/* Detail-list style, mirroring the Agreement Details card: icon · muted
+                label · bold value, two clean columns, generous whitespace. */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
+              <DetailField icon={Building2}   label="Account"          value={customer.name} />
+              <DetailField icon={CheckCircle} label="Status"           value={<span style={{ color: statusDot(customer.status), fontWeight: 600 }}>{customer.status}</span>} />
+              <DetailField icon={Briefcase}   label="Type"             value={customer.type} />
+              <DetailField icon={Calendar}    label="Customer Since"   value={customer.since} />
+              <DetailField icon={Layers}      label="Structure"        value={STRUCTURE_LABEL[customer.accountType] ?? customer.accountType} />
+              <DetailField icon={Building2}   label="Company"          value={company?.name} />
+              <DetailField icon={User}        label="Primary Contact"  value={primary?.name} />
+              <DetailField icon={MapPin}      label="Location"         value={location?.name} />
+              <DetailField icon={Phone}       label="Phone"            value={primary?.phone} />
+              <DetailField icon={Home}        label="Primary Property" value={primaryProp ? `${primaryProp.label || "Primary Address"} — ${primaryProp.address}, ${primaryProp.city}` : undefined} />
+              <DetailField icon={Mail}        label="Email"            value={primary?.email} />
+              <DetailField icon={Tag}         label="Tags" value={customer.tags.length > 0
+                ? <span className="inline-flex flex-wrap items-center gap-1 align-middle">{customer.tags.map(t => <span key={t} className="text-[10px] font-medium px-1.5 py-0.5 rounded" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-secondary)" }}>{t}</span>)}</span>
+                : undefined} />
+            </div>
+          </Card>
 
-      {/* ── Left column — account snapshot ──────────── */}
-      <div className="space-y-4">
-
-        {primary && (
-          <Card title="Primary Contact">
-            <div className="space-y-2.5">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-white text-[10px] font-bold shrink-0">
-                  {primary.name.split(" ").map(w => w[0] ?? "").join("").slice(0, 2).toUpperCase()}
-                </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold leading-tight" style={{ color: "var(--text-primary)" }}>{primary.name}</p>
-                  {primary.role && <p className="text-xs" style={{ color: "var(--text-muted)" }}>{primary.role}</p>}
+        {/* RIGHT — what needs doing (fills the column so it ends level with the
+            left Account card regardless of how much content each side has) */}
+        <div className="h-full flex flex-col gap-4">
+          <SectionCard title="Active Work" count={openJobs.length} action={{ label: "View all", onClick: () => onTab("Jobs") }}>
+            {nextApptJob && (
+              <div className="px-4 py-3" style={{ borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+                <p className="text-[10px] font-semibold uppercase tracking-wider mb-0.5" style={{ color: "var(--text-muted)" }}>Next scheduled</p>
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{nextApptJob.title}</p>
+                  <span className="text-xs shrink-0" style={{ color: "var(--text-secondary)" }}>{nextApptJob.date}{nextApptJob.tech ? ` · ${nextApptJob.tech}` : ""}</span>
                 </div>
               </div>
-              {primary.phone && <InfoRow icon={Phone} value={primary.phone} />}
-              {primary.email && <InfoRow icon={Mail}  value={primary.email} />}
-            </div>
-          </Card>
-        )}
-
-        {primaryProp && (
-          <Card title="Primary Property">
-            <div className="space-y-2">
-              {primaryProp.label && (
-                <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{primaryProp.label}</p>
-              )}
-              <InfoRow icon={MapPin} value={primaryProp.address + ", " + primaryProp.city + ", " + primaryProp.state + " " + primaryProp.zip} />
-              {(primaryProp.sqft || primaryProp.yearBuilt) && (
-                <div className="flex gap-4 pt-1">
-                  {primaryProp.sqft && (
-                    <div>
-                      <p className="text-[10px] uppercase tracking-wider font-semibold" style={{ color: "var(--text-muted)" }}>Sq Ft</p>
-                      <p className="text-xs font-medium" style={{ color: "var(--text-primary)" }}>{primaryProp.sqft.toLocaleString()}</p>
-                    </div>
-                  )}
-                  {primaryProp.yearBuilt && (
-                    <div>
-                      <p className="text-[10px] uppercase tracking-wider font-semibold" style={{ color: "var(--text-muted)" }}>Built</p>
-                      <p className="text-xs font-medium" style={{ color: "var(--text-primary)" }}>{primaryProp.yearBuilt}</p>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </Card>
-        )}
-
-        <Card title="Account & Location">
-          <div className="space-y-2.5">
-            <Meta label="Type"><span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={typePill(customer.type)}>{customer.type}</span></Meta>
-            <Meta label="Status"><span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={statusPill(customer.status)}>{customer.status}</span></Meta>
-            <Meta label="Structure"><Val>{STRUCTURE_LABEL[customer.accountType] ?? customer.accountType}</Val></Meta>
-            <Meta label="Since"><Val>{customer.since}</Val></Meta>
-            {(company || location || serviceArea) && <div className="h-px my-1" style={{ backgroundColor: "var(--border-subtle)" }} />}
-            {company && <Meta label="Company"><Val>{company.name}</Val></Meta>}
-            {location && <Meta label="Location"><Val>{location.name}</Val></Meta>}
-            {serviceArea && <Meta label="Service Area"><Val>{serviceArea.name}</Val></Meta>}
-            {customer.tags.length > 0 && (
+            )}
+            {!nextApptJob && otherOpenJobs.length === 0 ? <Empty text="No open jobs" /> : otherOpenJobs.slice(0, 3).map((job, i) => {
+              const s = jobStatusStyle(job.status);
+              return (
+                <Row key={job.id} last={i === otherOpenJobs.slice(0, 3).length - 1 && attentionWOs.length === 0}>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{job.title}</p>
+                    <p className="text-xs mt-0.5 truncate" style={{ color: "var(--text-muted)" }}>{job.date}{job.tech ? ` · ${job.tech}` : ""}</p>
+                  </div>
+                  <StatusBadge label={job.status} color={s.color} />
+                </Row>
+              );
+            })}
+            {/* Work orders folded in — only when some need attention */}
+            {attentionWOs.length > 0 && (
               <>
-                <div className="h-px my-1" style={{ backgroundColor: "var(--border-subtle)" }} />
-                <div className="flex flex-wrap gap-1.5">
-                  {customer.tags.map(t => (
-                    <span key={t} className="text-[10px] font-semibold px-2 py-1 rounded-full" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-secondary)" }}>{t}</span>
-                  ))}
+                <div className="px-4 pt-2.5 pb-1">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Work orders needing attention</p>
                 </div>
+                {attentionWOs.slice(0, 2).map((w, i) => {
+                  const done  = w.wo.checklist.filter(c => c.isComplete).length;
+                  const total = w.wo.checklist.length;
+                  const st    = WO_STATUS_STYLE[w.wo.status];
+                  return (
+                    <Row key={w.wo.id} last={i === Math.min(1, attentionWOs.length - 1)}>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{w.wo.title}</p>
+                        <p className="text-xs mt-0.5 truncate" style={{ color: "var(--text-muted)" }}>{w.job.title}{total > 0 ? ` · ${done}/${total} checklist` : ""}</p>
+                      </div>
+                      <StatusBadge label={st.label} color={st.color} />
+                    </Row>
+                  );
+                })}
               </>
             )}
-            {customer.notes && (
-              <>
-                <div className="h-px my-1" style={{ backgroundColor: "var(--border-subtle)" }} />
-                <p className="text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>{customer.notes}</p>
-              </>
-            )}
+          </SectionCard>
+
+          <SectionCard title="Recent Activity" count={events.length} action={{ label: "View all", onClick: () => onTab("Timeline") }} className="flex-1 min-h-0">
+            {events.length === 0 ? <Empty text="No activity yet" /> : events.slice(0, 3).map((e, i) => {
+              const cfg = EVENT_CONFIG[e.eventType];
+              const Icon = cfg.icon;
+              return (
+                <Row key={e.id} last={i === Math.min(2, events.length - 1)}>
+                  <div className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 mr-2.5" style={{ backgroundColor: cfg.bg }}>
+                    <Icon className="w-3 h-3" style={{ color: cfg.color }} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm leading-snug truncate" style={{ color: "var(--text-primary)" }}>{e.title}</p>
+                    <p className="text-[10px] mt-0.5 truncate" style={{ color: "var(--text-muted)" }}>{cfg.label} · {e.displayDate}{e.createdBy ? ` · ${e.createdBy}` : ""}</p>
+                  </div>
+                </Row>
+              );
+            })}
+          </SectionCard>
+        </div>
+      </div>
+
+      {/* ── Agreements — full-width, fills the remaining vertical space ── */}
+      <div className="flex-1 min-h-0 rounded-xl flex flex-col overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+        <div className="flex items-center justify-between px-4 py-3 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+          <div className="flex items-center gap-2">
+            <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Agreements</p>
+            {activeAgreements.length > 0 && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>{activeAgreements.length}</span>}
           </div>
-        </Card>
-
-        {/* Agreements (account-level) */}
-        <SectionCard title="Agreements" count={agreements.length} action={{ label: "View all", onClick: () => {} }}>
-          {agreements.length === 0 ? (
-            <Empty text="No active agreements">
-              <button className="mt-2 text-xs font-medium text-indigo-600 hover:text-indigo-700">Create agreement →</button>
-            </Empty>
-          ) : agreements.map((a, i) => (
-            <Row key={a.id} last={i === agreements.length - 1}>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{a.type}</p>
-                <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>Renews {a.renewalDate} · {a.visitFrequency}</p>
-              </div>
-              <div className="flex items-center gap-2 shrink-0 ml-3">
-                <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
-                  {a.annualValue.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 })}/yr
-                </span>
-                <span className="inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: "#d1fae5", color: "#065f46" }}>Active</span>
-              </div>
-            </Row>
-          ))}
-        </SectionCard>
-      </div>
-
-      {/* ── Right column ──────────────────────────────── */}
-      <div className="space-y-4">
-
-        {/* Open jobs */}
-        <SectionCard title="Open Jobs" count={openJobs.length} action={{ label: "View all", onClick: () => {} }}>
-          {openJobs.length === 0 ? (
-            <Empty text="No open jobs" />
-          ) : openJobs.map((job, i) => {
-            const s = jobStatusStyle(job.status);
-            return (
-              <Row key={job.id} last={i === openJobs.length - 1}>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{job.title}</p>
-                  <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>{job.date} · {job.tech}{job.amount ? ` · ${job.amount}` : ""}</p>
-                </div>
-                <span className="inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full ml-3 shrink-0" style={{ backgroundColor: s.bg, color: s.color }}>
-                  {job.status}
-                </span>
-              </Row>
-            );
-          })}
-        </SectionCard>
-
-        {/* Upcoming tasks */}
-        <SectionCard title="Upcoming Tasks" count={openTasks.length}>
-          {openTasks.length === 0 ? (
-            <Empty text="No upcoming tasks" />
-          ) : openTasks.map((task, i) => {
-            const isOverdue = task.status === "overdue";
-            return (
-              <Row key={task.id} last={i === openTasks.length - 1}>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{task.title}</p>
-                  <p className="text-xs mt-0.5" style={{ color: isOverdue ? "#dc2626" : "var(--text-muted)" }}>
-                    Due {task.dueDate}{task.assignedTo ? ` · ${task.assignedTo}` : ""}
-                  </p>
-                </div>
-                {isOverdue && (
-                  <span className="inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full ml-3 shrink-0" style={{ backgroundColor: "#fee2e2", color: "#991b1b" }}>
-                    Overdue
-                  </span>
-                )}
-              </Row>
-            );
-          })}
-        </SectionCard>
-
-        {/* Open leads */}
-        {openLeads.length > 0 && (
-          <SectionCard title="Open Leads" count={openLeads.length}>
-            {openLeads.map((lead, i) => {
-              const s = leadStatusStyle(lead.status);
-              return (
-                <Row key={lead.id} last={i === openLeads.length - 1}>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{lead.title}</p>
-                    <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>{lead.date}{lead.source ? ` · ${lead.source}` : ""}</p>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0 ml-3">
-                    {lead.value && <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{lead.value}</span>}
-                    <StatusBadge label={lead.status} color={s.color} />
-                  </div>
-                </Row>
-              );
-            })}
-          </SectionCard>
-        )}
-
-        {/* Recent activity */}
-        {notes.length > 0 && (
-          <SectionCard title="Recent Activity" count={notes.length}>
-            {notes.slice(0, 4).map((note, i) => {
-              const Icon = NOTE_ICON[note.type];
-              return (
-                <Row key={note.id} last={i === Math.min(3, notes.length - 1)}>
-                  <div className="w-6 h-6 rounded-full bg-indigo-100 flex items-center justify-center shrink-0 mr-2.5">
-                    <Icon className="w-3 h-3 text-indigo-600" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm leading-snug" style={{ color: "var(--text-secondary)" }}>{note.text}</p>
-                    <p className="text-[10px] mt-0.5" style={{ color: "var(--text-muted)" }}>{note.user} · {note.date}</p>
-                  </div>
-                </Row>
-              );
-            })}
-          </SectionCard>
-        )}
-
-      </div>
+          <button onClick={() => onTab("Agreements")} className="text-xs font-medium text-indigo-600 hover:text-indigo-700">View all</button>
+        </div>
+        <div className="flex-1 min-h-0 overflow-hidden p-4">
+          {activeAgreements.length === 0 ? (
+            <div className="h-full flex flex-col items-center justify-center text-center">
+              <p className="text-sm" style={{ color: "var(--text-muted)" }}>No active agreements</p>
+              <button onClick={() => onTab("Agreements")} className="mt-1.5 text-xs font-medium text-indigo-600 hover:text-indigo-700">Create an agreement →</button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+              {activeAgreements.map(a => {
+                const meta = AGREEMENT_STATUS_META[a.status];
+                return (
+                  <Link key={a.id} href={`/agreements/${a.id}`}
+                    className="rounded-lg p-3 transition-colors hover:bg-[var(--bg-surface-2)]"
+                    style={{ border: "1px solid var(--border-subtle)", textDecoration: "none" }}>
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="text-sm font-semibold truncate" style={{ color: "var(--text-primary)" }}>{a.type}</p>
+                      <StatusBadge label={meta?.label ?? a.status} color={meta?.color ?? "#6b7280"} size="sm" className="shrink-0" />
+                    </div>
+                    <div className="flex items-center justify-between gap-2 mt-2 text-xs" style={{ color: "var(--text-muted)" }}>
+                      <span className="truncate">Next visit {a.nextVisit ?? "—"}</span>
+                      <span className="shrink-0">Renews {a.renewalDate}</span>
+                    </div>
+                    <p className="text-sm font-semibold mt-1.5" style={{ color: "var(--text-primary)" }}>{a.annualValue.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 })}/yr</p>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -688,7 +653,7 @@ function PropertyCard({ property, onEdit }: { property: Property; onEdit: () => 
                 ? [{ label: "Role", node: <Pill text="Primary" style={{ backgroundColor: "#e0e7ff", color: "#3730a3" }} /> }]
                 : []),
               { label: "Type", node: <Pill text={property.type} style={{ backgroundColor: "var(--bg-input)", color: "var(--text-secondary)" }} /> },
-              { label: "Status", node: <Pill text={statusActive ? "Active" : "Inactive"} style={{ backgroundColor: statusActive ? "#d1fae5" : "var(--bg-input)", color: statusActive ? "#065f46" : "var(--text-muted)" }} /> },
+              { label: "Status", node: <StatusBadge label={statusActive ? "Active" : "Inactive"} color={statusActive ? "#10b981" : "#9ca3af"} size="sm" /> },
             ]} />
           </div>
         </div>
@@ -1547,6 +1512,7 @@ function CustomerDetailContent({ params }: { params: Promise<{ id: string }> }) 
   const [editing, setEditing]   = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [actionsOpen, setActionsOpen] = useState(false);
+  const [createModal, setCreateModal] = useState<null | "job" | "quote" | "lead">(null);
   const [refreshKey, setRefreshKey] = useState(0);   // bump to re-read customer after an edit
 
   // Keep the active tab in the URL so browser-back / in-app back links restore it.
@@ -1593,13 +1559,14 @@ function CustomerDetailContent({ params }: { params: Promise<{ id: string }> }) 
                 <div className="flex items-center gap-2">
                   <h1 className="text-base font-semibold truncate" style={{ color: "var(--text-primary)" }}>{customer.name}</h1>
                   <HoverInfo rows={[
-                    { label: "Type",      node: <Pill text={customer.type} style={typePill(customer.type)} /> },
-                    { label: "Status",    node: <Pill text={customer.status} style={statusPill(customer.status)} /> },
+                    { label: "Type",      node: <StatusBadge label={customer.type} color={typeDot(customer.type)} size="sm" /> },
+                    { label: "Status",    node: <StatusBadge label={customer.status} color={statusDot(customer.status)} size="sm" /> },
                     { label: "Structure", node: <span className="text-xs font-medium" style={{ color: "var(--text-primary)" }}>{STRUCTURE_LABEL[customer.accountType] ?? customer.accountType}</span> },
                     { label: "Since",     node: <span className="text-xs font-medium" style={{ color: "var(--text-primary)" }}>{customer.since}</span> },
                   ]} />
                 </div>
-                <p className="text-xs mt-0.5 truncate" style={{ color: "var(--text-muted)" }}>
+                <p className="text-xs mt-0.5 truncate flex items-center gap-1.5" style={{ color: "var(--text-muted)" }}>
+                  <MapPin className="w-3 h-3 shrink-0" />
                   {customer.address}, {customer.city}, {customer.state} · {customer.locationName}
                 </p>
               </div>
@@ -1607,29 +1574,53 @@ function CustomerDetailContent({ params }: { params: Promise<{ id: string }> }) 
             </Commentable>
           </div>
 
-          <div className="relative shrink-0">
-            <button onClick={() => setActionsOpen(o => !o)} aria-label="Account actions"
-              className="flex items-center justify-center w-9 h-9 rounded-lg transition-colors hover:bg-[var(--bg-surface-2)]"
-              style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>
-              <MoreVertical className="w-4 h-4" />
+          <div className="flex items-center gap-2 shrink-0">
+            {/* Primary action */}
+            <button onClick={() => setCreateModal("job")}
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-medium text-white transition hover:brightness-110"
+              style={{ backgroundColor: "#4f46e5" }}>
+              <Briefcase className="w-3.5 h-3.5" /> Create Job
             </button>
-            {actionsOpen && (
-              <>
-                {/* click-away catcher */}
-                <button aria-hidden tabIndex={-1} onClick={() => setActionsOpen(false)} className="fixed inset-0 z-40 cursor-default" />
-                <div className="absolute right-0 top-full mt-1.5 z-50 w-40 rounded-xl overflow-hidden py-1"
-                  style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "0 12px 32px rgba(0,0,0,0.18)" }}>
-                  <button onClick={() => { setActionsOpen(false); setEditing(true); }}
-                    className="flex items-center gap-2 w-full px-3 py-2 text-sm transition-colors hover:bg-[var(--bg-surface-2)]" style={{ color: "var(--text-primary)" }}>
-                    <Pencil className="w-3.5 h-3.5" /> Edit
-                  </button>
-                  <button onClick={() => { setActionsOpen(false); setConfirmDelete(true); }}
-                    className="flex items-center gap-2 w-full px-3 py-2 text-sm transition-colors hover:bg-red-50" style={{ color: "#dc2626" }}>
-                    <Trash2 className="w-3.5 h-3.5" /> Delete
-                  </button>
-                </div>
-              </>
-            )}
+
+            {/* More menu — secondary create actions + account management */}
+            <div className="relative">
+              <button onClick={() => setActionsOpen(o => !o)} aria-label="More actions"
+                className="flex items-center justify-center w-9 h-9 rounded-lg transition-colors hover:bg-[var(--bg-surface-2)]"
+                style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>
+                <MoreVertical className="w-4 h-4" />
+              </button>
+              {actionsOpen && (
+                <>
+                  {/* click-away catcher */}
+                  <button aria-hidden tabIndex={-1} onClick={() => setActionsOpen(false)} className="fixed inset-0 z-40 cursor-default" />
+                  <div className="absolute right-0 top-full mt-1.5 z-50 w-48 rounded-xl overflow-hidden py-1"
+                    style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "0 12px 32px rgba(0,0,0,0.18)" }}>
+                    {([
+                      { icon: FilePen,       label: "Create Quote",  onClick: () => setCreateModal("quote") },
+                      { icon: TrendingUp,    label: "Create Lead",   onClick: () => setCreateModal("lead") },
+                      { icon: MessageSquare, label: "Add Note",      onClick: () => setTab("Notes") },
+                      { icon: Receipt,       label: "Create Invoice",onClick: () => setTab("Billing") },
+                      { icon: Paperclip,     label: "Upload File",   onClick: () => setTab("Photos & Files") },
+                      { icon: Smartphone,    label: "Send Message",  onClick: () => setTab("Communication") },
+                    ] as const).map(item => (
+                      <button key={item.label} onClick={() => { setActionsOpen(false); item.onClick(); }}
+                        className="flex items-center gap-2 w-full px-3 py-2 text-sm transition-colors hover:bg-[var(--bg-surface-2)]" style={{ color: "var(--text-primary)" }}>
+                        <item.icon className="w-3.5 h-3.5" style={{ color: "var(--text-muted)" }} /> {item.label}
+                      </button>
+                    ))}
+                    <div className="h-px my-1" style={{ backgroundColor: "var(--border-subtle)" }} />
+                    <button onClick={() => { setActionsOpen(false); setEditing(true); }}
+                      className="flex items-center gap-2 w-full px-3 py-2 text-sm transition-colors hover:bg-[var(--bg-surface-2)]" style={{ color: "var(--text-primary)" }}>
+                      <Pencil className="w-3.5 h-3.5" style={{ color: "var(--text-muted)" }} /> Edit Account
+                    </button>
+                    <button onClick={() => { setActionsOpen(false); setConfirmDelete(true); }}
+                      className="flex items-center gap-2 w-full px-3 py-2 text-sm transition-colors hover:bg-red-50" style={{ color: "#dc2626" }}>
+                      <Trash2 className="w-3.5 h-3.5" /> Delete
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </div>
 
@@ -1647,7 +1638,11 @@ function CustomerDetailContent({ params }: { params: Promise<{ id: string }> }) 
           );
           return (
             <>
-              {tab === "Overview"       && section("Overview", <OverviewTab id={id} />)}
+              {tab === "Overview"       && (
+                <Commentable className="h-full" anchor={{ recordType: "customer", recordId: id, recordLabel: customer.name, section: "Overview" }}>
+                  <OverviewTab id={id} onTab={setTab} />
+                </Commentable>
+              )}
               {tab === "Contacts"       && <ContactsTab    id={id} />}
               {tab === "Properties"     && <PropertiesTab  id={id} />}
               {tab === "Equipment"      && section("Equipment", <EquipmentTab id={id} />)}
@@ -1663,6 +1658,11 @@ function CustomerDetailContent({ params }: { params: Promise<{ id: string }> }) 
           );
         })()}
       </div>
+
+      {/* Create flows — driven from the header actions */}
+      {createModal === "job"   && <JobWizard preset={{ customerId: id, lockCustomer: true }} onClose={() => setCreateModal(null)} onCreated={() => { setCreateModal(null); setRefreshKey(k => k + 1); }} />}
+      {createModal === "quote" && <QuickCreateQuoteModal preset={{ customerId: id, lockCustomer: true }} onClose={() => setCreateModal(null)} onContinue={(qid) => { setCreateModal(null); router.push(`/quotes/${qid}/builder`); }} />}
+      {createModal === "lead"  && <LeadWizard preset={{ accountId: id, lockAccount: true }} onClose={() => setCreateModal(null)} onCreated={() => { setCreateModal(null); setRefreshKey(k => k + 1); }} />}
 
       {/* Edit account — mounted on open so the form re-seeds from current data */}
       {editing && (
@@ -1721,6 +1721,20 @@ export default function CustomerDetailPage(props: { params: Promise<{ id: string
 }
 
 // ─── Shared UI primitives ─────────────────────────────────
+// Detail-list field matching the Agreement Details card: leading icon, a small
+// muted label, and a bold value beneath it. Falls back to "—" when empty.
+function DetailField({ icon: Icon, label, value }: { icon?: typeof Phone; label: string; value?: React.ReactNode }) {
+  return (
+    <div className="flex items-start gap-2.5">
+      {Icon && <Icon className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: "var(--text-muted)" }} />}
+      <div className="min-w-0 flex-1">
+        <p className="text-[10px]" style={{ color: "var(--text-muted)" }}>{label}</p>
+        <p className="text-sm font-medium break-words" style={{ color: "var(--text-primary)" }}>{value || "—"}</p>
+      </div>
+    </div>
+  );
+}
+
 function Meta({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex items-center justify-between gap-3">
@@ -1734,9 +1748,9 @@ function Val({ children }: { children: React.ReactNode }) {
   return <span className="text-xs font-medium text-right truncate" style={{ color: "var(--text-primary)" }}>{children}</span>;
 }
 
-function Card({ title, children }: { title: string; children: React.ReactNode }) {
+function Card({ title, children, className = "" }: { title: string; children: React.ReactNode; className?: string }) {
   return (
-    <div className="rounded-xl p-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+    <div className={`rounded-xl p-4 ${className}`} style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
       <p className="text-[10px] font-semibold uppercase tracking-widest mb-3" style={{ color: "var(--text-muted)" }}>{title}</p>
       {children}
     </div>
@@ -1753,23 +1767,24 @@ function InfoRow({ icon: Icon, value }: { icon: typeof Phone; value: string }) {
 }
 
 function SectionCard({
-  title, count, action, children,
+  title, count, action, children, className = "",
 }: {
   title: string;
   count: number;
   action?: { label: string; onClick: () => void };
   children: React.ReactNode;
+  className?: string;
 }) {
   return (
-    <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
-      <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+    <div className={`rounded-xl overflow-hidden flex flex-col ${className}`} style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+      <div className="flex items-center justify-between px-4 py-3 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
         <div className="flex items-center gap-2">
           <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{title}</p>
           {count > 0 && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>{count}</span>}
         </div>
         {action && <button onClick={action.onClick} className="text-xs font-medium text-indigo-600 hover:text-indigo-700">{action.label}</button>}
       </div>
-      <div>{children}</div>
+      <div className="flex-1 min-h-0 overflow-y-auto">{children}</div>
     </div>
   );
 }

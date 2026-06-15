@@ -3,7 +3,7 @@
 import React, { use, useState, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowLeft, CheckCircle, Circle, ChevronRight, Phone, MapPin, User, Clock, Calendar, DollarSign, Briefcase, AlertTriangle, Camera, ListChecks, Plus, Trash2, Ban, RotateCcw } from "lucide-react";
+import { ArrowLeft, CheckCircle, Circle, ChevronRight, Phone, MapPin, User, Clock, Calendar, DollarSign, Briefcase, AlertTriangle, Camera, ListChecks, Plus, Trash2, Ban, RotateCcw, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getJob, updateJob, deleteJob, getWorkOrder, getJobNotes, resolveJobStatus, type JobNoteType } from "@/lib/jobs/data";
 import WorkOrderWizard from "@/components/jobs/WorkOrderWizard";
@@ -718,9 +718,17 @@ function JobDetailContent({ params }: { params: Promise<{ id: string }> }) {
               </div>
               <p className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>Delete this job?</p>
             </div>
-            <p className="text-sm mb-5" style={{ color: "var(--text-secondary)" }}>
+            <p className="text-sm mb-3" style={{ color: "var(--text-secondary)" }}>
               &ldquo;{job.title}&rdquo; will be permanently removed — this can&apos;t be undone. To keep a record, use <span className="font-medium">Cancel</span> instead.
             </p>
+            {job.sourceModule === "agreements" && (
+              <div className="flex items-start gap-2 mb-5 rounded-lg p-3" style={{ backgroundColor: "#eff6ff", border: "1px solid #bfdbfe" }}>
+                <Info className="w-4 h-4 shrink-0 mt-0.5" style={{ color: "#2563eb" }} />
+                <p className="text-xs" style={{ color: "#1e40af" }}>
+                  This job is a maintenance agreement visit. Deleting it returns the visit to the <span className="font-medium">schedule queue</span> so it can be re-booked — the agreement&apos;s visit count won&apos;t be lost.
+                </p>
+              </div>
+            )}
             <div className="flex justify-end gap-2">
               <button onClick={() => setConfirmDelete(false)} className="px-3 py-2 rounded-lg text-sm"
                 style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>Keep job</button>

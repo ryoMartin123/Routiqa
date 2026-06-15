@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { Package, Plus, Search, Layers, LayoutList, EyeOff, SlidersHorizontal } from "lucide-react";
 import { useHierarchy } from "@/components/providers/HierarchyProvider";
 import PageTitle from "@/components/shared/PageTitle";
+import StatusBadge from "@/components/shared/StatusBadge";
 import UiSelect from "@/components/ui/Select";
 import ItemFormDrawer from "@/components/items/ItemFormDrawer";
 import IndustryCatalogModal from "@/components/items/IndustryCatalogModal";
@@ -25,13 +26,12 @@ function ItemRow({ it, last, onClick }: { it: Item; last: boolean; onClick: () =
         <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{it.name}</p>
         <p className="text-[10px] truncate" style={{ color: "var(--text-muted)" }}>{it.sku ? `${it.sku} · ` : ""}{it.description ?? ""}</p>
       </div>
-      <span className="inline-block w-fit text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: tc.bg, color: tc.color }}>{tc.label}</span>
+      <StatusBadge label={tc.label} color={tc.color} />
       <span className="text-xs truncate pr-2" style={{ color: "var(--text-secondary)" }}>{it.category}</span>
       <span className="text-sm font-semibold text-right" style={{ color: it.unitPrice < 0 ? "#dc2626" : "var(--text-primary)" }}>{fmt(it.unitPrice)}</span>
       <span className="text-center text-xs" style={{ color: it.taxable ? "var(--text-secondary)" : "var(--text-muted)" }}>{it.taxable ? "Yes" : "No"}</span>
       <span className="text-center text-xs" style={{ color: "var(--text-secondary)" }}>{it.defaultQuantity}</span>
-      <span className="inline-block w-fit text-[10px] font-semibold px-2 py-0.5 rounded-full"
-        style={{ backgroundColor: it.active ? "#d1fae5" : "var(--bg-input)", color: it.active ? "#065f46" : "var(--text-muted)" }}>{it.active ? "Active" : "Inactive"}</span>
+      <StatusBadge label={it.active ? "Active" : "Inactive"} color={it.active ? "#10b981" : "#9ca3af"} />
       <span className="text-[10px] justify-self-end" style={{ color: "var(--text-muted)" }}>Edit</span>
     </div>
   );
@@ -191,8 +191,8 @@ export default function ItemsPage() {
                         className="flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-[var(--bg-surface-2)] transition-colors"
                         style={{ borderBottom: i < g.items.length - 1 ? "1px solid var(--border-subtle)" : "none", opacity: it.active ? 1 : 0.55 }}>
                         <span className="text-sm flex-1 truncate" style={{ color: "var(--text-primary)" }}>{it.name}</span>
-                        <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full shrink-0" style={{ backgroundColor: tc.bg, color: tc.color }}>{tc.label}</span>
-                        {!it.active && <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full shrink-0" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>Inactive</span>}
+                        <StatusBadge label={tc.label} color={tc.color} size="sm" className="shrink-0" />
+                        {!it.active && <StatusBadge label="Inactive" color="#9ca3af" size="sm" className="shrink-0" />}
                         <span className="text-sm font-medium w-20 text-right shrink-0" style={{ color: it.unitPrice < 0 ? "#dc2626" : "var(--text-primary)" }}>{fmt(it.unitPrice)}</span>
                       </div>
                       </Commentable>

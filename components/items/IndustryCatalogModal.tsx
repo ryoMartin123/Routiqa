@@ -6,6 +6,7 @@ import {
   INDUSTRY_CATALOGS, applyIndustryCatalog, countMissingFromCatalog, fmt,
 } from "@/lib/items/data";
 import { ITEM_TYPE_CONFIG } from "@/lib/items/types";
+import StatusBadge from "@/components/shared/StatusBadge";
 
 export default function IndustryCatalogModal({ onClose, onApplied }: {
   onClose: () => void;
@@ -81,7 +82,7 @@ export default function IndustryCatalogModal({ onClose, onApplied }: {
                       return (
                         <div key={si.name} className="flex items-center gap-3 px-3 py-1.5" style={{ borderBottom: i < list.length - 1 ? "1px solid var(--border-subtle)" : "none" }}>
                           <span className="text-sm flex-1 truncate" style={{ color: "var(--text-primary)" }}>{si.name}</span>
-                          <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full shrink-0" style={{ backgroundColor: tc.bg, color: tc.color }}>{tc.label}</span>
+                          <StatusBadge label={tc.label} color={tc.color} size="sm" className="shrink-0" />
                           <span className="text-xs font-medium w-16 text-right shrink-0" style={{ color: si.unitPrice < 0 ? "#dc2626" : "var(--text-secondary)" }}>{fmt(si.unitPrice)}</span>
                         </div>
                       );

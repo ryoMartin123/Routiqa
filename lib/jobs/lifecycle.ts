@@ -21,7 +21,7 @@ import {
 } from "./data";
 import { can, accessLevel, hasFlag, principalRoles } from "@/lib/roles/resolver";
 import type { Principal, PermissionContext } from "@/lib/roles/types";
-import { completeAgreementVisitForJob } from "@/lib/agreements/data";
+import { completeAgreementVisitForJob, revertAgreementVisitForJob, reopenAgreementVisitForJob } from "@/lib/agreements/data";
 
 export type TransitionScope = "field" | "office";
 
@@ -201,10 +201,16 @@ export function transitionJobStatus(
   stampTimestamps(patch, to, now);
 
   const updated = updateJob(jobId, patch);
-  // Agreement visits ride this same engine: when an agreement-sourced job
-  // completes, write the result back to its linked visit + advance nextVisit.
-  if (to === "completed" && updated?.sourceModule === "agreements") {
-    completeAgreementVisitForJob(updated);
+  // Agreement visits ride this same engine: mirror the job's lifecycle onto the
+  // linked visit so the agreement's plan never drifts from reality.
+  if (updated?.sourceModule === "agreements") {
+    if (to === "completed") {
+      completeAgreementVisitForJob(updated);                 // visit → completed
+    } else if (to === "canceled") {
+      revertAgreementVisitForJob(updated);                   // visit → planned (back in the queue)
+    } else if (job.status === "completed" && to !== "invoiced" && to !== "closed") {
+      reopenAgreementVisitForJob(updated);                   // reopened from completed → visit un-completes
+    }
   }
   return { ok: true, job: updated };
 }

@@ -7,8 +7,8 @@ import type { LayoutItem as RGLItem } from "react-grid-layout";
 // container-width measurement need it mounted synchronously with the page.
 import DashboardGrid from "@/components/dashboard/DashboardGrid";
 import {
-  Settings2, Save, X, RotateCcw,
-  Plus, GripVertical, Info,
+  Settings2, Check, X, RotateCcw,
+  Plus, GripVertical, Info, MoreHorizontal,
 } from "lucide-react";
 
 import { useHierarchy } from "@/components/providers/HierarchyProvider";
@@ -66,6 +66,7 @@ function EditDock({
   const ref       = useRef<HTMLDivElement>(null);
   const dragOff   = useRef<{ dx: number; dy: number } | null>(null);
   const floating  = pos !== null;
+  const [menuOpen, setMenuOpen] = useState(false);
 
   // Window-level listeners stay mounted; dragOff.current gates them so we
   // only reposition while an actual drag is in progress.
@@ -114,7 +115,7 @@ function EditDock({
           : "var(--shadow-card)",
         ...(floating
           ? { position: "fixed", left: pos!.x, top: pos!.y, zIndex: 50 }
-          : {}),
+          : { position: "relative", zIndex: 50 }),
       }}>
 
       {/* Drag handle + mode indicator */}
@@ -130,7 +131,7 @@ function EditDock({
           <span className="relative inline-flex rounded-full h-2 w-2"
             style={{ backgroundColor: "var(--accent-icon)" }} />
         </span>
-        <span className="hidden md:inline text-sm font-semibold" style={{ color: "var(--accent-text-strong)" }}>Customize Mode</span>
+        <span className="hidden md:inline text-sm font-semibold" style={{ color: "var(--accent-text-strong)" }}>Customizing</span>
         <ContextBadge level={contextLevel} />
       </div>
 
@@ -146,22 +147,36 @@ function EditDock({
         <Plus className="w-3.5 h-3.5" /> Add Widget
       </button>
 
-      <button onClick={onReset}
-        className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs transition-colors hover:bg-[var(--bg-surface-2)]"
-        style={{ color: "var(--text-secondary)" }}
-        title="Reset to default layout">
-        <RotateCcw className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Reset</span>
-      </button>
-      <button onClick={onCancel}
-        className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs transition-colors hover:bg-[var(--bg-surface-2)]"
-        style={{ color: "var(--text-secondary)" }}>
-        <X className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Cancel</span>
-      </button>
-      <button onClick={onSave}
-        className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold text-white transition-opacity hover:opacity-90"
+      <button onClick={onSave} title="Done" aria-label="Done"
+        className="flex items-center justify-center w-9 h-9 rounded-xl text-white transition-opacity hover:opacity-90"
         style={{ backgroundColor: "var(--accent-text)", boxShadow: "0 2px 8px -1px rgba(49,46,129,0.4)" }}>
-        <Save className="w-3.5 h-3.5" /> Save Layout
+        <Check className="w-4 h-4" />
       </button>
+
+      {/* Overflow — secondary actions (reset / cancel) */}
+      <div className="relative">
+        <button onClick={() => setMenuOpen(o => !o)} aria-label="More options"
+          className="flex items-center justify-center w-8 h-8 rounded-xl transition-colors hover:bg-[var(--bg-surface-2)]"
+          style={{ color: "var(--text-secondary)" }}>
+          <MoreHorizontal className="w-4 h-4" />
+        </button>
+        {menuOpen && (
+          <>
+            <button aria-hidden tabIndex={-1} onClick={() => setMenuOpen(false)} className="fixed inset-0 z-40 cursor-default" />
+            <div className="absolute right-0 top-full mt-2 z-50 w-44 rounded-xl overflow-hidden py-1"
+              style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "0 12px 32px rgba(0,0,0,0.18)" }}>
+              <button onClick={() => { setMenuOpen(false); onReset(); }}
+                className="flex items-center gap-2 w-full px-3 py-2 text-sm transition-colors hover:bg-[var(--bg-surface-2)]" style={{ color: "var(--text-primary)" }}>
+                <RotateCcw className="w-3.5 h-3.5" style={{ color: "var(--text-muted)" }} /> Reset to default
+              </button>
+              <button onClick={() => { setMenuOpen(false); onCancel(); }}
+                className="flex items-center gap-2 w-full px-3 py-2 text-sm transition-colors hover:bg-[var(--bg-surface-2)]" style={{ color: "var(--text-primary)" }}>
+                <X className="w-3.5 h-3.5" style={{ color: "var(--text-muted)" }} /> Cancel
+              </button>
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }

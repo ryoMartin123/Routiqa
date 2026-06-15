@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   Search, Plus, SlidersHorizontal, ChevronUp, ChevronDown,
-  FileText, CalendarCheck, RefreshCw, DollarSign, LayoutTemplate,
+  FileText, CalendarCheck, RefreshCw, DollarSign,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -177,14 +177,6 @@ export default function AgreementsPage() {
         </div>
         <ModuleViewToggle view={moduleView} onChange={setModuleView} />
         <div className="flex-1 flex items-center justify-end gap-2">
-          <button
-            onClick={() => router.push("/settings?section=agreements")}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm transition-colors"
-            style={{ border: "1px solid var(--border)", color: "var(--text-secondary)", backgroundColor: "var(--bg-surface)" }}
-          >
-            <LayoutTemplate className="w-4 h-4" />
-            Templates
-          </button>
           <button onClick={() => router.push("/agreements/new")}
             className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-3 py-2 rounded-lg transition-colors">
             <Plus className="w-4 h-4" />

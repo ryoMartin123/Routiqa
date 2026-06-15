@@ -82,7 +82,6 @@ interface SettingItem {
   label:       string;
   description: string;
   icon:        typeof Globe;
-  phase?:      string;
 }
 
 interface Category {
@@ -157,9 +156,9 @@ const CATEGORIES: Category[] = [
     description: "Team members, roles, and access control",
     icon: Users,
     items: [
-      { key: "users",    label: "Users & Roles",       description: "Invite team members and assign roles",          icon: Users,       phase: "Phase 1" },
-      { key: "roles",    label: "Roles & Permissions",  description: "Create roles and set what each can access",      icon: ShieldCheck, phase: "Phase 1" },
-      { key: "security", label: "Security",             description: "Two-factor auth, sessions, and audit logging",  icon: Shield,      phase: "Phase 1" },
+      { key: "users",    label: "Users & Roles",       description: "Invite team members and assign roles",          icon: Users },
+      { key: "roles",    label: "Roles & Permissions",  description: "Create roles and set what each can access",      icon: ShieldCheck },
+      { key: "security", label: "Security",             description: "Two-factor auth, sessions, and audit logging",  icon: Shield },
     ],
   },
   {
@@ -168,7 +167,7 @@ const CATEGORIES: Category[] = [
     icon: MessageSquare,
     items: [
       { key: "marketing",     label: "Marketing",           description: "Campaign types, audiences, templates, and sender branding", icon: Megaphone },
-      { key: "communication", label: "Communication",       description: "Email, SMS, and phone provider connections", icon: MessageSquare, phase: "Phase 6" },
+      { key: "communication", label: "Communication",       description: "Email, SMS, and phone provider connections", icon: MessageSquare },
     ],
   },
   {
@@ -176,9 +175,9 @@ const CATEGORIES: Category[] = [
     description: "Integrations, billing, and data management",
     icon: Puzzle,
     items: [
-      { key: "integrations",  label: "Integrations",    description: "Google, Zapier, Stripe, and other connections", icon: Puzzle,     phase: "Phase 6" },
-      { key: "billing",       label: "Billing & Plan",  description: "Subscription plan and payment management",      icon: CreditCard, phase: "Phase 1" },
-      { key: "import_export", label: "Import / Export", description: "CSV import, export, and data backup",           icon: ArrowUpDown,phase: "Phase 6" },
+      { key: "integrations",  label: "Integrations",    description: "Google, Zapier, Stripe, and other connections", icon: Puzzle },
+      { key: "billing",       label: "Billing & Plan",  description: "Subscription plan and payment management",      icon: CreditCard },
+      { key: "import_export", label: "Import / Export", description: "CSV import, export, and data backup",           icon: ArrowUpDown },
     ],
   },
 ];
@@ -242,14 +241,10 @@ function Card({ children }: { children: React.ReactNode }) {
   );
 }
 
-function ComingSoon({ label, phase, features }: { label: string; phase: string; features: string[] }) {
+function ComingSoon({ label, features }: { label: string; features: string[] }) {
   return (
     <Card>
-      <div className="flex items-center justify-between mb-4">
-        <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{label}</p>
-        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
-          style={{ backgroundColor: "#e0e7ff", color: "#4f46e5" }}>{phase}</span>
-      </div>
+      <p className="text-sm font-semibold mb-4" style={{ color: "var(--text-primary)" }}>{label}</p>
       <ul className="space-y-1.5">
         {features.map(f => (
           <li key={f} className="flex items-start gap-2">
@@ -503,14 +498,12 @@ function BusinessStructureSection() {
             description="Recurring service plans, maintenance agreements, and renewal billing."
             enabled={orgSettings.agreementsEnabled}
             onChange={v => setOrgSetting("agreementsEnabled", v)}
-            tag="Phase 4"
           />
           <ToggleRow
             label="Marketing"
             description="Email and SMS campaigns, follow-up sequences, and review requests."
             enabled={orgSettings.marketingEnabled}
             onChange={v => setOrgSetting("marketingEnabled", v)}
-            tag="Phase 5"
           />
         </div>
         <p className="text-[11px] mt-3 pt-3" style={{ borderTop: "1px solid var(--border-subtle)", color: "var(--text-muted)" }}>
@@ -788,15 +781,7 @@ function SettingCard({ item, onClick }: { item: SettingItem; onClick: () => void
         <Icon className="w-4 h-4" style={{ color: "#4f46e5" }} />
       </div>
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 flex-wrap">
-          <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{item.label}</p>
-          {item.phase && (
-            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide"
-              style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>
-              {item.phase}
-            </span>
-          )}
-        </div>
+        <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{item.label}</p>
         <p className="text-xs mt-0.5 leading-snug" style={{ color: "var(--text-muted)" }}>{item.description}</p>
       </div>
       <ChevronRight className="w-4 h-4 shrink-0 mt-0.5 opacity-0 group-hover:opacity-40 transition-opacity"
@@ -845,7 +830,7 @@ function CategoryHome({ category, onSelect, onBack }: {
   const cat = CATEGORIES.find(c => c.key === category)!;
   const CatIcon = cat.icon;
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="space-y-6">
       <button onClick={onBack}
         className="flex items-center gap-1.5 text-sm transition-colors hover:opacity-80"
         style={{ color: "var(--text-secondary)" }}>
@@ -861,7 +846,8 @@ function CategoryHome({ category, onSelect, onBack }: {
           <p className="text-sm mt-0.5" style={{ color: "var(--text-secondary)" }}>{cat.description}</p>
         </div>
       </div>
-      <div className="grid grid-cols-2 gap-4">
+      {/* Responsive auto-fill grid — cards fill the available width and wrap row by row */}
+      <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))" }}>
         {cat.items.map(item => (
           <SettingCard key={item.key} item={item} onClick={() => onSelect(item.key)} />
         ))}
@@ -909,17 +895,17 @@ export default function SettingsPage() {
         onBack={agProps?.onBack ?? (() => {})} />;
       case "users":          return <UsersSection />;
       case "roles":          return <RolesSection />;
-      case "security":       return <ComingSoon label="Security" phase="Phase 1"
+      case "security":       return <ComingSoon label="Security"
         features={["Two-factor authentication","Session management","Audit log","Password policies"]} />;
       case "marketing":      return <MarketingSettingsSection />;
-      case "communication":  return <ComingSoon label="Communication" phase="Phase 6"
+      case "communication":  return <ComingSoon label="Communication"
         features={["Email provider connection","SMS provider connection","Phone system integration","Conversation inbox"]} />;
-      case "integrations":   return <ComingSoon label="Integrations" phase="Phase 6"
+      case "integrations":   return <ComingSoon label="Integrations"
         features={["Google Ads & LSA","Google Business Profile","Zapier / Make","Payment processing (Stripe)"]} />;
       case "industry":       return <IndustryDefaultsSection />;
-      case "billing":        return <ComingSoon label="Billing & Plan" phase="Phase 1"
+      case "billing":        return <ComingSoon label="Billing & Plan"
         features={["Subscription plan and seat count","Billing history","Payment method management","Usage limits"]} />;
-      case "import_export":  return <ComingSoon label="Import / Export" phase="Phase 6"
+      case "import_export":  return <ComingSoon label="Import / Export"
         features={["CSV import for customers, leads, jobs","Export to CSV / Excel","Data backup","Migration from other CRMs"]} />;
       default:               return null;
     }
@@ -1004,13 +990,14 @@ export default function SettingsPage() {
         {/* Home / Settings label */}
         <button
           onClick={goHome}
-          className="flex items-center gap-2 px-3 py-2 rounded-lg mb-2 w-full text-left transition-colors"
+          className="flex items-center gap-2 px-3 py-2 rounded-lg mb-2 w-full text-left text-xs font-semibold transition-colors"
           style={{
-            backgroundColor: view.mode === "home" ? "var(--bg-surface-2)" : "transparent",
-            color: view.mode === "home" ? "#4f46e5" : "var(--text-muted)",
+            backgroundColor: view.mode === "home" ? "var(--accent-soft-bg)"     : "transparent",
+            color:           view.mode === "home" ? "var(--accent-text-strong)" : "var(--text-muted)",
+            border:          `1px solid ${view.mode === "home" ? "var(--accent-soft-border)" : "transparent"}`,
           }}>
           <Settings2 className="w-3.5 h-3.5 shrink-0" />
-          <span className="text-xs font-semibold">Settings</span>
+          <span className="truncate">Settings</span>
         </button>
 
         <div className="h-px mx-3 mb-2" style={{ backgroundColor: "var(--border-subtle)" }} />
@@ -1020,14 +1007,14 @@ export default function SettingsPage() {
           const Icon = cat.icon;
           return (
             <button key={cat.key} onClick={() => goCategory(cat.key)}
-              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-left transition-colors"
+              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-left transition-colors"
               style={{
-                backgroundColor: isActive ? "var(--bg-surface-2)" : "transparent",
-                color:            isActive ? "#4f46e5"             : "var(--text-secondary)",
+                backgroundColor: isActive ? "var(--accent-soft-bg)"      : "transparent",
+                color:           isActive ? "var(--accent-text-strong)"  : "var(--text-secondary)",
+                border:          `1px solid ${isActive ? "var(--accent-soft-border)" : "transparent"}`,
               }}>
               <Icon className="w-3.5 h-3.5 shrink-0" />
-              <span className="text-xs truncate">{cat.label}</span>
-              {isActive && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-indigo-500 shrink-0" />}
+              <span className="flex-1 truncate">{cat.label}</span>
             </button>
           );
         })}

@@ -12,6 +12,7 @@ import NewCustomerModal from "@/components/customers/NewCustomerModal";
 import PageTitle from "@/components/shared/PageTitle";
 import ModuleSummaryCards, { type SummaryCard } from "@/components/shared/ModuleSummaryCards";
 import StatusTabs from "@/components/shared/StatusTabs";
+import StatusBadge from "@/components/shared/StatusBadge";
 import ModuleViewToggle, { type ModuleView } from "@/components/shared/ModuleViewToggle";
 import Select from "@/components/ui/Select";
 
@@ -56,16 +57,13 @@ const ACCOUNT_SUBLABEL: Partial<Record<AccountType, string>> = {
 type SortField = "name" | "type" | "status" | "since" | "locationName";
 
 // ─── Badge helpers ────────────────────────────────────────
-function typePill(type: CustomerType) {
-  return type === "Commercial"
-    ? { backgroundColor: "#fef3c7", color: "#92400e" }
-    : { backgroundColor: "var(--bg-input)", color: "var(--text-secondary)" };
+// Saturated dot colors for the shared StatusBadge (dot + text) indicator,
+// matching the customer detail page.
+function typeDot(type: CustomerType) {
+  return type === "Commercial" ? "#f59e0b" : "#6b7280";
 }
-
-function statusPill(status: CustomerStatus) {
-  return status === "Customer"
-    ? { backgroundColor: "#d1fae5", color: "#065f46" }
-    : { backgroundColor: "#e0e7ff", color: "#3730a3" };
+function statusDot(status: CustomerStatus) {
+  return status === "Customer" ? "#10b981" : "#6366f1";
 }
 
 // ─── Page ─────────────────────────────────────────────────
@@ -316,14 +314,10 @@ export default function CustomersPage() {
                   </div>
                 </div>
                 <div>
-                  <span className="inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full" style={typePill(c.type)}>
-                    {c.type}
-                  </span>
+                  <StatusBadge label={c.type} color={typeDot(c.type)} />
                 </div>
                 <div>
-                  <span className="inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full" style={statusPill(c.status)}>
-                    {c.status}
-                  </span>
+                  <StatusBadge label={c.status} color={statusDot(c.status)} />
                 </div>
                 <span className="text-sm truncate" style={{ color: "var(--text-secondary)" }}>
                   {c.address}, {c.city}, {c.state}

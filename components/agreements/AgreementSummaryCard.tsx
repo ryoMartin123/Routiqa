@@ -11,6 +11,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { Calendar, RefreshCw, DollarSign, ChevronRight } from "lucide-react";
 import { useRouter } from "next/navigation";
+import StatusBadge from "@/components/shared/StatusBadge";
 import { useHierarchy } from "@/components/providers/HierarchyProvider";
 import {
   formatValue, agreementVisitProgress, nextBillingDate, billingAmountPerPeriod,
@@ -55,10 +56,7 @@ export default function AgreementSummaryCard({ agreement }: { agreement: Custome
         <div className="min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <p className="text-base font-semibold truncate" style={{ color: "var(--text-primary)" }}>{agreement.type}</p>
-            <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full"
-              style={{ backgroundColor: status.color + "22", color: status.color }}>
-              <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: status.color }} /> {status.label}
-            </span>
+            <StatusBadge label={status.label} color={status.color} />
           </div>
           <p className="text-xs mt-0.5 truncate" style={{ color: "var(--text-muted)" }}>
             {formatValue(agreement)} · {agreement.visitFrequency}{agreement.propertyLabel ? ` · ${agreement.propertyLabel}` : ""}

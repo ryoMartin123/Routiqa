@@ -491,14 +491,50 @@ export function completeAgreementVisitForJob(job: { agreementId?: string; source
   updateAgreement(job.agreementId, { visits, nextVisit: nextPlannedDate(visits) });
 }
 
-// Planned visits still needing a job — the dispatcher's "Visits to schedule"
-// queue. Skips canceled agreements and already-materialized visits.
+// Called when an agreement-sourced job is DELETED or CANCELED: detaches the visit
+// from its now-gone/dead job and returns it to "planned" so the maintenance
+// obligation isn't silently lost — the visit re-enters the schedulable queue.
+// No-op for plain jobs (no agreementId/sourceRefId).
+export function revertAgreementVisitForJob(job: { agreementId?: string; sourceRefId?: string }): void {
+  if (!job.agreementId || !job.sourceRefId) return;
+  const agreement = getAgreement(job.agreementId);
+  if (!agreement) return;
+  let changed = false;
+  const visits = agreement.visits.map(v => {
+    if (v.id !== job.sourceRefId) return v;
+    changed = true;
+    return { ...v, status: "planned" as VisitStatus, jobId: undefined, completedDate: undefined };
+  });
+  if (changed) updateAgreement(job.agreementId, { visits, nextVisit: nextPlannedDate(visits) });
+}
+
+// Called when a COMPLETED agreement-sourced job is reopened (completed → in_progress):
+// the job still exists, so the visit drops back from "completed" to "scheduled" and
+// the agreement's visit count stays honest.
+export function reopenAgreementVisitForJob(job: { agreementId?: string; sourceRefId?: string }): void {
+  if (!job.agreementId || !job.sourceRefId) return;
+  const agreement = getAgreement(job.agreementId);
+  if (!agreement) return;
+  let changed = false;
+  const visits = agreement.visits.map(v => {
+    if (v.id !== job.sourceRefId || v.status !== "completed") return v;
+    changed = true;
+    return { ...v, status: "scheduled" as VisitStatus, completedDate: undefined };
+  });
+  if (changed) updateAgreement(job.agreementId, { visits, nextVisit: nextPlannedDate(visits) });
+}
+
+// Visits still needing a job — the dispatcher's "Visits to schedule" queue. A visit
+// is schedulable when it has NO live job: either never materialized, or its job was
+// deleted out from under it (orphan safety net). Completed/missed visits are history.
 export function getVisitsToSchedule(): { agreement: CustomerAgreement; visit: AgreementVisit }[] {
   const out: { agreement: CustomerAgreement; visit: AgreementVisit }[] = [];
   for (const a of getAllAgreements()) {
     if (a.status === "canceled") continue;
     for (const v of a.visits) {
-      if (v.status === "planned" && !v.jobId) out.push({ agreement: a, visit: v });
+      if (v.status === "completed" || v.status === "missed") continue;
+      const liveJob = v.jobId ? getJob(v.jobId) : undefined;
+      if (!liveJob) out.push({ agreement: a, visit: v });
     }
   }
   return out;
