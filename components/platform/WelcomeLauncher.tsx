@@ -12,11 +12,20 @@ import { usePermissionContext } from "@/components/providers/PermissionProvider"
 import { appAccessForUser } from "@/lib/platform/access";
 import { PLATFORM_APPS } from "@/lib/platform/apps";
 
+// Per-letter cadence for the greeting; the prompt and cards follow on from it.
+const LETTER_STEP = 0.045;
+
 export default function WelcomeLauncher() {
   const { actingUser } = usePermissionContext();
   const access = appAccessForUser(actingUser);
   const apps = PLATFORM_APPS.filter((a) => access[a.id]);
   const firstName = actingUser.fullName.split(/\s+/)[0];
+
+  // Greeting animates one letter at a time; everything after it is timed to land
+  // once the name has finished resolving.
+  const greeting = `Welcome, ${firstName}.`;
+  const promptDelay = greeting.length * LETTER_STEP + 0.35;
+  const cardBase = promptDelay + 0.35;
 
   return (
     <div
@@ -30,14 +39,24 @@ export default function WelcomeLauncher() {
         {/* Greeting */}
         <div className="text-center mb-12">
           <h1
-            className="platform-hero text-4xl sm:text-5xl font-semibold tracking-tight"
+            className="text-4xl sm:text-5xl font-semibold tracking-tight"
             style={{ color: "var(--text-primary)" }}
+            aria-label={greeting}
           >
-            Welcome, {firstName}.
+            {greeting.split("").map((ch, i) => (
+              <span
+                key={i}
+                aria-hidden="true"
+                className="platform-letter"
+                style={{ animationDelay: `${i * LETTER_STEP}s` }}
+              >
+                {ch === " " ? " " : ch}
+              </span>
+            ))}
           </h1>
           <p
-            className="platform-rise text-lg sm:text-xl mt-4"
-            style={{ color: "var(--text-muted)", animationDelay: "0.9s" }}
+            className="platform-fade text-lg sm:text-xl mt-4"
+            style={{ color: "var(--text-muted)", animationDelay: `${promptDelay}s` }}
           >
             Where would you like to work today?
           </p>

@@ -32,7 +32,8 @@ export default function RoleDrawer({ role, canManage, onClose, onSaved, onEditFu
 }) {
   const [draft, setDraft] = useState<RoleDefinition>(() => JSON.parse(JSON.stringify(role)));
   const [tab, setTab] = useState<Tab>("overview");
-  const editable = canManage && !role.locked;
+  // System defaults (and the locked Owner) are read-only — duplicate to customize.
+  const editable = canManage && !role.locked && !role.system;
   const dirty = JSON.stringify(draft) !== JSON.stringify(role);
 
   const assigned = useMemo(() => getUsers().filter((u) => u.assignments.some((a) => a.role === role.key)), [role.key]);
@@ -71,10 +72,14 @@ export default function RoleDrawer({ role, canManage, onClose, onSaved, onEditFu
           </div>
         </div>
 
-        {role.locked && (
+        {!editable && (
           <div className="px-5 py-2.5 flex items-center gap-2" style={{ backgroundColor: "#fffbeb", borderBottom: "1px solid #fde68a" }}>
             <Lock className="w-3.5 h-3.5 shrink-0" style={{ color: "#92400e" }} />
-            <p className="text-xs" style={{ color: "#92400e" }}>The Owner role is locked — its core permissions can&apos;t be changed.</p>
+            <p className="text-xs" style={{ color: "#92400e" }}>
+              {role.locked ? "The Owner role is locked — its core permissions can't be changed."
+                : role.system ? "System default roles are read-only. Duplicate this role to create an editable copy."
+                : "You don't have permission to edit this role."}
+            </p>
           </div>
         )}
 
@@ -84,7 +89,7 @@ export default function RoleDrawer({ role, canManage, onClose, onSaved, onEditFu
             <div className="space-y-3">
               <OvRow label="Description" value={role.description} />
               <OvRow label="Role type" value={role.locked ? "Locked owner" : role.system ? "System Default" : "Custom"} />
-              <OvRow label="Editable" value={editable ? "Yes" : "No — locked"} />
+              <OvRow label="Editable" value={editable ? "Yes" : role.system ? "No — system default" : "No — locked"} />
               <OvRow label="Default data scope"><ScopeBadge scope={roleDataScope(role)} /></OvRow>
               <OvRow label="Apps enabled"><AppBadges role={role} /></OvRow>
               <OvRow label="Users assigned" value={String(assigned.length)} />

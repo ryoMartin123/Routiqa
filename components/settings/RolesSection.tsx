@@ -6,7 +6,8 @@
 // role to open its detail drawer; create/edit opens the guided Role Builder.
 // Replaces the old oversized card grid and the giant default permission matrix.
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   Shield, ShieldCheck, Users, AlertTriangle, Plus, RotateCcw, Search, MoreHorizontal,
   Pencil, Copy, Trash2, Lock, UserCog, SlidersHorizontal,
@@ -15,8 +16,9 @@ import UiSelect from "@/components/ui/Select";
 import StatusBadge from "@/components/shared/StatusBadge";
 import { StatCard } from "@/components/platform/ui";
 import ModuleViewToggle, { type ModuleView } from "@/components/shared/ModuleViewToggle";
+import StatusTabs from "@/components/shared/StatusTabs";
 import { usePermissions } from "@/components/providers/PermissionProvider";
-import { getOrgRoles, getOrgRole, deleteRole, resetRole, resetAllRoles } from "@/lib/roles/store";
+import { getOrgRoles, getOrgRole, deleteRole, resetRole } from "@/lib/roles/store";
 import {
   roleApps, roleDataScope, sensitiveCount, adminCount, hasAdminAccess, APP_META, APP_ORDER, SCOPE_LABEL, DATA_SCOPES,
 } from "@/lib/roles/appmap";
@@ -44,8 +46,18 @@ export default function RolesSection() {
   const [builder, setBuilder] = useState<{ initial?: RoleDefinition; isNew: boolean } | null>(null);
   const [drawerKey, setDrawerKey] = useState<string | null>(null);
 
+  // Deep link from App Access ("Edit Role") — ?role=<key> opens that role's drawer.
+  const searchParams = useSearchParams();
+  useEffect(() => {
+    const key = searchParams.get("role");
+    if (key && getOrgRole(key)) setDrawerKey(key);
+  }, [searchParams]);
+
   // Roles = the working table (default); Overview = the KPI cards.
   const [view, setView] = useState<ModuleView>("list");
+
+  // Filter tabs (CRM-style) — quick segments across the role set.
+  const [tab, setTab] = useState("all");
 
   // Filters (condensed into one popover, CRM-style)
   const [search, setSearch] = useState("");
@@ -53,11 +65,8 @@ export default function RolesSection() {
   const [fType, setFType] = useState("all");
   const [fApp, setFApp] = useState("all");
   const [fScope, setFScope] = useState("all");
-  const [fAdmin, setFAdmin] = useState(false);
-  const [fSensitive, setFSensitive] = useState(false);
-  const [fNoUsers, setFNoUsers] = useState(false);
-  const activeFilters = [fType !== "all", fApp !== "all", fScope !== "all", fAdmin, fSensitive, fNoUsers].filter(Boolean).length;
-  function clearFilters() { setFType("all"); setFApp("all"); setFScope("all"); setFAdmin(false); setFSensitive(false); setFNoUsers(false); }
+  const activeFilters = [fType !== "all", fApp !== "all", fScope !== "all"].filter(Boolean).length;
+  function clearFilters() { setFType("all"); setFApp("all"); setFScope("all"); }
 
   if (builder) {
     return (
@@ -72,15 +81,22 @@ export default function RolesSection() {
   const customCount = roles.filter((r) => !r.system).length;
   const sensitiveRoles = roles.filter((r) => sensitiveCount(r) > 0 || adminCount(r) > 0).length;
 
+  // ── Filter tabs (CRM customers-style segments) ──
+  const TAB_FNS: Record<string, (r: RoleDefinition) => boolean> = {
+    all: () => true,
+    admin: (r) => hasAdminAccess(r),
+    sensitive: (r) => sensitiveCount(r) > 0,
+    no_users: (r) => (usersByRole.get(r.key) ?? 0) === 0,
+  };
+  const tabFn = TAB_FNS[tab] ?? TAB_FNS.all;
+
   const filtered = roles.filter((r) => {
+    if (!tabFn(r)) return false;
     if (search && !(`${r.label} ${r.description}`.toLowerCase().includes(search.toLowerCase()))) return false;
     if (fType === "system" && !r.system) return false;
     if (fType === "custom" && r.system) return false;
     if (fApp !== "all" && !roleApps(r).includes(fApp as PlatformAppId)) return false;
     if (fScope !== "all" && roleDataScope(r) !== fScope) return false;
-    if (fAdmin && !hasAdminAccess(r)) return false;
-    if (fSensitive && sensitiveCount(r) === 0) return false;
-    if (fNoUsers && (usersByRole.get(r.key) ?? 0) > 0) return false;
     return true;
   });
 
@@ -98,10 +114,6 @@ export default function RolesSection() {
         <div className="flex-1 flex justify-end">
           {canManage && (
             <div className="flex items-center gap-2 shrink-0">
-              <button onClick={() => { if (confirm("Reset all roles to the shipped defaults? Custom roles will be removed.")) { resetAllRoles(); refresh(); } }}
-                className="flex items-center gap-1.5 text-sm font-medium px-3 py-2 rounded-lg transition-colors" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>
-                <RotateCcw className="w-3.5 h-3.5" /> Reset Defaults
-              </button>
               <button onClick={() => setBuilder({ isNew: true })}
                 className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-3 py-2 rounded-lg transition-colors">
                 <Plus className="w-4 h-4" /> Create Role
@@ -123,8 +135,16 @@ export default function RolesSection() {
 
       {view === "list" && (
       <>
-        {/* Toolbar — search + one condensed Filter, right-aligned (CRM style) */}
-        <div className="flex items-center justify-end flex-wrap gap-2">
+        {/* Toolbar — tabs (left) · search + condensed Filter (right), CRM style */}
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <StatusTabs active={tab} onChange={setTab}
+            tabs={[
+              { key: "all", label: "All", count: roles.length },
+              { key: "admin", label: "Has Admin", count: roles.filter(TAB_FNS.admin).length, dividerBefore: true },
+              { key: "sensitive", label: "Has Sensitive", count: roles.filter(TAB_FNS.sensitive).length },
+              { key: "no_users", label: "No Users", count: roles.filter(TAB_FNS.no_users).length },
+            ]} />
+          <div className="flex items-center gap-2 flex-wrap">
           <div className="flex items-center gap-2 rounded-lg px-3 py-1.5" style={{ backgroundColor: "var(--bg-input)" }}>
             <Search className="w-3.5 h-3.5 shrink-0" style={{ color: "var(--text-muted)" }} />
             <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search roles..."
@@ -149,15 +169,11 @@ export default function RolesSection() {
                     <FilterField label="Role type"><UiSelect size="sm" value={fType} onChange={setFType} options={[{ value: "all", label: "All types" }, { value: "system", label: "System Default" }, { value: "custom", label: "Custom" }]} /></FilterField>
                     <FilterField label="App access"><UiSelect size="sm" value={fApp} onChange={setFApp} options={[{ value: "all", label: "Any app" }, ...APP_ORDER.filter((a) => a !== "portal").map((a) => ({ value: a, label: APP_META[a].name }))]} /></FilterField>
                     <FilterField label="Default scope"><UiSelect size="sm" value={fScope} onChange={setFScope} options={[{ value: "all", label: "Any scope" }, ...DATA_SCOPES.map((s) => ({ value: s.value, label: s.label }))]} /></FilterField>
-                    <div className="flex flex-wrap gap-1.5 pt-1">
-                      <FilterChip on={fAdmin} onClick={() => setFAdmin((v) => !v)} label="Has Admin" />
-                      <FilterChip on={fSensitive} onClick={() => setFSensitive((v) => !v)} label="Has Sensitive" />
-                      <FilterChip on={fNoUsers} onClick={() => setFNoUsers((v) => !v)} label="No Users" />
-                    </div>
                   </div>
                 </div>
               </>
             )}
+          </div>
           </div>
         </div>
 
@@ -209,15 +225,6 @@ function FilterField({ label, children }: { label: string; children: React.React
   );
 }
 
-function FilterChip({ on, onClick, label }: { on: boolean; onClick: () => void; label: string }) {
-  return (
-    <button onClick={onClick} className="text-xs font-medium px-2.5 py-1.5 rounded-lg transition-colors"
-      style={{ border: `1px solid ${on ? "var(--accent-soft-border)" : "var(--border)"}`, backgroundColor: on ? "var(--accent-soft-bg)" : "var(--bg-surface)", color: on ? "var(--accent-text)" : "var(--text-secondary)" }}>
-      {label}
-    </button>
-  );
-}
-
 function RoleRow({ role, users, canManage, last, onOpen, onEdit, onDuplicate, onReset, onArchive, onUsers }: {
   role: RoleDefinition; users: number; canManage: boolean; last: boolean;
   onOpen: () => void; onEdit: () => void; onDuplicate: () => void; onReset: () => void; onArchive: () => void; onUsers: () => void;
@@ -228,8 +235,8 @@ function RoleRow({ role, users, canManage, last, onOpen, onEdit, onDuplicate, on
   const status = role.status ?? "active";
 
   return (
-    <div onClick={onOpen} className="grid px-4 py-3 items-center cursor-pointer transition-colors hover:bg-[var(--bg-surface-2)]"
-      style={{ gridTemplateColumns: COLS, borderBottom: last ? "none" : "1px solid var(--border-subtle)" }}>
+    <div onClick={onOpen} className="grid px-4 py-3 items-center cursor-pointer transition-[background-color] hover:bg-[var(--bg-surface-2)]"
+      style={{ gridTemplateColumns: COLS, borderBottom: "1px solid", borderBottomColor: last ? "transparent" : "var(--border-subtle)" }}>
       {/* Role */}
       <div className="min-w-0 pr-2">
         <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{role.label}</p>
@@ -256,9 +263,12 @@ function RoleRow({ role, users, canManage, last, onOpen, onEdit, onDuplicate, on
           <span className="flex items-center gap-1 text-[11px]" style={{ color: "var(--text-muted)" }}><Lock className="w-3 h-3" /> Locked</span>
         ) : canManage ? (
           <>
-            <button onClick={onEdit} className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>
-              <Pencil className="w-3 h-3" /> Edit
-            </button>
+            {/* System defaults can't be edited — duplicate to customize. */}
+            {!role.system && (
+              <button onClick={onEdit} className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>
+                <Pencil className="w-3 h-3" /> Edit
+              </button>
+            )}
             <div className="relative">
               <button onClick={() => setMenu((m) => !m)} className="w-7 h-7 rounded-lg flex items-center justify-center transition-colors hover:bg-[var(--bg-input)]" style={{ color: "var(--text-secondary)" }}>
                 <MoreHorizontal className="w-4 h-4" />

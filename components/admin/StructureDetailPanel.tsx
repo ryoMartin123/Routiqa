@@ -160,18 +160,8 @@ function DetailHeader({ type, name, actions }: { type: NodeType; name: string; a
         </div>
       </div>
 
-      {/* Quick actions — Edit · Assign Users · More */}
+      {/* Quick actions — everything folded into the More (⋯) menu */}
       <div className="flex items-center gap-2 shrink-0">
-        <button onClick={actions.onEdit}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors text-white"
-          style={{ backgroundColor: "#4f46e5" }}>
-          <Pencil className="w-3.5 h-3.5" /> Edit
-        </button>
-        <button onClick={actions.onAssignUsers}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
-          style={{ border: "1px solid var(--border)", color: "var(--text-secondary)", backgroundColor: "var(--bg-surface)" }}>
-          <UserPlus className="w-3.5 h-3.5" /> Assign Users
-        </button>
         <div className="relative">
           <button onClick={() => setMoreOpen((o) => !o)} aria-label="More actions"
             className="flex items-center justify-center w-8 h-8 rounded-lg transition-colors"
@@ -183,6 +173,17 @@ function DetailHeader({ type, name, actions }: { type: NodeType; name: string; a
               <div className="fixed inset-0 z-40" onClick={() => setMoreOpen(false)} />
               <div role="menu" className="absolute right-0 mt-1.5 w-52 rounded-xl overflow-hidden z-50 py-1"
                 style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "0 12px 32px rgba(0,0,0,0.2)" }}>
+                <button onClick={() => { setMoreOpen(false); actions.onEdit(); }}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 text-sm transition-colors hover:bg-[var(--bg-surface-2)]"
+                  style={{ color: "var(--text-primary)" }}>
+                  <Pencil className="w-4 h-4" /> Edit {typeLabel}
+                </button>
+                <button onClick={() => { setMoreOpen(false); actions.onAssignUsers(); }}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 text-sm transition-colors hover:bg-[var(--bg-surface-2)]"
+                  style={{ color: "var(--text-primary)" }}>
+                  <UserPlus className="w-4 h-4" /> Assign users
+                </button>
+                <div className="my-1" style={{ borderTop: "1px solid var(--border-subtle)" }} />
                 {!isOrg && (
                   <button onClick={() => { setMoreOpen(false); actions.onToggleStatus(); }}
                     className="w-full flex items-center gap-2.5 px-3 py-2 text-sm transition-colors hover:bg-[var(--bg-surface-2)]"

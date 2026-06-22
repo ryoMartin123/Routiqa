@@ -5,7 +5,7 @@ import BusinessStructureManager from "@/components/admin/BusinessStructureManage
 // Admin owns the structure; the other apps read the selected scope.
 export default function AdminBusinessStructurePage() {
   return (
-    <div className="p-6">
+    <div className="p-6 h-full">
       <BusinessStructureManager />
     </div>
   );

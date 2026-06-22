@@ -25,7 +25,7 @@ export default function AdminDashboard() {
 
   return (
     <div className="p-6 space-y-4">
-      <PageHeader title="Admin" subtitle="Platform control center — users, access, structure, security, and billing." accent="#a855f7" />
+      <PageHeader title="Dashboard" subtitle="Platform control center — users, access, structure, security, and billing." accent="#a855f7" />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard label="Total Users" value={String(users.length)} hint={`${activeUsers} active`} icon={Users} accent="#a855f7" />

@@ -7,17 +7,22 @@
 // Status is not edited directly — it follows the invite / activate / deactivate
 // actions. Mutations require the `users_manage` flag; otherwise it's read-only.
 
-import { useMemo, useState } from "react";
-import { Users, Plus, Pencil, X, Trash2, ShieldCheck, Mail, RotateCcw, CheckCircle, Ban, ChevronDown } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { Users, Plus, Pencil, X, Trash2, ShieldCheck, Mail, RotateCcw, CheckCircle, Ban, ChevronDown, Search, SlidersHorizontal, UserCheck, Clock } from "lucide-react";
 import UiSelect from "@/components/ui/Select";
 import { useHierarchy } from "@/components/providers/HierarchyProvider";
 import { usePermissions } from "@/components/providers/PermissionProvider";
 import StatusBadge from "@/components/shared/StatusBadge";
+import { StatCard } from "@/components/platform/ui";
+import ModuleViewToggle, { type ModuleView } from "@/components/shared/ModuleViewToggle";
+import StatusTabs from "@/components/shared/StatusTabs";
 import { getAssignableRoles, getOrgRole, getRoleLabel } from "@/lib/roles/store";
+import UserPermissionPreview from "@/components/settings/UserPermissionPreview";
 import { assignmentError, allowedLevelsForRole } from "@/lib/roles/validate";
 import type { RoleKey } from "@/lib/roles/types";
 import {
-  getUsers, upsertUser, setUserStatus, deleteUser,
+  getUsers, getUser, upsertUser, setUserStatus, deleteUser,
   type AppUser, type RoleAssignment, type ScopeLevel, type UserStatus,
 } from "@/lib/users/data";
 
@@ -41,7 +46,15 @@ const LEVEL_LABEL: Record<ScopeLevel, string> = {
   org: "Organization-wide", company: "Company", location: "Location", service_area: "Service Area",
 };
 
-export default function UsersSection() {
+// Invite/Edit modal steps: identity → role@layer grants → effective-permission preview.
+type UserModalTab = "details" | "roles" | "permissions";
+const USER_MODAL_TABS: { key: UserModalTab; label: string }[] = [
+  { key: "details", label: "Details" },
+  { key: "roles", label: "Roles & Layers" },
+  { key: "permissions", label: "Permissions" },
+];
+
+export default function UsersSection({ embedded = false }: { embedded?: boolean }) {
   const { allCompanies, allLocations, allServiceAreas, orgSettings } = useHierarchy();
   const { hasFlag } = usePermissions();
   const canManage = hasFlag("users_manage");
@@ -51,6 +64,64 @@ export default function UsersSection() {
   const refresh = () => setVersion(v => v + 1);
 
   const [editing, setEditing] = useState<AppUser | "new" | null>(null);
+
+  // Deep link from App Access ("open this user") — ?user=<id> opens the editor.
+  const searchParams = useSearchParams();
+  useEffect(() => {
+    const id = searchParams.get("user");
+    if (id) { const u = getUser(id); if (u) setEditing(u); }
+  }, [searchParams]);
+
+  // Users = the working table (default); Overview = the KPI cards.
+  const [view, setView] = useState<ModuleView>("list");
+
+  // Status tabs + search + condensed Filter (CRM-style).
+  const [tab, setTab] = useState("all");
+  const [search, setSearch] = useState("");
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [fRole, setFRole] = useState("all");
+  const [fCompany, setFCompany] = useState("all");
+  const activeFilters = [fRole !== "all", fCompany !== "all"].filter(Boolean).length;
+  function clearFilters() { setFRole("all"); setFCompany("all"); }
+
+  // Role options — distinct roles actually held across the directory.
+  const roleOptions = useMemo(() => {
+    const keys = new Set<string>();
+    for (const u of users) for (const a of u.assignments) keys.add(a.role);
+    return [...keys].map(k => ({ value: k, label: getRoleLabel(k) }));
+  }, [users]);
+
+  // ── Filter predicates ──
+  const TAB_FNS: Record<string, (u: AppUser) => boolean> = {
+    all: () => true,
+    active: (u) => u.status === "active",
+    invited: (u) => u.status === "invited",
+    inactive: (u) => u.status === "inactive",
+  };
+  const tabFn = TAB_FNS[tab] ?? TAB_FNS.all;
+
+  function matchesCompany(u: AppUser): boolean {
+    if (fCompany === "all") return true;
+    return u.assignments.some(a => a.level === "org" || a.companyId === fCompany);
+  }
+
+  const filteredUsers = users.filter(u => {
+    if (!tabFn(u)) return false;
+    if (search && !(`${u.fullName} ${u.email}`.toLowerCase().includes(search.toLowerCase()))) return false;
+    if (fRole !== "all" && !u.assignments.some(a => a.role === fRole)) return false;
+    if (!matchesCompany(u)) return false;
+    return true;
+  });
+
+  // ── Summary counts ──
+  const totalUsers = users.length;
+  const activeCount = users.filter(u => u.status === "active").length;
+  const invitedCount = users.filter(u => u.status === "invited").length;
+  const rolesAssigned = useMemo(() => {
+    const keys = new Set<string>();
+    for (const u of users) for (const a of u.assignments) keys.add(a.role);
+    return keys.size;
+  }, [users]);
 
   // ── Scope label builders ────────────────────────────────
   const companyName = (id?: string) => allCompanies.find(c => c.id === id)?.name ?? id ?? "—";
@@ -66,20 +137,78 @@ export default function UsersSection() {
 
   return (
     <div className="space-y-5">
-      {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h2 className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>Users &amp; Roles</h2>
-          <p className="text-sm mt-0.5" style={{ color: "var(--text-secondary)" }}>
-            Invite team members and grant a role at the right layer — organization-wide, a company, or specific locations.
-          </p>
-        </div>
-        {canManage && (
-          <button onClick={() => setEditing("new")}
-            className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-3 py-2 rounded-lg transition-colors">
-            <Plus className="w-4 h-4" /> Invite User
-          </button>
+      {/* Header — when embedded under Users & Access the title is supplied by the parent. */}
+      <div className="flex items-center justify-between gap-4">
+        {embedded ? <div className="flex-1" /> : (
+          <div className="flex-1 min-w-0">
+            <h2 className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>Users</h2>
+            <p className="text-sm mt-0.5 truncate" style={{ color: "var(--text-secondary)" }}>
+              Invite team members and grant a role at the right layer — organization-wide, a company, or specific locations.
+            </p>
+          </div>
         )}
+        <ModuleViewToggle view={view} onChange={setView} listLabel="Users" />
+        <div className="flex-1 flex justify-end">
+          {canManage && (
+            <button onClick={() => setEditing("new")}
+              className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-3 py-2 rounded-lg transition-colors shrink-0">
+              <Plus className="w-4 h-4" /> Invite User
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Overview — KPI cards (kept off the main Users view) */}
+      {view === "overview" && (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <StatCard label="Total Users" value={String(totalUsers)} hint="In the directory" icon={Users} accent="#6366f1" />
+          <StatCard label="Active" value={String(activeCount)} hint="Active accounts" icon={UserCheck} accent="#22c55e" />
+          <StatCard label="Invited" value={String(invitedCount)} hint="Pending invites" icon={Clock} accent="#f59e0b" />
+          <StatCard label="Roles Assigned" value={String(rolesAssigned)} hint="Distinct roles in use" icon={ShieldCheck} accent="#0ea5e9" />
+        </div>
+      )}
+
+      {view === "list" && (
+      <>
+      {/* Toolbar — status tabs (left) · search + condensed Filter (right) */}
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <StatusTabs active={tab} onChange={setTab}
+          tabs={[
+            { key: "all", label: "All", count: users.length },
+            { key: "active", label: "Active", count: users.filter(TAB_FNS.active).length },
+            { key: "invited", label: "Invited", count: users.filter(TAB_FNS.invited).length },
+            { key: "inactive", label: "Inactive", count: users.filter(TAB_FNS.inactive).length },
+          ]} />
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-2 rounded-lg px-3 py-1.5" style={{ backgroundColor: "var(--bg-input)" }}>
+            <Search className="w-3.5 h-3.5 shrink-0" style={{ color: "var(--text-muted)" }} />
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search users..."
+              className="bg-transparent text-sm outline-none w-44" style={{ color: "var(--text-primary)" }} />
+          </div>
+          <div className="relative">
+            <button onClick={() => setFiltersOpen((o) => !o)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors"
+              style={{ border: `1px solid ${activeFilters ? "var(--accent-soft-border)" : "var(--border)"}`, backgroundColor: activeFilters ? "var(--accent-soft-bg)" : "var(--bg-surface)", color: activeFilters ? "var(--accent-text)" : "var(--text-secondary)" }}>
+              <SlidersHorizontal className="w-3.5 h-3.5" /> Filter
+              {activeFilters > 0 && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: "var(--accent-soft-2-bg)", color: "var(--accent-text)" }}>{activeFilters}</span>}
+            </button>
+            {filtersOpen && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setFiltersOpen(false)} />
+                <div className="absolute right-0 top-full mt-2 z-50 rounded-xl p-4 w-72" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "0 12px 32px rgba(0,0,0,0.18)" }}>
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Filters</p>
+                    {activeFilters > 0 && <button onClick={clearFilters} className="text-xs" style={{ color: "var(--accent-text)" }}>Clear all</button>}
+                  </div>
+                  <div className="space-y-2.5">
+                    <FilterField label="Role"><UiSelect size="sm" value={fRole} onChange={setFRole} options={[{ value: "all", label: "Any role" }, ...roleOptions]} /></FilterField>
+                    <FilterField label="Company"><UiSelect size="sm" value={fCompany} onChange={setFCompany} options={[{ value: "all", label: "Any company" }, ...allCompanies.map(c => ({ value: c.id, label: c.name }))]} /></FilterField>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Users table */}
@@ -94,7 +223,9 @@ export default function UsersSection() {
             </tr>
           </thead>
           <tbody>
-            {users.map(u => (
+            {filteredUsers.length === 0 ? (
+              <tr><td colSpan={4} className="px-4 py-14 text-center text-sm" style={{ color: "var(--text-muted)" }}>No users match the current filters.</td></tr>
+            ) : filteredUsers.map(u => (
               <tr key={u.id} style={{ borderBottom: "1px solid var(--border-subtle)" }}>
                 {/* User */}
                 <td className="px-4 py-3 align-top">
@@ -150,6 +281,8 @@ export default function UsersSection() {
         A role sets what a member can do; the layer sets which company or locations they operate in. Grant the same role at
         more than one location if they cover several. Role permissions are configured in Settings → Roles &amp; Permissions.
       </p>
+      </>
+      )}
 
       {editing && (
         <UserModal
@@ -202,6 +335,7 @@ function UserModal({
   const dirty = JSON.stringify({ fullName, email, rows }) !== initialKey;
   const [error, setError] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [modalTab, setModalTab] = useState<UserModalTab>("details");
 
   // Scope option lists — per-role levels are filtered so an org-level role can't
   // be scoped to a single branch.
@@ -262,16 +396,16 @@ function UserModal({
   }
 
   function save() {
-    if (!fullName.trim()) { setError("Name is required."); return; }
-    if (!EMAIL_RE.test(email.trim())) { setError("A valid email is required."); return; }
+    if (!fullName.trim()) { setError("Name is required."); setModalTab("details"); return; }
+    if (!EMAIL_RE.test(email.trim())) { setError("A valid email is required."); setModalTab("details"); return; }
     if (!isOwner) {
-      if (rows.length === 0) { setError("Add at least one role."); return; }
+      if (rows.length === 0) { setError("Add at least one role."); setModalTab("roles"); return; }
       for (const r of rows) {
         const def = getOrgRole(r.role);
-        if (def) { const e = assignmentError(def, r.level); if (e) { setError(e); return; } }
+        if (def) { const e = assignmentError(def, r.level); if (e) { setError(e); setModalTab("roles"); return; } }
       }
       const resolved = rows.map(resolveAssignment);
-      if (resolved.some(a => a === null)) { setError("Each role needs a layer selected."); return; }
+      if (resolved.some(a => a === null)) { setError("Each role needs a layer selected."); setModalTab("roles"); return; }
       upsertUser({ id: user?.id, fullName: fullName.trim(), email: email.trim(), status, assignments: resolved as Omit<RoleAssignment, "id">[] });
     } else {
       upsertUser({ id: user?.id, fullName: fullName.trim(), email: email.trim(), status, assignments: user!.assignments });
@@ -286,7 +420,7 @@ function UserModal({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="w-full max-w-lg max-h-[90vh] rounded-2xl overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}
+      <div className="w-full max-w-2xl max-h-[90vh] rounded-2xl overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}
         style={{ backgroundColor: "var(--bg-surface)", boxShadow: "0 16px 48px rgba(0,0,0,0.24)" }}>
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
@@ -307,86 +441,109 @@ function UserModal({
           </div>
         </div>
 
+        {/* Tab nav — Details · Roles & Layers · Permissions */}
+        <div className="px-5 pt-3 shrink-0">
+          <div className="flex items-center gap-1 p-1 rounded-xl w-fit" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border-subtle)" }}>
+            {USER_MODAL_TABS.map((t, i) => (
+              <button key={t.key} onClick={() => setModalTab(t.key)}
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-medium transition-colors"
+                style={{ backgroundColor: modalTab === t.key ? "var(--bg-surface)" : "transparent", color: modalTab === t.key ? "var(--text-primary)" : "var(--text-muted)", boxShadow: modalTab === t.key ? "var(--shadow-card)" : "none" }}>
+                <span className="text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center" style={{ backgroundColor: modalTab === t.key ? "#4f46e5" : "var(--bg-input)", color: modalTab === t.key ? "#fff" : "var(--text-muted)" }}>{i + 1}</span>
+                {t.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Body */}
         <div className="flex-1 overflow-y-auto p-5 space-y-5">
-          {/* Identity */}
-          <div className="space-y-3">
-            <Field label="Full name">
-              <input value={fullName} onChange={e => setFullName(e.target.value)} placeholder="e.g. Jordan Lee"
-                className="w-full rounded-lg px-3 py-2 text-sm outline-none"
-                style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)", color: "var(--text-primary)" }} />
-            </Field>
-            <Field label="Email">
-              <div className="flex items-center gap-2 rounded-lg px-3" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)" }}>
-                <Mail className="w-3.5 h-3.5 shrink-0" style={{ color: "var(--text-muted)" }} />
-                <input value={email} onChange={e => setEmail(e.target.value)} placeholder="name@company.com" type="email"
-                  className="w-full py-2 text-sm outline-none bg-transparent" style={{ color: "var(--text-primary)" }} />
-              </div>
-            </Field>
-          </div>
+          {/* Details */}
+          {modalTab === "details" && (
+            <div className="space-y-3">
+              <Field label="Full name">
+                <input value={fullName} onChange={e => setFullName(e.target.value)} placeholder="e.g. Jordan Lee"
+                  className="w-full rounded-lg px-3 py-2 text-sm outline-none"
+                  style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)", color: "var(--text-primary)" }} />
+              </Field>
+              <Field label="Email">
+                <div className="flex items-center gap-2 rounded-lg px-3" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)" }}>
+                  <Mail className="w-3.5 h-3.5 shrink-0" style={{ color: "var(--text-muted)" }} />
+                  <input value={email} onChange={e => setEmail(e.target.value)} placeholder="name@company.com" type="email"
+                    className="w-full py-2 text-sm outline-none bg-transparent" style={{ color: "var(--text-primary)" }} />
+                </div>
+              </Field>
+            </div>
+          )}
 
           {/* Roles & layers */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>Roles &amp; Layers</p>
-              {!isOwner && (
-                <button onClick={addRow} className="flex items-center gap-1 text-xs font-medium" style={{ color: "var(--accent-text)" }}>
-                  <Plus className="w-3.5 h-3.5" /> Add
-                </button>
-              )}
-            </div>
-
-            {isOwner ? (
-              <div className="rounded-lg px-3 py-3 text-xs flex items-center gap-2"
-                style={{ backgroundColor: "var(--bg-surface-2)", color: "var(--text-secondary)" }}>
-                <ShieldCheck className="w-4 h-4 shrink-0" style={{ color: "#4f46e5" }} />
-                Organization Owner — full access to everything. This can&apos;t be changed.
+          {modalTab === "roles" && (
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>Roles &amp; Layers</p>
+                {!isOwner && (
+                  <button onClick={addRow} className="flex items-center gap-1 text-xs font-medium" style={{ color: "var(--accent-text)" }}>
+                    <Plus className="w-3.5 h-3.5" /> Add
+                  </button>
+                )}
               </div>
-            ) : (
-              <div className="space-y-2">
-                {rows.map((r, i) => (
-                  <div key={i} className="rounded-lg p-3 space-y-2" style={{ border: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
-                    <div className="flex items-center gap-2">
-                      <div className="flex-1">
-                        <UiSelect value={r.role} onChange={v => changeRole(i, v as RoleKey)} options={roleOptions} size="sm" />
-                      </div>
-                      {rows.length > 1 && (
-                        <button onClick={() => removeRow(i)} title="Remove" className="p-1.5 rounded-md" style={{ color: "var(--text-muted)" }}>
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-40 shrink-0">
-                        <UiSelect value={r.level}
-                          onChange={v => updateRow(i, { level: v as ScopeLevel, targetId: "" })}
-                          options={levelOptionsFor(r.role)} size="sm" />
-                      </div>
-                      <div className="flex-1">
-                        {r.level === "org" ? (
-                          <p className="text-xs px-2.5 py-1.5" style={{ color: "var(--text-muted)" }}>{LEVEL_LABEL.org}</p>
-                        ) : (
-                          <UiSelect value={r.targetId} onChange={v => updateRow(i, { targetId: v })}
-                            options={targetOptions(r.level)} placeholder={`Select ${LEVEL_LABEL[r.level].toLowerCase()}…`} size="sm" />
+
+              {isOwner ? (
+                <div className="rounded-lg px-3 py-3 text-xs flex items-center gap-2"
+                  style={{ backgroundColor: "var(--bg-surface-2)", color: "var(--text-secondary)" }}>
+                  <ShieldCheck className="w-4 h-4 shrink-0" style={{ color: "#4f46e5" }} />
+                  Organization Owner — full access to everything. This can&apos;t be changed.
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {rows.map((r, i) => (
+                    <div key={i} className="rounded-lg p-3 space-y-2" style={{ border: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1">
+                          <UiSelect value={r.role} onChange={v => changeRole(i, v as RoleKey)} options={roleOptions} size="sm" />
+                        </div>
+                        {rows.length > 1 && (
+                          <button onClick={() => removeRow(i)} title="Remove" className="p-1.5 rounded-md" style={{ color: "var(--text-muted)" }}>
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
                         )}
                       </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-40 shrink-0">
+                          <UiSelect value={r.level}
+                            onChange={v => updateRow(i, { level: v as ScopeLevel, targetId: "" })}
+                            options={levelOptionsFor(r.role)} size="sm" />
+                        </div>
+                        <div className="flex-1">
+                          {r.level === "org" ? (
+                            <p className="text-xs px-2.5 py-1.5" style={{ color: "var(--text-muted)" }}>{LEVEL_LABEL.org}</p>
+                          ) : (
+                            <UiSelect value={r.targetId} onChange={v => updateRow(i, { targetId: v })}
+                              options={targetOptions(r.level)} placeholder={`Select ${LEVEL_LABEL[r.level].toLowerCase()}…`} size="sm" />
+                          )}
+                        </div>
+                      </div>
+                      <p className="text-[11px] leading-snug" style={{ color: "var(--text-muted)" }}>
+                        {getOrgRole(r.role)?.description}
+                      </p>
                     </div>
-                    <p className="text-[11px] leading-snug" style={{ color: "var(--text-muted)" }}>
-                      {getOrgRole(r.role)?.description}
-                    </p>
-                  </div>
-                ))}
-                <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>
-                  Add a row per layer — e.g. the same role at two locations within a company.
-                </p>
-              </div>
-            )}
-          </div>
+                  ))}
+                  <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>
+                    Add a row per layer — e.g. the same role at two locations within a company.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
 
-          {error && (
-            <div className="px-3 py-2 rounded-lg text-xs" style={{ backgroundColor: "#fee2e2", color: "#991b1b" }}>{error}</div>
+          {/* Permissions preview */}
+          {modalTab === "permissions" && (
+            <UserPermissionPreview roleKeys={rows.map(r => r.role)} isOwner={isOwner} />
           )}
         </div>
+
+        {error && (
+          <div className="mx-5 mb-3 px-3 py-2 rounded-lg text-xs shrink-0" style={{ backgroundColor: "#fee2e2", color: "#991b1b" }}>{error}</div>
+        )}
 
         {/* Footer */}
         <div className="shrink-0 px-5 py-3 flex items-center justify-between gap-2" style={{ borderTop: "1px solid var(--border-subtle)" }}>
@@ -439,6 +596,15 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   return (
     <div>
       <label className="block text-xs font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>{label}</label>
+      {children}
+    </div>
+  );
+}
+
+function FilterField({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <label className="block text-[10px] font-semibold uppercase tracking-wider mb-1" style={{ color: "var(--text-muted)" }}>{label}</label>
       {children}
     </div>
   );

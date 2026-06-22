@@ -154,6 +154,18 @@ body {
   0%   { opacity: 0; transform: translateY(18px); }
   100% { opacity: 1; transform: translateY(0); }
 }
+/* Greeting materializes one letter at a time (per-letter animation-delay set
+   inline). Opacity + a tiny lift only — no blur, which paints heavily on text
+   and reads as jitter. GPU-friendly so each glyph eases in smoothly. */
+@keyframes platform-letter {
+  0%   { opacity: 0; transform: translate3d(0, 0.28em, 0); }
+  100% { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+/* Plain opacity fade — no directional movement. */
+@keyframes platform-fade {
+  0%   { opacity: 0; }
+  100% { opacity: 1; }
+}
 .platform-hero {
   opacity: 0;
   animation: platform-hero 1.5s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
@@ -162,8 +174,18 @@ body {
   opacity: 0;
   animation: platform-rise 0.7s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
 }
+.platform-letter {
+  display: inline-block;
+  opacity: 0;
+  will-change: transform, opacity;
+  animation: platform-letter 0.5s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+}
+.platform-fade {
+  opacity: 0;
+  animation: platform-fade 0.9s ease forwards;
+}
 @media (prefers-reduced-motion: reduce) {
-  .platform-hero, .platform-rise { animation: none; opacity: 1; }
+  .platform-hero, .platform-rise, .platform-letter, .platform-fade { animation: none; opacity: 1; }
 }
 
 /* ─── Skeleton loading blocks ─────────────────────────────────────────

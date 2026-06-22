@@ -37,7 +37,6 @@ import {
   Archive,
   Users,
   KeyRound,
-  AppWindow,
   type LucideIcon,
 } from "lucide-react";
 import type { PlatformAppId } from "./apps";
@@ -101,9 +100,8 @@ export const APP_NAV: Partial<Record<PlatformAppId, AppNavItem[]>> = {
     { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
     { name: "Organization", href: "/admin/organization", icon: Globe },
     { name: "Business Structure", href: "/admin/companies", icon: Building2 },
-    { name: "Users", href: "/admin/users", icon: Users },
+    { name: "Users & Access", href: "/admin/users", icon: Users },
     { name: "Roles & Permissions", href: "/admin/roles", icon: ShieldCheck },
-    { name: "App Access", href: "/admin/app-access", icon: AppWindow },
     { name: "Security", href: "/admin/security", icon: KeyRound },
     { name: "Billing & Plan", href: "/admin/billing", icon: CreditCard },
     { name: "Integrations", href: "/admin/integrations", icon: Puzzle },

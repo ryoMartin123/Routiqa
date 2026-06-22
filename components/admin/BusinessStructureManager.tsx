@@ -10,7 +10,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  Building2, MapPin, Map, Globe, Plus, ChevronRight, ChevronDown, Users, Layers,
+  Building2, MapPin, Map, Globe, Plus, ChevronRight, ChevronDown, Users,
 } from "lucide-react";
 import { useHierarchy } from "@/components/providers/HierarchyProvider";
 import {
@@ -78,33 +78,30 @@ export default function BusinessStructureManager() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-6 h-full min-h-0">
       {/* Header */}
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3 flex-1 min-w-0">
-          <span className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: "#a855f722" }}>
-            <Layers className="w-5 h-5" style={{ color: "#a855f7" }} />
-          </span>
-          <div className="min-w-0">
-            <h1 className="text-xl font-semibold" style={{ color: "var(--text-primary)" }}>Business Structure</h1>
-            <p className="text-sm mt-0.5 truncate" style={{ color: "var(--text-muted)" }}>
-              Manage companies, branches, service areas, and operating structure across every app.
-            </p>
-          </div>
+      <div className="flex items-center justify-between gap-4 shrink-0">
+        <div className="flex-1 min-w-0">
+          <h1 className="text-xl font-semibold" style={{ color: "var(--text-primary)" }}>Business Structure</h1>
+          <p className="text-sm mt-0.5 truncate" style={{ color: "var(--text-muted)" }}>
+            Manage companies, branches, service areas, and operating structure across every app.
+          </p>
         </div>
         <ModuleViewToggle view={view} onChange={setView} listLabel="Structure" />
         <div className="flex-1 flex justify-end">
-          <AddMenu
-            open={addMenuOpen}
-            setOpen={setAddMenuOpen}
-            onPick={(kind) => { setAddMenuOpen(false); setAddModal(kind); }}
-          />
+          {view === "list" && (
+            <AddMenu
+              open={addMenuOpen}
+              setOpen={setAddMenuOpen}
+              onPick={(kind) => { setAddMenuOpen(false); setAddModal(kind); }}
+            />
+          )}
         </div>
       </div>
 
       {/* Overview — KPI cards (kept off the main Structure view) */}
       {view === "overview" && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 shrink-0">
           <StatCard label="Companies" value={String(activeCompanies)} hint="Active" icon={Building2} accent="#6366f1" />
           <StatCard label="Locations" value={String(activeLocations)} hint="Active" icon={MapPin} accent="#0ea5e9" />
           <StatCard label="Service Areas" value={String(activeAreas)} hint="Active" icon={Map} accent="#0d9488" />
@@ -114,16 +111,16 @@ export default function BusinessStructureManager() {
 
       {/* Manager — two panels: tree (left) · detail (right) */}
       {view === "list" && (
-      <div className="rounded-2xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
-        <div className="grid lg:grid-cols-[300px_1fr]">
+      <div className="rounded-2xl overflow-hidden flex-1 min-h-0" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
+        <div className="grid lg:grid-cols-[300px_1fr] h-full min-h-0">
           {/* Left — hierarchy tree */}
-          <div className="p-4 border-b lg:border-b-0 lg:border-r" style={{ borderColor: "var(--border-subtle)" }}>
+          <div className="p-4 border-b lg:border-b-0 lg:border-r overflow-y-auto min-h-0" style={{ borderColor: "var(--border-subtle)" }}>
             <p className="text-[10px] font-semibold uppercase tracking-widest mb-3 px-1" style={{ color: "var(--text-muted)" }}>Hierarchy</p>
             <div className="space-y-0.5">
               {/* Org root */}
               <TreeRow
                 depth={0} icon={Globe} name={organization.name} accent="#a855f7"
-                active={organization.status === "active"} count={allCompanies.length}
+                active={organization.status === "active"}
                 hasChildren={allCompanies.length > 0}
                 expanded={expanded.has(`org:${organization.id}`)}
                 selected={selection.type === "org"}
@@ -137,7 +134,7 @@ export default function BusinessStructureManager() {
                   <div key={co.id}>
                     <TreeRow
                       depth={1} icon={Building2} name={co.name} accent="#6366f1"
-                      active={co.status === "active"} count={coLocs.length}
+                      active={co.status === "active"}
                       hasChildren={coLocs.length > 0}
                       expanded={expanded.has(coKey)}
                       selected={selection.type === "company" && selection.id === co.id}
@@ -154,7 +151,7 @@ export default function BusinessStructureManager() {
                           <div key={loc.id}>
                             <TreeRow
                               depth={2} icon={MapPin} name={loc.name} accent="#0ea5e9"
-                              active={loc.status === "active"} count={areas.length}
+                              active={loc.status === "active"}
                               hasChildren={areas.length > 0}
                               expanded={expanded.has(locKey)}
                               selected={selection.type === "location" && selection.id === loc.id}
@@ -180,7 +177,7 @@ export default function BusinessStructureManager() {
           </div>
 
           {/* Right — selected item detail */}
-          <div className="p-6 min-w-0" style={{ backgroundColor: "var(--bg-surface)" }}>
+          <div className="p-6 min-w-0 overflow-y-auto min-h-0" style={{ backgroundColor: "var(--bg-surface)" }}>
             <CenterDetail selection={selection} onSelect={setSelection} actions={detailActions} />
           </div>
         </div>
@@ -247,11 +244,11 @@ function AddMenu({ open, setOpen, onPick }: {
 
 // ─── Tree row ─────────────────────────────────────────────
 function TreeRow({
-  depth, icon: Icon, name, accent, active, count,
+  depth, icon: Icon, name, accent, active,
   hasChildren, expanded, selected, onToggle, onSelect,
 }: {
   depth: number; icon: typeof Building2; name: string; accent: string;
-  active: boolean; count?: number; hasChildren?: boolean; expanded?: boolean;
+  active: boolean; hasChildren?: boolean; expanded?: boolean;
   selected: boolean; onToggle?: () => void; onSelect: () => void;
 }) {
   return (
@@ -280,9 +277,6 @@ function TreeRow({
       <span className="text-sm font-medium flex-1 truncate" style={{ color: selected ? "var(--text-primary)" : "var(--text-secondary)" }}>
         {name}
       </span>
-      {typeof count === "number" && count > 0 && (
-        <span className="text-[10px] font-semibold px-1.5 rounded-full leading-5 min-w-5 text-center" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>{count}</span>
-      )}
       <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: active ? ACTIVE : "var(--text-muted)" }} title={active ? "Active" : "Inactive"} />
     </div>
   );
