@@ -275,7 +275,7 @@ export default function CommentsDrawer() {
       <div data-comment-ui className="fixed inset-0 z-[65]" style={{ backgroundColor: "rgba(0,0,0,0.25)" }} onClick={closeDrawer} />
 
       {/* Panel */}
-      <div data-comment-ui className="fixed top-0 right-0 bottom-0 z-[70] w-full max-w-md flex flex-col"
+      <div data-comment-ui data-comment-panel className="fixed top-0 right-0 bottom-0 z-[70] w-full max-w-md flex flex-col"
         style={{ backgroundColor: "var(--bg-surface)", borderLeft: "1px solid var(--border)", boxShadow: "-16px 0 48px rgba(0,0,0,0.18)" }}>
 
         {/* Header */}

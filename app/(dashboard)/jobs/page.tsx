@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import JobWizard from "@/components/jobs/JobWizard";
-import { Search, Plus, SlidersHorizontal, ChevronUp, ChevronDown, FolderKanban, Calendar, CalendarClock, Loader, CheckCircle2, X } from "lucide-react";
+import { Search, Plus, SlidersHorizontal, ChevronUp, ChevronDown, FolderKanban, Calendar, CalendarClock, Loader, CheckCircle2, X, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ALL_JOBS, getSessionJobs, resolveJobStatus, type Job, type JobType } from "@/lib/jobs/data";
 import UiSelect from "@/components/ui/Select";
@@ -178,7 +178,7 @@ export default function JobsPage() {
   const router = useRouter();
   const [showCreate, setShowCreate] = useState(false);
   const [tab, setTab]         = useState("all");
-  const [moduleView, setModuleView] = useState<ModuleView>("list");
+  const [moduleView, setModuleView] = useState<ModuleView>("cards");
 
   // Toolbar filters (popover). All default to "any" so first render is unfiltered.
   const [filterOpen, setFilterOpen] = useState(false);
@@ -269,7 +269,7 @@ export default function JobsPage() {
         <div className="flex-1 min-w-0">
           <PageTitle title="Jobs" count={contextFiltered.length} description="Track scheduled work, job status, assignments, and field progress." />
         </div>
-        <ModuleViewToggle view={moduleView} onChange={setModuleView} />
+        <ModuleViewToggle view={moduleView} onChange={setModuleView} withCards overviewFirst />
         <div className="flex-1 flex justify-end">
           {canCreateJob && (
             <button onClick={() => setShowCreate(true)} className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-3 py-2 rounded-lg transition-colors">
@@ -285,8 +285,8 @@ export default function JobsPage() {
         </div>
       )}
 
-      {/* Table card */}
-      {moduleView === "list" && (
+      {/* List + Cards share the same toolbar/tabs */}
+      {(moduleView === "list" || moduleView === "cards") && (
       <>
         {/* Toolbar — tabs · search · filter, OUTSIDE the table card (consistent with Customers/Leads) */}
         <div className="flex items-center justify-between flex-wrap gap-2 mb-3">
@@ -357,14 +357,23 @@ export default function JobsPage() {
           )}
         </div>
 
-        {/* Table card */}
-        <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
-        {/* Projects view */}
+        {/* Projects tab keeps its inline list; otherwise the list table or cards grid */}
         {isProjects ? (
-          <div className="p-4">
+          <div className="rounded-xl overflow-hidden p-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
             <ProjectsInline projects={allProjects} companyId={effectiveCompanyId} locationId={effectiveLocationId} />
           </div>
+        ) : moduleView === "cards" ? (
+          displayed.length === 0 ? (
+            <div className="rounded-xl py-16 text-center" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>
+              <p className="text-sm" style={{ color: "var(--text-muted)" }}>No jobs match the current filter.</p>
+            </div>
+          ) : (
+            <div className="grid gap-3 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
+              {displayed.map(job => <JobCard key={job.id} job={job} statusConfig={statusConfig} showAmount={showAmount} />)}
+            </div>
+          )
         ) : (
+          <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
           <>
             {/* Column headers */}
             <div className="grid px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider select-none"
@@ -441,8 +450,8 @@ export default function JobsPage() {
               </div>
             </div>
           </>
+          </div>
         )}
-      </div>
       </>
       )}
 
@@ -452,5 +461,41 @@ export default function JobsPage() {
           onCreated={(jid) => { setShowCreate(false); router.push(`/jobs/${jid}`); }} />
       )}
     </div>
+  );
+}
+
+// ─── Job card (Cards view) — mirrors the dispatch unscheduled-queue card ───
+function JobCard({ job, statusConfig, showAmount }: {
+  job: Job; statusConfig: { key: string; name: string; color: string }[]; showAmount: boolean;
+}) {
+  const s = resolveJobStatus(job.status, statusConfig);
+  const amount = job.actualAmount ?? job.estimatedAmount;
+  return (
+    <Link href={`/jobs/${job.id}`}
+      className="group block rounded-lg p-3 transition-all hover:-translate-y-0.5 hover:shadow-md"
+      style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", borderLeft: `3px solid ${s.color}`, textDecoration: "none" }}>
+      <div className="flex items-start justify-between gap-2 mb-1.5">
+        <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
+          <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded inline-flex items-center gap-1 shrink-0" style={{ backgroundColor: s.color + "22", color: s.color }}>
+            <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: s.color }} />{s.label}
+          </span>
+          <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded shrink-0" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>{jobTypeLabel(job.type)}</span>
+          {job.projectId && <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded shrink-0" style={{ backgroundColor: "#e0e7ff", color: "#4f46e5" }}>PROJECT</span>}
+        </div>
+        {showAmount && amount && <span className="text-xs font-bold shrink-0" style={{ color: job.actualAmount ? "#10b981" : "var(--text-primary)" }}>{amount}</span>}
+      </div>
+      <p className="text-sm font-semibold truncate" style={{ color: "var(--text-primary)" }}>{job.title}</p>
+      {job.customerName && <p className="text-xs truncate" style={{ color: "var(--text-secondary)" }}>{job.customerName}</p>}
+      <div className="flex items-center justify-between gap-2 mt-2 pt-2" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+        <span className="text-[10px] truncate" style={{ color: "var(--text-muted)" }}>
+          {job.scheduledDate ? `${job.scheduledDate}${job.scheduledTime ? ` · ${job.scheduledTime}` : ""}` : "Unscheduled"}
+        </span>
+        <div className="flex items-center gap-1.5 shrink-0 min-w-0">
+          <div className="w-5 h-5 rounded-full bg-indigo-600 flex items-center justify-center text-[8px] font-bold text-white shrink-0">{job.assignedToInitials || "—"}</div>
+          <span className="text-[10px] truncate" style={{ color: "var(--text-secondary)" }}>{job.assignedTo || "Unassigned"}</span>
+          <ArrowRight className="w-3.5 h-3.5 shrink-0 transition-all opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 group-hover:-rotate-45" style={{ color: "#4f46e5" }} />
+        </div>
+      </div>
+    </Link>
   );
 }

@@ -136,6 +136,10 @@ export function getTasksForJob(jobId: string): Task[] {
   return getAllTasks().filter(t => t.jobId === jobId);
 }
 
+export function getTasksForProject(projectId: string): Task[] {
+  return getAllTasks().filter(t => t.projectId === projectId);
+}
+
 // ─── Create / update / delete ─────────────────────────────
 export interface NewTaskInput {
   title: string;

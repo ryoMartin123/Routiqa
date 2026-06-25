@@ -6,7 +6,7 @@
 // Right: preview/details (folder when nothing selected, document when selected).
 // Mock/local state. Documents accent = the Documents app icon color.
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import {
   ChevronRight, Folder, FolderOpen, FolderPlus, Search, Plus, Upload, MoreHorizontal,
   FileText, ListChecks, LayoutTemplate, NotebookPen, FileSignature, ClipboardList, Link as LinkIcon,
@@ -24,8 +24,21 @@ import {
 } from "@/lib/documents/mock";
 
 const ACCENT = appById("documents")?.accent ?? "#f59e0b";   // = the Documents app icon color
+// Drop-target fill: a slightly DARKER amber than the accent (amber-600 vs the
+// accent's amber-500) so the move target reads distinctly deeper than a merely
+// selected row — subtle, no outline.
+const DROP_SHADE = "#d97706" + "47";   // ~28% alpha
 const inp = "w-full rounded-lg px-3 py-2 text-sm outline-none";
 const inpStyle: React.CSSProperties = { border: "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)", color: "var(--text-primary)" };
+
+// A 1×1 transparent image used to suppress the browser's default drag ghost (the
+// faded snapshot of the row). We render our own minimal "Move to…" pill instead.
+const EMPTY_DRAG_IMG = typeof window !== "undefined"
+  ? (() => { const img = new Image(); img.src = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"; return img; })()
+  : null;
+function hideNativeDragImage(e: React.DragEvent) {
+  if (EMPTY_DRAG_IMG) { try { e.dataTransfer.setDragImage(EMPTY_DRAG_IMG, 0, 0); } catch { /* ignore */ } }
+}
 
 // Document type → icon.
 const TYPE_ICON: Record<DocType, typeof FileText> = {
@@ -112,8 +125,60 @@ export default function DocumentsExplorer({ initialFolderId }: { initialFolderId
     }
   }
 
+  // Custom drag indicator: the native ghost is suppressed (hideNativeDragImage on
+  // drag start); instead a small pill follows the cursor and names, in real time,
+  // the folder the item will land in. We also track the source so the indicator
+  // shows NOTHING while the cursor is over the very item being moved.
+  const [dragLabel, setDragLabel] = useState<string | null>(null);
+  const [dragSourceId, setDragSourceId] = useState<string | null>(null);
+  const [dragPos, setDragPos] = useState<{ x: number; y: number } | null>(null);
+  const [overSource, setOverSource] = useState(false);
+  const dragSourceElRef = useRef<HTMLElement | null>(null);
+  function beginDrag(label: string, id: string, e: React.DragEvent) {
+    hideNativeDragImage(e);
+    dragSourceElRef.current = e.currentTarget as HTMLElement;
+    setDragSourceId(id);
+    setDragLabel(label);
+    setDragPos({ x: e.clientX, y: e.clientY });
+  }
+  function endDrag() {
+    setDragLabel(null); setDragSourceId(null); setDragPos(null); setDragOverFolder(null); setOverSource(false);
+    dragSourceElRef.current = null;
+  }
+  useEffect(() => {
+    if (!dragLabel) return;
+    const onOver = (e: DragEvent) => {
+      setDragPos({ x: e.clientX, y: e.clientY });
+      const el = dragSourceElRef.current;
+      setOverSource(!!el && e.target instanceof Node && el.contains(e.target));
+    };
+    document.addEventListener("dragover", onOver);
+    document.addEventListener("drop", endDrag);
+    document.addEventListener("dragend", endDrag);
+    return () => {
+      document.removeEventListener("dragover", onOver);
+      document.removeEventListener("drop", endDrag);
+      document.removeEventListener("dragend", endDrag);
+    };
+  }, [dragLabel]);
+  const dragTargetName = dragOverFolder ? getFolder(dragOverFolder)?.name ?? null : null;
+
   return (
     <div className="flex h-full min-h-0">
+      {/* Floating drag pill — replaces the native ghost; names the live target.
+          Hidden entirely while the cursor is over the item being moved. */}
+      {dragLabel && dragPos && !overSource && (
+        <div className="fixed z-[100] pointer-events-none flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs"
+          style={{ left: dragPos.x + 14, top: dragPos.y + 14, maxWidth: 280, backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "0 6px 20px rgba(0,0,0,0.18)" }}>
+          <FileText className="w-3.5 h-3.5 shrink-0" style={{ color: ACCENT }} />
+          <span className="truncate" style={{ color: "var(--text-secondary)" }}>
+            <span style={{ color: "var(--text-primary)", fontWeight: 600 }}>{dragLabel}</span>
+            {dragTargetName
+              ? <> → <span style={{ color: ACCENT, fontWeight: 600 }}>{dragTargetName}</span></>
+              : <span style={{ color: "var(--text-muted)" }}> — drag onto a folder</span>}
+          </span>
+        </div>
+      )}
       {/* ── Left: folder tree ── */}
       <aside className="w-64 shrink-0 flex flex-col" style={{ borderRight: "1px solid var(--border)", backgroundColor: "var(--bg-surface)" }}>
         <div className="p-3 space-y-2 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
@@ -129,7 +194,8 @@ export default function DocumentsExplorer({ initialFolderId }: { initialFolderId
         <div className="flex-1 overflow-y-auto thin-scroll-y p-2">
           {tree.map(node => (
             <TreeNode key={node.id} node={node} depth={0} expanded={expanded} selected={selectedFolder} search={treeSearch.trim().toLowerCase()}
-              dragOver={dragOverFolder} onDragOverFolder={setDragOverFolder} onDropFolder={onDropFolder}
+              dragOver={dragOverFolder} dragSourceId={dragSourceId} onDragOverFolder={setDragOverFolder} onDropFolder={onDropFolder}
+              onBeginDrag={beginDrag} onEndDrag={endDrag}
               onToggle={toggle} onSelect={selectFolder} onNewSub={(pid) => setNewFolderParent(pid)} />
           ))}
         </div>
@@ -206,7 +272,7 @@ export default function DocumentsExplorer({ initialFolderId }: { initialFolderId
               {docs.map((d, i) => {
                 const Icon = TYPE_ICON[d.type] ?? FileText;
                 return (
-                  <button key={d.id} onClick={() => openDoc(d.id)} draggable onDragStart={e => { e.dataTransfer.setData("text/plain", "doc:" + d.id); e.dataTransfer.effectAllowed = "move"; }}
+                  <button key={d.id} onClick={() => openDoc(d.id)} draggable onDragStart={e => { e.dataTransfer.setData("text/plain", "doc:" + d.id); e.dataTransfer.effectAllowed = "move"; beginDrag(d.title, d.id, e); }} onDragEnd={endDrag}
                     className="w-full grid px-3 py-2.5 items-center text-left transition-colors hover:bg-[var(--bg-surface-2)] cursor-grab active:cursor-grabbing"
                     style={{ gridTemplateColumns: "2.2fr 1fr 0.9fr 1.1fr 0.9fr 1fr", gap: "0.5rem", borderTop: i === 0 ? "none" : "1px solid var(--border-subtle)", backgroundColor: selectedDoc === d.id ? ACCENT + "14" : "transparent" }}>
                     <span className="flex items-center gap-2 min-w-0"><Icon className="w-4 h-4 shrink-0" style={{ color: ACCENT }} /><span className="text-sm truncate" style={{ color: "var(--text-primary)" }}>{d.title}</span></span>
@@ -224,7 +290,7 @@ export default function DocumentsExplorer({ initialFolderId }: { initialFolderId
               {docs.map(d => {
                 const Icon = TYPE_ICON[d.type] ?? FileText;
                 return (
-                  <button key={d.id} onClick={() => openDoc(d.id)} draggable onDragStart={e => { e.dataTransfer.setData("text/plain", "doc:" + d.id); e.dataTransfer.effectAllowed = "move"; }}
+                  <button key={d.id} onClick={() => openDoc(d.id)} draggable onDragStart={e => { e.dataTransfer.setData("text/plain", "doc:" + d.id); e.dataTransfer.effectAllowed = "move"; beginDrag(d.title, d.id, e); }} onDragEnd={endDrag}
                     className="text-left rounded-xl p-3.5 transition-colors hover:bg-[var(--bg-surface-2)] cursor-grab active:cursor-grabbing"
                     style={{ border: `1px solid ${selectedDoc === d.id ? ACCENT + "66" : "var(--border-subtle)"}`, backgroundColor: selectedDoc === d.id ? ACCENT + "10" : "var(--bg-surface)" }}>
                     <div className="flex items-center justify-between mb-2"><span className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ backgroundColor: ACCENT + "1f" }}><Icon className="w-4.5 h-4.5" style={{ color: ACCENT, width: 18, height: 18 }} /></span><Chip color={STATUS_COLOR[d.status]}>{d.status}</Chip></div>
@@ -261,9 +327,10 @@ export default function DocumentsExplorer({ initialFolderId }: { initialFolderId
 }
 
 // ─── Folder tree node ─────────────────────────────────────
-function TreeNode({ node, depth, expanded, selected, search, dragOver, onDragOverFolder, onDropFolder, onToggle, onSelect, onNewSub }: {
+function TreeNode({ node, depth, expanded, selected, search, dragOver, dragSourceId, onDragOverFolder, onDropFolder, onBeginDrag, onEndDrag, onToggle, onSelect, onNewSub }: {
   node: FolderNode; depth: number; expanded: Set<string>; selected: string; search: string;
-  dragOver: string | null; onDragOverFolder: (id: string | null) => void; onDropFolder: (id: string, e: React.DragEvent) => void;
+  dragOver: string | null; dragSourceId: string | null; onDragOverFolder: (id: string | null) => void; onDropFolder: (id: string, e: React.DragEvent) => void;
+  onBeginDrag: (label: string, id: string, e: React.DragEvent) => void; onEndDrag: () => void;
   onToggle: (id: string) => void; onSelect: (id: string) => void; onNewSub: (pid: string) => void;
 }) {
   const [menu, setMenu] = useState(false);
@@ -274,17 +341,26 @@ function TreeNode({ node, depth, expanded, selected, search, dragOver, onDragOve
   if (search && !selfMatch && !descMatch) return null;
   const isOpen = expanded.has(node.id) || (!!search && descMatch);
   const isSelected = selected === node.id;
-  const isDropTarget = dragOver === node.id;
+  const isSource = dragSourceId === node.id;
+  const isDropTarget = dragOver === node.id && !isSource;
   const count = docCountDeep(node.id);
 
   return (
     <div>
       <div className="group relative flex items-center rounded-md"
-        draggable onDragStart={e => { e.stopPropagation(); e.dataTransfer.setData("text/plain", "folder:" + node.id); e.dataTransfer.effectAllowed = "move"; }}
-        onDragOver={e => { e.preventDefault(); onDragOverFolder(node.id); }}
+        draggable onDragStart={e => { e.stopPropagation(); e.dataTransfer.setData("text/plain", "folder:" + node.id); e.dataTransfer.effectAllowed = "move"; onBeginDrag(node.name, node.id, e); }}
+        onDragEnd={onEndDrag}
+        onDragOver={e => { e.preventDefault(); onDragOverFolder(isSource ? null : node.id); }}
         onDragLeave={() => onDragOverFolder(null)}
-        onDrop={e => onDropFolder(node.id, e)}
-        style={{ backgroundColor: isDropTarget ? ACCENT + "33" : isSelected ? ACCENT + "1f" : "transparent", outline: isDropTarget ? `1px dashed ${ACCENT}` : "none" }}>
+        onDrop={e => { if (!isSource) onDropFolder(node.id, e); }}
+        style={{
+          // Minimal drop indicator: the destination folder is just subtly shaded
+          // in (no outline / ring), and at a clearly stronger tint than a merely
+          // selected row so the move target reads distinctly. The source itself is
+          // never shaded — the floating pill says where it's going.
+          backgroundColor: isDropTarget ? DROP_SHADE : isSelected ? ACCENT + "1f" : "transparent",
+        }}>
+
         <button onClick={() => { onSelect(node.id); if (hasChildren) onToggle(node.id); }}
           className="flex-1 flex items-center gap-1.5 px-2 py-1.5 text-sm min-w-0" style={{ paddingLeft: 8 + depth * 14, color: isSelected ? ACCENT : "var(--text-secondary)" }}>
           {hasChildren ? <ChevronRight className="w-3.5 h-3.5 shrink-0 transition-transform" style={{ transform: isOpen ? "rotate(90deg)" : "none" }} /> : <span className="w-3.5 shrink-0" />}
@@ -306,7 +382,8 @@ function TreeNode({ node, depth, expanded, selected, search, dragOver, onDragOve
       </div>
       {hasChildren && isOpen && node.children.map(c => (
         <TreeNode key={c.id} node={c} depth={depth + 1} expanded={expanded} selected={selected} search={search}
-          dragOver={dragOver} onDragOverFolder={onDragOverFolder} onDropFolder={onDropFolder}
+          dragOver={dragOver} dragSourceId={dragSourceId} onDragOverFolder={onDragOverFolder} onDropFolder={onDropFolder}
+          onBeginDrag={onBeginDrag} onEndDrag={onEndDrag}
           onToggle={onToggle} onSelect={onSelect} onNewSub={onNewSub} />
       ))}
     </div>

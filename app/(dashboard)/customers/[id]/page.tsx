@@ -38,6 +38,7 @@ import { getActivityEvents } from "@/lib/activity/data";
 import { type ActivityEvent, type EventType } from "@/lib/activity/types";
 import Commentable from "@/components/comments/Commentable";
 import DetailTabs from "@/components/shared/DetailTabs";
+import RecordTasks from "@/components/tasks/RecordTasks";
 import AgreementSummaryCard from "@/components/agreements/AgreementSummaryCard";
 import JobWizard from "@/components/jobs/JobWizard";
 import { getWorkOrder, type WorkOrder, type WorkOrderStatus } from "@/lib/jobs/data";
@@ -72,7 +73,7 @@ const WO_STATUS_STYLE: Record<WorkOrderStatus, { label: string; bg: string; colo
   completed:   { label: "Completed",   bg: "#d1fae5",         color: "#065f46" },
 };
 
-const TABS = ["Overview", "Contacts", "Properties", "Equipment", "Jobs", "Leads", "Agreements", "Photos & Files", "Notes", "Communication", "Billing", "Timeline"];
+const TABS = ["Overview", "Contacts", "Properties", "Equipment", "Jobs", "Tasks", "Leads", "Agreements", "Photos & Files", "Notes", "Communication", "Billing", "Timeline"];
 
 // ─── Account structure display label ─────────────────────
 const STRUCTURE_LABEL: Record<string, string> = {
@@ -1599,6 +1600,7 @@ function CustomerDetailContent({ params }: { params: Promise<{ id: string }> }) 
               {tab === "Properties"     && <PropertiesTab  id={id} />}
               {tab === "Equipment"      && section("Equipment", <EquipmentTab id={id} />)}
               {tab === "Jobs"           && section("Jobs", <JobsTab id={id} />)}
+              {tab === "Tasks"          && section("Tasks", <RecordTasks type="customer" id={id} />)}
               {tab === "Leads"          && section("Leads", <LeadsTab id={id} />)}
               {tab === "Agreements"     && section("Agreements", <AgreementsTab id={id} />)}
               {tab === "Notes"          && section("Notes", <NotesTab id={id} />)}

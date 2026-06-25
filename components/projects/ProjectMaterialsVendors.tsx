@@ -42,21 +42,10 @@ export default function ProjectMaterialsVendors({ projectId, projectName }: { pr
   const requests = useMemo(() => materialRequestsForProject(projectId), [projectId, tick]);
   const activity = useMemo(() => projectProcurementActivity(projectId), [projectId, tick]);
 
-  const committed =
-    links.reduce((s, l) => s + (l.amountCommitted ?? 0), 0) +
-    assignments.reduce((s, a) => s + (a.contractAmount ?? 0), 0) +
-    pos.reduce((s, p) => s + poSubtotal(p), 0);
-
   return (
-    <div className="space-y-5 max-w-5xl">
-      {/* Committed-cost summary strip */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <Mini label="Vendors" value={String(links.length)} icon={Building2} />
-        <Mini label="Subcontractors" value={String(assignments.length)} icon={HardHat} />
-        <Mini label="Purchase Orders" value={String(pos.length)} icon={ShoppingCart} />
-        <Mini label="Committed Cost" value={money(committed)} icon={Activity} accent="#10b981" />
-      </div>
-
+    <div className="space-y-5 w-full">
+      {/* Four sections two-up; Procurement Activity spans full width below. */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch">
       {/* 1 · Required Materials */}
       <Section title="Required Materials" icon={Package} action={<Btn onClick={() => setModal("materials")}>Request Materials</Btn>}>
         {requests.length === 0 ? <Empty text="No material requests for this project yet." /> : (
@@ -144,7 +133,9 @@ export default function ProjectMaterialsVendors({ projectId, projectName }: { pr
         )}
       </Section>
 
-      {/* 5 · Procurement Activity */}
+      </div>
+
+      {/* 5 · Procurement Activity — full width */}
       <Section title="Procurement Activity" icon={Activity}>
         {activity.length === 0 ? <Empty text="No procurement activity yet." /> : (
           <ul className="space-y-2.5">
@@ -179,25 +170,22 @@ const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 // ─── Layout helpers ───────────────────────────────────────
 function Section({ title, icon: Icon, action, children }: { title: string; icon: typeof Package; action?: React.ReactNode; children: React.ReactNode }) {
   return (
-    <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
-      <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+    <div className="rounded-xl overflow-hidden flex flex-col h-full" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+      <div className="flex items-center justify-between px-4 py-3 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
         <div className="flex items-center gap-2"><Icon className="w-4 h-4" style={{ color: "var(--text-muted)" }} /><p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{title}</p></div>
         {action}
       </div>
-      <div className="p-4">{children}</div>
-    </div>
-  );
-}
-function Mini({ label, value, icon: Icon, accent }: { label: string; value: string; icon: typeof Package; accent?: string }) {
-  return (
-    <div className="rounded-xl p-3 flex items-center gap-2.5" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>
-      <span className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: (accent ?? ACCENT) + "1f" }}><Icon className="w-4 h-4" style={{ color: accent ?? ACCENT }} /></span>
-      <div><p className="text-lg font-bold leading-none" style={{ color: "var(--text-primary)" }}>{value}</p><p className="text-[10px] mt-0.5" style={{ color: "var(--text-muted)" }}>{label}</p></div>
+      <div className="p-4 flex-1">{children}</div>
     </div>
   );
 }
 function Btn({ onClick, children }: { onClick: () => void; children: React.ReactNode }) {
-  return <button onClick={onClick} className="flex items-center gap-1 text-xs font-medium px-2.5 py-1.5 rounded-lg" style={{ backgroundColor: ACCENT, color: "#fff" }}><Plus className="w-3.5 h-3.5" /> {children}</button>;
+  return (
+    <button onClick={onClick} className="group flex items-center gap-1 text-xs font-medium transition-colors" style={{ color: ACCENT }}>
+      <span className="w-4 h-4 rounded-full flex items-center justify-center transition-colors group-hover:brightness-95" style={{ backgroundColor: ACCENT + "1a" }}><Plus className="w-3 h-3" /></span>
+      {children}
+    </button>
+  );
 }
 function Empty({ text }: { text: string }) { return <p className="text-sm py-6 text-center" style={{ color: "var(--text-muted)" }}>{text}</p>; }
 function Table({ head, children }: { head: string[]; children: React.ReactNode }) {

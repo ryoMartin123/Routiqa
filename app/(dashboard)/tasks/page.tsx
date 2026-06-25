@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect, useRef } from "react";
 import Link from "next/link";
-import { CheckSquare, Plus, Search, SlidersHorizontal, Check, X, MoreHorizontal, Pencil, Trash2, ListChecks, MessageSquare, BarChart2, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { CheckSquare, Plus, Search, SlidersHorizontal, Check, X, MoreHorizontal, Pencil, Trash2, ListChecks, MessageSquare, BarChart2, AlertTriangle, CheckCircle2, ArrowUpRight } from "lucide-react";
 import {
   getAllTasks, toggleTaskComplete, deleteTask,
   type Task, type TaskStatus,
@@ -253,13 +253,14 @@ export default function TasksPage() {
                   </span>
                 </div>
 
-                {/* Linked to */}
+                {/* Linked to — an arrow link signals it navigates to the record */}
                 <div className="min-w-0">
                   {task.linkedLabel && task.linkedHref && lt ? (
                     <Link href={task.linkedHref}
-                      className="inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full truncate max-w-full"
-                      style={{ backgroundColor: lt.bg, color: lt.color, textDecoration: "none" }}>
-                      {task.linkedLabel}
+                      className="group inline-flex items-center gap-1 text-[11px] font-medium max-w-full hover:underline"
+                      style={{ color: lt.color, textDecoration: "none" }}>
+                      <span className="truncate">{task.linkedLabel}</span>
+                      <ArrowUpRight className="w-3 h-3 shrink-0 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
                     </Link>
                   ) : <span style={{ color: "var(--text-muted)" }}>—</span>}
                 </div>

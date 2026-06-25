@@ -93,7 +93,7 @@ export default function ChannelsWorkspace() {
       {/* Left — channel list */}
       <aside className="w-72 shrink-0 flex flex-col" style={{ borderRight: "1px solid var(--border)", backgroundColor: "var(--bg-surface)" }}>
         <div className="p-2.5 shrink-0 flex items-center gap-1.5" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
-          <div className="relative flex-1 min-w-0">
+          <div className="relative flex-1 min-w-0 order-2">
             <div className="flex items-center gap-2 rounded-lg px-2.5 py-1.5" style={{ backgroundColor: "var(--bg-input)" }}>
               <Hash className="w-3.5 h-3.5 shrink-0" style={{ color: "var(--text-muted)" }} />
               <input value={search} onFocusCapture={() => setSearchOpen(true)} onChange={e => { setSearch(e.target.value); setSearchOpen(true); }} placeholder="Search channels, people, messages…" className="bg-transparent text-sm outline-none w-full min-w-0" style={{ color: "var(--text-primary)" }} />
@@ -144,8 +144,8 @@ export default function ChannelsWorkspace() {
               </>
             )}
           </div>
-          {/* Single actions menu — create + filters live together */}
-          <div className="relative shrink-0">
+          {/* Single actions menu — create + filters live together (left of search) */}
+          <div className="relative shrink-0 order-1">
             <button onClick={() => setMenuOpen(o => !o)} title="Channel actions"
               className="w-8 h-8 rounded-lg flex items-center justify-center text-white"
               style={{ backgroundColor: ACCENT }}>
@@ -155,7 +155,7 @@ export default function ChannelsWorkspace() {
             {menuOpen && (
               <>
                 <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
-                <div className="absolute right-0 top-full mt-2 z-50 w-64 rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "0 12px 32px rgba(0,0,0,0.18)" }}>
+                <div className="absolute left-0 top-full mt-2 z-50 w-64 rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "0 12px 32px rgba(0,0,0,0.18)" }}>
                   <button onClick={() => { setMenuOpen(false); setCreateOpen(true); }} className="w-full flex items-center gap-2 px-3 py-2.5 text-sm font-medium transition-colors hover:bg-[var(--bg-surface-2)]" style={{ color: "var(--text-primary)" }}>
                     <Plus className="w-4 h-4" style={{ color: ACCENT }} /> Create Channel
                   </button>
@@ -415,7 +415,7 @@ function PostActionsMenu({ post: p, structured, refresh, onReplyAction }: {
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-full mt-1 z-50 w-56 rounded-xl overflow-hidden py-1" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "0 12px 32px rgba(0,0,0,0.2)" }}>
+          <div className="absolute right-0 bottom-full mb-1 z-50 w-56 rounded-xl overflow-hidden py-1" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "0 12px 32px rgba(0,0,0,0.2)" }}>
             {/* Reactions — common ones up front, any emoji on request (one per user) */}
             <ReactionPicker onPick={react} />
             <div className="my-1" style={{ borderTop: "1px solid var(--border-subtle)" }} />
@@ -454,8 +454,9 @@ function ReactionPicker({ onPick }: { onPick: (emoji: string) => void }) {
   return (
     <div>
       <div className="flex items-center gap-0.5 px-1.5 py-1">
-        {QUICK_REACTIONS.map(e => (
-          <button key={e} onClick={() => onPick(e)} className="w-7 h-7 rounded-md flex items-center justify-center text-base transition-colors hover:bg-[var(--bg-surface-2)]">{e}</button>
+        {QUICK_REACTIONS.map((e, i) => (
+          <button key={e} onClick={() => onPick(e)} style={{ animationDelay: `${i * 35}ms` }}
+            className="tw-emoji-pop-in w-7 h-7 rounded-md flex items-center justify-center text-base transition hover:scale-125 active:scale-90 hover:bg-[var(--bg-surface-2)]">{e}</button>
         ))}
         <button onClick={() => setExpanded(v => !v)} title="More emojis"
           className="w-7 h-7 rounded-md flex items-center justify-center transition-colors hover:bg-[var(--bg-surface-2)]"
@@ -517,7 +518,7 @@ function ReactionRow({ post: p, refresh, structured, onAction }: {
         const mine = hasReacted(p, emoji);
         return (
           <button key={emoji} onClick={() => react(emoji)}
-            className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-xs leading-none transition-colors"
+            className="tw-reaction-in inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-xs leading-none transition hover:scale-105 active:scale-95"
             title={names.join(", ")}
             style={{ backgroundColor: mine ? ACCENT + "1f" : "var(--bg-surface-2)", border: `1px solid ${mine ? ACCENT + "59" : "var(--border-subtle)"}`, color: mine ? ACCENT : "var(--text-secondary)" }}>
             <span>{emoji}</span><span className="font-medium">{names.length}</span>

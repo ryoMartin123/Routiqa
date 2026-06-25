@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   Search, Plus, SlidersHorizontal, ChevronUp, ChevronDown,
-  FileText, CalendarCheck, RefreshCw, DollarSign,
+  FileText, CalendarCheck, RefreshCw, DollarSign, ArrowRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -116,7 +116,7 @@ export default function AgreementsPage() {
   const [search, setSearch]   = useState("");
   const [sortField, setSort]  = useState<SortField>("customer");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
-  const [moduleView, setModuleView] = useState<ModuleView>("list");
+  const [moduleView, setModuleView] = useState<ModuleView>("cards");
 
   // Merge in session-created agreements client-side (avoids a hydration gap).
   const [agreements, setAgreements] = useState<CustomerAgreement[]>(AGREEMENTS);
@@ -175,7 +175,7 @@ export default function AgreementsPage() {
         <div className="flex-1 min-w-0">
           <PageTitle title="Agreements" count={agreements.length} description="Manage recurring service plans, visits, billing rules, and renewals." />
         </div>
-        <ModuleViewToggle view={moduleView} onChange={setModuleView} />
+        <ModuleViewToggle view={moduleView} onChange={setModuleView} withCards overviewFirst />
         <div className="flex-1 flex items-center justify-end gap-2">
           <button onClick={() => router.push("/agreements/new")}
             className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-3 py-2 rounded-lg transition-colors">
@@ -196,7 +196,7 @@ export default function AgreementsPage() {
         />
       )}
 
-      {moduleView === "list" && (
+      {(moduleView === "list" || moduleView === "cards") && (
       <>
         {/* Toolbar — tabs · search · filter, OUTSIDE the table card (consistent with Customers/Leads) */}
         <div
@@ -232,12 +232,23 @@ export default function AgreementsPage() {
           )}
         </div>
 
-        {/* Table card */}
-        <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
-        {/* Templates view */}
+        {/* Templates keep the table; otherwise list table or cards grid */}
         {isTemplates ? (
-          <TemplatesTable />
+          <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+            <TemplatesTable />
+          </div>
+        ) : moduleView === "cards" ? (
+          displayed.length === 0 ? (
+            <div className="rounded-xl py-16 text-center" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>
+              <p className="text-sm" style={{ color: "var(--text-muted)" }}>No agreements match your search.</p>
+            </div>
+          ) : (
+            <div className="grid gap-3 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
+              {displayed.map(a => <AgreementCard key={a.id} a={a} />)}
+            </div>
+          )
         ) : (
+          <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
           <>
             {/* Column headers */}
             <div
@@ -401,11 +412,42 @@ export default function AgreementsPage() {
               </div>
             </div>
           </>
+          </div>
         )}
-      </div>
       </>
       )}
 
     </div>
+  );
+}
+
+// ─── Agreement card (Cards view) — same size/style as the Jobs card ───
+function AgreementCard({ a }: { a: CustomerAgreement }) {
+  const s = STATUS[a.status];
+  return (
+    <Link href={`/agreements/${a.id}`}
+      className="group block rounded-lg p-3 transition-all hover:-translate-y-0.5 hover:shadow-md"
+      style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", borderLeft: `3px solid ${s.color}`, textDecoration: "none" }}>
+      <div className="flex items-start justify-between gap-2 mb-1.5">
+        <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
+          <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded inline-flex items-center gap-1 shrink-0" style={{ backgroundColor: s.color + "22", color: s.color }}>
+            <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: s.color }} />{s.label}
+          </span>
+          <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded shrink-0 truncate" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>{a.type}</span>
+        </div>
+        <span className="text-xs font-bold shrink-0" style={{ color: "var(--text-primary)" }}>{formatValue(a)}</span>
+      </div>
+      <p className="text-sm font-semibold truncate" style={{ color: "var(--text-primary)" }}>{a.customer}</p>
+      {(a.location || a.industry) && <p className="text-xs truncate" style={{ color: "var(--text-secondary)" }}>{a.location || a.industry}</p>}
+      <div className="flex items-center justify-between gap-2 mt-2 pt-2" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+        <span className="text-[10px] truncate" style={{ color: a.status === "overdue" ? "#dc2626" : a.status === "renewal_due" ? "#ea580c" : "var(--text-muted)" }}>
+          {a.nextVisit ? `Next: ${a.nextVisit}` : `Renews ${a.renewalDate}`}
+        </span>
+        <div className="flex items-center gap-1.5 shrink-0 min-w-0">
+          <span className="text-[10px] truncate" style={{ color: "var(--text-secondary)" }}>{a.assignedTo}</span>
+          <ArrowRight className="w-3.5 h-3.5 shrink-0 transition-all opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 group-hover:-rotate-45" style={{ color: "#4f46e5" }} />
+        </div>
+      </div>
+    </Link>
   );
 }

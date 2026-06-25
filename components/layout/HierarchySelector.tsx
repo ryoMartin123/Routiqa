@@ -113,10 +113,10 @@ export default function HierarchySelector() {
     const singleLocation = locationOptions[0];
     const label = singleLocation?.name ?? singleCompany?.name ?? organization.name;
     return (
-      <div className="flex items-center gap-2 px-3 py-1.5 shrink-0">
+      <div className="flex items-center gap-2 px-3 py-1.5 min-w-0">
         <Globe className="w-3.5 h-3.5 shrink-0" style={{ color: "var(--text-muted)" }} />
-        <span className="text-[10px] font-semibold" style={{ color: "var(--text-muted)" }}>Viewing</span>
-        <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{label}</span>
+        <span className="text-[10px] font-semibold shrink-0" style={{ color: "var(--text-muted)" }}>Viewing</span>
+        <span className="text-sm font-semibold truncate" style={{ color: "var(--text-primary)" }}>{label}</span>
       </div>
     );
   }
@@ -152,11 +152,11 @@ export default function HierarchySelector() {
   const isEmpty = crumbs.length === 0;
 
   return (
-    <div ref={ref} className="relative shrink-0">
+    <div ref={ref} className="relative min-w-0">
       {/* ── Trigger button ────────────────────────────── */}
       <button
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all max-w-[260px] overflow-hidden"
+        className="flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all min-w-0 max-w-full overflow-hidden"
         style={{
           backgroundColor: open ? "var(--bg-surface-2)" : "var(--bg-input)",
           border: `1px solid ${open ? "var(--border)" : "transparent"}`,

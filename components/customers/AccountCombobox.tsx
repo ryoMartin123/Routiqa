@@ -12,13 +12,14 @@ interface Props {
   disabled?:    boolean;
   placeholder?: string;
   size?:        "sm" | "md";
+  dropUp?:      boolean;                // open the popup above the trigger
 }
 
 // Searchable account picker. Filters to the active company/location scope (a job
 // or lead belongs to a location), matches on name/phone/address/city, and can
 // offer a "create new account" escape hatch. Reused by the job + lead wizards.
 export default function AccountCombobox({
-  value, onChange, onCreateNew, disabled, placeholder = "Search accounts…", size = "md",
+  value, onChange, onCreateNew, disabled, placeholder = "Search accounts…", size = "md", dropUp = false,
 }: Props) {
   const { effectiveCompanyId, effectiveLocationId } = useHierarchy();
   const [open, setOpen]   = useState(false);
@@ -112,7 +113,7 @@ export default function AccountCombobox({
       {/* Popup */}
       {open && (
         <div
-          className="absolute left-0 right-0 z-50 mt-1.5 rounded-xl overflow-hidden"
+          className={`absolute left-0 right-0 z-50 rounded-xl overflow-hidden ${dropUp ? "bottom-full mb-1.5" : "mt-1.5"}`}
           style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "0 12px 32px rgba(0,0,0,0.16)" }}
         >
           {/* Search box */}

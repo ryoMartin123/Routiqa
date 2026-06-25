@@ -408,13 +408,13 @@ function OverviewTab({ id, onTab }: { id: string; onTab: (tab: string) => void }
         <div className="h-full flex flex-col gap-4">
           <OvCard title="Customer">
             {customer ? (
-              <Link href={`/customers/${customer.id}`} className="flex items-start gap-3 hover:opacity-80 transition-opacity">
+              <Link href={`/customers/${customer.id}`} className="group flex items-center gap-3 hover:opacity-80 transition-opacity">
                 <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-white text-[10px] font-bold shrink-0">{customer.initials}</div>
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                   <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{customer.name}</p>
                   {customer.phone && <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>{customer.phone}</p>}
-                  <p className="text-[10px] mt-1" style={{ color: "#4f46e5" }}>View account →</p>
                 </div>
+                <span className="text-[10px] shrink-0 whitespace-nowrap inline-flex items-center gap-0.5 transition-all group-hover:gap-1.5" style={{ color: "#4f46e5" }}>View account <span className="transition-transform group-hover:translate-x-0.5">→</span></span>
               </Link>
             ) : (
               <div className="flex items-center gap-3">

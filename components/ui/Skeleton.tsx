@@ -10,24 +10,26 @@ import { cn } from "@/lib/utils";
 
 // ─── Delay gate + minimum-visible hold ────────────────────
 // Two-sided anti-flash for skeleton fallbacks:
-//   • delay      — render nothing for the first `delay` ms. If the page is ready
-//     quickly the fallback unmounts before the timer fires, so a fast load never
-//     flashes a skeleton.
-//   • minVisible — ONCE the skeleton has appeared, guarantee it stays on screen
-//     for at least this long. A Next.js route `loading.tsx` fallback is unmounted
-//     the instant the page is ready, so we can't hold it in React; instead, on
-//     unmount we hand the rendered skeleton off to a lightweight DOM overlay that
-//     lingers for the remaining time and fades out. The result: a load that
-//     finishes just after `delay` still shows a calm skeleton for ~minVisible
-//     rather than a sub-frame flash. (Mirrors AppLoadingOverlay's self-control.)
+//   • delay      — render nothing for the first `delay` ms; a fast load unmounts
+//     the fallback before the timer fires, so it never flashes a skeleton.
+//   • minVisible — once the skeleton HAS appeared, keep it on screen for at least
+//     this long so a load that finishes just after `delay` doesn't sub-frame
+//     flash. Next unmounts a route `loading.tsx` the instant the page is ready, so
+//     we can't hold it in React; instead, on unmount we hand the rendered skeleton
+//     to a lightweight DOM overlay that lingers the remaining time and fades out.
+//
+// The overlay is anchored ONCE (frozen) over the page-content region — it does NOT
+// re-anchor per frame. The old live-tracking version drifted/jittered as the real
+// content mounted; freezing keeps it perfectly still, and since the content fills
+// the same region the fade is seamless.
 export function Delayed({
   delay = 200, minVisible = 600, fadeMs = 220, children,
 }: { delay?: number; minVisible?: number; fadeMs?: number; children: React.ReactNode }) {
   const [show, setShow] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const shownAtRef = useRef<number | null>(null);
-  // Bumped on every effect run; lets the deferred hand-off tell a real unmount
-  // from React StrictMode's mount→unmount→mount double-invoke in development.
+  // Bumped per effect run so the deferred hand-off can tell a real unmount from
+  // React StrictMode's mount→unmount→mount double-invoke in development.
   const runIdRef = useRef(0);
 
   useEffect(() => {
@@ -39,51 +41,31 @@ export function Delayed({
     if (!show) return;
     shownAtRef.current = Date.now();
     const runId = ++runIdRef.current;
-    // Snapshot the skeleton's static markup NOW, while it's mounted and laid out.
-    // We deliberately do NOT freeze its position: the `host` (page-content region)
-    // stays mounted across the loading→page swap, so the hand-off overlay measures
-    // it LIVE and tracks it every frame. That keeps the overlay glued to the
-    // content even when the layout shifts mid-hold — e.g. collapsing the sidebar
-    // (a 300ms width animation) or resizing the window — instead of floating at
-    // stale coordinates, which was the visible "glitch".
     const node = ref.current;
-    const host = node?.parentElement as HTMLElement | null;   // the page-content region (not the chrome)
+    const host = node?.parentElement as HTMLElement | null;   // the page-content region
     const html = node?.innerHTML ?? null;
-    const initialRect = host?.getBoundingClientRect();
-    const ok = !!(html && initialRect && initialRect.width > 0 && initialRect.height > 0);
     return () => {
       const shownAt = shownAtRef.current;
-      if (shownAt == null || !ok || !host) return;
+      if (shownAt == null || !html || !host) return;
       const remaining = minVisible - (Date.now() - shownAt);
-      if (remaining <= 0) return;            // already on screen long enough
-      // Defer one tick: if a new effect run bumps runId first, this was a
-      // StrictMode remount, not a teardown — skip the hand-off.
+      if (remaining <= 0) return;            // already shown long enough — clean swap
+      // Defer a tick: a runId bump means this was a StrictMode remount, not a real
+      // teardown — skip the hand-off.
       setTimeout(() => {
-        // Reading the *latest* runIdRef.current here is intentional — a bump means
-        // a StrictMode remount happened, so this teardown isn't real.
-        // eslint-disable-next-line react-hooks/exhaustive-deps
         if (runIdRef.current !== runId || typeof document === "undefined") return;
         try {
+          const rect = host.isConnected ? host.getBoundingClientRect() : null;
+          if (!rect || rect.width === 0 || rect.height === 0) return;
           const overlay = document.createElement("div");
           overlay.setAttribute("aria-hidden", "true");
-          overlay.style.cssText = `position:fixed;overflow:hidden;z-index:30;background:var(--bg-page);transition:opacity ${fadeMs}ms ease;pointer-events:none;`;
-          overlay.innerHTML = html!;
+          // Frozen at the region's current rect — anchored once, never re-measured,
+          // so it can't drift while the real content mounts behind it.
+          overlay.style.cssText = `position:fixed;top:${rect.top}px;left:${rect.left}px;width:${rect.width}px;height:${rect.height}px;overflow:hidden;z-index:30;background:var(--bg-page);transition:opacity ${fadeMs}ms ease;pointer-events:none;`;
+          overlay.innerHTML = html;
           document.body.appendChild(overlay);
-          // Re-anchor to the live content region every frame so the overlay follows
-          // any layout change while it's held (sidebar collapse/expand, resize).
-          let raf = 0;
-          const place = () => {
-            const rect = host.isConnected ? host.getBoundingClientRect() : initialRect!;
-            overlay.style.top = `${rect.top}px`;
-            overlay.style.left = `${rect.left}px`;
-            overlay.style.width = `${rect.width}px`;
-            overlay.style.height = `${rect.height}px`;
-            raf = requestAnimationFrame(place);
-          };
-          place();
           window.setTimeout(() => {
             overlay.style.opacity = "0";
-            window.setTimeout(() => { cancelAnimationFrame(raf); overlay.remove(); }, fadeMs);
+            window.setTimeout(() => overlay.remove(), fadeMs);
           }, remaining);
         } catch { /* best-effort hold */ }
       }, 0);
@@ -91,8 +73,8 @@ export function Delayed({
   }, [show, minVisible, fadeMs]);
 
   if (!show) return null;
-  // display:contents — the wrapper gives us a ref to snapshot on hand-off without
-  // generating a box, so the skeleton's own layout (e.g. h-full) is unaffected.
+  // display:contents — gives a ref to snapshot on hand-off without generating a box,
+  // so the skeleton's own layout (e.g. h-full) is unaffected.
   return <div ref={ref} style={{ display: "contents" }}>{children}</div>;
 }
 
@@ -204,6 +186,67 @@ export function CardGridSkeleton({ count = 8, minWidth = 220 }: { count?: number
           <div className="p-4 space-y-2">
             <Skeleton className="h-3.5 w-2/3 rounded" />
             <Skeleton className="h-3 w-1/2 rounded" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// Big "command-center" project cards (Projects → Cards, the default view):
+// accent strip, title + health pill, type/stage chips, progress bar, a next-step
+// box, a 2×2 meta grid, and a team/footer row. Mirrors ProjectCards' layout.
+export function ProjectCardsSkeleton({ count = 6 }: { count?: number }) {
+  return (
+    <div className="grid gap-3 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
+      {Array.from({ length: count }).map((_, i) => (
+        <div key={i} className="rounded-xl overflow-hidden flex flex-col" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+          <Skeleton className="h-[3px] rounded-none" />
+          <div className="p-4 flex-1">
+            {/* Title + health pill */}
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0 flex-1 space-y-2">
+                <Skeleton className="h-3.5 w-2/3 rounded" />
+                <Skeleton className="h-3 w-1/2 rounded" />
+              </div>
+              <Skeleton className="h-4 w-16 rounded-full shrink-0" />
+            </div>
+            {/* Type + stage chips */}
+            <div className="flex items-center gap-1.5 mt-3">
+              <Skeleton className="h-4 w-16 rounded" />
+              <Skeleton className="h-4 w-20 rounded" />
+            </div>
+            {/* Progress */}
+            <div className="mt-4 space-y-1.5">
+              <div className="flex items-center justify-between">
+                <Skeleton className="h-2.5 w-20 rounded" />
+                <Skeleton className="h-2.5 w-8 rounded" />
+              </div>
+              <Skeleton className="h-1.5 w-full rounded-full" />
+            </div>
+            {/* Next-step box */}
+            <Skeleton className="h-9 w-full rounded-lg mt-4" />
+            {/* Meta grid 2×2 */}
+            <div className="grid grid-cols-2 gap-x-3 gap-y-3 mt-4">
+              {Array.from({ length: 4 }).map((_, m) => (
+                <div key={m} className="flex items-center gap-1.5">
+                  <SkeletonCircle size={14} />
+                  <div className="flex-1 space-y-1">
+                    <Skeleton className="h-2 w-10 rounded" />
+                    <Skeleton className="h-2.5 w-12 rounded" />
+                  </div>
+                </div>
+              ))}
+            </div>
+            {/* Footer — team avatars + open */}
+            <div className="flex items-center justify-between mt-4 pt-3" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+              <div className="flex -space-x-1.5">
+                <SkeletonCircle size={24} />
+                <SkeletonCircle size={24} />
+                <SkeletonCircle size={24} />
+              </div>
+              <Skeleton className="h-3.5 w-12 rounded" />
+            </div>
           </div>
         </div>
       ))}

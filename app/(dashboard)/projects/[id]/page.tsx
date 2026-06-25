@@ -2,13 +2,15 @@
 
 import { use, useState, Suspense } from "react";
 import Link from "next/link";
-import { ArrowLeft, Pencil, CheckCircle, Circle, ChevronRight, MapPin, User, Calendar, DollarSign, Clock, Plus, Trash2, AlertCircle } from "lucide-react";
-import { getProject, getProjectTasks, getProjectProgress, deleteProject, PROJECT_TYPE_LABELS } from "@/lib/projects/data";
+import { ArrowLeft, Pencil, Circle, ChevronRight, MapPin, User, Calendar, DollarSign, Clock, Plus, Trash2, AlertCircle, Tag, Activity, Briefcase, ShoppingCart, Building2, UserCog, HardHat, Package, TrendingUp } from "lucide-react";
+import { getProject, getProjectProgress, deleteProject, PROJECT_TYPE_LABELS } from "@/lib/projects/data";
+import { getTasksForProject } from "@/lib/tasks/data";
+import RecordTasks from "@/components/tasks/RecordTasks";
+import { getProjectVendorLinks, assignmentsForProject, posForProject, materialRequestsForProject, poSubtotal } from "@/lib/inventory/data";
 import ActionsMenu from "@/components/shared/ActionsMenu";
-import ProjectPhases from "@/components/projects/ProjectPhases";
 import EditProjectModal from "@/components/projects/EditProjectModal";
 import JobWizard from "@/components/jobs/JobWizard";
-import { phaseProgress, getPhases } from "@/lib/projects/phases";
+import { mapProgress } from "@/lib/projects/map";
 import { getProjectStages } from "@/lib/projects/settings";
 import { getJobsForProject, JOB_STATUS_CONFIG } from "@/lib/jobs/data";
 import StatusBadge from "@/components/shared/StatusBadge";
@@ -22,8 +24,11 @@ import QuoteTypeChooser from "@/components/quotes/create/QuoteTypeChooser";
 import PhotoGallery from "@/components/files/PhotoGallery";
 import DetailTabs from "@/components/shared/DetailTabs";
 import ProjectMaterialsVendors from "@/components/projects/ProjectMaterialsVendors";
+import ProjectMap from "@/components/projects/ProjectMap";
+import ProjectBudget from "@/components/projects/ProjectBudget";
+import ProjectActivity from "@/components/projects/ProjectActivity";
 
-const TABS = ["Overview", "Phases", "Jobs", "Tasks", "Materials & Vendors", "Photos & Files", "Scope", "Estimates", "Invoices", "Notes", "Timeline"];
+const TABS = ["Overview", "Map", "Jobs", "Tasks", "Materials & Vendors", "Budget", "Photos & Files", "Scope", "Estimates", "Invoices", "Notes", "Timeline"];
 
 // Link to a job opened from this project — carries ?back so the job's Back button
 // returns to this project's Jobs tab instead of the global Jobs list.
@@ -32,27 +37,36 @@ function jobHrefFromProject(jobId: string, projectId: string, projectName: strin
   return `/jobs/${jobId}?back=${back}&backLabel=${encodeURIComponent(projectName)}`;
 }
 
-// ─── Current-phase summary (Overview) ─────────────────────
-// Compact read-out of where the project is; the full editable stepper lives on
-// the Phases tab.
-function PhaseSummary({ projectId, onOpenPhases }: { projectId: string; onOpenPhases?: () => void }) {
-  const phases = getPhases(projectId);
-  const prog = phaseProgress(projectId);
-  const current = phases.find(p => p.status === "in_progress") ?? phases.find(p => p.status === "upcoming");
-  const allDone = phases.length > 0 && prog.done === prog.total;
+// Minimal accent action — matches the Request Materials / Add Vendor buttons in
+// Materials & Vendors (tinted circular + chip, no heavy fill).
+function MiniAction({ onClick, children }: { onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button onClick={onClick} className="group flex items-center gap-1.5 text-xs font-medium transition-colors" style={{ color: "#4f46e5" }}>
+      <span className="w-4 h-4 rounded-full flex items-center justify-center transition-all group-hover:brightness-95" style={{ backgroundColor: "#4f46e51a" }}><Plus className="w-3 h-3" /></span>
+      {children}
+    </button>
+  );
+}
+
+// ─── Workflow summary (Overview) ──────────────────────────
+// Compact read-out of where the project is, driven by the Map (the source of
+// truth). Links to the full Map tab.
+function WorkflowSummary({ projectId, onOpenMap }: { projectId: string; onOpenMap?: () => void }) {
+  const prog = mapProgress(projectId);
+  const allDone = prog.total > 0 && prog.done === prog.total;
   return (
     <div className="rounded-xl p-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
       <div className="flex items-center justify-between mb-2">
-        <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>Current Phase</p>
-        {onOpenPhases && (
-          <button onClick={onOpenPhases} className="text-[11px] font-medium hover:underline" style={{ color: "var(--accent-text)" }}>View phases →</button>
+        <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>Workflow Progress</p>
+        {onOpenMap && (
+          <button onClick={onOpenMap} className="text-[11px] font-medium hover:underline" style={{ color: "var(--accent-text)" }}>View map →</button>
         )}
       </div>
-      {phases.length === 0 ? (
-        <p className="text-sm" style={{ color: "var(--text-muted)" }}>No phases yet — set them up on the Phases tab.</p>
+      {prog.total === 0 ? (
+        <p className="text-sm" style={{ color: "var(--text-muted)" }}>No workflow steps yet.</p>
       ) : (
         <>
-          <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{allDone ? "All phases complete" : current?.name ?? "—"}</p>
+          <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{allDone ? "All steps complete" : `${prog.done} of ${prog.total} steps done`}</p>
           <div className="flex items-center gap-2 mt-2">
             <div className="flex-1 h-1.5 rounded-full" style={{ backgroundColor: "var(--bg-input)" }}>
               <div className="h-1.5 rounded-full" style={{ width: `${prog.pct}%`, backgroundColor: allDone ? "#10b981" : "#4f46e5" }} />
@@ -65,69 +79,103 @@ function PhaseSummary({ projectId, onOpenPhases }: { projectId: string; onOpenPh
   );
 }
 
-// ─── Phases tab ───────────────────────────────────────────
-function PhasesTab({ projectId, onChange }: { projectId: string; onChange?: () => void }) {
-  return <ProjectPhases projectId={projectId} onChange={onChange} />;
-}
-
 // ─── Overview tab ─────────────────────────────────────────
-function OverviewTab({ projectId, onChange, onOpenPhases }: { projectId: string; onChange?: () => void; onOpenPhases?: () => void }) {
+// Summary stat cards + a read-only details grid — same shape as the Customer /
+// Agreement overviews, with a Materials & Vendors KPI (Inventory owns the
+// masters; the project links to them).
+const money = (n: number) => `$${n.toLocaleString()}`;
+const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
+function OverviewTab({ projectId, onOpenMap, onOpenTab }: { projectId: string; onOpenMap?: () => void; onOpenTab: (t: string) => void }) {
   const project  = getProject(projectId)!;
   const jobs     = getJobsForProject(projectId);
-  const tasks    = getProjectTasks(projectId);
-  const openTasks = tasks.filter(t => !t.isComplete);
+  const tasks    = getTasksForProject(projectId);
+  const openTasks = tasks.filter(t => t.status !== "completed");
+
+  const stageDef = getProjectStages({ companyId: project.companyId, locationId: project.locationId }).find(st => st.key === project.stage);
+  const jobProg = getProjectProgress(projectId);
+  const prog = mapProgress(projectId);
+  const pct = prog.pct;
+  const progLabel = `${prog.done}/${prog.total} steps`;
+
+  // Materials & Vendors KPIs.
+  const links = getProjectVendorLinks(projectId);
+  const assignments = assignmentsForProject(projectId);
+  const pos = posForProject(projectId);
+  const requests = materialRequestsForProject(projectId);
+  const committed =
+    links.reduce((s, l) => s + (l.amountCommitted ?? 0), 0) +
+    assignments.reduce((s, a) => s + (a.contractAmount ?? 0), 0) +
+    pos.reduce((s, p) => s + poSubtotal(p), 0);
 
   return (
-    <div className="grid grid-cols-3 gap-6">
-      {/* Left: phase summary + project details */}
-      <div className="space-y-4">
-        <PhaseSummary projectId={projectId} onOpenPhases={onOpenPhases} />
-
-        <div className="rounded-xl p-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
-          <p className="text-[10px] font-semibold uppercase tracking-widest mb-3" style={{ color: "var(--text-muted)" }}>Project Info</p>
-          <div className="space-y-2.5">
-            {[
-              { label: "Type",        value: PROJECT_TYPE_LABELS[project.type] },
-              { label: "Priority",    value: project.priority.charAt(0).toUpperCase() + project.priority.slice(1) },
-              { label: "Assigned To", value: project.assignedTo },
-              { label: "Start Date",  value: project.startDate ?? "—" },
-              { label: "Target Date", value: project.targetDate ?? "—" },
-              { label: "Branch",      value: project.locationName },
-            ].map(({ label, value }) => (
-              <div key={label} className="flex justify-between">
-                <span className="text-xs" style={{ color: "var(--text-muted)" }}>{label}</span>
-                <span className="text-xs font-semibold" style={{ color: "var(--text-primary)" }}>{value}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {project.estimatedValue && (
-          <div className="rounded-xl p-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>
-            <p className="text-[10px] font-semibold uppercase tracking-widest mb-2" style={{ color: "var(--text-muted)" }}>Value</p>
-            <p className="text-xl font-bold" style={{ color: "var(--text-primary)" }}>{project.estimatedValue}</p>
-            <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>Estimated</p>
-          </div>
-        )}
-
-        {project.propertyAddress && (
-          <div className="rounded-xl p-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>
-            <p className="text-[10px] font-semibold uppercase tracking-widest mb-2" style={{ color: "var(--text-muted)" }}>Property</p>
-            <p className="text-sm" style={{ color: "var(--text-primary)" }}>{project.propertyAddress}</p>
-          </div>
-        )}
+    <div className="flex flex-col gap-5 h-full min-h-0">
+      {/* Summary cards */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+        <Stat icon={Activity}     label="Stage"          value={stageDef?.name ?? "—"} accent={stageDef?.color} sub={PROJECT_TYPE_LABELS[project.type]} />
+        <Stat icon={TrendingUp}   label="Progress"       value={`${pct}%`} sub={progLabel} />
+        <Stat icon={DollarSign}   label="Value"          value={project.estimatedValue || "—"} sub="Estimated" />
+        <Stat icon={Briefcase}    label="Jobs"           value={`${jobProg.completed}/${jobProg.total || jobs.length}`} sub="completed" />
+        <Stat icon={ShoppingCart} label="Committed Cost" value={money(committed)} accent="#10b981" sub={`${pos.length} PO${pos.length === 1 ? "" : "s"} · ${assignments.length} sub${assignments.length === 1 ? "" : "s"}`} />
+        <Stat icon={Calendar}     label="Target Date"    value={project.targetDate ?? "—"} sub={project.startDate ? `Start ${project.startDate}` : undefined} />
       </div>
 
-      {/* Right: jobs + tasks */}
-      <div className="col-span-2 space-y-4">
-
-        {/* Jobs summary */}
-        <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
-          <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
-            <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Jobs</p>
-            <Link href={`/projects/${projectId}?tab=Jobs`} className="text-xs font-medium text-indigo-600 hover:text-indigo-700">View all</Link>
+      {/* Details + side */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <DCard className="p-4 lg:col-span-2">
+          <DLabel>Project Details</DLabel>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 mt-3">
+            <DRow icon={Tag}       label="Type" value={PROJECT_TYPE_LABELS[project.type]} />
+            <DRow icon={Activity}  label="Priority" value={cap(project.priority)} />
+            <DRow icon={User}      label="Customer / Account" value={project.customerName} />
+            <DRow icon={MapPin}    label="Property" value={project.propertyAddress ?? "—"} />
+            <DRow icon={Building2} label="Branch" value={project.locationName} />
+            <DRow icon={UserCog}   label="Assigned To" value={project.assignedTo} />
+            <DRow icon={Calendar}  label="Start Date" value={project.startDate ?? "—"} />
+            <DRow icon={Calendar}  label="Target Date" value={project.targetDate ?? "—"} />
           </div>
-          {jobs.map((job, i) => {
+          {project.scope && (
+            <div className="mt-4 pt-3" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+              <DLabel>Scope</DLabel>
+              <p className="text-sm mt-2 whitespace-pre-line line-clamp-4" style={{ color: "var(--text-secondary)" }}>{project.scope}</p>
+            </div>
+          )}
+        </DCard>
+
+        <div className="flex flex-col gap-4">
+          <WorkflowSummary projectId={projectId} onOpenMap={onOpenMap} />
+
+          {/* Materials & Vendors KPI */}
+          <DCard className="p-4">
+            <div className="flex items-center justify-between mb-3">
+              <DLabel>Materials &amp; Vendors</DLabel>
+              <button onClick={() => onOpenTab("Materials & Vendors")} className="text-[11px] font-medium hover:underline" style={{ color: "var(--accent-text)" }}>View →</button>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <MiniKpi icon={Building2}    label="Vendors" value={links.length} />
+              <MiniKpi icon={HardHat}      label="Subcontractors" value={assignments.length} />
+              <MiniKpi icon={ShoppingCart} label="Purchase Orders" value={pos.length} />
+              <MiniKpi icon={Package}      label="Material Requests" value={requests.length} />
+            </div>
+            <div className="flex items-center justify-between mt-3 pt-3" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+              <span className="text-xs" style={{ color: "var(--text-muted)" }}>Committed cost</span>
+              <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{money(committed)}</span>
+            </div>
+          </DCard>
+        </div>
+      </div>
+
+      {/* Jobs + tasks — fills the remaining height; lists scroll internally */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 flex-1 min-h-0">
+        <DCard className="lg:col-span-2 overflow-hidden flex flex-col min-h-0">
+          <div className="flex items-center justify-between px-4 py-3 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+            <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Jobs</p>
+            <button onClick={() => onOpenTab("Jobs")} className="text-xs font-medium" style={{ color: "var(--accent-text)" }}>View all</button>
+          </div>
+          <div className="flex-1 overflow-y-auto min-h-0">
+          {jobs.length === 0 ? (
+            <p className="px-4 py-8 text-center text-sm" style={{ color: "var(--text-muted)" }}>No jobs on this project yet.</p>
+          ) : jobs.map((job, i) => {
             const js = JOB_STATUS_CONFIG[job.status];
             return (
               <Link key={job.id} href={jobHrefFromProject(job.id, projectId, project.name)}
@@ -144,26 +192,70 @@ function OverviewTab({ projectId, onChange, onOpenPhases }: { projectId: string;
               </Link>
             );
           })}
-        </div>
-
-        {/* Open tasks */}
-        {openTasks.length > 0 && (
-          <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>
-            <div className="px-4 py-3" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
-              <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Open Tasks ({openTasks.length})</p>
-            </div>
-            {openTasks.map((task, i) => (
-              <div key={task.id} className="flex items-center justify-between px-4 py-2.5"
-                style={i < openTasks.length - 1 ? { borderBottom: "1px solid var(--border-subtle)" } : undefined}>
-                <div className="flex items-center gap-2.5">
-                  <Circle className="w-4 h-4 shrink-0" style={{ color: "var(--border)" }} />
-                  <span className="text-sm" style={{ color: "var(--text-primary)" }}>{task.title}</span>
-                </div>
-                {task.dueDate && <span className="text-xs" style={{ color: "var(--text-muted)" }}>{task.dueDate}</span>}
-              </div>
-            ))}
           </div>
-        )}
+        </DCard>
+
+        <DCard className="overflow-hidden flex flex-col min-h-0">
+          <div className="px-4 py-3 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+            <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Open Tasks ({openTasks.length})</p>
+          </div>
+          <div className="flex-1 overflow-y-auto min-h-0">
+          {openTasks.length === 0 ? (
+            <p className="px-4 py-8 text-center text-sm" style={{ color: "var(--text-muted)" }}>No open tasks.</p>
+          ) : openTasks.map((task, i) => (
+            <div key={task.id} className="flex items-center justify-between px-4 py-2.5"
+              style={i < openTasks.length - 1 ? { borderBottom: "1px solid var(--border-subtle)" } : undefined}>
+              <div className="flex items-center gap-2.5 min-w-0">
+                <Circle className="w-4 h-4 shrink-0" style={{ color: "var(--border)" }} />
+                <span className="text-sm truncate" style={{ color: "var(--text-primary)" }}>{task.title}</span>
+              </div>
+              {task.dueDate && <span className="text-xs shrink-0" style={{ color: "var(--text-muted)" }}>{task.dueDate}</span>}
+            </div>
+          ))}
+          </div>
+        </DCard>
+      </div>
+    </div>
+  );
+}
+
+// ─── Overview presentational primitives (match Customer/Agreement overviews) ──
+function Stat({ icon: Icon, label, value, sub, accent }: { icon: typeof Activity; label: string; value: React.ReactNode; sub?: string; accent?: string }) {
+  return (
+    <div className="rounded-xl p-3.5" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+      <div className="flex items-center gap-1.5 mb-1.5">
+        <Icon className="w-3.5 h-3.5" style={{ color: accent ?? "var(--text-muted)" }} />
+        <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>{label}</p>
+      </div>
+      <p className="text-base font-bold leading-tight truncate" style={{ color: accent ?? "var(--text-primary)" }}>{value}</p>
+      {sub && <p className="text-[11px] mt-0.5 truncate" style={{ color: "var(--text-muted)" }}>{sub}</p>}
+    </div>
+  );
+}
+function DCard({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+  return <div className={`rounded-xl ${className}`} style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>{children}</div>;
+}
+function DLabel({ children }: { children: React.ReactNode }) {
+  return <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>{children}</p>;
+}
+function DRow({ icon: Icon, label, value }: { icon?: typeof Activity; label: string; value: React.ReactNode }) {
+  return (
+    <div className="flex items-start gap-2.5">
+      {Icon && <Icon className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: "var(--text-muted)" }} />}
+      <div className="min-w-0 flex-1">
+        <p className="text-[10px]" style={{ color: "var(--text-muted)" }}>{label}</p>
+        <p className="text-sm font-medium break-words" style={{ color: "var(--text-primary)" }}>{value || "—"}</p>
+      </div>
+    </div>
+  );
+}
+function MiniKpi({ icon: Icon, label, value }: { icon: typeof Activity; label: string; value: number }) {
+  return (
+    <div className="rounded-lg px-2.5 py-2 flex items-center gap-2" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border-subtle)" }}>
+      <Icon className="w-3.5 h-3.5 shrink-0" style={{ color: "var(--text-muted)" }} />
+      <div className="min-w-0">
+        <p className="text-base font-bold leading-none" style={{ color: "var(--text-primary)" }}>{value}</p>
+        <p className="text-[10px] truncate" style={{ color: "var(--text-muted)" }}>{label}</p>
       </div>
     </div>
   );
@@ -185,10 +277,7 @@ function JobsTab({ projectId }: { projectId: string }) {
       )}
       <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
         <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Jobs ({jobs.length})</p>
-        <button onClick={() => setWizard(true)} className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg"
-          style={{ backgroundColor: "#4f46e5", color: "#fff" }}>
-          <Plus className="w-3.5 h-3.5" /> Add Job
-        </button>
+        <MiniAction onClick={() => setWizard(true)}>Add Job</MiniAction>
       </div>
       {jobs.length === 0 ? (
         <div className="px-4 py-10 text-center"><p className="text-sm" style={{ color: "var(--text-muted)" }}>No jobs on this project yet.</p></div>
@@ -220,40 +309,8 @@ function JobsTab({ projectId }: { projectId: string }) {
 }
 
 // ─── Tasks tab ────────────────────────────────────────────
-function TasksTab({ projectId }: { projectId: string }) {
-  const tasks = getProjectTasks(projectId);
-  const [items, setItems] = useState(tasks);
-
-  function toggle(id: string) {
-    setItems(prev => prev.map(t => t.id === id ? { ...t, isComplete: !t.isComplete } : t));
-  }
-
-  if (items.length === 0) return <StubContent label="No tasks for this project." />;
-  return (
-    <div className="max-w-xl space-y-2">
-      {items.map(task => (
-        <button key={task.id} onClick={() => toggle(task.id)}
-          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left hover:bg-[var(--bg-surface-2)] transition-colors"
-          style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>
-          {task.isComplete
-            ? <CheckCircle className="w-5 h-5 shrink-0 text-emerald-500" />
-            : <Circle      className="w-5 h-5 shrink-0" style={{ color: "var(--border)" }} />}
-          <div className="flex-1 min-w-0">
-            <span className={task.isComplete ? "line-through" : ""} style={{ color: task.isComplete ? "var(--text-muted)" : "var(--text-primary)", fontSize: "0.875rem" }}>
-              {task.title}
-            </span>
-            {(task.dueDate || task.assignedTo) && (
-              <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
-                {[task.dueDate, task.assignedTo].filter(Boolean).join(" · ")}
-              </p>
-            )}
-          </div>
-        </button>
-      ))}
-    </div>
-  );
-}
-
+// Project tasks come from the central tasks store (so anything created here — or
+// linked to the project elsewhere — shows up). Create + complete inline.
 // ─── Scope tab ────────────────────────────────────────────
 function ScopeTab({ projectId }: { projectId: string }) {
   const project = getProject(projectId)!;
@@ -279,17 +336,14 @@ function ProjectEstimatesTab({ projectId }: { projectId: string }) {
   const quotes  = getQuotesForProject(projectId);
 
   return (
-    <div className="rounded-xl overflow-hidden max-w-3xl" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+    <div className="rounded-xl overflow-hidden w-full" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
       {wizard && (
         <QuoteTypeChooser preset={{ customerId: project.accountId, projectId, lockCustomer: true }}
           onClose={() => setWizard(false)} />
       )}
       <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
         <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Estimates ({quotes.length})</p>
-        <button onClick={() => setWizard(true)} className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg"
-          style={{ backgroundColor: "#4f46e5", color: "#fff" }}>
-          <Plus className="w-3.5 h-3.5" /> New Quote
-        </button>
+        <MiniAction onClick={() => setWizard(true)}>New Quote</MiniAction>
       </div>
       {quotes.length === 0 ? (
         <div className="px-4 py-10 text-center"><p className="text-sm" style={{ color: "var(--text-muted)" }}>No estimates for this project yet.</p></div>
@@ -320,7 +374,7 @@ function ProjectInvoicesTab({ projectId }: { projectId: string }) {
   const invoices = getInvoicesForProject(projectId);
 
   return (
-    <div className="rounded-xl overflow-hidden max-w-3xl" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+    <div className="rounded-xl overflow-hidden w-full" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
       {wizard && (
         <InvoiceWizard preset={{ customerId: project.accountId, projectId, lockCustomer: true }}
           onClose={() => setWizard(false)}
@@ -328,10 +382,7 @@ function ProjectInvoicesTab({ projectId }: { projectId: string }) {
       )}
       <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
         <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Invoices ({invoices.length})</p>
-        <button onClick={() => setWizard(true)} className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg"
-          style={{ backgroundColor: "#4f46e5", color: "#fff" }}>
-          <Plus className="w-3.5 h-3.5" /> New Invoice
-        </button>
+        <MiniAction onClick={() => setWizard(true)}>New Invoice</MiniAction>
       </div>
       {invoices.length === 0 ? (
         <div className="px-4 py-10 text-center"><p className="text-sm" style={{ color: "var(--text-muted)" }}>No invoices for this project yet.</p></div>
@@ -386,15 +437,10 @@ function ProjectDetailContent({ params }: { params: Promise<{ id: string }> }) {
     );
   }
 
-  // Stage is the source of truth — show it as the badge.
-  const stageDef = getProjectStages({ companyId: project.companyId, locationId: project.locationId }).find(st => st.key === project.stage);
-  // Prefer phase progress (the new milestone model); fall back to jobs when a
-  // project has no phases yet.
-  const ph       = phaseProgress(id);
-  const jobProg  = getProjectProgress(id);
-  const usePhases = ph.total > 0;
-  const pct      = usePhases ? ph.pct : (jobProg.total > 0 ? Math.round((jobProg.completed / jobProg.total) * 100) : 0);
-  const progLabel = usePhases ? `${ph.done}/${ph.total} phases` : `${jobProg.completed}/${jobProg.total} jobs`;
+  // Progress is driven by the project Map (the single source of truth).
+  const prog     = mapProgress(id);
+  const pct      = prog.pct;
+  const progLabel = `${prog.done}/${prog.total} steps`;
 
   return (
     <div className="flex flex-col h-full">
@@ -409,7 +455,6 @@ function ProjectDetailContent({ params }: { params: Promise<{ id: string }> }) {
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <h1 className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>{project.name}</h1>
-                <StatusBadge label={stageDef?.name ?? "—"} color={stageDef?.color ?? "#6b7280"} />
               </div>
               <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
                 {project.customerName} · {progLabel} complete · {pct}%
@@ -429,17 +474,18 @@ function ProjectDetailContent({ params }: { params: Promise<{ id: string }> }) {
       </div>
 
       <div className="flex-1 overflow-y-auto p-6" style={{ backgroundColor: "var(--bg-page)" }}>
-        {tab === "Overview"      && <OverviewTab projectId={id} onChange={() => setRefreshKey(k => k + 1)} onOpenPhases={() => setTab("Phases")} />}
-        {tab === "Phases"        && <PhasesTab   projectId={id} onChange={() => setRefreshKey(k => k + 1)} />}
+        {tab === "Overview"      && <OverviewTab projectId={id} onOpenMap={() => setTab("Map")} onOpenTab={setTab} />}
+        {tab === "Map"           && <ProjectMap projectId={id} onOpenTab={setTab} />}
         {tab === "Jobs"          && <JobsTab     projectId={id} />}
-        {tab === "Tasks"         && <TasksTab    projectId={id} />}
+        {tab === "Tasks"         && <RecordTasks type="project" id={id} />}
         {tab === "Materials & Vendors" && <ProjectMaterialsVendors projectId={id} projectName={project.name} />}
+        {tab === "Budget"        && <ProjectBudget projectId={id} />}
         {tab === "Scope"         && <ScopeTab    projectId={id} />}
         {tab === "Photos & Files"&& <PhotoGallery recordLevel="project" scope={{ accountId: project.accountId, projectId: id }} accountName={project.customerName} />}
         {tab === "Estimates"     && <ProjectEstimatesTab projectId={id} />}
         {tab === "Invoices"      && <ProjectInvoicesTab projectId={id} />}
         {tab === "Notes"         && <StubTab label="Notes" />}
-        {tab === "Timeline"      && <StubTab label="Timeline" />}
+        {tab === "Timeline"      && <ProjectActivity projectId={id} />}
       </div>
 
       {editing && (

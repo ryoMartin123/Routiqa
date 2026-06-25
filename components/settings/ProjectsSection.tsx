@@ -6,19 +6,19 @@ import UiSelect from "@/components/ui/Select";
 import { useScopedSetting } from "@/lib/settings-scope/useScopedSetting";
 import InheritanceChip from "@/components/settings/InheritanceChip";
 import { useRegisterSaveAction } from "@/components/settings/SettingsActions";
+import ProjectMapsEditor from "@/components/settings/ProjectMapsEditor";
 import {
   PROJECT_STAGES_KEY, DEFAULT_PROJECT_STAGES, reorderProjectStages, PROJECT_STAGE_COLORS, newProjectStageId, slugify,
   PROJECT_TYPES_KEY, DEFAULT_PROJECT_TYPES,
-  PROJECT_TEMPLATES_KEY, DEFAULT_PROJECT_TEMPLATES, newProjectTemplateId,
   PROJECT_DEFAULTS_KEY, DEFAULT_PROJECT_DEFAULTS,
-  type ProjectStage, type ProjectStageCategory, type ProjectTypeOption, type ProjectTemplate, type ProjectDefaults,
+  type ProjectStage, type ProjectStageCategory, type ProjectTypeOption, type ProjectDefaults,
 } from "@/lib/projects/settings";
 
 const SUBTABS = [
-  { key: "stages",    label: "Stages" },
-  { key: "types",     label: "Types" },
-  { key: "templates", label: "Templates" },
-  { key: "defaults",  label: "Defaults" },
+  { key: "stages",   label: "Stages" },
+  { key: "types",    label: "Types" },
+  { key: "maps",     label: "Maps" },
+  { key: "defaults", label: "Defaults" },
 ] as const;
 type SubTab = typeof SUBTABS[number]["key"];
 
@@ -43,7 +43,7 @@ export default function ProjectsSection() {
       <div>
         <h2 className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>Projects</h2>
         <p className="text-sm mt-0.5" style={{ color: "var(--text-secondary)" }}>
-          Customize the project pipeline, types, templates, and defaults. These drive the Projects board and the new-project wizard.
+          Customize the project pipeline, types, map workflows, and defaults. These drive the Projects board, the project Map, and the new-project wizard.
         </p>
       </div>
 
@@ -66,10 +66,10 @@ export default function ProjectsSection() {
       </div>
 
       {/* Only the active editor is mounted, so only its Save action registers. */}
-      {sub === "stages"    && <StagesEditor />}
-      {sub === "types"     && <TypesEditor />}
-      {sub === "templates" && <TemplatesEditor />}
-      {sub === "defaults"  && <DefaultsEditor />}
+      {sub === "stages"   && <StagesEditor />}
+      {sub === "types"    && <TypesEditor />}
+      {sub === "maps"     && <ProjectMapsEditor />}
+      {sub === "defaults" && <DefaultsEditor />}
     </div>
   );
 }
@@ -249,52 +249,6 @@ function TypesEditor() {
             </div>
           </div>
         ))}
-      </div>
-    </div>
-  );
-}
-
-// ─── Templates ────────────────────────────────────────────
-function TemplatesEditor() {
-  const scoped = useScopedSetting<ProjectTemplate[]>(PROJECT_TEMPLATES_KEY, DEFAULT_PROJECT_TEMPLATES);
-  const typesScoped = useScopedSetting<ProjectTypeOption[]>(PROJECT_TYPES_KEY, DEFAULT_PROJECT_TYPES);
-  const [templates, setTemplates] = useState<ProjectTemplate[]>(DEFAULT_PROJECT_TEMPLATES);
-  const [saved, setSaved] = useState(false);
-  const [baseline, setBaseline] = useState(() => JSON.stringify(DEFAULT_PROJECT_TEMPLATES));
-
-  useEffect(() => { setTemplates(scoped.value); setBaseline(JSON.stringify(scoped.value)); }, [scoped.value]);
-  const dirty = JSON.stringify(templates) !== baseline;
-
-  const typeOpts = [{ value: "", label: "No default type" }, ...typesScoped.value.filter(t => t.active).map(t => ({ value: t.key, label: t.label }))];
-
-  function addTemplate() { setTemplates(prev => [...prev, { id: newProjectTemplateId(), name: "New Template", phases: [] }]); setSaved(false); }
-  function patch(id: string, p: Partial<ProjectTemplate>) { setTemplates(prev => prev.map(t => t.id === id ? { ...t, ...p } : t)); setSaved(false); }
-  function handleSave() { scoped.save(templates); setBaseline(JSON.stringify(templates)); setSaved(true); setTimeout(() => setSaved(false), 2000); }
-  useRegisterSaveAction({ dirty, saved, onSave: handleSave });
-
-  return (
-    <div className="space-y-4">
-      <InheritanceChip source={scoped.source} isOverride={scoped.isOverride} parentSource={scoped.parentSource} onOverride={scoped.override} onReset={scoped.reset} />
-      {dirty && <div className="rounded-lg px-3 py-2 text-xs" style={{ backgroundColor: "#fef3c7", color: "#92400e" }}>You have unsaved changes.</div>}
-      <div className="flex justify-end">
-        <button onClick={addTemplate} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-white" style={{ backgroundColor: "#4f46e5" }}><Plus className="w-3.5 h-3.5" /> Add Template</button>
-      </div>
-      <div className="space-y-3">
-        {templates.map(t => (
-          <div key={t.id} className="rounded-xl p-4 space-y-3" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
-            <div className="flex items-center gap-3">
-              <input value={t.name} onChange={e => patch(t.id, { name: e.target.value })} className={inputCls} style={inputStyle} placeholder="Template name" />
-              <div className="w-48 shrink-0"><UiSelect value={t.typeKey ?? ""} onChange={v => patch(t.id, { typeKey: v || undefined })} options={typeOpts} /></div>
-              <button onClick={() => { setTemplates(prev => prev.filter(x => x.id !== t.id)); setSaved(false); }} className="p-2 rounded-lg hover:bg-red-50 shrink-0" style={{ color: "#9ca3af" }}><Trash2 className="w-4 h-4" /></button>
-            </div>
-            <div>
-              <label className="block text-xs font-medium mb-1" style={{ color: "var(--text-secondary)" }}>Phases <span style={{ color: "var(--text-muted)" }}>(one per line)</span></label>
-              <textarea value={t.phases.join("\n")} onChange={e => patch(t.id, { phases: e.target.value.split("\n").map(s => s.trim()).filter(Boolean) })}
-                rows={Math.max(3, t.phases.length + 1)} className={`${inputCls} resize-none`} style={inputStyle} placeholder={"Site survey\nRough-in\nInstall\nFinal QA"} />
-            </div>
-          </div>
-        ))}
-        {templates.length === 0 && <p className="text-sm text-center py-6" style={{ color: "var(--text-muted)" }}>No templates yet.</p>}
       </div>
     </div>
   );

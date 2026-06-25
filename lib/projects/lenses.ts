@@ -4,7 +4,7 @@
 // the List, Pipeline, and Calendar views.
 
 import { getInvoicesForProject } from "@/lib/quotes/data";
-import { phaseProgress } from "./phases";
+import { mapProgress } from "./map";
 import type { ProjectStage } from "./settings";
 import type { Project } from "./data";
 
@@ -46,9 +46,9 @@ export function billingBucket(projectId: string): "unbilled" | "invoiced" | "par
   return anyPaid ? "partially_paid" : "invoiced";
 }
 
-// Health = phase progress vs. the target date.
+// Health = map progress vs. the target date.
 export function healthBucket(project: Project): "on_track" | "at_risk" | "overdue" {
-  const { pct } = phaseProgress(project.id);
+  const { pct } = mapProgress(project.id);
   if (!project.targetDate) return "on_track";
   const target = new Date(project.targetDate);
   if (isNaN(target.getTime())) return "on_track";
@@ -56,6 +56,23 @@ export function healthBucket(project: Project): "on_track" | "at_risk" | "overdu
   if (daysLeft < 0 && pct < 100) return "overdue";
   if (daysLeft <= 7 && pct < 75) return "at_risk";
   return "on_track";
+}
+
+// ─── Project health (richer set used by Cards / Overview) ──
+// Built on healthBucket, plus "completed" (stage done) and "blocked" (a blocked
+// map node — passed in so this stays decoupled from the map module).
+export type ProjectHealth = "on_track" | "at_risk" | "overdue" | "blocked" | "completed";
+export const HEALTH_META: Record<ProjectHealth, { label: string; bg: string; color: string }> = {
+  on_track:  { label: "On Track",  bg: "#d1fae5", color: "#065f46" },
+  at_risk:   { label: "At Risk",   bg: "#fef3c7", color: "#92400e" },
+  overdue:   { label: "Overdue",   bg: "#fee2e2", color: "#991b1b" },
+  blocked:   { label: "Blocked",   bg: "#fee2e2", color: "#991b1b" },
+  completed: { label: "Completed", bg: "#e0e7ff", color: "#3730a3" },
+};
+export function projectHealth(project: Project, opts: { done?: boolean; blocked?: boolean } = {}): ProjectHealth {
+  if (opts.done) return "completed";
+  if (opts.blocked) return "blocked";
+  return healthBucket(project);
 }
 
 export function bucketOf(lens: LensKey, project: Project, stagesByKey: Map<string, ProjectStage>): string {

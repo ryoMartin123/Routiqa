@@ -4,6 +4,17 @@
   --font-family-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
 }
 
+/* Tailwind v4's Preflight resets <button> to cursor:default. Restore the
+   expected pointer on interactive controls so users know they're clickable
+   (applies across the whole app — buttons in Projects, modals, toolbars, etc.).
+   Disabled controls keep the default arrow. */
+button:not(:disabled),
+[role="button"]:not(:disabled),
+summary,
+label[for] {
+  cursor: pointer;
+}
+
 /* ─── Light theme (default) ─────────────────────────────── */
 :root {
   --bg-page:          #f9fafb;
@@ -670,6 +681,22 @@ body[data-comment-mode="1"] [data-comment-ui],
 body[data-comment-mode="1"] [data-comment-ui] * {
   cursor: pointer !important;
 }
+/* …but inside the comment composer/thread PANEL you're reading & typing, not
+   placing comments — restore natural cursors (pointer only on real controls). */
+body[data-comment-mode="1"] [data-comment-panel],
+body[data-comment-mode="1"] [data-comment-panel] * {
+  cursor: auto !important;
+}
+body[data-comment-mode="1"] [data-comment-panel] button:not(:disabled),
+body[data-comment-mode="1"] [data-comment-panel] a,
+body[data-comment-mode="1"] [data-comment-panel] [role="button"] {
+  cursor: pointer !important;
+}
+body[data-comment-mode="1"] [data-comment-panel] input,
+body[data-comment-mode="1"] [data-comment-panel] textarea,
+body[data-comment-mode="1"] [data-comment-panel] [contenteditable="true"] {
+  cursor: text !important;
+}
 
 /* Static amber frame around the viewport + a single amber flash on entry, so
    it's unmistakable the app is in comment mode. */
@@ -700,6 +727,27 @@ body[data-comment-mode="1"] [data-app-lock] {
 /* Comment UI (toggle, banner, drawer, pins) is always interactive in comment mode. */
 body[data-comment-mode="1"] [data-comment-ui] {
   pointer-events: auto;
+}
+
+/* ── Team Workspace — reaction emoji animations ── */
+/* Quick-reaction emojis pop up when the picker opens (staggered via inline delay). */
+@keyframes tw-emoji-pop-in {
+  0%   { opacity: 0; transform: translateY(6px) scale(0.5); }
+  65%  { opacity: 1; transform: translateY(0)   scale(1.18); }
+  100% { transform: scale(1); }
+}
+.tw-emoji-pop-in { animation: tw-emoji-pop-in 0.32s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+
+/* A new reaction chip pops in under the message when you react. */
+@keyframes tw-reaction-in {
+  0%   { opacity: 0; transform: scale(0.4); }
+  60%  { opacity: 1; transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+.tw-reaction-in { animation: tw-reaction-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .tw-emoji-pop-in, .tw-reaction-in { animation: none; }
 }
 
 /* ── Custom Proposal rich-text editor ── */

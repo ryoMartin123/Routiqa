@@ -77,15 +77,17 @@ export interface TaskAnchor {
 
 const LINKABLE_TYPES = ["customer", "lead", "job", "project"];
 
-function initialLink(task?: Task, defaultCustomerId?: string, anchor?: TaskAnchor): { type: LinkType; id: string } {
+function initialLink(task?: Task, defaultCustomerId?: string, anchor?: TaskAnchor, defaultLink?: DefaultLink): { type: LinkType; id: string } {
   if (task?.customerId) return { type: "customer", id: task.customerId };
   if (task?.leadId)     return { type: "lead",     id: task.leadId };
   if (task?.jobId)      return { type: "job",      id: task.jobId };
   if (task?.projectId)  return { type: "project",  id: task.projectId };
+  if (defaultLink)      return { type: defaultLink.type, id: defaultLink.id };
   if (anchor && LINKABLE_TYPES.includes(anchor.recordType)) return { type: anchor.recordType as LinkType, id: anchor.recordId };
   if (defaultCustomerId) return { type: "customer", id: defaultCustomerId };
   return { type: "none", id: "" };
 }
+type DefaultLink = { type: "customer" | "lead" | "job" | "project"; id: string };
 
 function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
   return (
@@ -98,12 +100,14 @@ function Field({ label, required, children }: { label: string; required?: boolea
   );
 }
 
-export default function NewTaskModal({ open, onClose, onSaved, task, defaultCustomerId, defaultTitle, defaultAssigneeId, anchor }: {
+export default function NewTaskModal({ open, onClose, onSaved, task, defaultCustomerId, defaultLink, lockLink, defaultTitle, defaultAssigneeId, anchor }: {
   open: boolean;
   onClose: () => void;
   onSaved?: (task: Task) => void;
   task?: Task;                    // edit mode when provided
   defaultCustomerId?: string;     // pre-link to an account (e.g. from a profile)
+  defaultLink?: DefaultLink;      // pre-link to a customer/lead/job/project (e.g. from its detail page)
+  lockLink?: boolean;             // with defaultLink: fix the link (created from inside that record)
   defaultTitle?: string;          // pre-fill the title (e.g. from a comment)
   defaultAssigneeId?: string;     // pre-select an assignee by user id (e.g. a mention)
   anchor?: TaskAnchor;            // pin the task to a comment anchor's exact spot
@@ -120,7 +124,7 @@ export default function NewTaskModal({ open, onClose, onSaved, task, defaultCust
   // Configurable task types + New Task defaults (Settings → Tasks).
   const settings = getTaskSettings();
   const activeTypes = getActiveTaskTypes();
-  const seedLink = initialLink(task, defaultCustomerId, anchor);
+  const seedLink = initialLink(task, defaultCustomerId, anchor, defaultLink);
 
   const defaultType = settings.defaultTypeKey || activeTypes[0]?.key || "follow_up";
   const defaultAssigned = settings.defaultAssignee === "creator" ? (actingUser?.fullName ?? UNASSIGNED) : UNASSIGNED;
@@ -271,6 +275,16 @@ export default function NewTaskModal({ open, onClose, onSaved, task, defaultCust
           </Field>
 
           <Field label="Link to Record">
+            {lockLink && linkType !== "none" ? (
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)" }}>
+                <span className="text-[11px] font-semibold px-2 py-0.5 rounded" style={{ backgroundColor: "#e0e7ff", color: "#4f46e5" }}>
+                  {LINK_TYPES.find(l => l.key === linkType)?.label}
+                </span>
+                <span className="text-sm truncate" style={{ color: "var(--text-primary)" }}>{linked?.fields.linkedLabel ?? "—"}</span>
+                <span className="ml-auto text-[11px]" style={{ color: "var(--text-muted)" }}>Locked</span>
+              </div>
+            ) : (
+            <>
             <div className="flex flex-wrap gap-1.5 mb-2">
               {LINK_TYPES.map(lt => {
                 const active = linkType === lt.key;
@@ -303,6 +317,8 @@ export default function NewTaskModal({ open, onClose, onSaved, task, defaultCust
               <p className="mt-1 text-[11px]" style={{ color: "var(--text-muted)" }}>
                 Linking shows this task on the {linkType}&apos;s profile.
               </p>
+            )}
+            </>
             )}
           </Field>
 

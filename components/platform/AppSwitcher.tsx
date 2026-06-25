@@ -33,7 +33,7 @@ export default function AppSwitcher() {
   const current = currentAppFromPath(pathname);
 
   return (
-    <div className="relative" ref={ref}>
+    <div className="relative shrink-0" ref={ref}>
       <button
         onClick={() => setOpen((o) => !o)}
         className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-sm font-medium transition-colors hover:bg-[var(--bg-surface-2)]"

@@ -129,6 +129,23 @@ export default function CalendarPage() {
   // Bumped after a job is persisted (updateJob/createJob) or availability changes
   // so the board/queue re-read the store (the single source of truth).
   const [refreshKey, setRefreshKey] = useState(0);
+  // Cursor-follow card while dragging from the queue. We suppress the native drag
+  // ghost and show this instead — but ONLY when not hovering a valid board slot
+  // (off-board or over a conflicting slot), so the board's own slot preview reads
+  // clean when you can actually drop.
+  const [qDragPos, setQDragPos] = useState<{ x: number; y: number } | null>(null);
+  useEffect(() => {
+    const onOver = (e: DragEvent) => { if (draggedQueueItem) setQDragPos({ x: e.clientX, y: e.clientY }); };
+    const onEnd = () => { setQDragPos(null); overValidSlot = false; };
+    document.addEventListener("dragover", onOver);
+    document.addEventListener("drop", onEnd);
+    document.addEventListener("dragend", onEnd);
+    return () => {
+      document.removeEventListener("dragover", onOver);
+      document.removeEventListener("drop", onEnd);
+      document.removeEventListener("dragend", onEnd);
+    };
+  }, []);
   // Technician availability for the focused day — loaded client-side (effect).
   const [availability, setAvailability] = useState<AvailabilityEvent[]>([]);
   const [timeOffOpen, setTimeOffOpen]   = useState(false);
@@ -750,6 +767,17 @@ export default function CalendarPage() {
           onClose={() => setShowVisitScheduler(false)}
         />
       )}
+
+      {/* Cursor-follow card while dragging from the queue — shown only when there's
+          no valid board slot under the cursor (off-board or over a taken slot). */}
+      {qDragPos && draggedQueueItem && !overValidSlot && (
+        <div className="fixed z-[100] pointer-events-none rounded-lg p-2.5 w-56"
+          style={{ left: qDragPos.x + 14, top: qDragPos.y + 14, backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", borderLeft: `3px solid ${draggedQueueItem.color}`, boxShadow: "0 8px 24px rgba(0,0,0,0.22)" }}>
+          <p className="text-sm font-semibold truncate" style={{ color: "var(--text-primary)" }}>{draggedQueueItem.title}</p>
+          {draggedQueueItem.customerName && <p className="text-[11px] truncate" style={{ color: "var(--text-secondary)" }}>{draggedQueueItem.customerName}</p>}
+          <p className="text-[10px] mt-0.5" style={{ color: "var(--text-muted)" }}>{draggedQueueItem.durationMinutes}m · drop on a free slot</p>
+        </div>
+      )}
     </div>
   );
 }
@@ -805,6 +833,13 @@ function DispatchBoard({ focus, mode, items, roster, availability, dayStart, day
   // Live preview while moving / resizing a block (tech = target row); queue-drag row.
   const [preview, setPreview] = useState<{ id: string; startMin: number; durationMinutes: number; tech: string } | null>(null);
   const [dragTech, setDragTech] = useState<string | null>(null);
+  // Live drop preview while dragging a queue job onto a lane (which lane + slot).
+  const [queuePreview, setQueuePreview] = useState<{ tech: string; startMin: number } | null>(null);
+  useEffect(() => {
+    const onEnd = () => { setQueuePreview(null); setDragTech(null); };
+    document.addEventListener("dragend", onEnd);
+    return () => document.removeEventListener("dragend", onEnd);
+  }, []);
   // Brief "can't overlap" notice when a move/drop would land on another job.
   const [overlapMsg, setOverlapMsg] = useState(false);
   function flashOverlap() { setOverlapMsg(true); window.setTimeout(() => setOverlapMsg(false), 2200); }
@@ -980,12 +1015,29 @@ function DispatchBoard({ focus, mode, items, roster, availability, dayStart, day
             <div data-track data-tech={tech.name}
               className="flex-1 relative transition-colors"
               style={{ height: `${ROW_H}px`, backgroundColor: isDropTarget ? "var(--accent-soft-bg)" : undefined }}
-              onDragOver={e => { e.preventDefault(); if (dragTech !== tech.name) setDragTech(tech.name); }}
-              onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setDragTech(null); }}
+              onDragOver={e => {
+                e.preventDefault();
+                if (dragTech !== tech.name) setDragTech(tech.name);
+                if (draggedQueueItem) {
+                  const mm = Math.floor(commitFromX(e.clientX, e.currentTarget) / increment) * increment;
+                  const startMin = clamp(mm, 0, totalMin - increment);
+                  const dur = draggedQueueItem.durationMinutes || increment;
+                  // Only preview a slot we can actually drop on; a conflicting slot
+                  // is "can't drop here" → no board preview, cursor card shows instead.
+                  if (laneOverlap(tech.name, startMin, dur, "")) {
+                    overValidSlot = false;
+                    if (queuePreview) setQueuePreview(null);
+                  } else {
+                    overValidSlot = true;
+                    if (!queuePreview || queuePreview.tech !== tech.name || queuePreview.startMin !== startMin) setQueuePreview({ tech: tech.name, startMin });
+                  }
+                }
+              }}
+              onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget as Node)) { setDragTech(null); setQueuePreview(null); overValidSlot = false; } }}
               onDrop={e => {
-                e.preventDefault(); setDragTech(null);
+                e.preventDefault(); setDragTech(null); setQueuePreview(null); overValidSlot = false;
                 const id = e.dataTransfer.getData("text/plain"); if (!id) return;
-                const mm = Math.round(commitFromX(e.clientX, e.currentTarget) / increment) * increment;
+                const mm = Math.floor(commitFromX(e.clientX, e.currentTarget) / increment) * increment;
                 const safe = clamp(mm, 0, totalMin - increment);
                 // Don't drop onto a slot already taken by another job in this lane.
                 if (pointInLane(tech.name, safe)) { flashOverlap(); return; }
@@ -995,6 +1047,21 @@ function DispatchBoard({ focus, mode, items, roster, availability, dayStart, day
               <div className="absolute inset-0 flex pointer-events-none">
                 {gridCells.map(c => <div key={c.key} className="h-full" style={{ flex: c.span, borderLeft: `1px ${c.half ? "dashed" : "solid"} var(--border-subtle)` }} />)}
               </div>
+
+              {/* Live drop preview — ghost of the dragged job at the valid slot it lands in */}
+              {queuePreview && queuePreview.tech === tech.name && draggedQueueItem && (() => {
+                const dur = draggedQueueItem.durationMinutes || increment;
+                const left = clamp((queuePreview.startMin / totalMin) * 100, 0, 100);
+                const width = clamp((dur / totalMin) * 100, 1, 100 - left);
+                const c = draggedQueueItem.color;
+                return (
+                  <div className="absolute top-1 bottom-1 rounded-lg pointer-events-none overflow-hidden flex flex-col justify-center px-2 z-30"
+                    style={{ left: `${left}%`, width: `${width}%`, backgroundColor: c + "26", border: `1.5px dashed ${c}` }}>
+                    <p className="text-[10px] font-semibold truncate" style={{ color: "var(--text-primary)" }}>{draggedQueueItem.title}</p>
+                    <p className="text-[9px] truncate" style={{ color: "var(--text-muted)" }}>{minToTime(queuePreview.startMin)} – {minToTime(queuePreview.startMin + dur)}</p>
+                  </div>
+                );
+              })()}
 
               {/* Availability overlays — PTO / time off / training / blocked (behind jobs) */}
               {techAvail.filter(a => AVAILABILITY_CONFIG[a.kind].blocksWork).map(a => {
@@ -1173,10 +1240,28 @@ function UnscheduledQueue({ items, views, tab, setTab, search, setSearch, onSele
 }
 
 // Compact list row for the queue's List layout — draggable like the card.
+// Handle to the queue item currently being dragged, so the board can render a
+// live drop preview — native DnD can't read dataTransfer during dragover.
+let draggedQueueItem: UnscheduledItem | null = null;
+// Set true by a lane while the cursor is over a VALID (droppable) slot. When true,
+// the board shows the slot preview and the cursor-follow card is hidden; when
+// false (off-board or over a conflicting slot) the cursor card shows instead.
+let overValidSlot = false;
+
+// 1×1 transparent image to suppress the browser's default drag ghost so we can
+// drive the cursor card ourselves.
+const EMPTY_DRAG_IMG = typeof window !== "undefined"
+  ? (() => { const img = new Image(); img.src = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"; return img; })()
+  : null;
+function suppressNativeDragImage(e: React.DragEvent) {
+  if (EMPTY_DRAG_IMG) { try { e.dataTransfer.setDragImage(EMPTY_DRAG_IMG, 0, 0); } catch { /* ignore */ } }
+}
+
 function QueueRow({ item: u, onSelect, last }: { item: UnscheduledItem; onSelect: (u: UnscheduledItem) => void; last: boolean }) {
   const cfg = LAYER_CONFIG[u.type]; const prio = PRIORITY_CONFIG[u.priority];
   return (
-    <div draggable onDragStart={e => e.dataTransfer.setData("text/plain", u.id)}
+    <div draggable onDragStart={e => { e.dataTransfer.setData("text/plain", u.id); draggedQueueItem = u; suppressNativeDragImage(e); }}
+      onDragEnd={() => { draggedQueueItem = null; overValidSlot = false; }}
       onClick={() => onSelect(u)}
       className="flex items-center gap-3 px-3 py-2.5 cursor-grab active:cursor-grabbing transition-colors hover:bg-[var(--bg-surface-2)]"
       style={{ borderBottom: last ? "none" : "1px solid var(--border-subtle)", borderLeft: `3px solid ${u.color}` }}>
@@ -1195,14 +1280,19 @@ function QueueRow({ item: u, onSelect, last }: { item: UnscheduledItem; onSelect
 function QueueCard({ item: u, onSelect }: { item: UnscheduledItem; onSelect: (u: UnscheduledItem) => void }) {
   const cfg = LAYER_CONFIG[u.type]; const prio = PRIORITY_CONFIG[u.priority];
   return (
-    <div draggable onDragStart={e => e.dataTransfer.setData("text/plain", u.id)}
+    <div draggable onDragStart={e => { e.dataTransfer.setData("text/plain", u.id); draggedQueueItem = u; suppressNativeDragImage(e); }}
+      onDragEnd={() => { draggedQueueItem = null; overValidSlot = false; }}
       onClick={() => onSelect(u)}
       className="rounded-lg p-3 cursor-grab active:cursor-grabbing transition-shadow hover:shadow-md"
       style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", borderLeft: `3px solid ${u.color}` }}>
       <div className="flex items-start justify-between gap-2 mb-1">
         <div className="flex items-center gap-1.5 min-w-0">
-          <StatusBadge label={cfg.label} color={cfg.color} size="sm" className="shrink-0" />
-          <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full shrink-0" style={{ backgroundColor: prio.bg, color: prio.color }}>{prio.label}</span>
+          <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded inline-flex items-center gap-1 shrink-0" style={{ backgroundColor: cfg.color + "22", color: cfg.color }}>
+            <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: cfg.color }} />{cfg.label}
+          </span>
+          <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded inline-flex items-center gap-1 shrink-0" style={{ backgroundColor: prio.bg, color: prio.color }}>
+            <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: prio.color }} />{prio.label}
+          </span>
         </div>
         {u.value && <span className="text-xs font-bold shrink-0" style={{ color: "var(--text-primary)" }}>{u.value}</span>}
       </div>

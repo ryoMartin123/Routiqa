@@ -21,9 +21,10 @@ import { QUOTE_STATUS_STYLE, INVOICE_STATUS_STYLE } from "@/lib/quotes/types";
 import PhotoGallery from "@/components/files/PhotoGallery";
 import QuoteTypeChooser from "@/components/quotes/create/QuoteTypeChooser";
 import DetailTabs from "@/components/shared/DetailTabs";
+import RecordTasks from "@/components/tasks/RecordTasks";
 import { JobHistoryList } from "@/components/jobs/JobStatusControl";
 
-const TABS = ["Overview", "Work Order", "Checklist", "Photos & Files", "Notes", "Customer", "Invoice / Estimate", "History"];
+const TABS = ["Overview", "Work Order", "Checklist", "Tasks", "Photos & Files", "Notes", "Customer", "Invoice / Estimate", "History"];
 
 const NOTE_COLORS: Record<JobNoteType, string> = { note: "#6366f1", call: "#10b981", email: "#3b82f6", visit: "#f59e0b" };
 
@@ -678,6 +679,7 @@ function JobDetailContent({ params }: { params: Promise<{ id: string }> }) {
         {tab === "Overview"          && <OverviewTab  jobId={id} />}
         {tab === "Work Order"        && <WorkOrderTab jobId={id} />}
         {tab === "Checklist"         && <ChecklistTab jobId={id} />}
+        {tab === "Tasks"             && <RecordTasks type="job" id={id} />}
         {tab === "Notes"             && <NotesTab     jobId={id} />}
         {tab === "Customer"          && <CustomerTab  jobId={id} />}
         {tab === "Photos & Files"    && <PhotoGallery recordLevel="job" scope={{ accountId: job.accountId, jobId: id, projectId: job.projectId }} accountName={job.customerName} />}

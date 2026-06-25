@@ -244,11 +244,12 @@ export default function PhotoGallery({ recordLevel, scope = {}, accountName, upl
 
   return (
     <div className="space-y-4">
-      {/* ── Toolbar: tabs + views (left) · search + filter (right) ── */}
-      <div className="flex flex-wrap items-center gap-2 justify-between">
-        {/* Left: unified tab bar — quick filters · divider · view/grouping */}
-        <div className="flex flex-wrap items-center gap-2">
-          {isGlobal && (
+      {/* ── Toolbar ── Embedded: search (left) · client/project tabs (center) ·
+          upload (right). Global keeps tabs (left) · search + filter + upload (right). */}
+      <div className="flex flex-wrap items-center gap-2">
+        {/* Left zone */}
+        <div className="flex-1 min-w-0 flex flex-wrap items-center gap-2">
+          {isGlobal ? (
             <div className="flex items-center gap-0.5 flex-wrap">
               {QUICK_TABS.map(t => {
                 const active = quickTab === t.key;
@@ -283,33 +284,42 @@ export default function PhotoGallery({ recordLevel, scope = {}, accountName, upl
                 );
               })}
             </div>
-          )}
-
-          {/* Scope toggle (embedded record mode) */}
-          {!isGlobal && scopeOptions.length > 1 && (
-            <div className="flex items-center rounded-lg overflow-hidden" style={{ border: "1px solid var(--border)" }}>
-              {scopeOptions.map(opt => {
-                const active = activeScopeKey === opt.key;
-                return (
-                  <button key={opt.key} onClick={() => setActiveScopeKey(opt.key)}
-                    className="px-3 py-1.5 text-xs font-medium transition-colors"
-                    style={{ backgroundColor: active ? "#4f46e5" : "var(--bg-surface)", color: active ? "#fff" : "var(--text-secondary)" }}>
-                    {opt.label}
-                  </button>
-                );
-              })}
+          ) : (
+            /* Search — embedded mode: pinned left (sized to match the Tasks search) */
+            <div className="flex items-center gap-2 rounded-lg px-3 py-1.5" style={{ backgroundColor: "var(--bg-input)" }}>
+              <Search className="w-3.5 h-3.5 shrink-0" style={{ color: "var(--text-muted)" }} />
+              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search files, jobs, tags…"
+                className="bg-transparent text-sm outline-none w-40" style={{ color: "var(--text-primary)" }} />
             </div>
           )}
         </div>
 
-        {/* Right: search + filter + count + upload */}
-        <div className="flex items-center gap-2">
-          {/* Search */}
-          <div className="flex items-center gap-2 rounded-lg px-3 py-2" style={{ backgroundColor: "var(--bg-input)" }}>
-            <Search className="w-4 h-4 shrink-0" style={{ color: "var(--text-muted)" }} />
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search files, accounts, jobs, tags…"
-              className="bg-transparent text-sm outline-none w-52" style={{ color: "var(--text-primary)" }} />
+        {/* Center zone — client / project scope tabs (embedded record mode) */}
+        {!isGlobal && scopeOptions.length > 1 && (
+          <div className="flex items-center rounded-lg overflow-hidden" style={{ border: "1px solid var(--border)" }}>
+            {scopeOptions.map(opt => {
+              const active = activeScopeKey === opt.key;
+              return (
+                <button key={opt.key} onClick={() => setActiveScopeKey(opt.key)}
+                  className="px-3 py-1.5 text-xs font-medium transition-colors"
+                  style={{ backgroundColor: active ? "#4f46e5" : "var(--bg-surface)", color: active ? "#fff" : "var(--text-secondary)" }}>
+                  {opt.label}
+                </button>
+              );
+            })}
           </div>
+        )}
+
+        {/* Right zone — (global) search + filter · upload */}
+        <div className="flex-1 min-w-0 flex items-center gap-2 justify-end">
+          {/* Search — global mode: right */}
+          {isGlobal && (
+            <div className="flex items-center gap-2 rounded-lg px-3 py-2" style={{ backgroundColor: "var(--bg-input)" }}>
+              <Search className="w-4 h-4 shrink-0" style={{ color: "var(--text-muted)" }} />
+              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search files, accounts, jobs, tags…"
+                className="bg-transparent text-sm outline-none w-52" style={{ color: "var(--text-primary)" }} />
+            </div>
+          )}
 
           {/* Filters button + popover (global only) */}
           {isGlobal && (
@@ -386,18 +396,13 @@ export default function PhotoGallery({ recordLevel, scope = {}, accountName, upl
             </div>
           )}
 
-          {/* File count — embedded galleries only; the global page shows it by the heading */}
-          {!isGlobal && (
-            <span className="text-xs whitespace-nowrap" style={{ color: "var(--text-muted)" }}>
-              {displayed.length} file{displayed.length === 1 ? "" : "s"}
-            </span>
-          )}
-
-          {/* Toolbar Upload button — hidden when the page renders its own in the header */}
+          {/* Toolbar Upload — minimal accent +chip (matches New Vendor); hidden
+              when the page renders its own in the header */}
           {!externalUpload && (
             <button onClick={() => setShowUpload(true)}
-              className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-3 py-2 rounded-lg transition-colors">
-              <Upload className="w-3.5 h-3.5" /> Upload
+              className="group flex items-center gap-1.5 text-sm font-medium transition-colors shrink-0" style={{ color: "#4f46e5" }}>
+              <span className="w-5 h-5 rounded-full flex items-center justify-center transition-all group-hover:brightness-95" style={{ backgroundColor: "#4f46e51a" }}><Upload className="w-3 h-3" /></span>
+              Upload
             </button>
           )}
         </div>

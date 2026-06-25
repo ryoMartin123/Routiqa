@@ -12,8 +12,7 @@ import {
   createProject, PROJECT_TYPE_LABELS,
   type ProjectType, type ProjectPriority,
 } from "@/lib/projects/data";
-import { getProjectTemplates } from "@/lib/projects/settings";
-import { applyTemplatePhases } from "@/lib/projects/phases";
+import { templateForType } from "@/lib/projects/map-templates";
 
 const TYPE_OPTIONS = (Object.entries(PROJECT_TYPE_LABELS) as [ProjectType, string][])
   .map(([value, label]) => ({ value, label }));
@@ -45,8 +44,6 @@ export default function ProjectWizard({ onClose, onCreated }: {
   const [estVal, setEstVal] = useState("");
   const [tech, setTech]   = useState("");
   const [description, setDescription] = useState("");
-  const [templateId, setTemplateId] = useState("");
-  const templates = useMemo(() => getProjectTemplates(), []);
 
   // Resolve the target account (the project always belongs to a customer account;
   // a lead resolves through its linked account).
@@ -100,10 +97,6 @@ export default function ProjectWizard({ onClose, onCreated }: {
       estimatedValue: estVal.trim() || undefined,
       assignedTo: tech || undefined, assignedToInitials: tech ? initialsOf(tech) : undefined,
     });
-    // Seed phases from the chosen template (drives the vertical progress viewer).
-    const tpl = templateId ? templates.find(t => t.id === templateId) : undefined;
-    if (tpl && tpl.phases.length) applyTemplatePhases(project.id, tpl.phases);
-
     // Picked from a lead → convert it: mark Won and link to the new project so the
     // lead profile reflects the conversion.
     if (mode === "lead" && leadId) {
@@ -145,7 +138,7 @@ export default function ProjectWizard({ onClose, onCreated }: {
               {mode === "account" && (
                 <div>
                   <label className="block text-xs font-medium mb-1" style={{ color: "var(--text-secondary)" }}>Account *</label>
-                  <AccountCombobox value={accountId} onChange={setAccountId} />
+                  <AccountCombobox value={accountId} onChange={setAccountId} dropUp />
                 </div>
               )}
 
@@ -183,14 +176,6 @@ export default function ProjectWizard({ onClose, onCreated }: {
                 <button onClick={() => setStep(1)} className="text-xs font-medium shrink-0" style={{ color: "var(--accent-text)" }}>Change</button>
               </div>
 
-              {templates.length > 0 && (
-                <div>
-                  <label className="block text-xs font-medium mb-1" style={{ color: "var(--text-secondary)" }}>Start from template <span style={{ color: "var(--text-muted)" }}>(optional)</span></label>
-                  <UiSelect value={templateId} onChange={setTemplateId}
-                    options={[{ value: "", label: "Blank project" }, ...templates.map(t => ({ value: t.id, label: `${t.name} · ${t.phases.length} phases` }))]} />
-                </div>
-              )}
-
               <div>
                 <label className="block text-xs font-medium mb-1" style={{ color: "var(--text-secondary)" }}>Project Name *</label>
                 <input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Whole-home HVAC replacement"
@@ -208,6 +193,14 @@ export default function ProjectWizard({ onClose, onCreated }: {
                 </div>
               </div>
 
+              {/* The type selects the project's Map workflow. */}
+              <div className="rounded-lg px-3 py-2 flex items-start gap-2" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border-subtle)" }}>
+                <FolderKanban className="w-3.5 h-3.5 mt-0.5 shrink-0" style={{ color: "#4f46e5" }} />
+                <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>
+                  Creates the <span style={{ color: "#4f46e5", fontWeight: 600 }}>{templateForType(type).name}</span> workflow — milestones, linked records, and a connected project map.
+                </p>
+              </div>
+
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium mb-1" style={{ color: "var(--text-secondary)" }}>Estimated Value</label>
@@ -223,7 +216,7 @@ export default function ProjectWizard({ onClose, onCreated }: {
               <div>
                 <label className="block text-xs font-medium mb-1" style={{ color: "var(--text-secondary)" }}>Description</label>
                 <textarea value={description} onChange={e => setDescription(e.target.value)} rows={3}
-                  placeholder="Scope, phases, what's included…"
+                  placeholder="Scope, milestones, what's included…"
                   className="w-full rounded-lg px-3 py-2 text-sm outline-none resize-none" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface)", color: "var(--text-primary)" }} />
               </div>
             </>

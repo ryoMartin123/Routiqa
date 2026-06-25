@@ -22,7 +22,6 @@ export const BUSINESS_RECORD_KEYS: string[] = [
   "crm-work-orders",
   // Projects
   "crm-extra-projects",
-  "crm-project-phases",
   // Quotes & invoices
   "crm-extra-quotes",
   "crm-quote-overrides",
