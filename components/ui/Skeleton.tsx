@@ -39,20 +39,21 @@ export function Delayed({
     if (!show) return;
     shownAtRef.current = Date.now();
     const runId = ++runIdRef.current;
-    // Snapshot the skeleton's markup + content-region position NOW, while it's
-    // mounted and laid out. The cleanup below is a passive effect that runs AFTER
-    // React has already detached this node, so measuring there yields an empty
-    // rect — which is why earlier the hand-off never appeared. The skeleton is
-    // static, so a snapshot taken at appear-time is identical to teardown-time.
+    // Snapshot the skeleton's static markup NOW, while it's mounted and laid out.
+    // We deliberately do NOT freeze its position: the `host` (page-content region)
+    // stays mounted across the loading→page swap, so the hand-off overlay measures
+    // it LIVE and tracks it every frame. That keeps the overlay glued to the
+    // content even when the layout shifts mid-hold — e.g. collapsing the sidebar
+    // (a 300ms width animation) or resizing the window — instead of floating at
+    // stale coordinates, which was the visible "glitch".
     const node = ref.current;
-    const host = node?.parentElement;     // the page-content region (not the chrome)
-    const r = host?.getBoundingClientRect();
-    const snap = node && r && r.width > 0 && r.height > 0
-      ? { html: node.innerHTML, top: r.top, left: r.left, width: r.width, height: r.height }
-      : null;
+    const host = node?.parentElement as HTMLElement | null;   // the page-content region (not the chrome)
+    const html = node?.innerHTML ?? null;
+    const initialRect = host?.getBoundingClientRect();
+    const ok = !!(html && initialRect && initialRect.width > 0 && initialRect.height > 0);
     return () => {
       const shownAt = shownAtRef.current;
-      if (shownAt == null || !snap) return;
+      if (shownAt == null || !ok || !host) return;
       const remaining = minVisible - (Date.now() - shownAt);
       if (remaining <= 0) return;            // already on screen long enough
       // Defer one tick: if a new effect run bumps runId first, this was a
@@ -65,12 +66,24 @@ export function Delayed({
         try {
           const overlay = document.createElement("div");
           overlay.setAttribute("aria-hidden", "true");
-          overlay.style.cssText = `position:fixed;top:${snap.top}px;left:${snap.left}px;width:${snap.width}px;height:${snap.height}px;overflow:hidden;z-index:30;background:var(--bg-page);transition:opacity ${fadeMs}ms ease;`;
-          overlay.innerHTML = snap.html;
+          overlay.style.cssText = `position:fixed;overflow:hidden;z-index:30;background:var(--bg-page);transition:opacity ${fadeMs}ms ease;pointer-events:none;`;
+          overlay.innerHTML = html!;
           document.body.appendChild(overlay);
+          // Re-anchor to the live content region every frame so the overlay follows
+          // any layout change while it's held (sidebar collapse/expand, resize).
+          let raf = 0;
+          const place = () => {
+            const rect = host.isConnected ? host.getBoundingClientRect() : initialRect!;
+            overlay.style.top = `${rect.top}px`;
+            overlay.style.left = `${rect.left}px`;
+            overlay.style.width = `${rect.width}px`;
+            overlay.style.height = `${rect.height}px`;
+            raf = requestAnimationFrame(place);
+          };
+          place();
           window.setTimeout(() => {
             overlay.style.opacity = "0";
-            window.setTimeout(() => overlay.remove(), fadeMs);
+            window.setTimeout(() => { cancelAnimationFrame(raf); overlay.remove(); }, fadeMs);
           }, remaining);
         } catch { /* best-effort hold */ }
       }, 0);
