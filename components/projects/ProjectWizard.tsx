@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { X, FolderKanban, Building2, TrendingUp, ChevronLeft, ChevronRight, Check } from "lucide-react";
 import UiSelect from "@/components/ui/Select";
+import DatePicker from "@/components/ui/DatePicker";
 import AccountCombobox from "@/components/customers/AccountCombobox";
 import LeadCombobox from "@/components/leads/LeadCombobox";
 import { getCustomer } from "@/lib/customers/data";
@@ -43,6 +44,8 @@ export default function ProjectWizard({ onClose, onCreated }: {
   const [priority, setPriority] = useState<ProjectPriority>("normal");
   const [estVal, setEstVal] = useState("");
   const [tech, setTech]   = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [targetDate, setTargetDate] = useState("");
   const [description, setDescription] = useState("");
 
   // Resolve the target account (the project always belongs to a customer account;
@@ -94,6 +97,7 @@ export default function ProjectWizard({ onClose, onCreated }: {
       locationName: target.locationName, propertyAddress: target.propertyAddress,
       name: name.trim(), description: description.trim() || undefined,
       type, priority,
+      startDate: startDate || undefined, targetDate: targetDate || undefined,
       estimatedValue: estVal.trim() || undefined,
       assignedTo: tech || undefined, assignedToInitials: tech ? initialsOf(tech) : undefined,
     });
@@ -138,7 +142,7 @@ export default function ProjectWizard({ onClose, onCreated }: {
               {mode === "account" && (
                 <div>
                   <label className="block text-xs font-medium mb-1" style={{ color: "var(--text-secondary)" }}>Account *</label>
-                  <AccountCombobox value={accountId} onChange={setAccountId} dropUp />
+                  <AccountCombobox value={accountId} onChange={setAccountId} />
                 </div>
               )}
 
@@ -210,6 +214,17 @@ export default function ProjectWizard({ onClose, onCreated }: {
                 <div>
                   <label className="block text-xs font-medium mb-1" style={{ color: "var(--text-secondary)" }}>Assigned To</label>
                   <UiSelect value={tech} onChange={setTech} options={[{ value: "", label: "Unassigned" }, ...roster.map(r => ({ value: r, label: r }))]} />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium mb-1" style={{ color: "var(--text-secondary)" }}>Start Date</label>
+                  <DatePicker value={startDate} onChange={setStartDate} placeholder="Select start date" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium mb-1" style={{ color: "var(--text-secondary)" }}>Target / End Date</label>
+                  <DatePicker value={targetDate} onChange={setTargetDate} placeholder="Select end date" min={startDate || undefined} />
                 </div>
               </div>
 

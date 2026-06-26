@@ -90,6 +90,7 @@ export interface NewProjectInput {
   accountId: string; customerName: string; customerInitials: string; locationName: string;
   name: string; description?: string; type?: ProjectType; priority?: ProjectPriority;
   stage?: string;
+  startDate?: string; targetDate?: string;
   estimatedValue?: string; propertyAddress?: string;
   assignedTo?: string; assignedToInitials?: string;
 }
@@ -103,6 +104,7 @@ export function createProject(input: NewProjectInput): Project {
     name: input.name, description: input.description ?? "",
     type: input.type ?? "installation", status: "draft", stage: input.stage ?? "planning",
     priority: input.priority ?? "normal",
+    startDate: input.startDate, targetDate: input.targetDate,
     assignedTo: input.assignedTo ?? "", assignedToInitials: input.assignedToInitials ?? "",
     estimatedValue: input.estimatedValue, jobIds: [],
     customerName: input.customerName, customerInitials: input.customerInitials, locationName: input.locationName,

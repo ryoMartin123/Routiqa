@@ -493,7 +493,7 @@ function JobCard({ job, statusConfig, showAmount }: {
         <div className="flex items-center gap-1.5 shrink-0 min-w-0">
           <div className="w-5 h-5 rounded-full bg-indigo-600 flex items-center justify-center text-[8px] font-bold text-white shrink-0">{job.assignedToInitials || "—"}</div>
           <span className="text-[10px] truncate" style={{ color: "var(--text-secondary)" }}>{job.assignedTo || "Unassigned"}</span>
-          <ArrowRight className="w-3.5 h-3.5 shrink-0 transition-all opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 group-hover:-rotate-45" style={{ color: "#4f46e5" }} />
+          <ArrowRight className="w-3.5 h-3.5 shrink-0 transition-transform group-hover:-rotate-45" style={{ color: "#4f46e5" }} />
         </div>
       </div>
     </Link>

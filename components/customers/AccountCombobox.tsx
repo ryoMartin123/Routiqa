@@ -5,6 +5,10 @@ import { ChevronDown, Search, Check, Plus } from "lucide-react";
 import { useHierarchy } from "@/components/providers/HierarchyProvider";
 import { getAllCustomers, getCustomer, type Customer } from "@/lib/customers/data";
 
+// Cap how many rows render at once — with hundreds of accounts we don't dump
+// them all into the DOM; the user narrows with the search box instead.
+const MAX_RESULTS = 50;
+
 interface Props {
   value:        string;                 // selected account id ("" = none)
   onChange:     (id: string) => void;
@@ -46,6 +50,11 @@ export default function AccountCombobox({
     return scoped.filter(c => has(c.name) || has(c.phone) || has(c.address) || has(c.city) || has(c.email));
   }, [scoped, query]);
 
+  // Only render the first MAX_RESULTS rows; keyboard nav + the create row are
+  // based on this visible slice too.
+  const visible = results.slice(0, MAX_RESULTS);
+  const overflow = results.length - visible.length;
+
   // The selected account resolves from the full set, so a pick outside the
   // current scope (e.g. a locked preset) still shows its name.
   const selected: Customer | undefined = value ? getCustomer(value) : undefined;
@@ -69,17 +78,17 @@ export default function AccountCombobox({
     setQuery("");
   }
 
-  const createRowIdx = onCreateNew ? results.length : -1;   // create row sits after results
+  const createRowIdx = onCreateNew ? visible.length : -1;   // create row sits after the visible rows
 
   function onKeyDown(e: React.KeyboardEvent) {
     if (e.key === "Escape") { setOpen(false); return; }
-    const max = onCreateNew ? results.length : results.length - 1;
+    const max = onCreateNew ? visible.length : visible.length - 1;
     if (e.key === "ArrowDown") { e.preventDefault(); setActiveIdx(i => Math.min(i + 1, max)); }
     if (e.key === "ArrowUp")   { e.preventDefault(); setActiveIdx(i => Math.max(i - 1, 0)); }
     if (e.key === "Enter") {
       e.preventDefault();
       if (activeIdx === createRowIdx && onCreateNew) { setOpen(false); onCreateNew(); return; }
-      const pick = results[activeIdx];
+      const pick = visible[activeIdx];
       if (pick) choose(pick.id);
     }
   }
@@ -137,7 +146,7 @@ export default function AccountCombobox({
                 No accounts match “{query}”.
               </p>
             )}
-            {results.map((c, i) => {
+            {visible.map((c, i) => {
               const isSelected = c.id === value;
               const isActive = i === activeIdx;
               return (
@@ -157,6 +166,11 @@ export default function AccountCombobox({
                 </button>
               );
             })}
+            {overflow > 0 && (
+              <p className="px-2.5 py-2 text-[11px] text-center" style={{ color: "var(--text-muted)" }}>
+                +{overflow} more — keep typing to narrow.
+              </p>
+            )}
           </div>
 
           {/* Create-new row */}
