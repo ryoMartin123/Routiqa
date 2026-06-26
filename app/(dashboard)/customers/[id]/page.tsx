@@ -11,7 +11,7 @@ import {
   Briefcase, ClipboardList, FilePen, FileCheck,
   Receipt, DollarSign, FileText, RefreshCw,
   Image as ImageIcon, Paperclip, Smartphone, CheckSquare,
-  Search, Clock,
+  Search, Clock, Star, ArrowDownUp,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import StatusBadge from "@/components/shared/StatusBadge";
@@ -73,7 +73,7 @@ const WO_STATUS_STYLE: Record<WorkOrderStatus, { label: string; bg: string; colo
   completed:   { label: "Completed",   bg: "#d1fae5",         color: "#065f46" },
 };
 
-const TABS = ["Overview", "Contacts", "Properties", "Equipment", "Jobs", "Tasks", "Leads", "Agreements", "Photos & Files", "Notes", "Communication", "Billing", "Timeline"];
+const TABS = ["Overview", "Contacts", "Properties", "Equipment", "Jobs", "Tasks", "Leads", "Agreements", "Photos & Files", "Notes", "Communication", "Billing", "History"];
 
 // ─── Account structure display label ─────────────────────
 const STRUCTURE_LABEL: Record<string, string> = {
@@ -285,14 +285,15 @@ function OverviewTab({ id, onTab }: { id: string; onTab: (tab: string) => void }
             )}
           </SectionCard>
 
-          <SectionCard title="Recent Activity" count={events.length} action={{ label: "View all", onClick: () => onTab("Timeline") }} className="flex-1 min-h-0">
+          <SectionCard title="Recent Activity" count={events.length} action={{ label: "View all", onClick: () => onTab("History") }} className="flex-1 min-h-0">
             {events.length === 0 ? <Empty text="No activity yet" /> : events.slice(0, 3).map((e, i) => {
               const cfg = EVENT_CONFIG[e.eventType];
               const Icon = cfg.icon;
+              const c = SYSTEM_EVENTS.has(e.eventType) || e.createdBy === "—" ? "var(--text-muted)" : CATEGORY_COLOR[categoryOf(e.eventType)];
               return (
                 <Row key={e.id} last={i === Math.min(2, events.length - 1)}>
-                  <div className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 mr-2.5" style={{ backgroundColor: cfg.bg }}>
-                    <Icon className="w-3 h-3" style={{ color: cfg.color }} />
+                  <div className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0 mr-2.5" style={{ backgroundColor: typeof c === "string" && c.startsWith("#") ? c + "1a" : "var(--bg-input)" }}>
+                    <Icon className="w-3 h-3" style={{ color: c }} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm leading-snug truncate" style={{ color: "var(--text-primary)" }}>{e.title}</p>
@@ -1316,41 +1317,89 @@ function BillingTab({ id }: { id: string }) {
   );
 }
 
-// ─── Timeline tab ─────────────────────────────────────────
+// ─── History tab ──────────────────────────────────────────
+// A broad, compact customer activity feed — jobs, communication, notes, billing,
+// files, agreements, tasks, and system activity. The time sits in a left gutter
+// connected to each row (not floating far right), rows are grouped by day with
+// relative headers, and system-generated entries render quieter than human ones.
 
 type EventConfig = {
   icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>;
-  bg: string;
-  color: string;
   label: string;
 };
 
 const EVENT_CONFIG: Record<EventType, EventConfig> = {
-  account_created:    { icon: UserPlus,      bg: "#e0e7ff", color: "#4f46e5", label: "Account Created" },
-  contact_added:      { icon: User,          bg: "#e0e7ff", color: "#4f46e5", label: "Contact Added" },
-  property_added:     { icon: Home,          bg: "#e0e7ff", color: "#4f46e5", label: "Property Added" },
-  lead_created:       { icon: TrendingUp,    bg: "#fef3c7", color: "#92400e", label: "Lead Created" },
-  lead_stage_changed: { icon: TrendingUp,    bg: "#fef3c7", color: "#92400e", label: "Lead Stage Changed" },
-  job_created:        { icon: Briefcase,     bg: "#e0e7ff", color: "#3730a3", label: "Job Created" },
-  job_scheduled:      { icon: Calendar,      bg: "#e0e7ff", color: "#3730a3", label: "Job Scheduled" },
-  job_completed:      { icon: CheckCircle,   bg: "#d1fae5", color: "#065f46", label: "Job Completed" },
-  work_order_created: { icon: ClipboardList, bg: "#e0e7ff", color: "#3730a3", label: "Work Order Created" },
-  quote_created:      { icon: FilePen,       bg: "#f5f3ff", color: "#6d28d9", label: "Quote Created" },
-  quote_sent:         { icon: FilePen,       bg: "#f5f3ff", color: "#6d28d9", label: "Quote Sent" },
-  quote_accepted:     { icon: FileCheck,     bg: "#d1fae5", color: "#065f46", label: "Quote Accepted" },
-  invoice_created:    { icon: Receipt,       bg: "#f5f3ff", color: "#6d28d9", label: "Invoice Created" },
-  payment_received:   { icon: DollarSign,    bg: "#d1fae5", color: "#065f46", label: "Payment Received" },
-  agreement_created:  { icon: FileText,      bg: "#ecfdf5", color: "#059669", label: "Agreement Created" },
-  agreement_renewed:  { icon: RefreshCw,     bg: "#ecfdf5", color: "#059669", label: "Agreement Renewed" },
-  photo_uploaded:     { icon: ImageIcon,     bg: "#eff6ff", color: "#2563eb", label: "Photo Uploaded" },
-  file_uploaded:      { icon: Paperclip,     bg: "#eff6ff", color: "#2563eb", label: "File Uploaded" },
-  note_added:         { icon: MessageSquare, bg: "var(--bg-input)", color: "var(--text-secondary)", label: "Note Added" },
-  email_sent:         { icon: Mail,          bg: "#eff6ff", color: "#2563eb", label: "Email Sent" },
-  sms_sent:           { icon: Smartphone,    bg: "#eff6ff", color: "#2563eb", label: "SMS Sent" },
-  call_logged:        { icon: Phone,         bg: "#eff6ff", color: "#2563eb", label: "Call Logged" },
-  task_created:       { icon: CheckSquare,   bg: "#fef3c7", color: "#92400e", label: "Task Created" },
-  task_completed:     { icon: CheckSquare,   bg: "#d1fae5", color: "#065f46", label: "Task Completed" },
+  account_created:    { icon: UserPlus,      label: "Account Created" },
+  contact_added:      { icon: User,          label: "Contact Added" },
+  property_added:     { icon: Home,          label: "Property Added" },
+  lead_created:       { icon: TrendingUp,    label: "Lead Created" },
+  lead_stage_changed: { icon: TrendingUp,    label: "Lead Stage Changed" },
+  job_created:        { icon: Briefcase,     label: "Job Created" },
+  job_scheduled:      { icon: Calendar,      label: "Job Scheduled" },
+  job_completed:      { icon: CheckCircle,   label: "Job Completed" },
+  work_order_created: { icon: ClipboardList, label: "Work Order Created" },
+  quote_created:      { icon: FilePen,       label: "Quote Created" },
+  quote_sent:         { icon: FilePen,       label: "Quote Sent" },
+  quote_accepted:     { icon: FileCheck,     label: "Quote Accepted" },
+  invoice_created:    { icon: Receipt,       label: "Invoice Created" },
+  payment_received:   { icon: DollarSign,    label: "Payment Received" },
+  agreement_created:  { icon: FileText,      label: "Agreement Created" },
+  agreement_renewed:  { icon: RefreshCw,     label: "Agreement Renewed" },
+  photo_uploaded:     { icon: ImageIcon,     label: "Photo Uploaded" },
+  file_uploaded:      { icon: Paperclip,     label: "File Uploaded" },
+  note_added:         { icon: MessageSquare, label: "Note Added" },
+  email_sent:         { icon: Mail,          label: "Email Sent" },
+  sms_sent:           { icon: Smartphone,    label: "SMS Sent" },
+  call_logged:        { icon: Phone,         label: "Call Logged" },
+  task_created:       { icon: CheckSquare,   label: "Task Created" },
+  task_completed:     { icon: CheckSquare,   label: "Task Completed" },
 };
+
+// Filter-chip categories + their accent colors (dark-mode friendly tints).
+type HistoryCategory = "all" | "jobs" | "communication" | "notes" | "billing" | "files" | "agreements" | "system";
+const HISTORY_CHIPS: { key: HistoryCategory; label: string }[] = [
+  { key: "all", label: "All" }, { key: "jobs", label: "Jobs" }, { key: "communication", label: "Communication" },
+  { key: "notes", label: "Notes" }, { key: "billing", label: "Billing" }, { key: "files", label: "Files" },
+  { key: "agreements", label: "Agreements" }, { key: "system", label: "System" },
+];
+const CATEGORY_COLOR: Record<Exclude<HistoryCategory, "all">, string> = {
+  jobs: "#6366f1", communication: "#0ea5e9", notes: "#f59e0b", billing: "#8b5cf6", files: "#14b8a6", agreements: "#10b981", system: "#6b7280",
+};
+const ALL_COLOR = "#6366f1";
+
+function categoryOf(t: EventType): Exclude<HistoryCategory, "all"> {
+  switch (t) {
+    case "job_created": case "job_scheduled": case "job_completed": case "work_order_created": return "jobs";
+    case "email_sent": case "sms_sent": case "call_logged": return "communication";
+    case "note_added": return "notes";
+    case "invoice_created": case "payment_received": case "quote_created": case "quote_sent": case "quote_accepted": return "billing";
+    case "photo_uploaded": case "file_uploaded": return "files";
+    case "agreement_created": case "agreement_renewed": return "agreements";
+    default: return "system";
+  }
+}
+// High-signal milestones surfaced by the "Important only" toggle.
+const IMPORTANT_EVENTS = new Set<EventType>(["job_scheduled", "job_completed", "payment_received", "invoice_created", "quote_accepted", "agreement_created", "agreement_renewed", "work_order_created"]);
+// Auto/system entries that render quieter than human activity.
+const SYSTEM_EVENTS = new Set<EventType>(["account_created", "contact_added", "property_added", "lead_created", "lead_stage_changed"]);
+
+// The contextual "related action" per event — navigates to the right profile tab.
+function actionFor(t: EventType): { label: string; tab: string } | null {
+  switch (t) {
+    case "job_created": case "job_scheduled": case "job_completed": case "work_order_created": return { label: "View Job", tab: "Jobs" };
+    case "email_sent": case "sms_sent": case "call_logged": return { label: "Reply", tab: "Communication" };
+    case "note_added": return { label: "View Note", tab: "Notes" };
+    case "invoice_created": case "payment_received": return { label: "Open Invoice", tab: "Billing" };
+    case "quote_created": case "quote_sent": case "quote_accepted": return { label: "View Quote", tab: "Billing" };
+    case "photo_uploaded": case "file_uploaded": return { label: "View Files", tab: "Photos & Files" };
+    case "agreement_created": case "agreement_renewed": return { label: "View Agreement", tab: "Agreements" };
+    case "lead_created": case "lead_stage_changed": return { label: "View Lead", tab: "Leads" };
+    case "contact_added": return { label: "View Contacts", tab: "Contacts" };
+    case "property_added": return { label: "View Properties", tab: "Properties" };
+    case "task_created": case "task_completed": return { label: "View Tasks", tab: "Tasks" };
+    default: return null;
+  }
+}
 
 function eventInitials(name: string): string {
   const p = (name || "").trim().split(/\s+/);
@@ -1362,22 +1411,40 @@ function eventTime(iso: string): string | null {
   const d = new Date(iso);
   return isNaN(d.getTime()) ? null : d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
 }
-function dayLabel(iso: string): string {
+// Relative date headers: Today, Yesterday, then "Mon, Jun 23" (+ year if not current).
+function dayHeading(iso: string): string {
   const d = new Date(/T/.test(iso) ? iso : iso + "T00:00:00");
-  return isNaN(d.getTime()) ? iso : d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" });
+  if (isNaN(d.getTime())) return iso;
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const that = new Date(d); that.setHours(0, 0, 0, 0);
+  const diff = Math.round((today.getTime() - that.getTime()) / 86_400_000);
+  if (diff === 0) return "Today";
+  if (diff === 1) return "Yesterday";
+  const sameYear = d.getFullYear() === new Date().getFullYear();
+  return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", ...(sameYear ? {} : { year: "numeric" }) });
 }
 
-function TimelineTab({ id }: { id: string }) {
+function HistoryTab({ id, onTab }: { id: string; onTab: (tab: string) => void }) {
   const events = useMemo(() => getActivityEvents(id), [id]);
   const [q, setQ] = useState("");
+  const [cat, setCat] = useState<HistoryCategory>("all");
+  const [newestFirst, setNewestFirst] = useState(true);
+  const [importantOnly, setImportantOnly] = useState(false);
 
   const s = q.trim().toLowerCase();
-  const filtered = events.filter(e => {
-    if (s && !`${e.title} ${e.description ?? ""} ${e.createdBy} ${EVENT_CONFIG[e.eventType].label}`.toLowerCase().includes(s)) return false;
-    return true;
-  });
+  const filtered = useMemo(() => {
+    const list = events.filter(e => {
+      if (cat !== "all" && categoryOf(e.eventType) !== cat) return false;
+      if (importantOnly && !IMPORTANT_EVENTS.has(e.eventType)) return false;
+      if (s && !`${e.title} ${e.description ?? ""} ${e.createdBy} ${EVENT_CONFIG[e.eventType].label}`.toLowerCase().includes(s)) return false;
+      return true;
+    });
+    return newestFirst ? list : [...list].reverse();   // events arrive newest-first
+  }, [events, cat, importantOnly, s, newestFirst]);
 
-  // Group consecutive events by calendar day for clear date headers.
+  const countFor = (key: HistoryCategory) => key === "all" ? events.length : events.filter(e => categoryOf(e.eventType) === key).length;
+
+  // Group consecutive rows by calendar day for the date headers.
   const groups: { day: string; items: typeof filtered }[] = [];
   for (const e of filtered) {
     const day = (e.createdAt || "").slice(0, 10);
@@ -1386,59 +1453,119 @@ function TimelineTab({ id }: { id: string }) {
     else groups.push({ day, items: [e] });
   }
 
+  const toggleBase = "inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors";
+
   return (
     <div className="space-y-4">
-      {/* Toolbar — search */}
-      <div className="flex items-center justify-between gap-2 flex-wrap">
-        <div className="flex items-center gap-2 rounded-lg px-3 py-2 flex-1 min-w-[200px] max-w-sm" style={{ backgroundColor: "var(--bg-input)" }}>
-          <Search className="w-3.5 h-3.5 shrink-0" style={{ color: "var(--text-muted)" }} />
-          <input value={q} onChange={e => setQ(e.target.value)} placeholder="Search activity, people…" className="bg-transparent text-sm outline-none w-full" style={{ color: "var(--text-primary)" }} />
+      {/* Toolbar — search + sort/important */}
+      <div className="space-y-3">
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-2 rounded-lg px-3 py-2 flex-1 min-w-[200px] max-w-sm" style={{ backgroundColor: "var(--bg-input)" }}>
+            <Search className="w-3.5 h-3.5 shrink-0" style={{ color: "var(--text-muted)" }} />
+            <input value={q} onChange={e => setQ(e.target.value)} placeholder="Search history..." className="bg-transparent text-sm outline-none w-full" style={{ color: "var(--text-primary)" }} />
+          </div>
+          <div className="flex items-center gap-1.5 ml-auto">
+            <button onClick={() => setNewestFirst(v => !v)} className={toggleBase}
+              style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }} title="Toggle sort order">
+              <ArrowDownUp className="w-3.5 h-3.5" /> {newestFirst ? "Newest first" : "Oldest first"}
+            </button>
+            <button onClick={() => setImportantOnly(v => !v)} className={toggleBase}
+              style={importantOnly
+                ? { border: "1px solid #f59e0b59", backgroundColor: "#f59e0b1a", color: "#f59e0b" }
+                : { border: "1px solid var(--border)", color: "var(--text-secondary)" }}>
+              <Star className="w-3.5 h-3.5" style={{ fill: importantOnly ? "#f59e0b" : "none" }} /> Important only
+            </button>
+          </div>
         </div>
-        <p className="text-xs shrink-0" style={{ color: "var(--text-muted)" }}>{filtered.length} of {events.length} {events.length === 1 ? "event" : "events"}</p>
+
+        {/* Filter chips */}
+        <div className="flex items-center gap-1.5 flex-wrap">
+          {HISTORY_CHIPS.map(c => {
+            const active = cat === c.key;
+            const color = c.key === "all" ? ALL_COLOR : CATEGORY_COLOR[c.key];
+            const n = countFor(c.key);
+            return (
+              <button key={c.key} onClick={() => setCat(c.key)}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-colors"
+                style={active
+                  ? { backgroundColor: color + "1f", color, border: `1px solid ${color}59` }
+                  : { backgroundColor: "transparent", color: "var(--text-muted)", border: "1px solid var(--border-subtle)" }}>
+                {c.label}
+                <span className="text-[10px]" style={{ color: active ? color : "var(--text-muted)", opacity: 0.8 }}>{n}</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {filtered.length === 0 ? (
         <div className="py-12 text-center rounded-xl" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>
-          <p className="text-sm" style={{ color: "var(--text-muted)" }}>No matching activity.</p>
+          <p className="text-sm" style={{ color: "var(--text-muted)" }}>No matching history.</p>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-5">
           {groups.map(group => (
             <div key={group.day}>
-              <p className="text-[11px] font-semibold uppercase tracking-wider mb-2 px-1" style={{ color: "var(--text-muted)" }}>{dayLabel(group.day)}</p>
-              <div className="relative">
-                <div className="absolute top-3 bottom-3" style={{ left: "19px", width: "2px", backgroundColor: "var(--border-subtle)" }} />
-                <div className="space-y-1.5">
-                  {group.items.map(event => {
-                    const config = EVENT_CONFIG[event.eventType];
-                    const Icon = config.icon;
-                    const time = eventTime(event.createdAt);
-                    return (
-                      <div key={event.id} className="relative flex gap-4">
-                        <div className="relative z-10 w-10 h-10 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: config.bg, boxShadow: "0 0 0 2px var(--bg-page)" }}>
-                          <Icon className="w-4 h-4" style={{ color: config.color }} />
+              {/* Date header */}
+              <div className="flex items-center gap-2.5 mb-2">
+                <p className="text-[11px] font-semibold uppercase tracking-wider shrink-0" style={{ color: "var(--text-secondary)" }}>{dayHeading(group.day)}</p>
+                <div className="flex-1 h-px" style={{ backgroundColor: "var(--border-subtle)" }} />
+                <span className="text-[10px] shrink-0" style={{ color: "var(--text-muted)" }}>{group.items.length}</span>
+              </div>
+
+              <div className="space-y-0.5">
+                {group.items.map(event => {
+                  const config = EVENT_CONFIG[event.eventType];
+                  const Icon = config.icon;
+                  const time = eventTime(event.createdAt);
+                  const quiet = SYSTEM_EVENTS.has(event.eventType) || event.createdBy === "—";
+                  const color = quiet ? "var(--text-muted)" : CATEGORY_COLOR[categoryOf(event.eventType)];
+                  const action = actionFor(event.eventType);
+                  return (
+                    <div key={event.id} className="flex gap-3 rounded-lg px-2 py-2 -mx-2 transition-colors hover:bg-[var(--bg-surface-2)]">
+                      {/* Time gutter — connected to the row */}
+                      <div className="w-12 shrink-0 text-right pt-1">
+                        <span className="text-[11px] tabular-nums" style={{ color: "var(--text-muted)" }}>{time ?? ""}</span>
+                      </div>
+
+                      {/* Category icon node */}
+                      <div className="shrink-0 pt-0.5">
+                        <span className="w-7 h-7 rounded-lg flex items-center justify-center"
+                          style={{ backgroundColor: quiet ? "var(--bg-input)" : color + "1a", border: `1px solid ${quiet ? "var(--border-subtle)" : color + "33"}` }}>
+                          <Icon className="w-3.5 h-3.5" style={{ color }} />
+                        </span>
+                      </div>
+
+                      {/* Content */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded"
+                            style={{ backgroundColor: quiet ? "var(--bg-input)" : color + "1a", color: quiet ? "var(--text-muted)" : color }}>
+                            {config.label}
+                          </span>
+                          {quiet && <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>System</span>}
                         </div>
-                        <div className="flex-1 min-w-0 rounded-xl px-4 py-3" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="min-w-0">
-                              <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded" style={{ backgroundColor: config.bg, color: config.color }}>{config.label}</span>
-                              <p className="text-sm font-medium mt-1" style={{ color: "var(--text-primary)" }}>{event.title}</p>
-                              {event.description && <p className="text-xs mt-0.5 leading-relaxed" style={{ color: "var(--text-secondary)" }}>{event.description}</p>}
-                            </div>
-                            <span className="flex items-center gap-1 text-xs shrink-0 mt-0.5 whitespace-nowrap" style={{ color: "var(--text-muted)" }}>
-                              <Clock className="w-3 h-3" /> {time ?? event.displayDate}
-                            </span>
-                          </div>
-                          {/* Who the activity belongs to */}
-                          <div className="flex items-center gap-1.5 mt-2 pt-2" style={{ borderTop: "1px solid var(--border-subtle)" }}>
-                            <span className="w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-bold text-white shrink-0" style={{ backgroundColor: event.createdBy === "—" ? "#9ca3af" : "#6366f1" }}>{eventInitials(event.createdBy)}</span>
-                            <span className="text-[11px]" style={{ color: "var(--text-secondary)" }}>{event.createdBy === "—" ? "System" : event.createdBy}</span>
-                          </div>
+                        <p className="text-sm font-medium mt-1 leading-snug" style={{ color: quiet ? "var(--text-secondary)" : "var(--text-primary)" }}>{event.title}</p>
+                        {event.description && <p className="text-xs mt-0.5 leading-relaxed" style={{ color: "var(--text-muted)" }}>{event.description}</p>}
+
+                        <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                          <span className="inline-flex items-center gap-1.5">
+                            <span className="w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold text-white shrink-0" style={{ backgroundColor: event.createdBy === "—" ? "#9ca3af" : "#6366f1" }}>{eventInitials(event.createdBy)}</span>
+                            <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>{event.createdBy === "—" ? "System" : event.createdBy}</span>
+                          </span>
+                          {action && (
+                            <>
+                              <span className="text-[11px]" style={{ color: "var(--border)" }}>·</span>
+                              <button onClick={() => onTab(action.tab)} className="inline-flex items-center gap-0.5 text-[11px] font-medium transition-colors hover:underline" style={{ color: "var(--accent-text)" }}>
+                                {action.label} <ChevronRight className="w-3 h-3" />
+                              </button>
+                            </>
+                          )}
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           ))}
@@ -1607,7 +1734,7 @@ function CustomerDetailContent({ params }: { params: Promise<{ id: string }> }) 
               {tab === "Photos & Files" && section("Photos & Files", <PhotoGallery recordLevel="account" scope={{ accountId: id }} accountName={customer.name} />)}
               {tab === "Communication"  && <StubTab label="Communication" link="/inbox" />}
               {tab === "Billing"        && section("Billing", <BillingTab id={id} />)}
-              {tab === "Timeline"       && section("Timeline", <TimelineTab id={id} />)}
+              {tab === "History"        && section("History", <HistoryTab id={id} onTab={setTab} />)}
             </>
           );
         })()}
