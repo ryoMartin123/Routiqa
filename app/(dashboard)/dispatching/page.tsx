@@ -135,7 +135,17 @@ export default function CalendarPage() {
   // clean when you can actually drop.
   const [qDragPos, setQDragPos] = useState<{ x: number; y: number } | null>(null);
   useEffect(() => {
-    const onOver = (e: DragEvent) => { if (draggedQueueItem) setQDragPos({ x: e.clientX, y: e.clientY }); };
+    const onOver = (e: DragEvent) => {
+      if (!draggedQueueItem) return;
+      // Mark the whole document a valid drop target while dragging from the queue.
+      // Without this, releasing over a non-droppable area triggers the browser's
+      // snap-back animation, which DELAYS `dragend` (and `drop` never fires) — so
+      // the cursor-follow card lingers. Allowing the drop everywhere makes the
+      // release fire immediately, clearing the preview at once.
+      e.preventDefault();
+      if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
+      setQDragPos({ x: e.clientX, y: e.clientY });
+    };
     const onEnd = () => { setQDragPos(null); overValidSlot = false; };
     document.addEventListener("dragover", onOver);
     document.addEventListener("drop", onEnd);
@@ -913,9 +923,15 @@ function DispatchBoard({ focus, mode, items, roster, availability, dayStart, day
       // X, so an X-only test would misread it as a click and open the drawer.
       if (Math.abs(ev.clientX - startX) > 4 || Math.abs(ev.clientY - startY) > 4) moved = true;
       if (kind === "move") {
-        curStart = clamp(snap(mm - grab), 0, totalMin - dur0); curDur = dur0;
+        curDur = dur0;
         const overTrack = (document.elementFromPoint(ev.clientX, ev.clientY) as HTMLElement | null)?.closest("[data-track]") as HTMLElement | null;
         if (overTrack?.dataset.tech) curTech = overTrack.dataset.tech;
+        // Cross-tech reassignment behaves like a queue drop — snap the START to the
+        // beginning of the time block under the cursor (ignore where you grabbed it).
+        // Same-tech nudges keep the grab offset so the block tracks your pointer.
+        curStart = curTech !== originTech
+          ? clamp(Math.floor(mm / increment) * increment, 0, totalMin - dur0)
+          : clamp(snap(mm - grab), 0, totalMin - dur0);
       } else { curDur = clamp(snap(mm - base), 30, totalMin - base); curStart = base; }
       // Reassigning to a different tech is always a move, never a click.
       if (curTech !== originTech) moved = true;
@@ -1063,6 +1079,27 @@ function DispatchBoard({ focus, mode, items, roster, availability, dayStart, day
                 );
               })()}
 
+              {/* Live MOVE preview — ghost of an existing board job at the slot it
+                  lands in on ANOTHER tech's row. Mirrors the queue-drag ghost so
+                  reassigning across techs reads the same as scheduling from the queue. */}
+              {preview && preview.tech === tech.name && (() => {
+                const mv = dayItems.find(x => x.id === preview.id);
+                if (!mv || (mv.assignedTo ?? "") === tech.name) return null;   // same lane → the block itself shows the move
+                const dur = preview.durationMinutes;
+                const left = clamp((preview.startMin / totalMin) * 100, 0, 100);
+                const width = clamp((dur / totalMin) * 100, 1, 100 - left);
+                const invalid = laneOverlap(tech.name, preview.startMin, dur, mv.id);
+                const job = mv.sourceModule === "jobs" ? getJob(mv.sourceId) : undefined;
+                const c = invalid ? "#ef4444" : (job ? resolveJobTypeColor(job.type) : mv.color);
+                return (
+                  <div className="absolute top-1 bottom-1 rounded-lg pointer-events-none overflow-hidden flex flex-col justify-center px-2 z-30"
+                    style={{ left: `${left}%`, width: `${width}%`, backgroundColor: c + "26", border: `1.5px dashed ${c}` }}>
+                    <p className="text-[10px] font-semibold truncate" style={{ color: "var(--text-primary)" }}>{mv.customerName ?? mv.title}</p>
+                    <p className="text-[9px] truncate" style={{ color: invalid ? "#ef4444" : "var(--text-muted)" }}>{minToTime(preview.startMin)} – {minToTime(preview.startMin + dur)}{invalid ? " · taken" : ""}</p>
+                  </div>
+                );
+              })()}
+
               {/* Availability overlays — PTO / time off / training / blocked (behind jobs) */}
               {techAvail.filter(a => AVAILABILITY_CONFIG[a.kind].blocksWork).map(a => {
                 const cfg = AVAILABILITY_CONFIG[a.kind]; const { left, width } = availSpan(a);
@@ -1097,17 +1134,20 @@ function DispatchBoard({ focus, mode, items, roster, availability, dayStart, day
               {/* Job blocks */}
               {techItems.map(i => {
                 const p = preview?.id === i.id ? preview : null;
-                const sm = p ? p.startMin : startMinOf(i);
-                const dur = p ? p.durationMinutes : i.durationMinutes;
+                const movingAway = p ? p.tech !== (i.assignedTo ?? "") : false;  // dragging to another tech
+                // Same-lane move/resize → the block follows the cursor. Cross-tech move
+                // → the origin block stays put (faded) and the target lane shows the ghost.
+                const tracking = !!p && !movingAway;
+                const sm = tracking ? p!.startMin : startMinOf(i);
+                const dur = tracking ? p!.durationMinutes : i.durationMinutes;
                 const left = clamp((sm / totalMin) * 100, 0, 100);
                 const width = Math.max(3, (Math.min(dur, totalMin - sm) / totalMin) * 100);
                 const prio = i.priority && i.priority !== "normal" ? PRIORITY_CONFIG[i.priority] : null;
-                const movingAway = p && p.tech !== (i.assignedTo ?? "");  // dragging to another tech
                 // Card body shade = the JOB TYPE; the full-height left section is the
-                // status stage icon. While dragging, flag an overlapping drop in red.
+                // status stage icon. While dragging in-lane, flag an overlapping drop in red.
                 const job = i.sourceModule === "jobs" ? getJob(i.sourceId) : undefined;
                 const typeColor = job ? resolveJobTypeColor(job.type) : i.color;
-                const invalid = !!p && laneOverlap(p.tech, p.startMin, p.durationMinutes, i.id);
+                const invalid = tracking && laneOverlap(p!.tech, p!.startMin, p!.durationMinutes, i.id);
                 return (
                   <div key={i.id} data-block
                     onMouseDown={e => beginDrag(e, i, "move")}
@@ -1124,7 +1164,7 @@ function DispatchBoard({ focus, mode, items, roster, availability, dayStart, day
                         {!movingAway && prio && <span className="text-[8px] font-bold px-1 rounded shrink-0" style={{ backgroundColor: prio.bg, color: prio.color }}>{prio.label}</span>}
                       </div>
                       <p className="text-[9px] truncate leading-tight" style={{ color: "var(--text-muted)" }}>
-                        {p ? `${minToTime(sm)} · ${dur}m` : `${fmtTime(i.start)} · ${i.jobType ? jobTypeLabel(i.jobType) : ""}${i.city ? ` · ${i.city}` : ""}`}
+                        {tracking ? `${minToTime(sm)} · ${dur}m` : `${fmtTime(i.start)} · ${i.jobType ? jobTypeLabel(i.jobType) : ""}${i.city ? ` · ${i.city}` : ""}`}
                       </p>
                     </div>
                     {/* Resize handle (right edge) */}
