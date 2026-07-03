@@ -6,17 +6,22 @@
 // with secondary transitions tucked beneath it. Contact actions are a compact
 // row; the contextual "+" opens job quick-actions. No global search/nav bar here.
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useRef, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   Phone, MessageSquare, Navigation, Camera, User, Clock, MapPin, AlertTriangle,
   FileText, ClipboardCheck, Wrench, ChevronRight, Briefcase, CheckCircle2, Circle,
-  Plus, X, StickyNote, Package, CheckSquare, Flag, Play, DollarSign, Trash2,
+  Plus, PlusCircle, X, StickyNote, Package, CheckSquare, Flag, Play, DollarSign, Trash2,
+  Receipt, Search, Pencil,
 } from "lucide-react";
 import MobileHeader from "@/components/mobile/MobileHeader";
 import { Section, Card, DetailRow, StatusChip, EmptyState, prettyType, ACCENT } from "@/components/mobile/ui";
-import { getJob, type JobStatus } from "@/lib/jobs/data";
+import { getJob, getWorkOrder, updateWorkOrderById, type JobStatus, type WorkOrderLineItem } from "@/lib/jobs/data";
+import { getAllItems, getItem, type Item } from "@/lib/items/data";
+import { ITEM_TYPE_CONFIG } from "@/lib/items/types";
+import { consumeFromTruck, returnToTruck, findStockItem } from "@/lib/inventory/data";
+import { techTruckName } from "@/lib/mobile/truck";
 import { getTasksForJob } from "@/lib/tasks/data";
 import { getCustomer } from "@/lib/customers/data";
 import { getFiles } from "@/lib/files/data";
@@ -25,11 +30,17 @@ import PhotoCapture from "@/components/mobile/PhotoCapture";
 import BottomSheet from "@/components/mobile/BottomSheet";
 import { primaryAction, secondaryActions, setMyJobStatus, getMobileCaps, getCurrentTech } from "@/lib/mobile/data";
 import { getJobMaterials, addJobMaterial, removeJobMaterial } from "@/lib/mobile/materials";
-import { getAllInvoices, recordPayment, type InvoiceRecord } from "@/lib/quotes/data";
+import { getAllInvoices, recordPayment, createInvoiceFromWorkOrder, type InvoiceRecord } from "@/lib/quotes/data";
 
 const PRIMARY_ICON: Partial<Record<JobStatus, React.ElementType>> = {
   en_route: Flag, in_progress: CheckCircle2, waiting_on_parts: Play, waiting_on_customer: Play,
 };
+const money = (n: number) => `$${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+// Catalog item → work-order line kind (part / labor / fee).
+const kindForItemType = (t: Item["type"]): WorkOrderLineItem["kind"] =>
+  t === "labor" || t === "service" ? "labor"
+  : t === "fee" || t === "discount" || t === "membership" ? "fee"
+  : "part";
 
 export default function JobDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -38,6 +49,9 @@ export default function JobDetailPage() {
   const [capture, setCapture] = useState(false);
   const [qa, setQa] = useState(false);
   const [matSheet, setMatSheet] = useState(false);
+  const [catalogSheet, setCatalogSheet] = useState(false);
+  const [customLineSheet, setCustomLineSheet] = useState(false);
+  const [signSheet, setSignSheet] = useState(false);
   const [paySheet, setPaySheet] = useState<InvoiceRecord | null>(null);
   const caps = useMemo(() => getMobileCaps(), []);
   // eslint-disable-next-line react-hooks/exhaustive-deps -- tick forces a re-read after a status change
@@ -51,6 +65,12 @@ export default function JobDetailPage() {
   const checklist = useMemo(() => (job ? getJobPhotoChecklist(job.id, job.type) : []), [job, tick]);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const materials = useMemo(() => (job ? getJobMaterials(job.id) : []), [job, tick]);
+  // Priced work order for field-pricing techs — the same lineItems store the desktop
+  // WorkOrderBilling + Create-invoice bridge use.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const wo = useMemo(() => (job ? getWorkOrder(job.id) : undefined), [job, tick]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const catalog = useMemo(() => (job ? getAllItems().filter(i => i.active && i.companyId === job.companyId) : []), [job]);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const invoices = useMemo(() => (job && caps.invoicesView ? getAllInvoices().filter(i => i.jobId === job.id) : []), [job, tick]);
 
@@ -67,6 +87,46 @@ export default function JobDetailPage() {
   const mapsHref = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(job.propertyAddress || job.customerName)}`;
   const hasBottom = startRoute || !!primary || secondary.length > 0;
   const prog = checklistProgress(checklist);
+
+  // ── Priced Parts & Labor (field-pricing techs) ──
+  const partsPriced = caps.woPricing && !!wo;
+  const woLines = wo?.lineItems ?? [];
+  const woSubtotal = woLines.reduce((s, li) => s + li.qty * li.unitPrice, 0);
+  const saveWoLines = (lines: WorkOrderLineItem[]) => {
+    if (wo) updateWorkOrderById(wo.id, { lineItems: lines });
+    setTick(t => t + 1);
+  };
+  const truckName = techTruckName(getCurrentTech());
+  const addCatalogLine = (it: Item) => {
+    const qty = it.defaultQuantity || 1;
+    saveWoLines([...woLines, {
+      id: `woli-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`,
+      kind: kindForItemType(it.type), description: it.name, qty,
+      unitPrice: it.unitPrice, itemId: it.id, taxable: it.taxable, unitCost: it.unitCost,
+    }]);
+    // Deduct from the tech's truck when the part is stocked there (services/labor no-op).
+    if (it.sku && truckName) consumeFromTruck(it.sku, truckName, qty, { jobId: job.id, createdBy: getCurrentTech().fullName, notes: wo?.title });
+  };
+  const addCustomLine = (name: string, qty: number, price: number) => saveWoLines([...woLines, {
+    id: `woli-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`, kind: "part", description: name, qty, unitPrice: price,
+  }]);
+  const removeWoLine = (lineId: string) => {
+    const line = woLines.find(l => l.id === lineId);
+    saveWoLines(woLines.filter(l => l.id !== lineId));
+    // Put truck stock back if this line consumed it.
+    const sku = line?.itemId ? getItem(line.itemId)?.sku : undefined;
+    if (sku && truckName) returnToTruck(sku, truckName, line!.qty);
+  };
+  const invoiceFromWo = () => {
+    if (!wo) return;
+    const inv = createInvoiceFromWorkOrder(wo.id);
+    setTick(t => t + 1);
+    if (inv) setPaySheet(inv);   // straight to Collect payment
+  };
+  const saveSignature = (name: string, dataUrl: string) => {
+    if (wo) updateWorkOrderById(wo.id, { signatureName: name, signatureDataUrl: dataUrl, signedAt: new Date().toISOString() });
+    setTick(t => t + 1);
+  };
 
   return (
     <div>
@@ -156,29 +216,84 @@ export default function JobDetailPage() {
           )}
         </Section>
 
-        {/* Materials — a real field log against this job */}
-        <Section title="Materials & equipment" action={materials.length > 0 ? <span className="text-xs" style={{ color: "var(--text-muted)" }}>{materials.length} logged</span> : undefined}>
-          <Card>
-            {materials.map((m, i) => (
-              <div key={m.id} className="flex items-center gap-3 px-4 py-3" style={{ borderTop: i ? "1px solid var(--border)" : "none" }}>
-                <Package className="w-4 h-4 shrink-0" style={{ color: "var(--text-muted)" }} />
-                <span className="text-sm flex-1 truncate" style={{ color: "var(--text-primary)" }}>{m.name}</span>
-                <span className="text-sm tabular-nums" style={{ color: "var(--text-secondary)" }}>× {m.qty}</span>
-                <button onClick={() => { removeJobMaterial(job.id, m.id); setTick(t => t + 1); }} aria-label={`Remove ${m.name}`} className="p-1.5 -mr-1.5 active:opacity-60">
-                  <Trash2 className="w-4 h-4" style={{ color: "var(--text-muted)" }} />
-                </button>
-              </div>
-            ))}
-            <button onClick={() => setMatSheet(true)} className="w-full flex items-center gap-3 px-4 py-3.5 active:bg-[var(--bg-surface-2)]" style={{ borderTop: materials.length ? "1px solid var(--border)" : "none" }}>
-              <Wrench className="w-4 h-4" style={{ color: ACCENT }} /><span className="text-sm flex-1 text-left font-medium" style={{ color: ACCENT }}>Log materials used</span><ChevronRight className="w-4 h-4" style={{ color: "var(--text-muted)" }} />
-            </button>
-            {caps.customersView && (
-              <Link href={`/mobile/customers/${job.accountId}`} className="w-full flex items-center gap-3 px-4 py-3.5 active:bg-[var(--bg-surface-2)]" style={{ borderTop: "1px solid var(--border)" }}>
-                <FileText className="w-4 h-4" style={{ color: "var(--text-muted)" }} /><span className="text-sm flex-1 text-left" style={{ color: "var(--text-primary)" }}>Customer, property &amp; equipment</span><ChevronRight className="w-4 h-4" style={{ color: "var(--text-muted)" }} />
-              </Link>
+        {/* Parts & Labor — priced, catalog-backed (field-pricing techs). Same WO
+            lineItems the desktop uses; turns into an invoice right here. */}
+        {partsPriced ? (
+          <Section title="Parts & labor" action={woLines.length > 0 ? <span className="text-xs font-semibold tabular-nums" style={{ color: "var(--text-secondary)" }}>{money(woSubtotal)}</span> : undefined}>
+            <Card>
+              {woLines.map((li, i) => (
+                <div key={li.id} className="flex items-center gap-3 px-4 py-3" style={{ borderTop: i ? "1px solid var(--border)" : "none" }}>
+                  <Package className="w-4 h-4 shrink-0" style={{ color: "var(--text-muted)" }} />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm truncate" style={{ color: "var(--text-primary)" }}>{li.description}</p>
+                    <p className="text-xs tabular-nums" style={{ color: "var(--text-muted)" }}>{li.qty} × {money(li.unitPrice)}</p>
+                  </div>
+                  <span className="text-sm font-semibold tabular-nums" style={{ color: "var(--text-primary)" }}>{money(li.qty * li.unitPrice)}</span>
+                  <button onClick={() => removeWoLine(li.id)} aria-label="Remove" className="p-1.5 -mr-1.5 active:opacity-60"><Trash2 className="w-4 h-4" style={{ color: "var(--text-muted)" }} /></button>
+                </div>
+              ))}
+              <button onClick={() => setCatalogSheet(true)} className="w-full flex items-center gap-3 px-4 py-3.5 active:bg-[var(--bg-surface-2)]" style={{ borderTop: woLines.length ? "1px solid var(--border)" : "none" }}>
+                <PlusCircle className="w-4 h-4" style={{ color: ACCENT }} /><span className="text-sm flex-1 text-left font-medium" style={{ color: ACCENT }}>Add from catalog</span><ChevronRight className="w-4 h-4" style={{ color: "var(--text-muted)" }} />
+              </button>
+              <button onClick={() => setCustomLineSheet(true)} className="w-full flex items-center gap-3 px-4 py-3.5 active:bg-[var(--bg-surface-2)]" style={{ borderTop: "1px solid var(--border)" }}>
+                <Wrench className="w-4 h-4" style={{ color: "var(--text-muted)" }} /><span className="text-sm flex-1 text-left" style={{ color: "var(--text-primary)" }}>Add custom line</span><ChevronRight className="w-4 h-4" style={{ color: "var(--text-muted)" }} />
+              </button>
+            </Card>
+            {woLines.length > 0 && (
+              <button onClick={invoiceFromWo} className="w-full min-h-[50px] mt-2.5 rounded-2xl flex items-center justify-center gap-2 text-[15px] font-bold text-white active:scale-[0.99] transition-transform" style={{ backgroundColor: "#16a34a" }}>
+                <Receipt className="w-5 h-5" /> Invoice &amp; collect · {money(woSubtotal)}
+              </button>
             )}
-          </Card>
-        </Section>
+          </Section>
+        ) : (
+          /* Usage-only log (office prices it) */
+          <Section title="Materials & equipment" action={materials.length > 0 ? <span className="text-xs" style={{ color: "var(--text-muted)" }}>{materials.length} logged</span> : undefined}>
+            <Card>
+              {materials.map((m, i) => (
+                <div key={m.id} className="flex items-center gap-3 px-4 py-3" style={{ borderTop: i ? "1px solid var(--border)" : "none" }}>
+                  <Package className="w-4 h-4 shrink-0" style={{ color: "var(--text-muted)" }} />
+                  <span className="text-sm flex-1 truncate" style={{ color: "var(--text-primary)" }}>{m.name}</span>
+                  <span className="text-sm tabular-nums" style={{ color: "var(--text-secondary)" }}>× {m.qty}</span>
+                  <button onClick={() => { removeJobMaterial(job.id, m.id); setTick(t => t + 1); }} aria-label={`Remove ${m.name}`} className="p-1.5 -mr-1.5 active:opacity-60">
+                    <Trash2 className="w-4 h-4" style={{ color: "var(--text-muted)" }} />
+                  </button>
+                </div>
+              ))}
+              <button onClick={() => setMatSheet(true)} className="w-full flex items-center gap-3 px-4 py-3.5 active:bg-[var(--bg-surface-2)]" style={{ borderTop: materials.length ? "1px solid var(--border)" : "none" }}>
+                <Wrench className="w-4 h-4" style={{ color: ACCENT }} /><span className="text-sm flex-1 text-left font-medium" style={{ color: ACCENT }}>Log materials used</span><ChevronRight className="w-4 h-4" style={{ color: "var(--text-muted)" }} />
+              </button>
+            </Card>
+          </Section>
+        )}
+
+        {/* Customer / property / equipment */}
+        {caps.customersView && (
+          <Link href={`/mobile/customers/${job.accountId}`} className="flex items-center gap-3 px-4 py-3.5 rounded-2xl active:bg-[var(--bg-surface-2)]" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
+            <FileText className="w-4 h-4" style={{ color: "var(--text-muted)" }} /><span className="text-sm flex-1 text-left" style={{ color: "var(--text-primary)" }}>Customer, property &amp; equipment</span><ChevronRight className="w-4 h-4" style={{ color: "var(--text-muted)" }} />
+          </Link>
+        )}
+
+        {/* Customer sign-off — capture approval / completion signature on the WO */}
+        {wo && (
+          <Section title="Customer sign-off">
+            <Card className="p-4">
+              {wo.signatureDataUrl ? (
+                <div>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={wo.signatureDataUrl} alt="Signature" className="w-full rounded-xl" style={{ height: 120, objectFit: "contain", backgroundColor: "#fff", border: "1px solid var(--border)" }} />
+                  <div className="flex items-center justify-between mt-2">
+                    <p className="text-xs" style={{ color: "var(--text-muted)" }}>Signed by <span className="font-semibold" style={{ color: "var(--text-secondary)" }}>{wo.signatureName || "Customer"}</span></p>
+                    <button onClick={() => setSignSheet(true)} className="text-xs font-semibold active:opacity-60" style={{ color: ACCENT }}>Re-sign</button>
+                  </div>
+                </div>
+              ) : (
+                <button onClick={() => setSignSheet(true)} className="w-full min-h-[48px] rounded-2xl flex items-center justify-center gap-2 text-[15px] font-semibold active:scale-[0.99] transition-transform" style={{ border: `1.5px dashed ${ACCENT}66`, color: ACCENT, backgroundColor: ACCENT + "0d" }}>
+                  <Pencil className="w-4 h-4" /> Get customer signature
+                </button>
+              )}
+            </Card>
+          </Section>
+        )}
 
         {/* Financials — only when the CRM reveals totals to this role */}
         {caps.financials && (job.estimatedAmount || invoices.length > 0) && (
@@ -237,6 +352,9 @@ export default function JobDetailPage() {
         jobId={job.id} defaultCategory={checklist.find(c => !c.captured)?.key} onSaved={() => setTick(t => t + 1)} />
 
       <MaterialSheet open={matSheet} onClose={() => setMatSheet(false)} jobId={job.id} onSaved={() => setTick(t => t + 1)} />
+      <CatalogSheet open={catalogSheet} onClose={() => setCatalogSheet(false)} items={catalog} truckName={truckName} onAdd={addCatalogLine} />
+      <CustomLineSheet open={customLineSheet} onClose={() => setCustomLineSheet(false)} onAdd={addCustomLine} />
+      {signSheet && <SignatureSheet defaultName={job.customerName} onClose={() => setSignSheet(false)} onSave={saveSignature} />}
       {caps.collectPayments && <PaymentSheet invoice={paySheet} onClose={() => setPaySheet(null)} onSaved={() => setTick(t => t + 1)} />}
     </div>
   );
@@ -269,6 +387,144 @@ function MaterialSheet({ open, onClose, jobId, onSaved }: { open: boolean; onClo
           className="w-full min-h-[50px] rounded-2xl text-base font-bold text-white active:scale-[0.99] transition-transform disabled:opacity-40"
           style={{ backgroundColor: ACCENT }}>
           Add to job
+        </button>
+      </div>
+    </BottomSheet>
+  );
+}
+
+// Pull a priced service/part from the catalog onto the work order (tap to add).
+// Shows how many the tech has on their truck (by SKU) so they can see stock.
+function CatalogSheet({ open, onClose, items, truckName, onAdd }: { open: boolean; onClose: () => void; items: Item[]; truckName?: string; onAdd: (it: Item) => void }) {
+  const [q, setQ] = useState("");
+  const filtered = items.filter(i => !q || i.name.toLowerCase().includes(q.toLowerCase()) || (i.sku ?? "").toLowerCase().includes(q.toLowerCase()));
+  return (
+    <BottomSheet open={open} onClose={onClose} title="Add from catalog" subtitle={truckName ? `Tap to add · stock shown for ${truckName}` : "Services & common parts — tap to add"}>
+      <div className="pb-2">
+        <div className="flex items-center gap-2 rounded-xl px-3.5 mb-2" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-input)" }}>
+          <Search className="w-4 h-4 shrink-0" style={{ color: "var(--text-muted)" }} />
+          <input value={q} onChange={e => setQ(e.target.value)} placeholder="Search services & parts" autoFocus={open}
+            className="flex-1 py-3 text-[15px] outline-none bg-transparent" style={{ color: "var(--text-primary)" }} />
+        </div>
+        <div className="max-h-[52vh] overflow-y-auto -mx-1">
+          {filtered.length === 0 ? (
+            <p className="text-sm text-center py-8" style={{ color: "var(--text-muted)" }}>No matching items.</p>
+          ) : filtered.map(it => {
+            const cfg = ITEM_TYPE_CONFIG[it.type];
+            const stock = it.sku && truckName ? findStockItem(it.sku, truckName) : undefined;
+            return (
+              <button key={it.id} onClick={() => onAdd(it)} className="w-full flex items-center gap-2.5 px-3 py-3 rounded-xl active:bg-[var(--bg-surface-2)]">
+                <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded shrink-0" style={{ backgroundColor: cfg.bg, color: cfg.color }}>{cfg.label}</span>
+                <div className="flex-1 min-w-0 text-left">
+                  <p className="text-sm truncate" style={{ color: "var(--text-primary)" }}>{it.name}</p>
+                  {stock && <p className="text-[11px]" style={{ color: stock.qtyOnHand > 0 ? "#059669" : "#dc2626" }}>{stock.qtyOnHand > 0 ? `${stock.qtyOnHand} on truck` : "Out on truck"}</p>}
+                </div>
+                <span className="text-sm font-semibold tabular-nums shrink-0" style={{ color: "var(--text-primary)" }}>{money(it.unitPrice)}</span>
+                <Plus className="w-4 h-4 shrink-0" style={{ color: ACCENT }} />
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </BottomSheet>
+  );
+}
+
+// Add a one-off priced line that isn't in the catalog.
+function CustomLineSheet({ open, onClose, onAdd }: { open: boolean; onClose: () => void; onAdd: (name: string, qty: number, price: number) => void }) {
+  const [name, setName] = useState("");
+  const [qty, setQty] = useState(1);
+  const [price, setPrice] = useState("");
+  const save = () => {
+    if (!name.trim()) return;
+    onAdd(name.trim(), qty, Number(price) || 0);
+    setName(""); setQty(1); setPrice(""); onClose();
+  };
+  return (
+    <BottomSheet open={open} onClose={onClose} title="Custom line" subtitle="A one-off part or charge not in the catalog">
+      <div className="space-y-3 pb-2">
+        <input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Custom fabricated bracket" autoFocus={open}
+          className="w-full rounded-xl px-3.5 py-3 text-[15px] outline-none"
+          style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-input)", color: "var(--text-primary)" }} />
+        <div className="flex items-center gap-3">
+          <span className="text-sm font-medium flex-1" style={{ color: "var(--text-secondary)" }}>Quantity</span>
+          <div className="flex items-center rounded-xl" style={{ border: "1px solid var(--border)" }}>
+            <button onClick={() => setQty(q => Math.max(1, q - 1))} className="px-4 py-2.5 text-lg active:opacity-60" style={{ color: "var(--text-secondary)" }}>−</button>
+            <span className="w-8 text-center text-[15px] font-semibold tabular-nums" style={{ color: "var(--text-primary)" }}>{qty}</span>
+            <button onClick={() => setQty(q => q + 1)} className="px-4 py-2.5 text-lg active:opacity-60" style={{ color: "var(--text-secondary)" }}>+</button>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 rounded-xl px-3.5" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-input)" }}>
+          <span className="text-lg font-semibold" style={{ color: "var(--text-muted)" }}>$</span>
+          <input value={price} onChange={e => setPrice(e.target.value.replace(/[^0-9.]/g, ""))} placeholder="0.00" inputMode="decimal"
+            className="flex-1 py-3 text-lg font-semibold outline-none bg-transparent" style={{ color: "var(--text-primary)" }} />
+          <span className="text-xs" style={{ color: "var(--text-muted)" }}>each</span>
+        </div>
+        <button onClick={save} disabled={!name.trim()}
+          className="w-full min-h-[50px] rounded-2xl text-base font-bold text-white active:scale-[0.99] transition-transform disabled:opacity-40"
+          style={{ backgroundColor: ACCENT }}>
+          Add line
+        </button>
+      </div>
+    </BottomSheet>
+  );
+}
+
+// Sign-on-glass — the customer signs with a finger; saved as a PNG on the WO.
+function SignatureSheet({ defaultName, onClose, onSave }: { defaultName: string; onClose: () => void; onSave: (name: string, dataUrl: string) => void }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const drawing = useRef(false);
+  const last = useRef<{ x: number; y: number } | null>(null);
+  const dirty = useRef(false);
+  const [name, setName] = useState(defaultName);
+  const [hasInk, setHasInk] = useState(false);
+
+  useEffect(() => {
+    const c = canvasRef.current; if (!c) return;
+    const ratio = window.devicePixelRatio || 1;
+    const rect = c.getBoundingClientRect();
+    c.width = Math.max(1, rect.width) * ratio;
+    c.height = Math.max(1, rect.height) * ratio;
+    const ctx = c.getContext("2d"); if (!ctx) return;
+    ctx.scale(ratio, ratio);
+    ctx.lineWidth = 2.2; ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.strokeStyle = "#111827";
+  }, []);
+
+  const pt = (e: React.PointerEvent) => {
+    const rect = canvasRef.current!.getBoundingClientRect();
+    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+  };
+  const down = (e: React.PointerEvent) => { drawing.current = true; last.current = pt(e); (e.currentTarget as Element).setPointerCapture?.(e.pointerId); };
+  const move = (e: React.PointerEvent) => {
+    if (!drawing.current || !last.current) return;
+    const ctx = canvasRef.current!.getContext("2d")!; const p = pt(e);
+    ctx.beginPath(); ctx.moveTo(last.current.x, last.current.y); ctx.lineTo(p.x, p.y); ctx.stroke();
+    last.current = p; dirty.current = true; if (!hasInk) setHasInk(true);
+  };
+  const up = () => { drawing.current = false; last.current = null; };
+  const clear = () => { const c = canvasRef.current; if (!c) return; c.getContext("2d")!.clearRect(0, 0, c.width, c.height); dirty.current = false; setHasInk(false); };
+  const save = () => {
+    const c = canvasRef.current; if (!c || !dirty.current) return;
+    onSave(name.trim() || defaultName, c.toDataURL("image/png"));
+    onClose();
+  };
+
+  return (
+    <BottomSheet open onClose={onClose} title="Customer signature" subtitle="Sign in the box to approve">
+      <div className="space-y-3 pb-2">
+        <input value={name} onChange={e => setName(e.target.value)} placeholder="Signer name"
+          className="w-full rounded-xl px-3.5 py-3 text-[15px] outline-none"
+          style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-input)", color: "var(--text-primary)" }} />
+        <div className="relative">
+          <canvas ref={canvasRef} onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerLeave={up}
+            className="w-full rounded-xl touch-none" style={{ height: 180, border: "1px solid var(--border)", backgroundColor: "#fff", cursor: "crosshair" }} />
+          {!hasInk && <span className="absolute inset-0 flex items-center justify-center text-sm pointer-events-none" style={{ color: "#9ca3af" }}>Sign here</span>}
+          <button onClick={clear} className="absolute top-2 right-3 text-xs font-semibold active:opacity-60" style={{ color: "var(--text-muted)" }}>Clear</button>
+        </div>
+        <button onClick={save} disabled={!hasInk}
+          className="w-full min-h-[50px] rounded-2xl text-base font-bold text-white active:scale-[0.99] transition-transform disabled:opacity-40"
+          style={{ backgroundColor: "#16a34a" }}>
+          Save signature
         </button>
       </div>
     </BottomSheet>

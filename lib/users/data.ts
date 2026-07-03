@@ -38,6 +38,9 @@ export interface AppUser {
   // Platform-layer 1: explicit app-access override. When set it wins over the
   // role-derived default (portal is always forced on). See lib/platform/access.
   appAccess?: Partial<AppAccess>;
+  // Field tech's home truck/van (an inventory Warehouse id, kind "truck"). Parts
+  // consumed on a work order deduct from here. See lib/mobile/truck.
+  truckWarehouseId?: string;
 }
 
 // ─── Helpers ──────────────────────────────────────────────
@@ -171,6 +174,7 @@ export interface UpsertUserInput {
   phone?: string;
   status?: UserStatus;
   assignments: Omit<RoleAssignment, "id">[];
+  truckWarehouseId?: string;    // field tech's home truck (inventory Warehouse id)
 }
 
 // Create or update a user. New users default to "invited".
@@ -189,6 +193,7 @@ export function upsertUser(input: UpsertUserInput): AppUser {
         email: input.email,
         phone: input.phone ?? existing.phone,
         status: input.status ?? existing.status,
+        truckWarehouseId: input.truckWarehouseId,
         // The owner keeps its owner grant regardless of edits.
         assignments: existing.isOrgOwner ? existing.assignments : assignments,
       };
@@ -206,6 +211,7 @@ export function upsertUser(input: UpsertUserInput): AppUser {
     phone: input.phone,
     status: input.status ?? "invited",
     assignments,
+    truckWarehouseId: input.truckWarehouseId,
     createdAt: new Date().toISOString().slice(0, 10),
   };
   _users = [...list, created];

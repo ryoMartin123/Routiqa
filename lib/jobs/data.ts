@@ -123,7 +123,9 @@ export interface WorkOrder {
   equipment?: string[];         // units/assets serviced
   lineItems?: WorkOrderLineItem[]; // parts + labor + fees → invoice source
   photos?: string[];            // storage paths / ids
-  signatureName?: string;       // customer sign-off
+  signatureName?: string;       // customer sign-off name
+  signatureDataUrl?: string;    // sign-on-glass image (PNG data URL)
+  signedAt?: string;            // ISO when the customer signed
   completedAt?: string;         // ISO when the WO was completed
 }
 

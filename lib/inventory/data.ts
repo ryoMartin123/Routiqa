@@ -574,6 +574,43 @@ export function receivePurchaseOrder(
   updatePurchaseOrder(poId, { lines, status });
 }
 
+// ─── Truck stock consumption (field → inventory) ──────────
+// A part consumed on a work order is pulled from the tech's truck. Items link to
+// the price book by SKU and to a warehouse/truck by its NAME (InventoryItem.location).
+export function getWarehouse(id: string): Warehouse | undefined { return WAREHOUSES.find(w => w.id === id); }
+
+// Find the stock record for a SKU at a given location (warehouse/truck name).
+export function findStockItem(sku: string, locationName: string): InventoryItem | undefined {
+  if (!sku || !locationName) return undefined;
+  return _items.find(i => i.sku === sku && i.location === locationName);
+}
+
+export interface StockChange { item: InventoryItem; qtyBefore: number; qtyAfter: number }
+
+// Consume `qty` of a SKU from a truck/warehouse. Logs a "usage" movement against
+// the job. No-op (returns undefined) when the SKU isn't stocked there — services,
+// labor, or a part the truck doesn't carry simply don't move stock.
+export function consumeFromTruck(sku: string, locationName: string, qty: number, ctx?: { jobId?: string; createdBy?: string; notes?: string }): StockChange | undefined {
+  if (qty <= 0) return undefined;
+  const item = findStockItem(sku, locationName);
+  if (!item) return undefined;
+  const before = item.qtyOnHand;
+  adjustItemQty(item.id, -qty);
+  _movements = [{
+    id: uid("mv"), movementType: "usage", itemName: item.name, quantity: qty,
+    fromLocation: locationName, relatedJobId: ctx?.jobId,
+    createdBy: ctx?.createdBy ?? "—", createdAt: nowIso(), notes: ctx?.notes,
+  }, ..._movements];
+  return { item, qtyBefore: before, qtyAfter: Math.max(0, before - qty) };
+}
+
+// Put stock back (e.g. a WO line was removed before invoicing).
+export function returnToTruck(sku: string, locationName: string, qty: number): void {
+  if (qty <= 0) return;
+  const item = findStockItem(sku, locationName);
+  if (item) adjustItemQty(item.id, qty);
+}
+
 // ─── Movements / material requests / activity API ─────────
 export function getMovements(): InventoryMovement[] { return _movements; }
 export function getMaterialRequests(): MaterialRequest[] { return _materialRequests; }

@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import UiSelect from "@/components/ui/Select";
 import StatusBadge from "@/components/shared/StatusBadge";
+import { getWarehouses } from "@/lib/inventory/data";
 import { useHierarchy } from "@/components/providers/HierarchyProvider";
 import { usePermissions } from "@/components/providers/PermissionProvider";
 import { getAssignableRoles, getOrgRole, getRoleLabel } from "@/lib/roles/store";
@@ -90,6 +91,7 @@ export default function UserDetailDrawer({
   const [fullName, setFullName] = useState(user?.fullName ?? "");
   const [email, setEmail]       = useState(user?.email ?? "");
   const [phone, setPhone]       = useState(user?.phone ?? "");
+  const [truckId, setTruckId]   = useState(user?.truckWarehouseId ?? "");
   const initialRows: DraftAssignment[] = user
     ? user.assignments.map(a => ({
         role: a.role, level: a.level,
@@ -100,8 +102,12 @@ export default function UserDetailDrawer({
     : [{ role: "field_technician", level: "location", targetId: "" }];
   const [rows, setRows] = useState<DraftAssignment[]>(initialRows);
 
-  const initialKey = JSON.stringify({ fullName: user?.fullName ?? "", email: user?.email ?? "", phone: user?.phone ?? "", rows: initialRows });
-  const dirty = JSON.stringify({ fullName, email, phone, rows }) !== initialKey;
+  const initialKey = JSON.stringify({ fullName: user?.fullName ?? "", email: user?.email ?? "", phone: user?.phone ?? "", truckId: user?.truckWarehouseId ?? "", rows: initialRows });
+  const dirty = JSON.stringify({ fullName, email, phone, truckId, rows }) !== initialKey;
+
+  // Home truck applies to field roles; the option list is owned by Inventory.
+  const trucks = useMemo(() => getWarehouses().filter(w => w.kind === "truck"), []);
+  const isFieldTech = rows.some(r => r.role === "field_technician" || r.role === "installer");
 
   // ── Active hierarchy option lists ──
   const companies = useMemo(() => allCompanies.filter(c => c.status === "active"), [allCompanies]);
@@ -173,9 +179,9 @@ export default function UserDetailDrawer({
       }
       const resolved = rows.map(resolveAssignment);
       if (resolved.some(a => a === null)) { setError("Each role needs a layer selected."); setTab("roles"); return; }
-      upsertUser({ id: user?.id, fullName: fullName.trim(), email: email.trim(), phone: phone.trim() || undefined, status, assignments: resolved as Omit<RoleAssignment, "id">[] });
+      upsertUser({ id: user?.id, fullName: fullName.trim(), email: email.trim(), phone: phone.trim() || undefined, status, assignments: resolved as Omit<RoleAssignment, "id">[], truckWarehouseId: isFieldTech ? (truckId || undefined) : undefined });
     } else {
-      upsertUser({ id: user?.id, fullName: fullName.trim(), email: email.trim(), phone: phone.trim() || undefined, status, assignments: user!.assignments });
+      upsertUser({ id: user?.id, fullName: fullName.trim(), email: email.trim(), phone: phone.trim() || undefined, status, assignments: user!.assignments, truckWarehouseId: truckId || undefined });
     }
     onSaved();
   }
@@ -239,6 +245,7 @@ export default function UserDetailDrawer({
               fullName={fullName} setFullName={setFullName}
               email={email} setEmail={setEmail}
               phone={phone} setPhone={setPhone}
+              showTruck={isFieldTech} truckId={truckId} setTruckId={setTruckId} trucks={trucks}
             />
           )}
 
@@ -352,11 +359,12 @@ export default function UserDetailDrawer({
 }
 
 // ─── Profile ──────────────────────────────────────────────
-function ProfileTab({ editable, isOwner, isNew, status, fullName, setFullName, email, setEmail, phone, setPhone }: {
+function ProfileTab({ editable, isOwner, isNew, status, fullName, setFullName, email, setEmail, phone, setPhone, showTruck, truckId, setTruckId, trucks }: {
   editable: boolean; isOwner: boolean; isNew: boolean; status: UserStatus;
   fullName: string; setFullName: (v: string) => void;
   email: string; setEmail: (v: string) => void;
   phone: string; setPhone: (v: string) => void;
+  showTruck: boolean; truckId: string; setTruckId: (v: string) => void; trucks: { id: string; name: string }[];
 }) {
   const readOnly = !editable && !isNew;
   return (
@@ -387,6 +395,12 @@ function ProfileTab({ editable, isOwner, isNew, status, fullName, setFullName, e
           </div>
         </Field>
       </div>
+      {showTruck && (
+        <Field label="Home truck" hint="Field techs — stock deducts here when parts are used on a job">
+          <UiSelect size="sm" value={truckId} onChange={readOnly ? () => {} : setTruckId}
+            options={[{ value: "", label: "Not assigned" }, ...trucks.map(t => ({ value: t.id, label: t.name }))]} />
+        </Field>
+      )}
       {isOwner && (
         <p className="text-[11px] flex items-center gap-1.5" style={{ color: "var(--text-muted)" }}>
           <ShieldCheck className="w-3.5 h-3.5" style={{ color: "#4f46e5" }} /> The organization owner account can&apos;t be deactivated or removed.

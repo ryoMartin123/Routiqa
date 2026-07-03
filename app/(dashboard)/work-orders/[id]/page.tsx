@@ -11,10 +11,10 @@ import { use, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  ArrowLeft, CheckCircle2, Circle, Play, RotateCcw, Repeat,
-  Briefcase, User, MapPin, Phone, Mail, Calendar, Clock, Users, ExternalLink,
-  Receipt, FilePen, ChevronRight, Activity, Tag, Building2, DollarSign, Package,
-  Image as ImageIcon,
+  ArrowLeft, CheckCircle2, Circle, Play, RotateCcw, Repeat, ClipboardList,
+  Briefcase, User, MapPin, Phone, Mail, Calendar, Clock, Users,
+  Receipt, FilePen, Activity, Tag, Building2, DollarSign, Package,
+  Image as ImageIcon, Plus,
 } from "lucide-react";
 import {
   getWorkOrderById, updateWorkOrderById, getJob, JOB_STATUS_CONFIG, resolveJobTypeColor,
@@ -94,10 +94,36 @@ export default function WorkOrderDetailPage(props: { params: Promise<{ id: strin
   const checklistMet = reqItems.length === 0 || reqDone === reqItems.length;
   const photosMet    = images.length > 0;
 
+  // Activity feed — the work order's lifecycle, in the same timeline style as the
+  // Project / Agreement activity tabs (created → visits → completion → job status).
+  const fmtDT = (iso: string) => new Date(iso).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+  const activity: ActivityEntry[] = [
+    { icon: ClipboardList, color: "#4f46e5", label: "Created", title: wo.title, meta: job ? job.title : undefined, user: job?.assignedTo },
+    ...visits.map(v => {
+      const as = APPT_STATUS[v.status];
+      const vt = v.visitType ? VISIT_TYPE_CONFIG[v.visitType] : undefined;
+      return {
+        icon: Calendar, color: as.color, label: as.label, title: vt ? `${vt.label} visit` : "Visit",
+        meta: `${v.techIds.length ? v.techIds.join(", ") : "Unassigned"} · ${v.durationMinutes} min`,
+        date: v.scheduledDate ? `${v.scheduledDate}${v.scheduledTime ? ` · ${v.scheduledTime}` : ""}` : "Unscheduled",
+      } as ActivityEntry;
+    }),
+    ...(wo.completedAt ? [{ icon: CheckCircle2, color: "#16a34a", label: "Completed", title: "Work order completed", date: fmtDT(wo.completedAt) } as ActivityEntry] : []),
+    ...(job?.statusHistory ?? []).map(e => {
+      const to = JOB_STATUS_CONFIG[e.to as keyof typeof JOB_STATUS_CONFIG];
+      const from = JOB_STATUS_CONFIG[e.from as keyof typeof JOB_STATUS_CONFIG];
+      return {
+        icon: Activity, color: to?.color ?? "#9ca3af", label: to?.label ?? e.to,
+        title: `${from?.label ?? e.from} → ${to?.label ?? e.to}${e.override ? " · override" : ""}`,
+        meta: e.reason || undefined, user: e.byName, date: fmtDT(e.at),
+      } as ActivityEntry;
+    }),
+  ];
+
   // Billing tabs only when this role can see field pricing (like WorkOrderBilling).
   const TABS = showPricing
-    ? ["Overview", "Quotes", "Invoices", "Photos & Files", "History"]
-    : ["Overview", "Photos & Files", "History"];
+    ? ["Overview", "Parts & Labor", "Quotes", "Invoices", "Photos & Files", "Activity"]
+    : ["Overview", "Parts & Labor", "Photos & Files", "Activity"];
 
   return (
     <div className="flex flex-col h-full">
@@ -112,7 +138,6 @@ export default function WorkOrderDetailPage(props: { params: Promise<{ id: strin
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <h1 className="text-base font-semibold truncate" style={{ color: "var(--text-primary)" }}>{wo.title}</h1>
-                <StatusBadge label={st.label} color={st.color} />
               </div>
               <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
                 {job ? job.customerName : "—"}{job ? ` · ${job.title}` : ""}
@@ -241,9 +266,6 @@ export default function WorkOrderDetailPage(props: { params: Promise<{ id: strin
               </div>
             </div>
 
-            {/* Parts & Labor capture → invoice/quote source */}
-            <WorkOrderBilling workOrderId={wo.id} />
-
             {/* Checklist + Visits — fill the remaining height */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 flex-1 min-h-0">
               <DCard className="lg:col-span-2 overflow-hidden flex flex-col min-h-0">
@@ -306,42 +328,23 @@ export default function WorkOrderDetailPage(props: { params: Promise<{ id: strin
           </div>
         )}
 
+        {tab === "Parts & Labor" && <WorkOrderBilling workOrderId={wo.id} />}
+
         {tab === "Quotes" && (
-          <BillingTab title="Quotes from this work order" emptyText="No quotes raised from this work order yet." onNew={newQuote} newLabel="New quote" newIcon={FilePen}
-            rows={quotes.map(q => ({ id: q.id, href: `/quotes/${q.id}`, icon: FilePen, number: q.quoteNumber, total: q.total, status: QUOTE_STATUS_STYLE[q.status].label, color: QUOTE_STATUS_STYLE[q.status].color }))} />
+          <BillingTab title="Quotes" emptyText="No quotes raised from this work order yet." onNew={newQuote} newLabel="New Quote"
+            rows={quotes.map(q => ({ id: q.id, href: `/quotes/${q.id}`, number: q.quoteNumber, sub: q.title, total: q.total, status: QUOTE_STATUS_STYLE[q.status].label, color: QUOTE_STATUS_STYLE[q.status].color }))} />
         )}
 
         {tab === "Invoices" && (
-          <BillingTab title="Invoices from this work order" emptyText="No invoices built from this work order yet." onNew={newInvoice} newLabel="New invoice" newIcon={Receipt}
-            rows={invoices.map(inv => ({ id: inv.id, href: `/invoices/${inv.id}`, icon: Receipt, number: inv.invoiceNumber, total: inv.total, status: INVOICE_STATUS_STYLE[inv.status].label, color: INVOICE_STATUS_STYLE[inv.status].color }))} />
+          <BillingTab title="Invoices" emptyText="No invoices built from this work order yet." onNew={newInvoice} newLabel="New Invoice"
+            rows={invoices.map(inv => ({ id: inv.id, href: `/invoices/${inv.id}`, number: inv.invoiceNumber, sub: inv.title, total: inv.total, status: INVOICE_STATUS_STYLE[inv.status].label, color: INVOICE_STATUS_STYLE[inv.status].color }))} />
         )}
 
         {tab === "Photos & Files" && job && (
           <PhotoGallery recordLevel="work_order" scope={{ workOrderId: wo.id, jobId: job.id, accountId: job.accountId }} accountName={job.customerName} />
         )}
 
-        {tab === "History" && (
-          <div className="max-w-2xl">
-            {job?.statusHistory?.length ? (
-              <div className="space-y-3">
-                {[...job.statusHistory].reverse().map(e => (
-                  <div key={e.id} className="flex items-start gap-3">
-                    <div className="w-2 h-2 rounded-full mt-1.5 shrink-0" style={{ backgroundColor: JOB_STATUS_CONFIG[e.to as keyof typeof JOB_STATUS_CONFIG]?.color ?? "#9ca3af" }} />
-                    <div>
-                      <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
-                        {JOB_STATUS_CONFIG[e.from as keyof typeof JOB_STATUS_CONFIG]?.label ?? e.from} → {JOB_STATUS_CONFIG[e.to as keyof typeof JOB_STATUS_CONFIG]?.label ?? e.to}
-                        {e.override && <span className="ml-1.5 text-[10px] font-semibold" style={{ color: "#dc2626" }}>OVERRIDE</span>}
-                      </p>
-                      <p className="text-xs" style={{ color: "var(--text-muted)" }}>{e.byName} · {new Date(e.at).toLocaleString()}{e.reason ? ` · ${e.reason}` : ""}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm" style={{ color: "var(--text-muted)" }}>No activity recorded yet. Job-level status changes appear here.{job && <> <Link href={`/jobs/${job.id}?tab=History`} className="inline-flex items-center gap-1" style={{ color: "var(--accent-text)" }}>Open job history <ExternalLink className="w-3 h-3" /></Link></>}</p>
-            )}
-          </div>
-        )}
+        {tab === "Activity" && <ActivityTimeline entries={activity} />}
       </div>
 
       {returnOpen && job && <ReturnVisitModal job={job} onClose={() => setReturnOpen(false)} onScheduled={() => setReturnOpen(false)} />}
@@ -393,43 +396,90 @@ function MiniKpi({ icon: Icon, label, value }: { icon: IconType; label: string; 
   );
 }
 
-// Full-width Quotes / Invoices tab — a header with a "New" action + a list of docs.
-interface BillingRow { id: string; href: string; icon: IconType; number: string; total: number; status: string; color: string }
-function BillingTab({ title, emptyText, rows, onNew, newLabel, newIcon: NewIcon }: {
-  title: string; emptyText: string; rows: BillingRow[]; onNew: () => void; newLabel: string; newIcon: IconType;
-}) {
+// Minimal accent action — matches the "New Quote / New Invoice" buttons on the
+// project detail page (tinted circular Plus + chip, no heavy fill).
+function MiniAction({ onClick, children }: { onClick: () => void; children: React.ReactNode }) {
   return (
-    <div className="max-w-3xl">
-      <div className="flex items-center justify-between mb-3">
-        <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{title}</p>
-        <button onClick={onNew} className="inline-flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-lg text-white transition hover:brightness-110" style={{ backgroundColor: "#4f46e5" }}>
-          <NewIcon className="w-3.5 h-3.5" /> {newLabel}
-        </button>
-      </div>
-      {rows.length === 0 ? (
-        <DCard className="p-8 text-center"><p className="text-sm" style={{ color: "var(--text-muted)" }}>{emptyText}</p></DCard>
-      ) : (
-        <DCard className="p-2">
-          {rows.map(r => <DocRow key={r.id} href={r.href} icon={r.icon} number={r.number} total={r.total} status={r.status} color={r.color} />)}
-        </DCard>
-      )}
-    </div>
+    <button onClick={onClick} className="group flex items-center gap-1.5 text-xs font-medium transition-colors" style={{ color: "#4f46e5" }}>
+      <span className="w-4 h-4 rounded-full flex items-center justify-center transition-all group-hover:brightness-95" style={{ backgroundColor: "#4f46e51a" }}><Plus className="w-3 h-3" /></span>
+      {children}
+    </button>
   );
 }
 
-function DocRow({ href, icon: Icon, number, total, status, color }: {
-  href: string; icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>; number: string; total: number; status: string; color: string;
+// Full-width, viewport-adaptive Quotes / Invoices tab — header (count + New) over
+// a scrollable list. Fills the available height like the Overview tab.
+interface BillingRow { id: string; href: string; number: string; sub?: string; total: number; status: string; color: string }
+function BillingTab({ title, emptyText, rows, onNew, newLabel }: {
+  title: string; emptyText: string; rows: BillingRow[]; onNew: () => void; newLabel: string;
 }) {
   return (
-    <Link href={href} className="flex items-center gap-2.5 -mx-1 px-1 py-1.5 rounded-lg hover:bg-[var(--bg-surface-2)] transition-colors">
-      <Icon className="w-3.5 h-3.5 shrink-0" style={{ color: "var(--text-muted)" }} />
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{number}</p>
-        <StatusBadge label={status} color={color} size="sm" />
+    <DCard className="w-full overflow-hidden">
+      <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid var(--border)" }}>
+        <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{title} ({rows.length})</p>
+        <MiniAction onClick={onNew}>{newLabel}</MiniAction>
       </div>
-      <span className="text-sm font-semibold tabular-nums shrink-0" style={{ color: "var(--text-primary)" }}>{fmtCurrency(total)}</span>
-      <ChevronRight className="w-3.5 h-3.5 shrink-0" style={{ color: "var(--text-muted)" }} />
-    </Link>
+      <div>
+        {rows.length === 0 ? (
+          <div className="px-4 py-10 text-center"><p className="text-sm" style={{ color: "var(--text-muted)" }}>{emptyText}</p></div>
+        ) : rows.map((r, i) => (
+          <Link key={r.id} href={r.href}
+            className="flex items-center gap-4 px-4 py-3 hover:bg-[var(--bg-surface-2)] transition-colors"
+            style={{ borderBottom: i < rows.length - 1 ? "1px solid var(--border)" : "none", textDecoration: "none" }}>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-mono font-medium" style={{ color: "var(--text-primary)" }}>{r.number}</p>
+              {r.sub && <p className="text-xs mt-0.5 truncate" style={{ color: "var(--text-muted)" }}>{r.sub}</p>}
+            </div>
+            <StatusBadge label={r.status} color={r.color} className="shrink-0" />
+            <span className="text-sm font-semibold shrink-0" style={{ color: "var(--text-primary)" }}>{r.total > 0 ? fmtCurrency(r.total) : "TBD"}</span>
+          </Link>
+        ))}
+      </div>
+    </DCard>
+  );
+}
+
+// Activity timeline — same treatment as the Project / Agreement activity tabs:
+// a tinted status icon on a connector line, then a surface card with a status
+// pill, the title, meta, and who/when.
+interface ActivityEntry { icon: IconType; color: string; label: string; title: string; meta?: string; user?: string; date?: string }
+function ActivityTimeline({ entries }: { entries: ActivityEntry[] }) {
+  if (entries.length === 0) {
+    return (
+      <div className="py-12 text-center rounded-xl" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
+        <p className="text-sm" style={{ color: "var(--text-muted)" }}>No activity yet</p>
+      </div>
+    );
+  }
+  return (
+    <div className="w-full">
+      {entries.map((e, i) => {
+        const Icon = e.icon;
+        const last = i === entries.length - 1;
+        return (
+          <div key={i} className="flex gap-3">
+            <div className="flex flex-col items-center shrink-0">
+              <div className="w-7 h-7 rounded-lg flex items-center justify-center z-10" style={{ backgroundColor: e.color + "1a", border: `1px solid ${e.color}33` }}>
+                <Icon className="w-3.5 h-3.5" style={{ color: e.color }} />
+              </div>
+              {!last && <div className="w-px flex-1 my-1" style={{ backgroundColor: "var(--border-subtle)" }} />}
+            </div>
+            <div className="flex-1 min-w-0 rounded-xl px-4 py-3 mb-3 flex flex-col" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)", minHeight: 76 }}>
+              <div className="flex items-start justify-between gap-3">
+                <span className="inline-block text-[10px] font-semibold px-2 py-0.5 rounded-md shrink-0" style={{ backgroundColor: e.color + "1a", color: e.color }}>{e.label}</span>
+                {e.date && <span className="text-xs shrink-0" style={{ color: "var(--text-muted)" }}>{e.date}</span>}
+              </div>
+              <p className="text-sm font-medium mt-1.5 break-words leading-relaxed" style={{ color: "var(--text-primary)" }}>{e.title}</p>
+              {e.meta && <p className="text-[11px] mt-0.5 truncate" style={{ color: "var(--text-muted)" }}>{e.meta}</p>}
+              <div className="flex items-center gap-1.5 mt-auto pt-1.5">
+                <User className="w-3 h-3 shrink-0" style={{ color: "var(--text-muted)" }} />
+                <span className="text-[11px] truncate" style={{ color: "var(--text-muted)" }}>{e.user || "System"}</span>
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
   );
 }
 

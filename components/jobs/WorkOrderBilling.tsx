@@ -7,9 +7,11 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Trash2, Receipt, Wrench, Package, BadgeDollarSign, FileText } from "lucide-react";
-import { getWorkOrderById, updateWorkOrderById, type WorkOrderLineItem } from "@/lib/jobs/data";
+import { Plus, PlusCircle, Trash2, Receipt, Wrench, Package, BadgeDollarSign, FileText } from "lucide-react";
+import { getWorkOrderById, updateWorkOrderById, getJob, type WorkOrderLineItem } from "@/lib/jobs/data";
 import { createInvoiceFromWorkOrder, createQuoteFromWorkOrder } from "@/lib/quotes/data";
+import { getAllItems, type Item } from "@/lib/items/data";
+import CatalogPicker from "@/components/quotes/CatalogPicker";
 import { useDataVersion } from "@/lib/sync/useDataVersion";
 import { usePermissions } from "@/components/providers/PermissionProvider";
 
@@ -29,7 +31,13 @@ export default function WorkOrderBilling({ workOrderId }: { workOrderId: string 
   // only (no $, no invoicing) — the office prices it. When on, it's a priced work
   // order the user can invoice from. Toggled per role in Settings → Roles.
   const showPricing = fieldVisible("finance_field_pricing");
+  const showCost = fieldVisible("finance_cost_margin");   // margin visible in the catalog picker
   const wo = useMemo(() => getWorkOrderById(workOrderId), [workOrderId, rev]);
+  const job = useMemo(() => (wo?.jobId ? getJob(wo.jobId) : undefined), [wo?.jobId]);
+  // The catalog (Items & Services / price book) scoped to this WO's company —
+  // the fast path for services + common parts. Custom lines cover the rest.
+  const catalog = useMemo(() => getAllItems().filter(i => i.active && (!job || i.companyId === job.companyId)), [job]);
+  const [catalogOpen, setCatalogOpen] = useState(false);
   const [kind, setKind] = useState<Kind>("part");
   const [desc, setDesc] = useState("");
   const [qty, setQty] = useState("1");
@@ -37,6 +45,23 @@ export default function WorkOrderBilling({ workOrderId }: { workOrderId: string 
 
   const items = wo?.lineItems ?? [];
   const subtotal = items.reduce((s, li) => s + li.qty * li.unitPrice, 0);
+
+  // Item type → work-order line kind (part / labor / fee).
+  const kindForItem = (t: Item["type"]): Kind =>
+    t === "labor" || t === "service" ? "labor"
+    : t === "fee" || t === "discount" || t === "membership" ? "fee"
+    : "part";
+
+  // Pull selected catalog items in as priced work-order lines (snapshot + itemId ref).
+  const addCatalogItems = (sel: Item[]) => {
+    const added: WorkOrderLineItem[] = sel.map((it, i) => ({
+      id: `woli-${Date.now()}-${i}-${Math.random().toString(36).slice(2, 5)}`,
+      kind: kindForItem(it.type), description: it.name, qty: it.defaultQuantity || 1,
+      unitPrice: it.unitPrice, itemId: it.id, taxable: it.taxable, unitCost: it.unitCost,
+    }));
+    if (added.length) updateWorkOrderById(workOrderId, { lineItems: [...items, ...added] });
+    setCatalogOpen(false);
+  };
 
   const add = () => {
     if (!desc.trim()) return;
@@ -89,16 +114,26 @@ export default function WorkOrderBilling({ workOrderId }: { workOrderId: string 
         </div>
       )}
 
-      {/* Add row */}
-      <div className="flex flex-wrap items-center gap-2 mb-3">
+      {/* Add from catalog — the fast path: services + common parts pull in priced. */}
+      {showPricing && (
+        <button onClick={() => setCatalogOpen(true)}
+          className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold mb-2 transition hover:brightness-95"
+          style={{ border: "1px solid var(--accent-soft-border)", color: "var(--accent-text)", backgroundColor: "var(--accent-soft-bg)" }}>
+          <PlusCircle className="w-4 h-4" /> Add from catalog
+        </button>
+      )}
+
+      {/* Custom line — for a one-off part or charge that isn't in the catalog. */}
+      <div className="flex flex-wrap items-center gap-2 mb-1">
         <select value={kind} onChange={e => setKind(e.target.value as Kind)} className={inputCls} style={inputStyle}>
           {(Object.keys(KIND_META) as Kind[]).map(k => <option key={k} value={k}>{KIND_META[k].label}</option>)}
         </select>
-        <input value={desc} onChange={e => setDesc(e.target.value)} onKeyDown={e => e.key === "Enter" && add()} placeholder="Description (e.g. Run capacitor 45/5)" className={`${inputCls} flex-1 min-w-[140px]`} style={inputStyle} />
+        <input value={desc} onChange={e => setDesc(e.target.value)} onKeyDown={e => e.key === "Enter" && add()} placeholder="Custom line (e.g. Run capacitor 45/5)" className={`${inputCls} flex-1 min-w-[140px]`} style={inputStyle} />
         <input value={qty} onChange={e => setQty(e.target.value)} type="number" min="1" className={`${inputCls} w-16`} style={inputStyle} />
         {showPricing && <input value={price} onChange={e => setPrice(e.target.value)} type="number" min="0" step="0.01" placeholder="0.00" className={`${inputCls} w-24`} style={inputStyle} />}
         <button onClick={add} className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium" style={{ border: "1px solid var(--border)", color: "var(--text-primary)" }}><Plus className="w-3.5 h-3.5" /> Add</button>
       </div>
+      {showPricing && <p className="text-[11px] mb-3" style={{ color: "var(--text-muted)" }}>Common services &amp; parts live in the catalog — use a custom line only for one-offs.</p>}
 
       {/* Total + create invoice — only when this role can see field pricing */}
       {showPricing && (
@@ -122,6 +157,8 @@ export default function WorkOrderBilling({ workOrderId }: { workOrderId: string 
           </div>
         </div>
       )}
+
+      {catalogOpen && <CatalogPicker items={catalog} showCost={showCost} onAdd={addCatalogItems} onClose={() => setCatalogOpen(false)} />}
     </div>
   );
 }
