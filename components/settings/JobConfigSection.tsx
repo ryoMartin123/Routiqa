@@ -153,7 +153,7 @@ function JobTypesTab({ register }: { register: Saver }) {
           </div>
         </div>
         {/* Work order behavior for this job type */}
-        <div className="rounded-lg p-3 space-y-2.5" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border-subtle)" }}>
+        <div className="rounded-lg p-3 space-y-2.5" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}>
           <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Work Order</p>
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -197,9 +197,9 @@ function JobTypesTab({ register }: { register: Saver }) {
       {showAdd && Form()}
 
       <div className="rounded-xl overflow-hidden"
-        style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+        style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
         <div className="flex items-center justify-between px-4 py-3"
-          style={{ borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+          style={{ borderBottom: "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)" }}>
           <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Job Types
             <span className="ml-2 text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>{items.length}</span>
           </p>
@@ -210,14 +210,14 @@ function JobTypesTab({ register }: { register: Saver }) {
           )}
         </div>
         <div className="grid px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider"
-          style={{ gridTemplateColumns: "auto 2fr 1.4fr 0.8fr 1fr 0.8fr auto", gap: "0.75rem", color: "var(--text-muted)", borderBottom: "1px solid var(--border-subtle)" }}>
+          style={{ gridTemplateColumns: "auto 2fr 1.4fr 0.8fr 1fr 0.8fr auto", gap: "0.75rem", color: "var(--text-muted)", borderBottom: "1px solid var(--border)" }}>
           <span>Order</span><span>Name</span><span>Key</span><span>Duration</span><span>Category</span><span className="text-center">Active</span><span />
         </div>
         {sorted.map((t, i) => editingId === t.id ? (
-          <div key={t.id} className="p-4" style={{ borderBottom: i < sorted.length - 1 ? "1px solid var(--border-subtle)" : "none" }}>{Form()}</div>
+          <div key={t.id} className="p-4" style={{ borderBottom: i < sorted.length - 1 ? "1px solid var(--border)" : "none" }}>{Form()}</div>
         ) : (
           <div key={t.id} className="grid px-4 py-3 items-center hover:bg-[var(--bg-surface-2)] transition-colors"
-            style={{ gridTemplateColumns: "auto 2fr 1.4fr 0.8fr 1fr 0.8fr auto", gap: "0.75rem", borderBottom: i < sorted.length - 1 ? "1px solid var(--border-subtle)" : "none", opacity: t.active ? 1 : 0.5 }}>
+            style={{ gridTemplateColumns: "auto 2fr 1.4fr 0.8fr 1fr 0.8fr auto", gap: "0.75rem", borderBottom: i < sorted.length - 1 ? "1px solid var(--border)" : "none", opacity: t.active ? 1 : 0.5 }}>
             <div className="flex flex-col">
               <button onClick={() => move(t.id, -1)} disabled={i === 0} className="disabled:opacity-20" style={{ color: "var(--text-muted)" }}><ChevronUp className="w-3.5 h-3.5" /></button>
               <button onClick={() => move(t.id, 1)} disabled={i === sorted.length - 1} className="disabled:opacity-20" style={{ color: "var(--text-muted)" }}><ChevronDown className="w-3.5 h-3.5" /></button>
@@ -374,9 +374,9 @@ function JobStatusesTab({ register }: { register: Saver }) {
       {showAdd && Form()}
 
       <div className="rounded-xl overflow-hidden"
-        style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+        style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
         <div className="flex items-center justify-between px-4 py-3"
-          style={{ borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+          style={{ borderBottom: "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)" }}>
           <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Job Statuses
             <span className="ml-2 text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>{items.length}</span>
           </p>
@@ -387,14 +387,14 @@ function JobStatusesTab({ register }: { register: Saver }) {
           )}
         </div>
         <div className="grid px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider"
-          style={{ gridTemplateColumns: "auto 2fr 1.5fr 1fr 0.8fr auto", gap: "0.75rem", color: "var(--text-muted)", borderBottom: "1px solid var(--border-subtle)" }}>
+          style={{ gridTemplateColumns: "auto 2fr 1.5fr 1fr 0.8fr auto", gap: "0.75rem", color: "var(--text-muted)", borderBottom: "1px solid var(--border)" }}>
           <span>Order</span><span>Status</span><span>Key</span><span>Category</span><span className="text-center">Active</span><span />
         </div>
         {sorted.map((s, i) => editingId === s.id ? (
-          <div key={s.id} className="p-4" style={{ borderBottom: i < sorted.length - 1 ? "1px solid var(--border-subtle)" : "none" }}>{Form()}</div>
+          <div key={s.id} className="p-4" style={{ borderBottom: i < sorted.length - 1 ? "1px solid var(--border)" : "none" }}>{Form()}</div>
         ) : (
           <div key={s.id} className="grid px-4 py-3 items-center hover:bg-[var(--bg-surface-2)] transition-colors"
-            style={{ gridTemplateColumns: "auto 2fr 1.5fr 1fr 0.8fr auto", gap: "0.75rem", borderBottom: i < sorted.length - 1 ? "1px solid var(--border-subtle)" : "none", opacity: s.active ? 1 : 0.5 }}>
+            style={{ gridTemplateColumns: "auto 2fr 1.5fr 1fr 0.8fr auto", gap: "0.75rem", borderBottom: i < sorted.length - 1 ? "1px solid var(--border)" : "none", opacity: s.active ? 1 : 0.5 }}>
             <div className="flex flex-col">
               <button onClick={() => move(s.id, -1)} disabled={i === 0} className="disabled:opacity-20" style={{ color: "var(--text-muted)" }}><ChevronUp className="w-3.5 h-3.5" /></button>
               <button onClick={() => move(s.id, 1)} disabled={i === sorted.length - 1} className="disabled:opacity-20" style={{ color: "var(--text-muted)" }}><ChevronDown className="w-3.5 h-3.5" /></button>

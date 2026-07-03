@@ -9,7 +9,7 @@
 import type { Quote, Invoice, QuoteStatus, QuoteMode, QuoteRenderMode, QuotePricing, InvoiceStatus, LineItemCategory, QuoteSection } from "./types";
 import type { QuoteBlock } from "./blocks";
 import { QUOTE_STATUS_STYLE } from "./types";
-import { createJob, getJob, getWorkOrderById, type Job } from "@/lib/jobs/data";
+import { createJob, getJob, getWorkOrderById, type Job, type WorkOrderLineItem } from "@/lib/jobs/data";
 import { createProject, type Project } from "@/lib/projects/data";
 import { currentUser } from "@/lib/hierarchy/data";   // signed-in user (org admin) — drives createdBy / assignedTo / activity actor
 
@@ -446,16 +446,12 @@ export function createInvoiceFromQuote(id: string): InvoiceRecord | undefined {
   return inv;
 }
 
-// Build an invoice from a Work Order's captured parts/labor/fees — the field→billing
-// bridge. The invoice links back to the work order's Job for context.
-export function createInvoiceFromWorkOrder(workOrderId: string): InvoiceRecord | undefined {
-  const wo = getWorkOrderById(workOrderId);
-  if (!wo) return;
-  const job = getJob(wo.jobId);
-  if (!job) return;
+// Map a work order's captured parts/labor/fees → billing LineItems. Shared by the
+// invoice and quote bridges so both carry the same tax flag, catalog ref, and cost.
+function workOrderToLineItems(wo: { lineItems?: WorkOrderLineItem[] }): LineItem[] {
   const catFor = (k: "part" | "labor" | "fee"): LineItemCategory =>
     k === "part" ? "Materials" : k === "labor" ? "Labor" : "Other";
-  const lineItems: LineItem[] = (wo.lineItems ?? []).map((li, i) => ({
+  return (wo.lineItems ?? []).map((li, i) => ({
     id: `li-wo-${Date.now()}-${i}`,
     name: li.description,
     description: li.description,
@@ -463,15 +459,45 @@ export function createInvoiceFromWorkOrder(workOrderId: string): InvoiceRecord |
     unitPrice: li.unitPrice,
     total: li.qty * li.unitPrice,
     category: catFor(li.kind),
-    taxable: li.kind !== "labor",
+    // Carry the field-captured tax flag + catalog ref forward; fall back to a
+    // kind-based default when the work order line didn't specify taxability.
+    taxable: li.taxable ?? li.kind !== "labor",
+    itemId: li.itemId,
+    unitCost: li.unitCost,
   }));
+}
+
+// Build an invoice from a Work Order's captured parts/labor/fees — the field→billing
+// bridge. The invoice links back to the work order's Job for context.
+export function createInvoiceFromWorkOrder(workOrderId: string): InvoiceRecord | undefined {
+  const wo = getWorkOrderById(workOrderId);
+  if (!wo) return;
+  const job = getJob(wo.jobId);
+  if (!job) return;
   const due = new Date(); due.setDate(due.getDate() + 30);
   const dueDate = due.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
   return createInvoice({
     customerId: job.accountId, customerName: job.customerName, customerInitials: job.customerInitials, locationName: job.locationName,
     companyId: job.companyId, locationId: job.locationId, serviceAreaId: job.serviceAreaId,
-    title: wo.title || job.title, dueDate, lineItems,
-    jobId: job.id, projectId: job.projectId,
+    title: wo.title || job.title, dueDate, lineItems: workOrderToLineItems(wo),
+    jobId: job.id, workOrderId: wo.id, projectId: job.projectId,
+    linkedLabel: `Work Order: ${wo.title}`, linkedType: "job", linkedId: job.id,
+  });
+}
+
+// Build a quote from a Work Order — the field-upsell path ("your blower's also
+// failing, here's the price"). Seeds from the captured parts/labor and links back
+// to the work order + its Job. Starts as a draft custom quote.
+export function createQuoteFromWorkOrder(workOrderId: string): QuoteRecord | undefined {
+  const wo = getWorkOrderById(workOrderId);
+  if (!wo) return;
+  const job = getJob(wo.jobId);
+  if (!job) return;
+  return createQuote({
+    customerId: job.accountId, customerName: job.customerName, customerInitials: job.customerInitials, locationName: job.locationName,
+    companyId: job.companyId, locationId: job.locationId, serviceAreaId: job.serviceAreaId,
+    title: wo.title || job.title, lineItems: workOrderToLineItems(wo),
+    jobId: job.id, workOrderId: wo.id, projectId: job.projectId,
     linkedLabel: `Work Order: ${wo.title}`, linkedType: "job", linkedId: job.id,
   });
 }
@@ -508,6 +534,12 @@ export function getQuotesForJob(jobId: string): QuoteRecord[] {
 export function getInvoicesForJob(jobId: string): InvoiceRecord[] {
   return getAllInvoices().filter(i => i.jobId === jobId);
 }
+export function getQuotesForWorkOrder(workOrderId: string): QuoteRecord[] {
+  return getAllQuotes().filter(q => q.workOrderId === workOrderId);
+}
+export function getInvoicesForWorkOrder(workOrderId: string): InvoiceRecord[] {
+  return getAllInvoices().filter(i => i.workOrderId === workOrderId);
+}
 export function getQuotesForLead(leadId: string): QuoteRecord[] {
   return getAllQuotes().filter(q => q.leadId === leadId);
 }
@@ -539,7 +571,7 @@ export interface NewQuoteInput {
   // Hierarchy (derived from the customer by the caller; defaults applied if absent)
   companyId?: string; locationId?: string; serviceAreaId?: string;
   // Context links
-  leadId?: string; jobId?: string; projectId?: string; agreementId?: string; propertyId?: string;
+  leadId?: string; jobId?: string; workOrderId?: string; projectId?: string; agreementId?: string; propertyId?: string;
   propertyLabel?: string;
   linkedLabel?: string; linkedType?: QuoteRecord["linkedType"]; linkedId?: string;
   // Metadata
@@ -574,7 +606,7 @@ export function createQuote(input: NewQuoteInput): QuoteRecord {
     locationId: input.locationId ?? "loc_augusta",
     serviceAreaId: input.serviceAreaId,
     customerId: input.customerId,
-    propertyId: input.propertyId, leadId: input.leadId, jobId: input.jobId,
+    propertyId: input.propertyId, leadId: input.leadId, jobId: input.jobId, workOrderId: input.workOrderId,
     projectId: input.projectId, agreementId: input.agreementId,
     quoteNumber: number, title: input.title, status,
     quoteMode: input.quoteMode ?? "custom",
@@ -604,7 +636,7 @@ export interface NewInvoiceInput {
   title: string; lineItems: LineItem[]; taxRate?: number; dueDate: string;
   companyId?: string; locationId?: string; serviceAreaId?: string;
   propertyLabel?: string; customerNotes?: string; internalNotes?: string;
-  quoteId?: string; quoteNumber?: string; jobId?: string; projectId?: string; agreementId?: string; propertyId?: string;
+  quoteId?: string; quoteNumber?: string; jobId?: string; workOrderId?: string; projectId?: string; agreementId?: string; propertyId?: string;
   linkedLabel?: string; linkedType?: InvoiceRecord["linkedType"]; linkedId?: string;
 }
 
@@ -633,7 +665,7 @@ export function createInvoice(input: NewInvoiceInput): InvoiceRecord {
     organizationId: "org_northstar",
     companyId: input.companyId ?? "co_hvac", locationId: input.locationId ?? "loc_augusta", serviceAreaId: input.serviceAreaId,
     customerId: input.customerId,
-    propertyId: input.propertyId, jobId: input.jobId, projectId: input.projectId, agreementId: input.agreementId,
+    propertyId: input.propertyId, jobId: input.jobId, workOrderId: input.workOrderId, projectId: input.projectId, agreementId: input.agreementId,
     quoteId: input.quoteId,
     invoiceNumber: nextNumber("INV", all), title: input.title, status: "draft",
     ...totals, balanceDue: totals.total, dueDate: input.dueDate,

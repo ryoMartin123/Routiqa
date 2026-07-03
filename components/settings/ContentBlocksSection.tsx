@@ -81,7 +81,7 @@ export default function ContentBlocksSection() {
       </div>
 
       {filtered.length === 0 ? (
-        <div className="rounded-xl py-14 text-center" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>
+        <div className="rounded-xl py-14 text-center" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
           <FileText className="w-8 h-8 mx-auto mb-3" style={{ color: "var(--text-muted)" }} />
           <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>No content blocks match</p>
           <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>Create one or adjust your filters.</p>
@@ -112,7 +112,7 @@ export default function ContentBlocksSection() {
 function SummaryCard({ label, value, warn }: { label: string; value: number; warn?: boolean }) {
   const danger = warn && value > 0;
   return (
-    <div className="rounded-xl p-3.5" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+    <div className="rounded-xl p-3.5" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
       <p className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>{label}</p>
       <p className="text-2xl font-bold mt-1" style={{ color: danger ? "#b45309" : "var(--text-primary)" }}>{value}</p>
     </div>
@@ -123,7 +123,7 @@ function BlockCard({ b, usedIn, onEdit, onPreview, onDuplicate, onArchive }: {
   b: ContentBlock; usedIn: number; onEdit: () => void; onPreview: () => void; onDuplicate: () => void; onArchive: () => void;
 }) {
   return (
-    <div className="rounded-xl p-4 flex flex-col" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+    <div className="rounded-xl p-4 flex flex-col" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
       <div className="flex items-start justify-between gap-2">
         <p className="text-sm font-semibold leading-snug" style={{ color: "var(--text-primary)" }}>{b.name}</p>
       </div>
@@ -169,7 +169,7 @@ function BlockEditModal({ block, onClose, onSaved }: { block: ContentBlock | nul
   return (
     <div className="fixed inset-0 z-[80] bg-black/45 flex items-center justify-center p-4" onClick={onClose}>
       <div className="w-full max-w-2xl max-h-[90vh] flex flex-col rounded-2xl overflow-hidden" onClick={e => e.stopPropagation()} style={{ backgroundColor: "var(--bg-surface)", boxShadow: "0 24px 70px rgba(0,0,0,0.4)" }}>
-        <div className="flex items-center justify-between px-5 py-3.5 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+        <div className="flex items-center justify-between px-5 py-3.5 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
           <p className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>{block ? "Edit Content Block" : "Create Content Block"}</p>
           <button onClick={onClose} style={{ color: "var(--text-muted)" }}><X className="w-5 h-5" /></button>
         </div>
@@ -188,7 +188,7 @@ function BlockEditModal({ block, onClose, onSaved }: { block: ContentBlock | nul
           </Field>
           <Field label="Tags (comma separated)"><input value={tags} onChange={e => setTags(e.target.value)} className={inp} style={inpStyle} /></Field>
         </div>
-        <div className="px-5 py-3.5 flex justify-end gap-2 shrink-0" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+        <div className="px-5 py-3.5 flex justify-end gap-2 shrink-0" style={{ borderTop: "1px solid var(--border)" }}>
           <button onClick={onClose} className="px-3 py-2 rounded-lg text-sm" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>Cancel</button>
           <button onClick={save} className="px-4 py-2 rounded-lg text-sm font-medium text-white" style={{ backgroundColor: "var(--accent-text)" }}>{block ? "Save" : "Create"}</button>
         </div>
@@ -204,7 +204,7 @@ function MiniEditor({ value, onChange }: { value: string; onChange: (v: string) 
   }
   return (
     <div className="rounded-lg overflow-hidden" style={{ border: "1px solid var(--border)" }}>
-      <div className="flex items-center gap-1 px-2 py-1.5" style={{ borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+      <div className="flex items-center gap-1 px-2 py-1.5" style={{ borderBottom: "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)" }}>
         <ToolBtn label="H" title="Heading line" onClick={() => onChange(value + (value && !value.endsWith("\n") ? "\n" : "") + "## Heading")} bold />
         <ToolBtn label="B" title="Bold" onClick={() => wrap("**")} bold />
         <ToolBtn label="i" title="Italic" onClick={() => wrap("*")} italic />
@@ -226,7 +226,7 @@ function BlockPreviewModal({ block, usedIn, onClose, onEdit, onDuplicate }: {
   return (
     <div className="fixed inset-0 z-[80] bg-black/45 flex items-center justify-center p-4" onClick={onClose}>
       <div className="w-full max-w-xl max-h-[88vh] flex flex-col rounded-2xl overflow-hidden" onClick={e => e.stopPropagation()} style={{ backgroundColor: "var(--bg-surface)", boxShadow: "0 24px 70px rgba(0,0,0,0.4)" }}>
-        <div className="flex items-center justify-between px-5 py-3.5 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+        <div className="flex items-center justify-between px-5 py-3.5 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
           <div className="min-w-0">
             <p className="text-base font-semibold truncate" style={{ color: "var(--text-primary)" }}>{block.name}</p>
             <p className="text-[11px] mt-0.5" style={{ color: "var(--text-muted)" }}>{CONTENT_BLOCK_TYPE_LABELS[block.type]}{block.industry ? ` · ${INDUSTRY_LABELS[block.industry]}` : ""}</p>
@@ -234,12 +234,12 @@ function BlockPreviewModal({ block, usedIn, onClose, onEdit, onDuplicate }: {
           <button onClick={onClose} style={{ color: "var(--text-muted)" }}><X className="w-5 h-5" /></button>
         </div>
         <div className="flex-1 overflow-y-auto thin-scroll-y p-5">
-          <div className="rounded-xl p-4" style={{ backgroundColor: "#fff", border: "1px solid var(--border-subtle)" }}>
+          <div className="rounded-xl p-4" style={{ backgroundColor: "#fff", border: "1px solid var(--border)" }}>
             <RenderedText text={block.text} />
           </div>
           <p className="flex items-center gap-1.5 text-[11px] mt-3" style={{ color: "var(--text-muted)" }}><Link2 className="w-3.5 h-3.5" /> {usedIn > 0 ? `Used in ${usedIn} salesbook${usedIn === 1 ? "" : "s"}` : "Not used in any salesbook yet"}</p>
         </div>
-        <div className="px-5 py-3.5 flex justify-end gap-2 shrink-0" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+        <div className="px-5 py-3.5 flex justify-end gap-2 shrink-0" style={{ borderTop: "1px solid var(--border)" }}>
           <button onClick={onDuplicate} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}><Copy className="w-4 h-4" /> Duplicate</button>
           <button onClick={onEdit} className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-white" style={{ backgroundColor: "var(--accent-text)" }}><Pencil className="w-4 h-4" /> Edit</button>
         </div>
@@ -291,11 +291,11 @@ export function ContentBlockPicker({ filterType, onPick, onClose }: {
   return (
     <div className="fixed inset-0 z-[80] bg-black/45 flex items-center justify-center p-4" onClick={onClose}>
       <div className="w-full max-w-3xl max-h-[88vh] flex flex-col rounded-2xl overflow-hidden" onClick={e => e.stopPropagation()} style={{ backgroundColor: "var(--bg-surface)", boxShadow: "0 24px 70px rgba(0,0,0,0.4)" }}>
-        <div className="flex items-center justify-between px-5 py-3.5 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+        <div className="flex items-center justify-between px-5 py-3.5 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
           <p className="text-base font-semibold flex items-center gap-2" style={{ color: "var(--text-primary)" }}><FileText className="w-4 h-4" style={{ color: "var(--accent-text)" }} /> Add Content Block</p>
           <button onClick={onClose} style={{ color: "var(--text-muted)" }}><X className="w-5 h-5" /></button>
         </div>
-        <div className="px-5 py-3 flex items-center gap-2 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+        <div className="px-5 py-3 flex items-center gap-2 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
           <div className="relative flex-1"><Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "var(--text-muted)" }} /><input value={q} onChange={e => setQ(e.target.value)} placeholder="Search blocks…" className="w-full rounded-lg pl-9 pr-3 py-2 text-sm outline-none" style={inpStyle} /></div>
           <div className="w-48"><UiSelect size="sm" value={type} onChange={setType} placeholder="All types" options={[{ value: "", label: "All types" }, ...CONTENT_BLOCK_TYPES.map(t => ({ value: t, label: CONTENT_BLOCK_TYPE_LABELS[t] }))]} /></div>
           <button onClick={() => setCreating(true)} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-white shrink-0" style={{ backgroundColor: "var(--accent-text)" }}><Plus className="w-4 h-4" /> New</button>
@@ -304,7 +304,7 @@ export function ContentBlockPicker({ filterType, onPick, onClose }: {
           {filtered.length === 0 ? <p className="text-sm text-center py-10" style={{ color: "var(--text-muted)" }}>No blocks — create one with “New”.</p> : (
             <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))" }}>
               {filtered.map(b => (
-                <div key={b.id} className="rounded-xl p-3.5 flex flex-col" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+                <div key={b.id} className="rounded-xl p-3.5 flex flex-col" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
                   <div className="flex items-center gap-1.5 flex-wrap"><p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{b.name}</p></div>
                   <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded w-fit mt-1" style={{ backgroundColor: "var(--accent-soft-bg)", color: "var(--accent-text)" }}>{CONTENT_BLOCK_TYPE_LABELS[b.type]}</span>
                   <p className="text-[11px] mt-1.5 leading-snug flex-1" style={{ color: "var(--text-muted)", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{b.text}</p>

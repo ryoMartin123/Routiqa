@@ -2,7 +2,7 @@
 
 import { use, useState, Suspense } from "react";
 import Link from "next/link";
-import { ArrowLeft, Pencil, Circle, ChevronRight, MapPin, User, Calendar, DollarSign, Clock, Plus, Trash2, AlertCircle, Tag, Activity, Briefcase, ShoppingCart, Building2, UserCog, HardHat, Package, TrendingUp } from "lucide-react";
+import { ArrowLeft, Pencil, Circle, ChevronRight, ArrowRight, MapPin, User, Calendar, DollarSign, Clock, Plus, Trash2, AlertCircle, Tag, Activity, Briefcase, ShoppingCart, Building2, UserCog, HardHat, Package, TrendingUp } from "lucide-react";
 import { getProject, getProjectProgress, deleteProject, PROJECT_TYPE_LABELS } from "@/lib/projects/data";
 import { getTasksForProject } from "@/lib/tasks/data";
 import RecordTasks from "@/components/tasks/RecordTasks";
@@ -48,6 +48,18 @@ function MiniAction({ onClick, children }: { onClick: () => void; children: Reac
   );
 }
 
+// "View all / View map…" affordance — the arrow tilts up to a 45° up-right angle
+// and nudges outward on hover, so the "go there" cue feels alive. Shared by every
+// Overview card link so they read identically.
+function ViewLink({ onClick, children }: { onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button onClick={onClick} className="group inline-flex items-center gap-1 text-xs font-medium transition-colors hover:brightness-110" style={{ color: "var(--accent-text)" }}>
+      {children}
+      <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 ease-out group-hover:-rotate-45 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+    </button>
+  );
+}
+
 // ─── Workflow summary (Overview) ──────────────────────────
 // Compact read-out of where the project is, driven by the Map (the source of
 // truth). Links to the full Map tab.
@@ -55,12 +67,10 @@ function WorkflowSummary({ projectId, onOpenMap }: { projectId: string; onOpenMa
   const prog = mapProgress(projectId);
   const allDone = prog.total > 0 && prog.done === prog.total;
   return (
-    <div className="rounded-xl p-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+    <div className="rounded-xl p-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
       <div className="flex items-center justify-between mb-2">
         <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>Workflow Progress</p>
-        {onOpenMap && (
-          <button onClick={onOpenMap} className="text-[11px] font-medium hover:underline" style={{ color: "var(--accent-text)" }}>View map →</button>
-        )}
+        {onOpenMap && <ViewLink onClick={onOpenMap}>View map</ViewLink>}
       </div>
       {prog.total === 0 ? (
         <p className="text-sm" style={{ color: "var(--text-muted)" }}>No workflow steps yet.</p>
@@ -135,7 +145,7 @@ function OverviewTab({ projectId, onOpenMap, onOpenTab }: { projectId: string; o
             <DRow icon={Calendar}  label="Target Date" value={project.targetDate ?? "—"} />
           </div>
           {project.scope && (
-            <div className="mt-4 pt-3" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+            <div className="mt-4 pt-3" style={{ borderTop: "1px solid var(--border)" }}>
               <DLabel>Scope</DLabel>
               <p className="text-sm mt-2 whitespace-pre-line line-clamp-4" style={{ color: "var(--text-secondary)" }}>{project.scope}</p>
             </div>
@@ -149,7 +159,7 @@ function OverviewTab({ projectId, onOpenMap, onOpenTab }: { projectId: string; o
           <DCard className="p-4">
             <div className="flex items-center justify-between mb-3">
               <DLabel>Materials &amp; Vendors</DLabel>
-              <button onClick={() => onOpenTab("Materials & Vendors")} className="text-[11px] font-medium hover:underline" style={{ color: "var(--accent-text)" }}>View →</button>
+              <ViewLink onClick={() => onOpenTab("Materials & Vendors")}>View vendors</ViewLink>
             </div>
             <div className="grid grid-cols-2 gap-2">
               <MiniKpi icon={Building2}    label="Vendors" value={links.length} />
@@ -157,7 +167,7 @@ function OverviewTab({ projectId, onOpenMap, onOpenTab }: { projectId: string; o
               <MiniKpi icon={ShoppingCart} label="Purchase Orders" value={pos.length} />
               <MiniKpi icon={Package}      label="Material Requests" value={requests.length} />
             </div>
-            <div className="flex items-center justify-between mt-3 pt-3" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+            <div className="flex items-center justify-between mt-3 pt-3" style={{ borderTop: "1px solid var(--border)" }}>
               <span className="text-xs" style={{ color: "var(--text-muted)" }}>Committed cost</span>
               <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{money(committed)}</span>
             </div>
@@ -168,9 +178,9 @@ function OverviewTab({ projectId, onOpenMap, onOpenTab }: { projectId: string; o
       {/* Jobs + tasks — fills the remaining height; lists scroll internally */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 flex-1 min-h-0">
         <DCard className="lg:col-span-2 overflow-hidden flex flex-col min-h-0">
-          <div className="flex items-center justify-between px-4 py-3 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+          <div className="flex items-center justify-between px-4 py-3 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
             <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Jobs</p>
-            <button onClick={() => onOpenTab("Jobs")} className="text-xs font-medium" style={{ color: "var(--accent-text)" }}>View all</button>
+            <ViewLink onClick={() => onOpenTab("Jobs")}>View all</ViewLink>
           </div>
           <div className="flex-1 overflow-y-auto min-h-0">
           {jobs.length === 0 ? (
@@ -180,7 +190,7 @@ function OverviewTab({ projectId, onOpenMap, onOpenTab }: { projectId: string; o
             return (
               <Link key={job.id} href={jobHrefFromProject(job.id, projectId, project.name)}
                 className="flex items-center justify-between px-4 py-3 hover:bg-[var(--bg-surface-2)] transition-colors"
-                style={i < jobs.length - 1 ? { borderBottom: "1px solid var(--border-subtle)" } : undefined}>
+                style={i < jobs.length - 1 ? { borderBottom: "1px solid var(--border)" } : undefined}>
                 <div>
                   <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{job.title}</p>
                   <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>{job.scheduledDate} · {job.assignedTo}</p>
@@ -196,15 +206,16 @@ function OverviewTab({ projectId, onOpenMap, onOpenTab }: { projectId: string; o
         </DCard>
 
         <DCard className="overflow-hidden flex flex-col min-h-0">
-          <div className="px-4 py-3 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+          <div className="flex items-center justify-between px-4 py-3 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
             <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Open Tasks ({openTasks.length})</p>
+            <ViewLink onClick={() => onOpenTab("Tasks")}>View all</ViewLink>
           </div>
           <div className="flex-1 overflow-y-auto min-h-0">
           {openTasks.length === 0 ? (
             <p className="px-4 py-8 text-center text-sm" style={{ color: "var(--text-muted)" }}>No open tasks.</p>
           ) : openTasks.map((task, i) => (
             <div key={task.id} className="flex items-center justify-between px-4 py-2.5"
-              style={i < openTasks.length - 1 ? { borderBottom: "1px solid var(--border-subtle)" } : undefined}>
+              style={i < openTasks.length - 1 ? { borderBottom: "1px solid var(--border)" } : undefined}>
               <div className="flex items-center gap-2.5 min-w-0">
                 <Circle className="w-4 h-4 shrink-0" style={{ color: "var(--border)" }} />
                 <span className="text-sm truncate" style={{ color: "var(--text-primary)" }}>{task.title}</span>
@@ -222,7 +233,7 @@ function OverviewTab({ projectId, onOpenMap, onOpenTab }: { projectId: string; o
 // ─── Overview presentational primitives (match Customer/Agreement overviews) ──
 function Stat({ icon: Icon, label, value, sub, accent }: { icon: typeof Activity; label: string; value: React.ReactNode; sub?: string; accent?: string }) {
   return (
-    <div className="rounded-xl p-3.5" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+    <div className="rounded-xl p-3.5" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
       <div className="flex items-center gap-1.5 mb-1.5">
         <Icon className="w-3.5 h-3.5" style={{ color: accent ?? "var(--text-muted)" }} />
         <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>{label}</p>
@@ -233,7 +244,7 @@ function Stat({ icon: Icon, label, value, sub, accent }: { icon: typeof Activity
   );
 }
 function DCard({ children, className = "" }: { children: React.ReactNode; className?: string }) {
-  return <div className={`rounded-xl ${className}`} style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>{children}</div>;
+  return <div className={`rounded-xl ${className}`} style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>{children}</div>;
 }
 function DLabel({ children }: { children: React.ReactNode }) {
   return <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>{children}</p>;
@@ -251,7 +262,7 @@ function DRow({ icon: Icon, label, value }: { icon?: typeof Activity; label: str
 }
 function MiniKpi({ icon: Icon, label, value }: { icon: typeof Activity; label: string; value: number }) {
   return (
-    <div className="rounded-lg px-2.5 py-2 flex items-center gap-2" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border-subtle)" }}>
+    <div className="rounded-lg px-2.5 py-2 flex items-center gap-2" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}>
       <Icon className="w-3.5 h-3.5 shrink-0" style={{ color: "var(--text-muted)" }} />
       <div className="min-w-0">
         <p className="text-base font-bold leading-none" style={{ color: "var(--text-primary)" }}>{value}</p>
@@ -269,13 +280,13 @@ function JobsTab({ projectId }: { projectId: string }) {
   const project = getProject(projectId)!;
   const jobs = getJobsForProject(projectId);
   return (
-    <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+    <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
       {wizard && (
         <JobWizard preset={{ customerId: project.accountId, projectId, lockCustomer: true }}
           onClose={() => setWizard(false)}
           onCreated={(jid) => { setWizard(false); forceRefresh(n => n + 1); router.push(jobHrefFromProject(jid, projectId, project.name)); }} />
       )}
-      <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+      <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid var(--border)" }}>
         <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Jobs ({jobs.length})</p>
         <MiniAction onClick={() => setWizard(true)}>Add Job</MiniAction>
       </div>
@@ -284,7 +295,7 @@ function JobsTab({ projectId }: { projectId: string }) {
       ) : (
       <>
       <div className="grid px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider"
-        style={{ gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr 1fr", color: "var(--text-muted)", borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+        style={{ gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr 1fr", color: "var(--text-muted)", borderBottom: "1px solid var(--border)", backgroundColor: "transparent" }}>
         <span>Job</span><span>Type</span><span>Status</span><span>Date</span><span>Tech</span><span>Amount</span>
       </div>
       {jobs.map((job, i) => {
@@ -292,7 +303,7 @@ function JobsTab({ projectId }: { projectId: string }) {
         return (
           <Link key={job.id} href={jobHrefFromProject(job.id, projectId, project.name)}
             className="grid px-4 py-3 items-center hover:bg-[var(--bg-surface-2)] transition-colors"
-            style={{ gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr 1fr", borderBottom: i < jobs.length - 1 ? "1px solid var(--border-subtle)" : "none", textDecoration: "none" }}>
+            style={{ gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr 1fr", borderBottom: i < jobs.length - 1 ? "1px solid var(--border)" : "none", textDecoration: "none" }}>
             <span className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{job.title}</span>
             <span className="text-sm capitalize" style={{ color: "var(--text-secondary)" }}>{job.type}</span>
             <StatusBadge label={s.label} color={s.color} />
@@ -317,7 +328,7 @@ function ScopeTab({ projectId }: { projectId: string }) {
   if (!project.scope) return <StubContent label="No scope document added yet." />;
   return (
     <div className="max-w-2xl">
-      <div className="rounded-xl p-6" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+      <div className="rounded-xl p-6" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
         <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: "var(--text-muted)" }}>Scope of Work</p>
         <p className="text-sm leading-relaxed whitespace-pre-line" style={{ color: "var(--text-secondary)" }}>{project.scope}</p>
       </div>
@@ -326,7 +337,7 @@ function ScopeTab({ projectId }: { projectId: string }) {
 }
 
 function StubContent({ label }: { label: string }) {
-  return <div className="rounded-xl p-10 text-center" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}><p className="text-sm" style={{ color: "var(--text-muted)" }}>{label}</p></div>;
+  return <div className="rounded-xl p-10 text-center" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}><p className="text-sm" style={{ color: "var(--text-muted)" }}>{label}</p></div>;
 }
 
 // ─── Estimates (quotes) tab ───────────────────────────────
@@ -336,12 +347,12 @@ function ProjectEstimatesTab({ projectId }: { projectId: string }) {
   const quotes  = getQuotesForProject(projectId);
 
   return (
-    <div className="rounded-xl overflow-hidden w-full" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+    <div className="rounded-xl overflow-hidden w-full" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
       {wizard && (
         <QuoteTypeChooser preset={{ customerId: project.accountId, projectId, lockCustomer: true }}
           onClose={() => setWizard(false)} />
       )}
-      <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+      <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid var(--border)" }}>
         <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Estimates ({quotes.length})</p>
         <MiniAction onClick={() => setWizard(true)}>New Quote</MiniAction>
       </div>
@@ -352,7 +363,7 @@ function ProjectEstimatesTab({ projectId }: { projectId: string }) {
         return (
           <Link key={q.id} href={`/quotes/${q.id}`}
             className="flex items-center gap-4 px-4 py-3 hover:bg-[var(--bg-surface-2)] transition-colors"
-            style={{ borderBottom: i < quotes.length - 1 ? "1px solid var(--border-subtle)" : "none", textDecoration: "none" }}>
+            style={{ borderBottom: i < quotes.length - 1 ? "1px solid var(--border)" : "none", textDecoration: "none" }}>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-mono font-medium" style={{ color: "var(--text-primary)" }}>{q.quoteNumber}</p>
               <p className="text-xs mt-0.5 truncate" style={{ color: "var(--text-muted)" }}>{q.title}</p>
@@ -374,13 +385,13 @@ function ProjectInvoicesTab({ projectId }: { projectId: string }) {
   const invoices = getInvoicesForProject(projectId);
 
   return (
-    <div className="rounded-xl overflow-hidden w-full" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+    <div className="rounded-xl overflow-hidden w-full" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
       {wizard && (
         <InvoiceWizard preset={{ customerId: project.accountId, projectId, lockCustomer: true }}
           onClose={() => setWizard(false)}
           onCreated={(id) => { setWizard(false); router.push(`/invoices/${id}`); }} />
       )}
-      <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+      <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid var(--border)" }}>
         <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Invoices ({invoices.length})</p>
         <MiniAction onClick={() => setWizard(true)}>New Invoice</MiniAction>
       </div>
@@ -391,7 +402,7 @@ function ProjectInvoicesTab({ projectId }: { projectId: string }) {
         return (
           <Link key={inv.id} href={`/invoices/${inv.id}`}
             className="flex items-center gap-4 px-4 py-3 hover:bg-[var(--bg-surface-2)] transition-colors"
-            style={{ borderBottom: i < invoices.length - 1 ? "1px solid var(--border-subtle)" : "none", textDecoration: "none" }}>
+            style={{ borderBottom: i < invoices.length - 1 ? "1px solid var(--border)" : "none", textDecoration: "none" }}>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-mono font-medium" style={{ color: "var(--text-primary)" }}>{inv.invoiceNumber}</p>
               <p className="text-xs mt-0.5 truncate" style={{ color: "var(--text-muted)" }}>
@@ -407,7 +418,7 @@ function ProjectInvoicesTab({ projectId }: { projectId: string }) {
   );
 }
 function StubTab({ label }: { label: string }) {
-  return <div className="rounded-xl p-10 text-center" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}><p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{label}</p><p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>Coming soon</p></div>;
+  return <div className="rounded-xl p-10 text-center" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}><p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{label}</p><p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>Coming soon</p></div>;
 }
 
 // ─── Page ─────────────────────────────────────────────────
@@ -444,7 +455,7 @@ function ProjectDetailContent({ params }: { params: Promise<{ id: string }> }) {
 
   return (
     <div className="flex flex-col h-full">
-      <div style={{ backgroundColor: "var(--bg-surface)", borderBottom: "1px solid var(--border-subtle)" }}>
+      <div style={{ backgroundColor: "var(--bg-surface)", borderBottom: "1px solid var(--border)" }}>
         <div className="flex items-center justify-between px-6 py-4">
           <div className="flex items-center gap-4 min-w-0">
             <Link href="/projects" className="flex items-center gap-1.5 text-sm shrink-0" style={{ color: "var(--text-secondary)" }}>
@@ -496,7 +507,7 @@ function ProjectDetailContent({ params }: { params: Promise<{ id: string }> }) {
       {confirmDelete && (
         <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={() => setConfirmDelete(false)}>
           <div className="w-full max-w-md rounded-2xl overflow-hidden" onClick={e => e.stopPropagation()}
-            style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "0 16px 48px rgba(0,0,0,0.24)" }}>
+            style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "0 16px 48px rgba(0,0,0,0.24)" }}>
             <div className="px-6 py-5 flex items-start gap-3">
               <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: "#fee2e2" }}>
                 <AlertCircle className="w-5 h-5" style={{ color: "#dc2626" }} />
@@ -508,7 +519,7 @@ function ProjectDetailContent({ params }: { params: Promise<{ id: string }> }) {
                 </p>
               </div>
             </div>
-            <div className="px-6 py-4 flex justify-end gap-2" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+            <div className="px-6 py-4 flex justify-end gap-2" style={{ borderTop: "1px solid var(--border)" }}>
               <button onClick={() => setConfirmDelete(false)} className="px-4 py-2 rounded-lg text-sm font-medium" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>Cancel</button>
               <button onClick={() => { deleteProject(id); router.push("/projects"); }} className="px-4 py-2 rounded-lg text-sm font-medium text-white" style={{ backgroundColor: "#dc2626" }}>Delete Project</button>
             </div>

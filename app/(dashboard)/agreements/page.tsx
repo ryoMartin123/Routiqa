@@ -53,7 +53,7 @@ function TemplatesTable() {
       className="rounded-xl overflow-hidden"
       style={{
         backgroundColor: "var(--bg-surface)",
-        border: "1px solid var(--border-subtle)",
+        border: "1px solid var(--border)",
         boxShadow: "var(--shadow-card)",
       }}
     >
@@ -63,7 +63,7 @@ function TemplatesTable() {
         style={{
           gridTemplateColumns: "2.5fr 1fr 1fr 1fr 1fr 1fr 1fr",
           color: "var(--text-muted)",
-          borderBottom: "1px solid var(--border-subtle)",
+          borderBottom: "1px solid var(--border)",
           backgroundColor: "var(--bg-surface-2)",
         }}
       >
@@ -84,7 +84,7 @@ function TemplatesTable() {
             className="grid px-4 py-3 items-center hover:bg-[var(--bg-surface-2)] transition-colors cursor-pointer"
             style={{
               gridTemplateColumns: "2.5fr 1fr 1fr 1fr 1fr 1fr 1fr",
-              borderBottom: i < TEMPLATES.length - 1 ? "1px solid var(--border-subtle)" : "none",
+              borderBottom: i < TEMPLATES.length - 1 ? "1px solid var(--border)" : "none",
             }}
           >
             <div>
@@ -234,12 +234,12 @@ export default function AgreementsPage() {
 
         {/* Templates keep the table; otherwise list table or cards grid */}
         {isTemplates ? (
-          <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+          <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
             <TemplatesTable />
           </div>
         ) : moduleView === "cards" ? (
           displayed.length === 0 ? (
-            <div className="rounded-xl py-16 text-center" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>
+            <div className="rounded-xl py-16 text-center" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
               <p className="text-sm" style={{ color: "var(--text-muted)" }}>No agreements match your search.</p>
             </div>
           ) : (
@@ -248,7 +248,7 @@ export default function AgreementsPage() {
             </div>
           )
         ) : (
-          <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+          <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
           <>
             {/* Column headers */}
             <div
@@ -256,7 +256,7 @@ export default function AgreementsPage() {
               style={{
                 gridTemplateColumns: "2fr 1.5fr 1fr 1fr 1fr 1fr 1fr 1fr 1.5fr",
                 color: "var(--text-muted)",
-                borderBottom: "1px solid var(--border-subtle)",
+                borderBottom: "1px solid var(--border)",
                 backgroundColor: "var(--bg-surface-2)",
               }}
             >
@@ -306,7 +306,7 @@ export default function AgreementsPage() {
                       className="grid px-4 py-3 items-center hover:bg-[var(--bg-surface-2)] transition-colors"
                       style={{
                         gridTemplateColumns: "2fr 1.5fr 1fr 1fr 1fr 1fr 1fr 1fr 1.5fr",
-                        borderBottom: i < displayed.length - 1 ? "1px solid var(--border-subtle)" : "none",
+                        borderBottom: i < displayed.length - 1 ? "1px solid var(--border)" : "none",
                         textDecoration: "none",
                       }}
                     >
@@ -388,7 +388,7 @@ export default function AgreementsPage() {
             <div
               className="flex items-center justify-between px-4 py-3 text-xs"
               style={{
-                borderTop: "1px solid var(--border-subtle)",
+                borderTop: "1px solid var(--border)",
                 color: "var(--text-muted)",
                 backgroundColor: "var(--bg-surface-2)",
               }}
@@ -427,7 +427,7 @@ function AgreementCard({ a }: { a: CustomerAgreement }) {
   return (
     <Link href={`/agreements/${a.id}`}
       className="group block rounded-lg p-3 transition-all hover:-translate-y-0.5 hover:shadow-md"
-      style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", borderLeft: `3px solid ${s.color}`, textDecoration: "none" }}>
+      style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", borderLeft: `3px solid ${s.color}`, textDecoration: "none" }}>
       <div className="flex items-start justify-between gap-2 mb-1.5">
         <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
           <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded inline-flex items-center gap-1 shrink-0" style={{ backgroundColor: s.color + "22", color: s.color }}>
@@ -439,7 +439,7 @@ function AgreementCard({ a }: { a: CustomerAgreement }) {
       </div>
       <p className="text-sm font-semibold truncate" style={{ color: "var(--text-primary)" }}>{a.customer}</p>
       {(a.location || a.industry) && <p className="text-xs truncate" style={{ color: "var(--text-secondary)" }}>{a.location || a.industry}</p>}
-      <div className="flex items-center justify-between gap-2 mt-2 pt-2" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+      <div className="flex items-center justify-between gap-2 mt-2 pt-2" style={{ borderTop: "1px solid var(--border)" }}>
         <span className="text-[10px] truncate" style={{ color: a.status === "overdue" ? "#dc2626" : a.status === "renewal_due" ? "#ea580c" : "var(--text-muted)" }}>
           {a.nextVisit ? `Next: ${a.nextVisit}` : `Renews ${a.renewalDate}`}
         </span>

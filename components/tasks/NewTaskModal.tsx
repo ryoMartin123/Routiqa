@@ -234,10 +234,10 @@ export default function NewTaskModal({ open, onClose, onSaved, task, defaultCust
     <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={onClose}>
       <div className="w-full max-w-lg max-h-[90vh] flex flex-col rounded-2xl overflow-hidden"
         onClick={e => e.stopPropagation()}
-        style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "0 16px 48px rgba(0,0,0,0.24)" }}>
+        style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "0 16px 48px rgba(0,0,0,0.24)" }}>
 
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-5 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+        <div className="flex items-center justify-between px-6 py-5 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: "var(--accent-soft-bg)" }}>
               <CheckSquare className="w-4 h-4" style={{ color: "var(--accent-text)" }} />
@@ -343,7 +343,7 @@ export default function NewTaskModal({ open, onClose, onSaved, task, defaultCust
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 flex gap-2" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+        <div className="px-6 py-4 flex gap-2" style={{ borderTop: "1px solid var(--border)" }}>
           <button onClick={onClose}
             className="flex-1 py-2 rounded-lg text-sm font-medium transition-colors"
             style={{ border: "1px solid var(--border)", color: "var(--text-secondary)", backgroundColor: "var(--bg-surface)" }}>

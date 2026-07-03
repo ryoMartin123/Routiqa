@@ -23,7 +23,7 @@ export default function JobsInTerritory() {
     <div className="rounded-xl overflow-hidden h-full min-h-0 flex flex-col"
       style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
       <div className="flex items-center gap-2 px-5 py-4 shrink-0"
-        style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+        style={{ borderBottom: "1px solid var(--border)" }}>
         <Briefcase className="w-4 h-4" style={{ color: "#4f46e5" }} />
         <div>
           <h2 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Jobs in Territory</h2>
@@ -42,7 +42,7 @@ export default function JobsInTerritory() {
             return (
               <Link key={job.id} href={`/jobs/${job.id}`}
                 className="flex items-center gap-3 px-5 py-3 hover:bg-[var(--bg-surface-2)] transition-colors"
-                style={{ borderBottom: i < jobs.length - 1 ? "1px solid var(--border-subtle)" : "none", textDecoration: "none" }}>
+                style={{ borderBottom: i < jobs.length - 1 ? "1px solid var(--border)" : "none", textDecoration: "none" }}>
                 <div className="w-12 shrink-0">
                   <p className="text-xs font-semibold" style={{ color: "var(--text-primary)" }}>{job.scheduledTime}</p>
                 </div>

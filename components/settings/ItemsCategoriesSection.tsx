@@ -93,9 +93,9 @@ export default function ItemsCategoriesSection() {
             <button onClick={() => { setAdding(false); setDraftName(""); }} className="p-2 rounded-lg shrink-0" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}><X className="w-4 h-4" /></button>
           </div>
         )}
-        <div className="rounded-lg overflow-hidden" style={{ border: "1px solid var(--border-subtle)" }}>
+        <div className="rounded-lg overflow-hidden" style={{ border: "1px solid var(--border)" }}>
           {sorted.map((c, i) => (
-            <div key={c.id} className="flex items-center gap-3 px-3 py-2.5" style={{ borderBottom: i < sorted.length - 1 ? "1px solid var(--border-subtle)" : "none", backgroundColor: "var(--bg-surface)", opacity: c.active ? 1 : 0.5 }}>
+            <div key={c.id} className="flex items-center gap-3 px-3 py-2.5" style={{ borderBottom: i < sorted.length - 1 ? "1px solid var(--border)" : "none", backgroundColor: "var(--bg-surface)", opacity: c.active ? 1 : 0.5 }}>
               <div className="flex flex-col">
                 <button onClick={() => move(c.id, -1)} disabled={i === 0} className="disabled:opacity-20" style={{ color: "var(--text-muted)" }}><ChevronUp className="w-3.5 h-3.5" /></button>
                 <button onClick={() => move(c.id, 1)} disabled={i === sorted.length - 1} className="disabled:opacity-20" style={{ color: "var(--text-muted)" }}><ChevronDown className="w-3.5 h-3.5" /></button>

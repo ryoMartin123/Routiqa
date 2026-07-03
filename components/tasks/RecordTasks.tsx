@@ -91,7 +91,7 @@ export default function RecordTasks({ type, id, accent = "#4f46e5" }: { type: Li
       </div>
 
       {tasks.length === 0 ? (
-        <div className="rounded-xl p-10 text-center" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>
+        <div className="rounded-xl p-10 text-center" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
           <p className="text-sm" style={{ color: "var(--text-muted)" }}>{all.length === 0 ? "No tasks yet." : "No tasks match this filter."}</p>
         </div>
       ) : (
@@ -104,7 +104,7 @@ export default function RecordTasks({ type, id, accent = "#4f46e5" }: { type: Li
             return (
               <div key={task.id}
                 className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-opacity ${isCompleting ? "task-completing" : ""}`}
-                style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", opacity: isCompleted ? 0.55 : 1 }}>
+                style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", opacity: isCompleted ? 0.55 : 1 }}>
                 <button onClick={() => toggle(task.id)}
                   className="w-5 h-5 rounded flex items-center justify-center shrink-0 transition-all"
                   style={{

@@ -9,9 +9,10 @@ import { getJob, updateJob, deleteJob, getWorkOrder, getWorkOrderById, getWorkOr
 import { getAppointmentsForJob, VISIT_TYPE_CONFIG, type AppointmentStatus } from "@/lib/appointments/data";
 import { useDataVersion } from "@/lib/sync/useDataVersion";
 import ReturnVisitModal from "@/components/jobs/ReturnVisitModal";
+import { canAddVisit } from "@/lib/jobs/serviceCall";
 import WorkOrderWizard from "@/components/jobs/WorkOrderWizard";
 import WorkOrderBilling from "@/components/jobs/WorkOrderBilling";
-import { getJobStatuses } from "@/lib/job-config/data";
+import { getJobStatuses, jobTypeLabel } from "@/lib/job-config/data";
 import StatusBadge from "@/components/shared/StatusBadge";
 import ActionsMenu from "@/components/shared/ActionsMenu";
 import {
@@ -44,20 +45,25 @@ const APPT_STATUS_META: Record<AppointmentStatus, { label: string; color: string
 // ─── Visits tab — every scheduled visit (appointment) on this job ─────────
 function VisitsTab({ jobId, onSchedule }: { jobId: string; onSchedule: () => void }) {
   const rev = useDataVersion();
+  // Ordered by creation so the numbering is stable (original = 1, return = 2).
   const visits = React.useMemo(
-    () => getAppointmentsForJob(jobId).slice().sort((a, b) => `${a.scheduledDate} ${a.scheduledTime}`.localeCompare(`${b.scheduledDate} ${b.scheduledTime}`)),
+    () => getAppointmentsForJob(jobId).slice().sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id)),
     [jobId, rev],
   );
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- rev re-reads after changes
+  const canVisit = React.useMemo(() => { const j = getJob(jobId); return j ? canAddVisit(j).allowed : false; }, [jobId, rev]);
   return (
     <div className="max-w-3xl space-y-3">
       <div className="flex items-center justify-between gap-3">
         <div>
           <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Visits</p>
-          <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>Each visit is its own appointment + work order — schedule a return when a job needs a second trip.</p>
+          <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>Each visit is its own appointment + work order — schedule the next when a job needs another trip.</p>
         </div>
-        <button onClick={onSchedule} className="inline-flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-lg text-white shrink-0" style={{ backgroundColor: "#4f46e5" }}>
-          <Repeat className="w-4 h-4" /> Schedule return visit
-        </button>
+        {canVisit && (
+          <button onClick={onSchedule} className="inline-flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-lg text-white shrink-0" style={{ backgroundColor: "#4f46e5" }}>
+            <Repeat className="w-4 h-4" /> Schedule return visit
+          </button>
+        )}
       </div>
       {visits.length === 0 ? (
         <div className="rounded-xl p-8 text-center" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
@@ -92,121 +98,219 @@ function VisitsTab({ jobId, onSchedule }: { jobId: string; onSchedule: () => voi
 const NOTE_COLORS: Record<JobNoteType, string> = { note: "#6366f1", call: "#10b981", email: "#3b82f6", visit: "#f59e0b" };
 
 // ─── Overview tab ─────────────────────────────────────────
+// Same shape as the Agreement / Customer overview tabs: a row of compact summary
+// cards, then a snapshot grid — a wide "Job Details" card plus a right column of
+// Work Order + Financials cards, with Notes below.
 function OverviewTab({ jobId }: { jobId: string }) {
-  const job     = getJob(jobId)!;
-  const project = job.projectId ? getProject(job.projectId) : null;
-  const wo      = getWorkOrder(jobId);
-  const notes   = getJobNotes(jobId);
-  const s       = resolveJobStatus(job.status, getJobStatuses().filter(st => st.active));
+  const job      = getJob(jobId)!;
+  const project  = job.projectId ? getProject(job.projectId) : null;
+  const wo       = getWorkOrder(jobId);
+  const notes    = getJobNotes(jobId);
+  const customer = getCustomer(job.accountId);
+  const quotes   = getQuotesForJob(jobId);
+  const invoices = getInvoicesForJob(jobId);
+  const s        = resolveJobStatus(job.status, getJobStatuses().filter(st => st.active));
 
   const doneItems  = wo?.checklist.filter(i => i.isComplete).length ?? 0;
   const totalItems = wo?.checklist.length ?? 0;
   const pct        = totalItems > 0 ? Math.round((doneItems / totalItems) * 100) : 0;
+  const prio       = job.priority === "urgent" || job.priority === "high" ? job.priority : null;
+  const mapsHref   = job.propertyAddress
+    ? `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(job.propertyAddress)}`
+    : undefined;
+
+  const workOrders = getWorkOrdersForJob(jobId);
+  // Visits ordered by creation so numbering is stable (original = 1, return = 2).
+  const visits = getAppointmentsForJob(jobId).slice()
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id));
+  const jobStatuses = getJobStatuses();
+  const labelOf = (k: string) => jobStatuses.find(st => st.key === k)?.name ?? k;
+  const colorOf = (k: string) => jobStatuses.find(st => st.key === k)?.color ?? "#6b7280";
+  const activity = [...(job.statusHistory ?? [])].reverse().slice(0, 6);
+  const fmtWhen = (iso: string) => { const d = new Date(iso); return isNaN(d.getTime()) ? iso : d.toLocaleDateString("en-US", { month: "short", day: "numeric" }); };
+
+  const summary: { icon: typeof Briefcase; label: string; value: string; sub?: string; accent?: string }[] = [
+    { icon: CheckCircle, label: "Status",     value: s.label, sub: jobTypeLabel(job.type), accent: s.color },
+    { icon: Calendar,    label: "Scheduled",  value: job.scheduledDate || "Unscheduled", sub: job.scheduledTime || `${job.durationMinutes} min` },
+    { icon: User,        label: "Technician", value: job.assignedTo || "Unassigned", sub: "Assigned tech" },
+    { icon: ListChecks,  label: "Checklist",  value: totalItems > 0 ? `${doneItems}/${totalItems}` : "—", sub: totalItems > 0 ? `${pct}% complete` : "No work order" },
+    { icon: DollarSign,  label: "Amount",     value: job.actualAmount || job.estimatedAmount || "—", sub: job.actualAmount ? "Actual" : job.estimatedAmount ? "Estimated" : "—", accent: job.actualAmount ? "#10b981" : undefined },
+  ];
+
+  // Reusable list-card header (title + count) for the fill cards.
+  const listHead = (title: string, count: number) => (
+    <div className="flex items-center justify-between px-4 py-3 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
+      <SectionLabel>{title}</SectionLabel>
+      {count > 0 && <span className="text-[11px] font-semibold tabular-nums" style={{ color: "var(--text-muted)" }}>{count}</span>}
+    </div>
+  );
 
   return (
-    <div className="grid grid-cols-3 gap-6">
-      {/* Left: job details */}
-      <div className="space-y-4">
-        <Card title="Job Details">
-          <div className="space-y-2.5">
-            <InfoRow icon={Briefcase}  label="Type"        value={job.type.charAt(0).toUpperCase() + job.type.slice(1)} />
-            <InfoRow icon={Calendar}   label="Scheduled"   value={`${job.scheduledDate} at ${job.scheduledTime}`} />
-            <InfoRow icon={Clock}      label="Duration"    value={`${job.durationMinutes} minutes`} />
-            <InfoRow icon={User}       label="Assigned To" value={job.assignedTo} />
-            {job.propertyAddress && <InfoRow icon={MapPin} label="Address" value={job.propertyAddress} />}
-            {job.priority === "urgent" && (
-              <div className="flex items-center gap-2 mt-1 px-3 py-2 rounded-lg" style={{ backgroundColor: "#fee2e2" }}>
-                <AlertTriangle className="w-4 h-4 text-red-600" />
-                <span className="text-sm font-semibold text-red-700">Urgent Priority</span>
-              </div>
-            )}
-          </div>
-        </Card>
-
-        {project && (
-          <Card title="Part of Project">
-            <Link href={`/projects/${project.id}`} className="flex items-center justify-between group">
-              <div>
-                <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{project.name}</p>
-                <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>{project.status} · {project.jobIds.length} jobs</p>
-              </div>
-              <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" style={{ color: "var(--text-muted)" }} />
-            </Link>
-          </Card>
-        )}
-
-        {(job.estimatedAmount || job.actualAmount) && (
-          <Card title="Amount">
-            <div className="space-y-2">
-              {job.estimatedAmount && (
-                <div className="flex justify-between">
-                  <span className="text-xs" style={{ color: "var(--text-muted)" }}>Estimated</span>
-                  <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{job.estimatedAmount}</span>
-                </div>
-              )}
-              {job.actualAmount && (
-                <div className="flex justify-between">
-                  <span className="text-xs" style={{ color: "var(--text-muted)" }}>Actual</span>
-                  <span className="text-sm font-semibold text-emerald-600">{job.actualAmount}</span>
-                </div>
-              )}
+    <div className="min-h-full flex flex-col gap-4">
+      {/* Summary cards */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2.5 shrink-0">
+        {summary.map(c => (
+          <Card key={c.label} className="px-3 py-2.5">
+            <div className="flex items-center gap-1.5 mb-1">
+              <c.icon className="w-3 h-3" style={{ color: c.accent ?? "var(--text-muted)" }} />
+              <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>{c.label}</p>
             </div>
+            <p className="text-sm font-bold leading-tight truncate" style={{ color: c.accent ?? "var(--text-primary)" }}>{c.value}</p>
+            {c.sub && <p className="text-[11px] mt-0.5 truncate" style={{ color: "var(--text-muted)" }}>{c.sub}</p>}
           </Card>
-        )}
+        ))}
       </div>
 
-      {/* Right: work order + checklist + notes */}
-      <div className="col-span-2 space-y-4">
-        {/* Checklist progress */}
-        {wo && totalItems > 0 && (
-          <div className="rounded-xl p-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Checklist Progress</p>
-              <span className="text-sm font-bold" style={{ color: pct === 100 ? "#10b981" : "var(--text-secondary)" }}>{pct}% · {doneItems}/{totalItems}</span>
+      {/* Main grid — fills the page; the two columns stay equal height and the
+          list cards (Work Orders / Visits) grow to fill, scrolling if long. */}
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-4 min-h-0">
+        {/* Left (2/3): Job Details + Work Orders */}
+        <div className="lg:col-span-2 flex flex-col gap-4 min-h-0">
+          <Card className="p-4 shrink-0">
+            <SectionLabel>Job Details</SectionLabel>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 mt-3">
+              <InfoRow icon={Briefcase} label="Type" value={jobTypeLabel(job.type)} />
+              <InfoRow icon={Info} label="Status" value={<span style={{ color: s.color, fontWeight: 600 }}>{s.label}</span>} />
+              <InfoRow icon={Calendar} label="Scheduled" value={job.scheduledDate ? `${job.scheduledDate}${job.scheduledTime ? ` · ${job.scheduledTime}` : ""}` : "Unscheduled"} />
+              <InfoRow icon={Clock} label="Duration" value={`${job.durationMinutes} min`} />
+              <InfoRow icon={User} label="Assigned Technician" value={job.assignedTo || "Unassigned"} />
+              <InfoRow icon={MapPin} label="Location" value={job.propertyAddress
+                ? (mapsHref ? <a href={mapsHref} target="_blank" rel="noreferrer" style={{ color: "var(--accent-text)" }}>{job.propertyAddress}</a> : job.propertyAddress)
+                : "—"} />
+              {prio && <InfoRow icon={AlertTriangle} label="Priority" value={<span className="capitalize" style={{ color: prio === "urgent" ? "#dc2626" : "#c2410c", fontWeight: 600 }}>{prio}</span>} />}
+              <InfoRow icon={User} label="Customer" value={customer
+                ? <Link href={`/customers/${customer.id}`} style={{ color: "var(--accent-text)" }}>{customer.name}</Link>
+                : job.customerName} />
+              {project && <InfoRow icon={Briefcase} label="Project" value={<Link href={`/projects/${project.id}`} style={{ color: "var(--accent-text)" }}>{project.name}</Link>} />}
             </div>
-            <div className="h-2 rounded-full" style={{ backgroundColor: "var(--bg-input)" }}>
-              <div className="h-2 rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: pct === 100 ? "#10b981" : "#4f46e5" }} />
-            </div>
-            <div className="mt-3 space-y-1.5">
-              {wo.checklist.slice(0, 5).map(item => (
-                <div key={item.id} className="flex items-center gap-2">
-                  {item.isComplete
-                    ? <CheckCircle className="w-3.5 h-3.5 shrink-0 text-emerald-500" />
-                    : <Circle      className="w-3.5 h-3.5 shrink-0" style={{ color: "var(--text-muted)" }} />}
-                  <span className="text-xs" style={{ color: item.isComplete ? "var(--text-muted)" : "var(--text-primary)", textDecoration: item.isComplete ? "line-through" : "none" }}>
-                    {item.label}
-                  </span>
-                </div>
+          </Card>
+
+          <Card className="flex-1 min-h-0 flex flex-col overflow-hidden">
+            {listHead("Work Orders", workOrders.length)}
+            <div className="flex-1 overflow-y-auto thin-scroll-y">
+              {workOrders.length === 0 ? (
+                <p className="px-4 py-6 text-center text-sm" style={{ color: "var(--text-muted)" }}>No work order created for this job yet.</p>
+              ) : workOrders.map((w, i) => (
+                <Link key={w.id} href={`/work-orders/${w.id}`} className="flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-[var(--bg-surface-2)]"
+                  style={{ borderTop: i > 0 ? "1px solid var(--border)" : "none" }}>
+                  <div className="flex items-center gap-2 min-w-0">
+                    <ListChecks className="w-3.5 h-3.5 shrink-0" style={{ color: "var(--text-muted)" }} />
+                    <span className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{w.title}</span>
+                  </div>
+                  <span className="text-xs shrink-0 capitalize" style={{ color: "var(--text-muted)" }}>{w.checklist.filter(c => c.isComplete).length}/{w.checklist.length} · {w.status.replace(/_/g, " ")}</span>
+                </Link>
               ))}
-              {wo.checklist.length > 5 && (
-                <p className="text-xs pl-5" style={{ color: "var(--text-muted)" }}>+{wo.checklist.length - 5} more items</p>
+            </div>
+          </Card>
+        </div>
+
+        {/* Right (1/3): Recent Activity + Visits */}
+        <div className="flex flex-col gap-4 min-h-0">
+          <Card className="p-4 shrink-0">
+            <SectionLabel>Recent Activity</SectionLabel>
+            <div className="mt-3">
+              {activity.length === 0 ? (
+                <p className="text-xs" style={{ color: "var(--text-muted)" }}>No activity recorded yet.</p>
+              ) : (
+                <div className="space-y-3">
+                  {activity.map(e => (
+                    <div key={e.id} className="flex items-start gap-2.5">
+                      <span className="w-1.5 h-1.5 rounded-full mt-1.5 shrink-0" style={{ backgroundColor: colorOf(e.to) }} />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-medium" style={{ color: "var(--text-primary)" }}>{labelOf(e.from)} → {labelOf(e.to)}</p>
+                        <p className="text-[10px]" style={{ color: "var(--text-muted)" }}>{e.byName}{e.byRole ? ` · ${e.byRole}` : ""} · {fmtWhen(e.at)}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
-          </div>
-        )}
+          </Card>
 
-        {/* Work order summary */}
-        {wo && (
-          <div className="rounded-xl p-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
-            <p className="text-sm font-semibold mb-2" style={{ color: "var(--text-primary)" }}>Work Order</p>
-            <p className="text-sm font-medium mb-2" style={{ color: "var(--text-secondary)" }}>{wo.title}</p>
-            <p className="text-xs leading-relaxed whitespace-pre-line" style={{ color: "var(--text-muted)" }}>
-              {wo.instructions.split("\n\n")[0]}
-            </p>
-          </div>
-        )}
-
-        {/* Recent notes */}
-        {notes.length > 0 && (
-          <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
-            <div className="px-4 py-3" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
-              <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Notes</p>
+          <Card className="flex-1 min-h-0 flex flex-col overflow-hidden">
+            {listHead("Visits", visits.length)}
+            <div className="flex-1 overflow-y-auto thin-scroll-y px-4 py-3">
+              {visits.length === 0 ? (
+                <p className="text-xs text-center py-3" style={{ color: "var(--text-muted)" }}>No visits scheduled yet.</p>
+              ) : (
+                <div className="space-y-2.5">
+                  {visits.map((v, i) => {
+                    const vwo = getWorkOrderById(v.workOrderId);
+                    const m = APPT_STATUS_META[v.status];
+                    return (
+                      <Link key={v.id} href={`/work-orders/${v.workOrderId}`} className="flex items-start gap-2.5 group">
+                        <span className="w-5 h-5 rounded-md flex items-center justify-center shrink-0 text-[10px] font-bold" style={{ backgroundColor: "var(--accent-soft-bg)", color: "var(--accent-text)" }}>{i + 1}</span>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium truncate group-hover:underline" style={{ color: "var(--text-primary)" }}>{vwo?.title || `Visit ${i + 1}`}</p>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>{v.scheduledDate || "Unscheduled"}{v.scheduledTime ? ` · ${v.scheduledTime}` : ""}</span>
+                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold" style={{ color: m.color }}><span className="w-1 h-1 rounded-full" style={{ backgroundColor: m.color }} />{m.label}</span>
+                          </div>
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
             </div>
-            {notes.map((note, i) => (
-              <div key={note.id} className="flex items-start gap-3 px-4 py-3"
-                style={i < notes.length - 1 ? { borderBottom: "1px solid var(--border-subtle)" } : undefined}>
-                <div className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-[9px] font-bold text-white mt-0.5"
-                  style={{ backgroundColor: NOTE_COLORS[note.type] }}>
+          </Card>
+        </div>
+      </div>
+
+      {/* Bottom: Quotes + Invoices (aligned, equal width) */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 shrink-0">
+        <Card className="overflow-hidden">
+          {listHead("Quotes", quotes.length)}
+          {quotes.length === 0 ? (
+            <p className="px-4 py-6 text-center text-sm" style={{ color: "var(--text-muted)" }}>No quotes for this job.</p>
+          ) : quotes.map((q, i) => {
+            const qs = QUOTE_STATUS_STYLE[q.status];
+            return (
+              <Link key={q.id} href={`/quotes/${q.id}`} className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-[var(--bg-surface-2)]"
+                style={{ borderTop: i > 0 ? "1px solid var(--border)" : "none", textDecoration: "none" }}>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-mono font-medium" style={{ color: "var(--text-primary)" }}>{q.quoteNumber}</p>
+                  <p className="text-xs mt-0.5 truncate" style={{ color: "var(--text-muted)" }}>{q.title}</p>
+                </div>
+                <StatusBadge label={qs.label} color={qs.color} className="shrink-0" />
+                <span className="text-sm font-semibold shrink-0" style={{ color: "var(--text-primary)" }}>{q.total > 0 ? fmt(q.total) : "TBD"}</span>
+              </Link>
+            );
+          })}
+        </Card>
+
+        <Card className="overflow-hidden">
+          {listHead("Invoices", invoices.length)}
+          {invoices.length === 0 ? (
+            <p className="px-4 py-6 text-center text-sm" style={{ color: "var(--text-muted)" }}>No invoices for this job.</p>
+          ) : invoices.map((inv, i) => {
+            const is = INVOICE_STATUS_STYLE[inv.status];
+            return (
+              <Link key={inv.id} href={`/invoices/${inv.id}`} className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-[var(--bg-surface-2)]"
+                style={{ borderTop: i > 0 ? "1px solid var(--border)" : "none", textDecoration: "none" }}>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-mono font-medium" style={{ color: "var(--text-primary)" }}>{inv.invoiceNumber}</p>
+                  <p className="text-xs mt-0.5 truncate" style={{ color: "var(--text-muted)" }}>{inv.title}</p>
+                </div>
+                <StatusBadge label={is.label} color={is.color} className="shrink-0" />
+                <div className="text-right shrink-0">
+                  <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{fmt(inv.total)}</p>
+                  {inv.balanceDue > 0 && <p className="text-[10px]" style={{ color: inv.status === "past_due" ? "#dc2626" : "var(--text-muted)" }}>{fmt(inv.balanceDue)} due</p>}
+                </div>
+              </Link>
+            );
+          })}
+        </Card>
+      </div>
+
+      {/* Notes */}
+      {notes.length > 0 && (
+        <Card className="p-4 shrink-0">
+          <SectionLabel>Notes</SectionLabel>
+          <div className="space-y-3 mt-3">
+            {notes.map(note => (
+              <div key={note.id} className="flex items-start gap-3">
+                <div className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-[9px] font-bold text-white mt-0.5" style={{ backgroundColor: NOTE_COLORS[note.type] }}>
                   {note.userInitials}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -216,8 +320,8 @@ function OverviewTab({ jobId }: { jobId: string }) {
               </div>
             ))}
           </div>
-        )}
-      </div>
+        </Card>
+      )}
     </div>
   );
 }
@@ -257,11 +361,11 @@ function WorkOrderTab({ jobId }: { jobId: string }) {
       {/* All work orders on this job — each opens its own detail page. Multiple
           appear when the job needed return visits / extra field packets. */}
       {allWos.length > 1 && (
-        <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+        <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
           <p className="px-4 pt-3 pb-1.5 text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Work orders on this job ({allWos.length})</p>
           {allWos.map((w, i) => (
             <Link key={w.id} href={`/work-orders/${w.id}`} className="flex items-center justify-between px-4 py-2.5 hover:bg-[var(--bg-surface-2)] transition-colors"
-              style={{ borderTop: i > 0 ? "1px solid var(--border-subtle)" : "none" }}>
+              style={{ borderTop: i > 0 ? "1px solid var(--border)" : "none" }}>
               <div className="min-w-0 flex items-center gap-2">
                 <ListChecks className="w-3.5 h-3.5 shrink-0" style={{ color: "var(--text-muted)" }} />
                 <span className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{w.title}</span>
@@ -273,7 +377,7 @@ function WorkOrderTab({ jobId }: { jobId: string }) {
       )}
 
       {/* Work order status / create CTA */}
-      <div className="rounded-xl p-4 flex items-center justify-between" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+      <div className="rounded-xl p-4 flex items-center justify-between" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
         {wo ? (
           <>
             <div className="flex items-center gap-2.5">
@@ -305,7 +409,7 @@ function WorkOrderTab({ jobId }: { jobId: string }) {
       {wo && <WorkOrderBilling workOrderId={wo.id} />}
 
       {/* Template header */}
-      <div className="rounded-xl p-6" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+      <div className="rounded-xl p-6" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
         <div className="flex items-start justify-between mb-1">
           <div>
             <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: "var(--text-muted)" }}>Work Order Template</p>
@@ -334,7 +438,7 @@ function WorkOrderTab({ jobId }: { jobId: string }) {
 
       {/* Instructions */}
       {(instructions.internal || instructions.safety) && (
-        <div className="rounded-xl p-5 space-y-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+        <div className="rounded-xl p-5 space-y-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
           {instructions.internal && (
             <div>
               <p className="text-xs font-semibold uppercase tracking-widest mb-1.5" style={{ color: "var(--text-muted)" }}>Field Instructions</p>
@@ -351,8 +455,8 @@ function WorkOrderTab({ jobId }: { jobId: string }) {
       )}
 
       {/* Checklist preview */}
-      <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
-        <div className="px-4 py-3" style={{ borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+      <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
+        <div className="px-4 py-3" style={{ borderBottom: "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)" }}>
           <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Checklist</p>
         </div>
         {checklist.length === 0 ? (
@@ -361,7 +465,7 @@ function WorkOrderTab({ jobId }: { jobId: string }) {
           const badge = CHECK_TYPE_BADGE[c.type] ?? CHECK_TYPE_BADGE.checkbox;
           return (
             <div key={c.id} className="flex items-center gap-3 px-4 py-2.5"
-              style={{ borderBottom: i < checklist.length - 1 ? "1px solid var(--border-subtle)" : "none" }}>
+              style={{ borderBottom: i < checklist.length - 1 ? "1px solid var(--border)" : "none" }}>
               <Circle className="w-4 h-4 shrink-0" style={{ color: "var(--border)" }} />
               <span className="text-sm flex-1" style={{ color: "var(--text-primary)" }}>{c.label}</span>
               {c.required && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded" style={{ backgroundColor: "#fee2e2", color: "#991b1b" }}>Required</span>}
@@ -372,8 +476,8 @@ function WorkOrderTab({ jobId }: { jobId: string }) {
       </div>
 
       {/* Required photos */}
-      <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
-        <div className="flex items-center gap-2 px-4 py-3" style={{ borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+      <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
+        <div className="flex items-center gap-2 px-4 py-3" style={{ borderBottom: "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)" }}>
           <Camera className="w-4 h-4" style={{ color: "#2563eb" }} />
           <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Required Photos</p>
         </div>
@@ -381,7 +485,7 @@ function WorkOrderTab({ jobId }: { jobId: string }) {
           <div className="px-4 py-6 text-center"><p className="text-sm" style={{ color: "var(--text-muted)" }}>No required photo rules on this template.</p></div>
         ) : photos.map((p, i) => (
           <div key={p.id} className="flex items-center gap-3 px-4 py-2.5"
-            style={{ borderBottom: i < photos.length - 1 ? "1px solid var(--border-subtle)" : "none" }}>
+            style={{ borderBottom: i < photos.length - 1 ? "1px solid var(--border)" : "none" }}>
             <Camera className="w-3.5 h-3.5 shrink-0" style={{ color: "var(--text-muted)" }} />
             <span className="text-sm flex-1" style={{ color: "var(--text-primary)" }}>{p.category}</span>
             {p.notes && <span className="text-[11px] truncate max-w-48" style={{ color: "var(--text-muted)" }}>{p.notes}</span>}
@@ -398,19 +502,19 @@ function WorkOrderTab({ jobId }: { jobId: string }) {
       {(instructions.materials || instructions.completion || instructions.customerFacing) && (
         <div className="grid grid-cols-2 gap-4">
           {instructions.materials && (
-            <div className="rounded-xl p-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+            <div className="rounded-xl p-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
               <p className="text-[10px] font-semibold uppercase tracking-widest mb-1.5" style={{ color: "var(--text-muted)" }}>Materials / Notes</p>
               <p className="text-xs leading-relaxed whitespace-pre-line" style={{ color: "var(--text-secondary)" }}>{instructions.materials}</p>
             </div>
           )}
           {instructions.completion && (
-            <div className="rounded-xl p-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+            <div className="rounded-xl p-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
               <p className="text-[10px] font-semibold uppercase tracking-widest mb-1.5" style={{ color: "var(--text-muted)" }}>Completion Requirements</p>
               <p className="text-xs leading-relaxed whitespace-pre-line" style={{ color: "var(--text-secondary)" }}>{instructions.completion}</p>
             </div>
           )}
           {instructions.customerFacing && (
-            <div className="rounded-xl p-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+            <div className="rounded-xl p-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
               <p className="text-[10px] font-semibold uppercase tracking-widest mb-1.5" style={{ color: "var(--text-muted)" }}>Customer-Facing Notes</p>
               <p className="text-xs leading-relaxed whitespace-pre-line" style={{ color: "var(--text-secondary)" }}>{instructions.customerFacing}</p>
             </div>
@@ -446,7 +550,7 @@ function ChecklistTab({ jobId }: { jobId: string }) {
   return (
     <div className="max-w-xl space-y-4">
       {/* Progress */}
-      <div className="rounded-xl p-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>
+      <div className="rounded-xl p-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
         <div className="flex items-center justify-between mb-1">
           <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{doneCount} of {items.length} complete</span>
           <span className="text-sm font-bold" style={{ color: pct === 100 ? "#10b981" : "#4f46e5" }}>{pct}%</span>
@@ -460,9 +564,9 @@ function ChecklistTab({ jobId }: { jobId: string }) {
       </div>
 
       {/* Items — completion drives the job's completion gate */}
-      <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+      <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
         {items.map((item, i) => {
-          const border = i < items.length - 1 ? { borderBottom: "1px solid var(--border-subtle)" } : undefined;
+          const border = i < items.length - 1 ? { borderBottom: "1px solid var(--border)" } : undefined;
           return (
             <button key={item.id} onClick={() => toggle(item.id)}
               className="w-full flex items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-[var(--bg-surface-2)]" style={border}>
@@ -487,12 +591,12 @@ function NotesTab({ jobId }: { jobId: string }) {
 
   return (
     <div className="max-w-2xl space-y-4">
-      <div className="rounded-xl p-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>
+      <div className="rounded-xl p-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
         <textarea value={draft} onChange={e => setDraft(e.target.value)}
           placeholder="Add a note..." rows={3}
           className="w-full resize-none text-sm outline-none bg-transparent"
           style={{ color: "var(--text-primary)" }} />
-        <div className="flex justify-end mt-3 pt-3" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+        <div className="flex justify-end mt-3 pt-3" style={{ borderTop: "1px solid var(--border)" }}>
           <button disabled={!draft.trim()}
             className="px-3 py-1.5 rounded-lg text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 transition-colors">
             Save Note
@@ -502,7 +606,7 @@ function NotesTab({ jobId }: { jobId: string }) {
       {notes.length === 0
         ? <p className="text-sm text-center py-8" style={{ color: "var(--text-muted)" }}>No notes yet</p>
         : notes.map(note => (
-          <div key={note.id} className="rounded-xl p-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>
+          <div key={note.id} className="rounded-xl p-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
             <div className="flex items-start gap-3">
               <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold text-white"
                 style={{ backgroundColor: NOTE_COLORS[note.type] }}>
@@ -531,7 +635,7 @@ function CustomerTab({ jobId }: { jobId: string }) {
   if (!customer) return <StubContent label="Customer record not found." />;
   return (
     <div className="max-w-sm">
-      <div className="rounded-xl p-5" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+      <div className="rounded-xl p-5" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
         <div className="flex items-center gap-3 mb-4">
           <div className="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center text-white text-sm font-bold">{customer.initials}</div>
           <div>
@@ -544,7 +648,7 @@ function CustomerTab({ jobId }: { jobId: string }) {
           {customer.email && <InfoRow icon={Phone} label="Email" value={customer.email} />}
           <InfoRow icon={MapPin} label="Address" value={`${customer.address}, ${customer.city}, ${customer.state}`} />
         </div>
-        <div className="mt-4 pt-4" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+        <div className="mt-4 pt-4" style={{ borderTop: "1px solid var(--border)" }}>
           <Link href={`/customers/${customer.id}`} className="flex items-center justify-between text-sm font-medium text-indigo-600 hover:text-indigo-700">
             Open customer record <ChevronRight className="w-4 h-4" />
           </Link>
@@ -557,7 +661,7 @@ function CustomerTab({ jobId }: { jobId: string }) {
 // ─── Stub content ─────────────────────────────────────────
 function StubContent({ label }: { label: string }) {
   return (
-    <div className="rounded-xl p-10 text-center" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>
+    <div className="rounded-xl p-10 text-center" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
       <p className="text-sm" style={{ color: "var(--text-muted)" }}>{label}</p>
     </div>
   );
@@ -579,8 +683,8 @@ function JobFinancialsTab({ jobId }: { jobId: string }) {
 
   function Section({ title, onNew, newLabel = "New Quote", children }: { title: string; onNew?: () => void; newLabel?: string; children: React.ReactNode }) {
     return (
-      <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
-        <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+      <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
+        <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid var(--border)" }}>
           <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{title}</p>
           {onNew && (
             <button onClick={onNew} className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg"
@@ -608,7 +712,7 @@ function JobFinancialsTab({ jobId }: { jobId: string }) {
           return (
             <Link key={q.id} href={`/quotes/${q.id}`}
               className="flex items-center gap-4 px-4 py-3 hover:bg-[var(--bg-surface-2)] transition-colors"
-              style={{ borderBottom: i < quotes.length - 1 ? "1px solid var(--border-subtle)" : "none", textDecoration: "none" }}>
+              style={{ borderBottom: i < quotes.length - 1 ? "1px solid var(--border)" : "none", textDecoration: "none" }}>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-mono font-medium" style={{ color: "var(--text-primary)" }}>{q.quoteNumber}</p>
                 <p className="text-xs mt-0.5 truncate" style={{ color: "var(--text-muted)" }}>{q.title}</p>
@@ -629,7 +733,7 @@ function JobFinancialsTab({ jobId }: { jobId: string }) {
           return (
             <Link key={inv.id} href={`/invoices/${inv.id}`}
               className="flex items-center gap-4 px-4 py-3 hover:bg-[var(--bg-surface-2)] transition-colors"
-              style={{ borderBottom: i < invoices.length - 1 ? "1px solid var(--border-subtle)" : "none", textDecoration: "none" }}>
+              style={{ borderBottom: i < invoices.length - 1 ? "1px solid var(--border)" : "none", textDecoration: "none" }}>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-mono font-medium" style={{ color: "var(--text-primary)" }}>{inv.invoiceNumber}</p>
                 <p className="text-xs mt-0.5 truncate" style={{ color: "var(--text-muted)" }}>{inv.title}</p>
@@ -649,21 +753,25 @@ function JobFinancialsTab({ jobId }: { jobId: string }) {
 }
 
 // ─── Shared primitives ────────────────────────────────────
-function Card({ title, children }: { title: string; children: React.ReactNode }) {
+// Same visual language as the Agreement / Customer overview tabs: a shadowed
+// surface Card, an uppercase SectionLabel, and labeled InfoRows.
+function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className="rounded-xl p-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
-      <p className="text-[10px] font-semibold uppercase tracking-widest mb-3" style={{ color: "var(--text-muted)" }}>{title}</p>
+    <div className={`rounded-xl ${className}`} style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
       {children}
     </div>
   );
 }
-function InfoRow({ icon: Icon, label, value }: { icon: typeof Phone; label: string; value: string }) {
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>{children}</p>;
+}
+function InfoRow({ icon: Icon, label, value }: { icon?: typeof Phone; label: string; value: React.ReactNode }) {
   return (
     <div className="flex items-start gap-2.5">
-      <Icon className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: "var(--text-muted)" }} />
-      <div className="min-w-0">
+      {Icon && <Icon className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: "var(--text-muted)" }} />}
+      <div className="min-w-0 flex-1">
         <p className="text-[10px]" style={{ color: "var(--text-muted)" }}>{label}</p>
-        <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{value}</p>
+        <p className="text-sm font-medium break-words" style={{ color: "var(--text-primary)" }}>{value || "—"}</p>
       </div>
     </div>
   );
@@ -715,10 +823,11 @@ function JobDetailContent({ params }: { params: Promise<{ id: string }> }) {
 
   const s       = resolveJobStatus(job.status, getJobStatuses().filter(st => st.active));
   const project = job.projectId ? getProject(job.projectId) : null;
+  const canVisit = canAddVisit(job).allowed;
 
   return (
     <div className="flex flex-col h-full">
-      <div style={{ backgroundColor: "var(--bg-surface)", borderBottom: "1px solid var(--border-subtle)" }}>
+      <div style={{ backgroundColor: "var(--bg-surface)", borderBottom: "1px solid var(--border)" }}>
         {/* Top row */}
         <div className="flex items-center justify-between px-6 py-4">
           <div className="flex items-center gap-4 min-w-0">
@@ -735,7 +844,7 @@ function JobDetailContent({ params }: { params: Promise<{ id: string }> }) {
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <h1 className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>{job.title}</h1>
-                <StatusBadge label={s.label} color={s.color} />
+                <StatusBadge label={s.label} color={s.color} dot={false} />
               </div>
               <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>{job.customerName} · {job.scheduledDate} at {job.scheduledTime}</p>
             </div>
@@ -743,7 +852,7 @@ function JobDetailContent({ params }: { params: Promise<{ id: string }> }) {
           <div className="flex items-center gap-2 shrink-0">
             {/* On-hold jobs (waiting on parts/customer/approval) surface a prominent
                 return-visit action — that's how a second trip gets booked. */}
-            {HOLD_STATUSES.has(job.status) && (
+            {HOLD_STATUSES.has(job.status) && canVisit && (
               <button onClick={() => setReturnOpen(true)} className="inline-flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-lg" style={{ backgroundColor: "#f59e0b1a", color: "#b45309", border: "1px solid #f59e0b59" }}>
                 <Repeat className="w-4 h-4" /> Schedule return visit
               </button>
@@ -751,7 +860,7 @@ function JobDetailContent({ params }: { params: Promise<{ id: string }> }) {
             {/* Every action for this job lives in the ⋮ menu, consistent with the
                 other detail pages. Status itself is shown as the badge above. */}
             <ActionsMenu actions={[
-              !["canceled", "closed", "no_show"].includes(job.status) &&
+              canVisit &&
                 { label: "Schedule return visit", icon: Repeat, onClick: () => setReturnOpen(true) },
               job.status !== "canceled" && !["completed", "invoiced", "closed", "no_show"].includes(job.status) &&
                 { label: "Reschedule", icon: Calendar, onClick: rescheduleJob },

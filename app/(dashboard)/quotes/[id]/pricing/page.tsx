@@ -127,7 +127,7 @@ export default function PricingWizardPage({ params }: { params: Promise<{ id: st
   return (
     <div className="flex flex-col h-full" style={{ backgroundColor: "var(--bg-page)" }}>
       {/* Top bar */}
-      <div className="flex items-center gap-3 px-5 py-3 shrink-0" style={{ backgroundColor: "var(--bg-surface)", borderBottom: "1px solid var(--border-subtle)" }}>
+      <div className="flex items-center gap-3 px-5 py-3 shrink-0" style={{ backgroundColor: "var(--bg-surface)", borderBottom: "1px solid var(--border)" }}>
         <Link href={`/quotes/${id}`} className="flex items-center gap-1.5 text-sm shrink-0" style={{ color: "var(--text-secondary)" }}>
           <ArrowLeft className="w-4 h-4" /> Quote
         </Link>
@@ -182,7 +182,7 @@ export default function PricingWizardPage({ params }: { params: Promise<{ id: st
 
           {/* Results (sticky) */}
           <div className="lg:sticky lg:top-2 self-start space-y-3">
-            <div className="rounded-2xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+            <div className="rounded-2xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
               <div className="px-5 py-4" style={{ background: `linear-gradient(135deg, ${accent}, ${accent}cc)` }}>
                 <p className="text-[11px] font-semibold uppercase tracking-widest text-white/80">Recommended Sell Price</p>
                 <p className="text-3xl font-bold text-white mt-1">{fmt(calc.sellPrice)}</p>
@@ -225,7 +225,7 @@ export default function PricingWizardPage({ params }: { params: Promise<{ id: st
 // ─── Small bits ───────────────────────────────────────────
 function Group({ title, icon: Icon, children }: { title: string; icon: typeof DollarSign; children: React.ReactNode }) {
   return (
-    <div className="rounded-xl p-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+    <div className="rounded-xl p-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
       <div className="flex items-center gap-2 mb-3">
         <Icon className="w-3.5 h-3.5" style={{ color: "var(--text-muted)" }} />
         <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>{title}</p>

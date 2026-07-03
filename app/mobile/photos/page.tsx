@@ -35,7 +35,7 @@ export default function MobilePhotosPage() {
       <div className="px-4">
         {/* Capture banner */}
         <button onClick={startCapture} className="w-full flex items-center gap-3 rounded-2xl p-4 mb-4 active:scale-[0.99] transition-transform"
-          style={{ border: `1px solid ${ACCENT}33`, backgroundColor: ACCENT + "0d", boxShadow: "var(--shadow-glow)" }}>
+          style={{ border: `1px solid ${ACCENT}33`, backgroundColor: ACCENT + "0d", boxShadow: "var(--shadow-card)" }}>
           <span className="w-11 h-11 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: ACCENT }}><Camera className="w-5 h-5 text-white" /></span>
           <div className="text-left min-w-0 flex-1">
             <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Take photos</p>
@@ -48,7 +48,7 @@ export default function MobilePhotosPage() {
         ) : (
           <div className="grid grid-cols-3 gap-2">
             {photos.map(p => (
-              <div key={p.id} className="relative aspect-square rounded-xl overflow-hidden flex items-center justify-center" style={{ border: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+              <div key={p.id} className="relative aspect-square rounded-xl overflow-hidden flex items-center justify-center" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)" }}>
                 {p.previewUrl
                   // eslint-disable-next-line @next/next/no-img-element
                   ? <img src={p.previewUrl} alt="" className="w-full h-full object-cover" />

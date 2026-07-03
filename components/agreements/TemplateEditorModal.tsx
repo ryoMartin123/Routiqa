@@ -45,7 +45,7 @@ export default function TemplateEditorModal({ template, isNew, onCancel, onSave 
         style={{ backgroundColor: "var(--bg-surface)", boxShadow: "0 16px 48px rgba(0,0,0,0.24)" }}>
 
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+        <div className="flex items-center justify-between px-6 py-4 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
           <div className="flex items-center gap-2">
             <FileText className="w-4 h-4" style={{ color: "#4f46e5" }} />
             <p className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>{isNew ? "New Template" : "Edit Template"}</p>
@@ -83,7 +83,7 @@ export default function TemplateEditorModal({ template, isNew, onCancel, onSave 
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 flex items-center justify-between gap-3 shrink-0" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+        <div className="px-6 py-4 flex items-center justify-between gap-3 shrink-0" style={{ borderTop: "1px solid var(--border)" }}>
           <p className="text-[11px]" style={{ color: hasVisit ? "var(--text-muted)" : "#dc2626" }}>
             {!hasName ? "Name your template to save." : !hasVisit ? "Add at least one visit to save this template." : "Ready to save."}
           </p>

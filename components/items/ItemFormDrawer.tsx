@@ -86,7 +86,7 @@ export default function ItemFormDrawer({ item, onClose, onSaved }: {
       <div className="w-full max-w-lg max-h-[92vh] flex flex-col rounded-2xl overflow-hidden" onClick={e => e.stopPropagation()}
         style={{ backgroundColor: "var(--bg-surface)", boxShadow: "0 16px 48px rgba(0,0,0,0.24)" }}>
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+        <div className="flex items-center justify-between px-5 py-4 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
           <p className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>{editing ? "Edit Item" : "New Item"}</p>
           <button onClick={onClose} style={{ color: "var(--text-muted)" }}><X className="w-4 h-4" /></button>
         </div>
@@ -147,11 +147,11 @@ export default function ItemFormDrawer({ item, onClose, onSaved }: {
             <input type="number" min={0} step="1" value={defaultQuantity} onChange={e => setDefaultQuantity(e.target.value)} className={`${inputCls} w-28`} style={inputStyle} />
           </Field>
 
-          <div className="flex items-center justify-between py-2" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+          <div className="flex items-center justify-between py-2" style={{ borderTop: "1px solid var(--border)" }}>
             <span className="text-sm" style={{ color: "var(--text-primary)" }}>Taxable</span>
             <Toggle on={taxable} onChange={setTaxable} />
           </div>
-          <div className="flex items-center justify-between py-2" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+          <div className="flex items-center justify-between py-2" style={{ borderTop: "1px solid var(--border)" }}>
             <div>
               <span className="text-sm" style={{ color: "var(--text-primary)" }}>Active</span>
               <p className="text-[10px]" style={{ color: "var(--text-muted)" }}>Inactive items are hidden from quote pickers.</p>
@@ -161,7 +161,7 @@ export default function ItemFormDrawer({ item, onClose, onSaved }: {
         </div>
 
         {/* Footer */}
-        <div className="px-5 py-4 flex justify-end gap-2 shrink-0" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+        <div className="px-5 py-4 flex justify-end gap-2 shrink-0" style={{ borderTop: "1px solid var(--border)" }}>
           <button onClick={onClose} className="px-3 py-2 rounded-lg text-sm" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>Cancel</button>
           <button onClick={handleSave} disabled={!canSave}
             className="px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-40" style={{ backgroundColor: "#4f46e5" }}>

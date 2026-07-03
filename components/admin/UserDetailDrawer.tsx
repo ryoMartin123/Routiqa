@@ -201,7 +201,7 @@ export default function UserDetailDrawer({
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
       <div className="relative w-full max-w-[540px] h-full flex flex-col" style={{ backgroundColor: "var(--bg-surface)", borderLeft: "1px solid var(--border)", boxShadow: "-16px 0 48px -12px rgba(0,0,0,0.3)" }}>
         {/* Header */}
-        <div className="px-5 py-4 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+        <div className="px-5 py-4 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">
               <span className="w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
@@ -258,7 +258,7 @@ export default function UserDetailDrawer({
               ) : (
                 <div className="space-y-2">
                   {(user?.assignments ?? []).map(a => (
-                    <div key={a.id} className="rounded-lg px-3 py-2.5 flex items-center justify-between gap-2" style={{ border: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+                    <div key={a.id} className="rounded-lg px-3 py-2.5 flex items-center justify-between gap-2" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)" }}>
                       <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{getRoleLabel(a.role)}</p>
                       <span className="text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-secondary)" }}>{scopeLabel(a)}</span>
                     </div>
@@ -308,7 +308,7 @@ export default function UserDetailDrawer({
         {/* Footer — secondary actions menu (left) · Save (right). Only when the
             Profile/Role draft can change; App Access saves itself on toggle. */}
         {(editable || isNew) && (
-          <div className="shrink-0 px-5 py-3 flex items-center justify-between gap-2" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+          <div className="shrink-0 px-5 py-3 flex items-center justify-between gap-2" style={{ borderTop: "1px solid var(--border)" }}>
             <div className="relative">
               {user && editable ? (
                 <>
@@ -329,7 +329,7 @@ export default function UserDetailDrawer({
                             <MenuItem icon={Ban} label="Deactivate" onClick={() => { setMenuOpen(false); onStatus(user.id, "inactive"); }} />
                           </>
                         )}
-                        <div style={{ borderTop: "1px solid var(--border-subtle)" }} />
+                        <div style={{ borderTop: "1px solid var(--border)" }} />
                         <MenuItem icon={Trash2} label="Delete user" danger onClick={() => { setMenuOpen(false); handleDelete(); }} />
                       </div>
                     </>
@@ -417,7 +417,7 @@ function RoleEditor({ rows, roleOptions, levelOptionsFor, targetOptions, onChang
       </div>
       <div className="space-y-2">
         {rows.map((r, i) => (
-          <div key={i} className="rounded-lg p-3 space-y-2" style={{ border: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+          <div key={i} className="rounded-lg p-3 space-y-2" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)" }}>
             <div className="flex items-center gap-2">
               <div className="flex-1"><UiSelect value={r.role} onChange={v => onChangeRole(i, v as RoleKey)} options={roleOptions} size="sm" /></div>
               {rows.length > 1 && (
@@ -478,7 +478,7 @@ function AppAccessTab({ user, editable, onRefresh }: { user: AppUser; editable: 
         Users inherit app access from their role. Toggle an app to set a <strong>user-level override</strong> — overrides
         should be rare and are clearly flagged. My Portal is always on for everyone.
       </p>
-      <div className="rounded-xl overflow-hidden" style={{ border: "1px solid var(--border-subtle)" }}>
+      <div className="rounded-xl overflow-hidden" style={{ border: "1px solid var(--border)" }}>
         {APP_ORDER.map((app, i) => {
           const meta = APP_META[app];
           const on = effective[app];
@@ -491,7 +491,7 @@ function AppAccessTab({ user, editable, onRefresh }: { user: AppUser; editable: 
             : on ? (src ? `Inherited from ${src}` : "Enabled") : "Disabled";
           return (
             <div key={app} className="flex items-center gap-3 px-3 py-2.5"
-              style={{ borderBottom: i === APP_ORDER.length - 1 ? "none" : "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface)" }}>
+              style={{ borderBottom: i === APP_ORDER.length - 1 ? "none" : "1px solid var(--border)", backgroundColor: "var(--bg-surface)" }}>
               <span className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: meta.accent + "1f" }}>
                 <AppWindow className="w-4 h-4" style={{ color: meta.accent }} />
               </span>
@@ -553,7 +553,7 @@ function ActivityTab({ user }: { user: AppUser }) {
       {events.map((e, i) => (
         <div key={i} className="flex gap-3">
           <div className="flex flex-col items-center">
-            <span className="w-7 h-7 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border-subtle)" }}>
+            <span className="w-7 h-7 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}>
               <e.icon className="w-3.5 h-3.5" style={{ color: "var(--text-secondary)" }} />
             </span>
             {i < events.length - 1 && <span className="w-px flex-1 my-1" style={{ backgroundColor: "var(--border-subtle)" }} />}

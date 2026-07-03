@@ -55,7 +55,7 @@ export default function ProjectBudget({ projectId }: { projectId: string }) {
           <CostRow icon={HardHat} label="Subcontractors" value={money(subCost)} hint={`${assignments.length} assignment${assignments.length === 1 ? "" : "s"}`} />
           <CostRow icon={Wrench} label="Labor" value="—" hint="Placeholder" muted />
           <Total label="Total committed" value={money(committed)} />
-          <div className="flex items-center justify-between mt-2 pt-2" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+          <div className="flex items-center justify-between mt-2 pt-2" style={{ borderTop: "1px solid var(--border)" }}>
             <span className="text-xs" style={{ color: "var(--text-muted)" }}>Est. margin vs quoted</span>
             <span className="text-sm font-semibold" style={{ color: margin >= 0 ? "#10b981" : "#dc2626" }}>{money(margin)} · {marginPct}%</span>
           </div>
@@ -80,7 +80,7 @@ export default function ProjectBudget({ projectId }: { projectId: string }) {
 
 function Stat({ icon: Icon, label, value, sub, accent }: { icon: typeof DollarSign; label: string; value: string; sub?: string; accent?: string }) {
   return (
-    <div className="rounded-xl p-3.5" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+    <div className="rounded-xl p-3.5" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
       <div className="flex items-center gap-1.5 mb-1.5"><Icon className="w-3.5 h-3.5" style={{ color: accent ?? "var(--text-muted)" }} /><p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>{label}</p></div>
       <p className="text-lg font-bold leading-tight truncate" style={{ color: accent ?? "var(--text-primary)" }}>{value}</p>
       {sub && <p className="text-[11px] mt-0.5 truncate" style={{ color: "var(--text-muted)" }}>{sub}</p>}
@@ -89,8 +89,8 @@ function Stat({ icon: Icon, label, value, sub, accent }: { icon: typeof DollarSi
 }
 function Card({ title, icon: Icon, children }: { title: string; icon: typeof DollarSign; children: React.ReactNode }) {
   return (
-    <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
-      <div className="flex items-center gap-2 px-4 py-3" style={{ borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+    <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
+      <div className="flex items-center gap-2 px-4 py-3" style={{ borderBottom: "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)" }}>
         <Icon className="w-4 h-4" style={{ color: "var(--text-muted)" }} /><p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{title}</p>
       </div>
       <div className="p-4">{children}</div>
@@ -99,7 +99,7 @@ function Card({ title, icon: Icon, children }: { title: string; icon: typeof Dol
 }
 function CostRow({ icon: Icon, label, value, hint, muted }: { icon: typeof DollarSign; label: string; value: string; hint?: string; muted?: boolean }) {
   return (
-    <div className="flex items-center justify-between gap-3 py-2" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+    <div className="flex items-center justify-between gap-3 py-2" style={{ borderBottom: "1px solid var(--border)" }}>
       <span className="flex items-center gap-2 min-w-0"><Icon className="w-3.5 h-3.5 shrink-0" style={{ color: "var(--text-muted)" }} /><span className="text-sm truncate" style={{ color: muted ? "var(--text-muted)" : "var(--text-primary)" }}>{label}</span></span>
       <div className="text-right shrink-0"><span className="text-sm font-medium tabular-nums" style={{ color: muted ? "var(--text-muted)" : "var(--text-primary)" }}>{value}</span>{hint && <span className="block text-[10px]" style={{ color: "var(--text-muted)" }}>{hint}</span>}</div>
     </div>

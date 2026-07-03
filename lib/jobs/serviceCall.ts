@@ -8,9 +8,51 @@
 
 import {
   createJob, createWorkOrder, getWorkOrder, getJob, materializeWorkOrderForJob,
-  type Job, type WorkOrder, type NewJobInput,
+  type Job, type JobStatus, type WorkOrder, type NewJobInput,
 } from "@/lib/jobs/data";
-import { createAppointment, type Appointment, type VisitType } from "@/lib/appointments/data";
+import { createAppointment, getAppointmentsForJob, type Appointment, type VisitType } from "@/lib/appointments/data";
+
+// ─── Return-visit guard ───────────────────────────────────
+// Whether another visit can be booked on a job, and what booking one implies.
+// Principle: a follow-up needs an ANCHORED first visit (the job must be
+// scheduled — that anchor is either the job's own schedule or an existing
+// appointment), and TERMINAL jobs can't take new visits (spin up a new job).
+// Completed/invoiced jobs CAN take a visit, but doing so REOPENS them (that's a
+// callback/warranty trip). Used by both entry points so the rule lives in one place.
+const VISIT_TERMINAL = new Set<JobStatus>(["closed", "canceled", "no_show"]);
+const VISIT_DONE     = new Set<JobStatus>(["completed", "invoiced"]);
+
+export type VisitGuard =
+  | { allowed: true; reopens: boolean }
+  | { allowed: false; reason: string };
+
+export function canAddVisit(job: Job): VisitGuard {
+  if (VISIT_TERMINAL.has(job.status)) {
+    return { allowed: false, reason: "This job is closed — create a new job for any further work." };
+  }
+  const anchored = !!job.scheduledDate
+    || getAppointmentsForJob(job.id).some(a => a.scheduledDate && a.status !== "canceled");
+  if (!anchored) {
+    return { allowed: false, reason: "Schedule the first visit on the dispatch board before adding another." };
+  }
+  return { allowed: true, reopens: VISIT_DONE.has(job.status) };
+}
+
+// End time (ms) of the job's latest visit — its own schedule plus any live
+// appointments — so a new visit can be required to start strictly after it.
+export function latestVisitEndMs(job: Job): number {
+  // Space separator (not "T") so it parses BOTH the job's display-format schedule
+  // ("Jul 5, 2026" + "9:00 AM") and an appointment's ISO schedule ("2026-07-05" + "14:00").
+  const toMs = (d?: string, t?: string) => { const ms = new Date(`${d} ${t || "00:00"}`).getTime(); return isNaN(ms) ? 0 : ms; };
+  let end = 0;
+  // Only contribute when the start actually parses — a bad date must not fall back
+  // to epoch and produce a bogus anchor.
+  if (job.scheduledDate) { const st = toMs(job.scheduledDate, job.scheduledTime); if (st) end = Math.max(end, st + (job.durationMinutes || 0) * 60_000); }
+  for (const a of getAppointmentsForJob(job.id)) {
+    if (a.scheduledDate && a.status !== "canceled") { const st = toMs(a.scheduledDate, a.scheduledTime); if (st) end = Math.max(end, st + a.durationMinutes * 60_000); }
+  }
+  return end;
+}
 
 export interface CreateServiceCallInput extends NewJobInput {
   techIds?: string[];        // crew (primary first); falls back to assignedTo

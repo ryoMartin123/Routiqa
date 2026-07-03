@@ -251,7 +251,7 @@ function AddWidgetsDrawer({
                   onDragStart={e => { onDragStartWidget(REPORT_WIDGET_PREFIX + r.id); e.dataTransfer.effectAllowed = "copy"; e.dataTransfer.setData("text/plain", REPORT_WIDGET_PREFIX + r.id); }}
                   onDragEnd={onDragEndWidget}
                   className="flex items-start gap-2.5 text-left p-3 rounded-xl transition-all hover:shadow-sm cursor-grab active:cursor-grabbing"
-                  style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border-subtle)" }}>
+                  style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}>
                   <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5" style={{ backgroundColor: "var(--accent-soft-2-bg)" }}>
                     <LineChart className="w-3.5 h-3.5" style={{ color: "var(--accent-text)" }} />
                   </div>
@@ -414,7 +414,7 @@ export default function DashboardPage() {
 
         {/* Center: greeting */}
         <p className="flex-1 text-center text-sm" style={{ color: "var(--text-secondary)" }}>
-          {greeting.date && `${greeting.date} — `}good {greeting.part}, {userName}
+          {greeting.date && `${greeting.date} — `}good {greeting.part}, {userName.split(" ")[0]}
         </p>
 
         {/* Right: customize / edit dock */}
@@ -444,7 +444,7 @@ export default function DashboardPage() {
       {/* ── Widget grid ─────────────────────────────────── */}
       {contextVisible.length === 0 ? (
         <div className="rounded-xl p-12 text-center"
-          style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>
+          style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
           <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>
             No widgets for this context level
           </p>

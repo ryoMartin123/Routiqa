@@ -34,7 +34,7 @@ export default function MobileAccountingPage() {
               {recent.map((i, idx) => {
                 const st = INVOICE_STATUS_STYLE[i.status];
                 return (
-                  <div key={i.id} className="flex items-center gap-3 px-4 py-3" style={{ borderTop: idx ? "1px solid var(--border-subtle)" : "none" }}>
+                  <div key={i.id} className="flex items-center gap-3 px-4 py-3" style={{ borderTop: idx ? "1px solid var(--border)" : "none" }}>
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-semibold truncate" style={{ color: "var(--text-primary)" }}>{i.customerName}</p>
                       <p className="text-xs truncate" style={{ color: "var(--text-muted)" }}>{i.invoiceNumber} · due {i.dueDate}</p>

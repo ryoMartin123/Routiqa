@@ -21,7 +21,7 @@ export default function TodaysJobs() {
     <div className="rounded-xl overflow-hidden h-full min-h-0 flex flex-col"
       style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
       <div className="flex items-center justify-between px-5 py-4 shrink-0"
-        style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+        style={{ borderBottom: "1px solid var(--border)" }}>
         <div>
           <h2 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Today&apos;s Jobs</h2>
           <p className="text-[10px] mt-0.5" style={{ color: "var(--text-muted)" }}>{TODAY}</p>
@@ -42,7 +42,7 @@ export default function TodaysJobs() {
             return (
               <Link key={job.id} href={`/jobs/${job.id}`}
                 className="flex items-center gap-4 px-5 py-3 hover:bg-[var(--bg-surface-2)] transition-colors"
-                style={{ borderBottom: i < jobs.length - 1 ? "1px solid var(--border-subtle)" : "none", textDecoration: "none" }}>
+                style={{ borderBottom: i < jobs.length - 1 ? "1px solid var(--border)" : "none", textDecoration: "none" }}>
                 <div className="w-16 shrink-0">
                   <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{job.scheduledTime}</p>
                   <p className="text-[10px]" style={{ color: "var(--text-muted)" }}>{job.durationMinutes}m</p>

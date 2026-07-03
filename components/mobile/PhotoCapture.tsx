@@ -60,7 +60,7 @@ export default function PhotoCapture({ open, onClose, accountId, accountName, jo
   return (
     <div className="fixed inset-0 z-[70] flex flex-col" style={{ backgroundColor: "var(--bg-page)", paddingTop: "env(safe-area-inset-top)" }}>
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+      <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid var(--border)" }}>
         <button onClick={onClose} className="p-1.5 -ml-1.5 rounded-lg active:bg-[var(--bg-surface-2)]"><X className="w-5 h-5" style={{ color: "var(--text-primary)" }} /></button>
         <p className="text-base font-bold" style={{ color: "var(--text-primary)" }}>Add photos</p>
         <button onClick={save} disabled={!staged.length} className="text-sm font-semibold transition-opacity disabled:opacity-40" style={{ color: ACCENT }}>Save {staged.length || ""}</button>
@@ -77,7 +77,7 @@ export default function PhotoCapture({ open, onClose, accountId, accountName, jo
           {staged.map(s => (
             // eslint-disable-next-line @next/next/no-img-element
             <div key={s.id} className="relative aspect-square">
-              <img src={s.url} alt="" className="w-full h-full object-cover rounded-2xl" style={{ border: "1px solid var(--border-subtle)" }} />
+              <img src={s.url} alt="" className="w-full h-full object-cover rounded-2xl" style={{ border: "1px solid var(--border)" }} />
               <button onClick={() => setStaged(v => v.filter(x => x.id !== s.id))} className="absolute top-1 right-1 w-6 h-6 rounded-full flex items-center justify-center" style={{ backgroundColor: "rgba(0,0,0,0.55)" }}><X className="w-3.5 h-3.5 text-white" /></button>
             </div>
           ))}
@@ -114,7 +114,7 @@ export default function PhotoCapture({ open, onClose, accountId, accountName, jo
       </div>
 
       {/* Save bar */}
-      <div className="p-4" style={{ borderTop: "1px solid var(--border-subtle)", paddingBottom: "calc(env(safe-area-inset-bottom) + 1rem)" }}>
+      <div className="p-4" style={{ borderTop: "1px solid var(--border)", paddingBottom: "calc(env(safe-area-inset-bottom) + 1rem)" }}>
         <button onClick={save} disabled={!staged.length} className="w-full min-h-[50px] rounded-2xl flex items-center justify-center gap-2 text-base font-semibold text-white transition-opacity disabled:opacity-40" style={{ backgroundColor: ACCENT }}>
           <Check className="w-5 h-5" /> Save {staged.length} photo{staged.length === 1 ? "" : "s"}{cat ? ` · ${cat.name}` : ""}
         </button>

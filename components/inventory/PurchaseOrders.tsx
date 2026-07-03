@@ -128,17 +128,17 @@ export default function PurchaseOrders() {
         </div>
       </div>
 
-      <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+      <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
         <div className="overflow-x-auto thin-scroll-x">
           <div style={{ minWidth: 1100 }}>
-            <div className="grid px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider items-center" style={{ gridTemplateColumns: PO_COLS, gap: "0.75rem", color: "var(--text-muted)", borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+            <div className="grid px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider items-center" style={{ gridTemplateColumns: PO_COLS, gap: "0.75rem", color: "var(--text-muted)", borderBottom: "1px solid var(--border)", backgroundColor: "transparent" }}>
               <span>PO #</span><span>Vendor</span><span>Status</span><span>Linked</span><span className="text-right">Total</span><span>Expected</span><span className="text-center">Received</span><span>Created By</span><span className="text-right">Actions</span>
             </div>
             {filtered.length === 0 ? (
               <div className="py-14 text-center"><p className="text-sm" style={{ color: "var(--text-muted)" }}>No purchase orders match the current filters.</p></div>
             ) : filtered.map((p, i) => (
               <div key={p.id} onClick={() => setOpenId(p.id)} className="grid px-4 py-3 items-center cursor-pointer transition-colors hover:bg-[var(--bg-surface-2)]"
-                style={{ gridTemplateColumns: PO_COLS, gap: "0.75rem", borderBottom: i < filtered.length - 1 ? "1px solid var(--border-subtle)" : "none" }}>
+                style={{ gridTemplateColumns: PO_COLS, gap: "0.75rem", borderBottom: i < filtered.length - 1 ? "1px solid var(--border)" : "none" }}>
                 <div className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{p.number}</div>
                 <div className="text-xs truncate" style={{ color: "var(--text-secondary)" }}>{p.vendorName}</div>
                 <div><Dot style={PO_STATUS_STYLE[p.status]} /></div>
@@ -190,12 +190,12 @@ function PODrawer({ po, onClose, onReceive }: { po: PurchaseOrder; onClose: () =
         </div>
         <div>
           <DrawerBlockTitle>Line Items</DrawerBlockTitle>
-          <div className="rounded-xl overflow-hidden" style={{ border: "1px solid var(--border-subtle)" }}>
-            <div className="grid px-3 py-2 text-[10px] font-semibold uppercase tracking-wider" style={{ gridTemplateColumns: "2fr 0.8fr 1fr 1fr", gap: "0.5rem", color: "var(--text-muted)", backgroundColor: "var(--bg-surface-2)", borderBottom: "1px solid var(--border-subtle)" }}>
+          <div className="rounded-xl overflow-hidden" style={{ border: "1px solid var(--border)" }}>
+            <div className="grid px-3 py-2 text-[10px] font-semibold uppercase tracking-wider" style={{ gridTemplateColumns: "2fr 0.8fr 1fr 1fr", gap: "0.5rem", color: "var(--text-muted)", backgroundColor: "var(--bg-surface-2)", borderBottom: "1px solid var(--border)" }}>
               <span>Item</span><span className="text-center">Recv/Ord</span><span className="text-right">Unit</span><span className="text-right">Total</span>
             </div>
             {po.lines.map((l, i) => (
-              <div key={l.id} className="grid px-3 py-2 items-center" style={{ gridTemplateColumns: "2fr 0.8fr 1fr 1fr", gap: "0.5rem", borderBottom: i < po.lines.length - 1 ? "1px solid var(--border-subtle)" : "none" }}>
+              <div key={l.id} className="grid px-3 py-2 items-center" style={{ gridTemplateColumns: "2fr 0.8fr 1fr 1fr", gap: "0.5rem", borderBottom: i < po.lines.length - 1 ? "1px solid var(--border)" : "none" }}>
                 <div className="min-w-0"><p className="text-sm truncate" style={{ color: "var(--text-primary)" }}>{l.itemName}</p><p className="text-[10px]" style={{ color: "var(--text-muted)" }}>{TRACKING_METHOD_LABELS[l.tracking]}</p></div>
                 <div className="text-center text-xs tabular-nums" style={{ color: l.quantityReceived >= l.quantityOrdered ? "#10b981" : "var(--text-secondary)" }}>{l.quantityReceived}/{l.quantityOrdered}</div>
                 <div className="text-right text-xs tabular-nums" style={{ color: "var(--text-secondary)" }}>{money(l.unitCost)}</div>
@@ -272,7 +272,7 @@ function CreatePODrawer({ onClose, onCreated }: { onClose: () => void; onCreated
           <div className="flex items-center justify-between mb-2"><DrawerBlockTitle>Line Items</DrawerBlockTitle><button onClick={addLine} className="text-xs font-medium flex items-center gap-1" style={{ color: ACCENT }}><Plus className="w-3.5 h-3.5" /> Add line</button></div>
           <div className="space-y-2">
             {lines.map(l => (
-              <div key={l.id} className="rounded-lg p-3 space-y-2" style={{ border: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+              <div key={l.id} className="rounded-lg p-3 space-y-2" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)" }}>
                 <div className="flex items-center gap-2">
                   <div className="flex-1"><UiSelect size="sm" value={l.itemId ?? ""} onChange={v => pickItem(l.id, v)} options={[{ value: "", label: "Custom item…" }, ...items.map(i => ({ value: i.id, label: i.name }))]} /></div>
                   {lines.length > 1 && <button onClick={() => removeLine(l.id)} className="p-1.5 rounded-md shrink-0" style={{ color: "var(--text-muted)" }}><Trash2 className="w-3.5 h-3.5" /></button>}
@@ -287,7 +287,7 @@ function CreatePODrawer({ onClose, onCreated }: { onClose: () => void; onCreated
               </div>
             ))}
           </div>
-          <div className="flex items-center justify-end gap-2 mt-3 pt-2" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+          <div className="flex items-center justify-end gap-2 mt-3 pt-2" style={{ borderTop: "1px solid var(--border)" }}>
             <span className="text-xs" style={{ color: "var(--text-muted)" }}>Subtotal</span>
             <span className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>{money(subtotal)}</span>
           </div>
@@ -335,7 +335,7 @@ function ReceiveDrawer({ po, onClose, onReceived }: { po: PurchaseOrder; onClose
             {po.lines.map(l => {
               const remaining = l.quantityOrdered - l.quantityReceived;
               return (
-                <div key={l.id} className="rounded-lg p-3" style={{ border: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+                <div key={l.id} className="rounded-lg p-3" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)" }}>
                   <div className="flex items-center justify-between gap-2 mb-2">
                     <div className="min-w-0"><p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{l.itemName}</p><p className="text-[11px]" style={{ color: "var(--text-muted)" }}>Ordered {l.quantityOrdered} · received {l.quantityReceived} · {TRACKING_METHOD_LABELS[l.tracking]}</p></div>
                   </div>
@@ -351,7 +351,7 @@ function ReceiveDrawer({ po, onClose, onReceived }: { po: PurchaseOrder; onClose
           </div>
         </div>
         <Field label="Notes"><textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} className={`${inp} resize-none`} style={inpStyle} /></Field>
-        <div className="rounded-lg px-3 py-2 flex items-center gap-2" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border-subtle)" }}>
+        <div className="rounded-lg px-3 py-2 flex items-center gap-2" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}>
           <Truck className="w-3.5 h-3.5 shrink-0" style={{ color: "var(--text-muted)" }} />
           <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>Receiving records a movement (<span style={{ color: "var(--text-secondary)" }}>{po.vendorName} → {destination}</span>) and updates on-hand stock. Barcode / RFID scanning is future-ready.</p>
         </div>

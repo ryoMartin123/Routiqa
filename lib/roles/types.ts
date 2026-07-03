@@ -58,6 +58,7 @@ export type FieldMask =
   | "finance_internal_pricing"  // internal price book / list pricing
   | "finance_cost_margin"       // item cost, markup, margin
   | "finance_totals"            // quote/invoice totals, balances, payments
+  | "finance_field_pricing"     // line-item pricing shown to field techs (work orders / mobile)
   | "finance_payroll"           // labor cost / pay rates
   | "comms_internal_notes"      // internal-only notes
   | "sales_other_commissions"   // other reps' commissions

@@ -30,7 +30,7 @@ export function AddressValidationDialog({
         {/* Original */}
         <div
           className="rounded-lg p-3"
-          style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}
+          style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}
         >
           <p
             className="text-[10px] font-semibold uppercase tracking-wider mb-1.5"

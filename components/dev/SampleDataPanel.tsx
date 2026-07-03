@@ -101,7 +101,7 @@ export default function SampleDataPanel() {
           style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "0 16px 40px rgba(0,0,0,0.22)" }}>
 
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+          <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid var(--border)" }}>
             <div className="flex items-center gap-2">
               <FlaskConical className="w-4 h-4" style={{ color: "var(--accent-text)" }} />
               <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Sample Data</p>
@@ -161,7 +161,7 @@ export default function SampleDataPanel() {
               const loaded = counts[t.type] ?? 0;
               return (
                 <div key={t.type} className="flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-[var(--bg-surface-2)]"
-                  style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+                  style={{ borderBottom: "1px solid var(--border)" }}>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{t.label}</p>
@@ -197,7 +197,7 @@ export default function SampleDataPanel() {
           </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-between px-4 py-2.5" style={{ borderTop: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+          <div className="flex items-center justify-between px-4 py-2.5" style={{ borderTop: "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)" }}>
             <button onClick={() => { setWipe(true); setConfirm(null); }}
               className="text-[11px] font-semibold hover:underline" style={{ color: "#dc2626" }}>
               Clear all records

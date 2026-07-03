@@ -132,17 +132,17 @@ export default function Subcontractors() {
         </div>
       </div>
 
-      <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+      <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
         <div className="overflow-x-auto thin-scroll-x">
           <div style={{ minWidth: 1060 }}>
-            <div className="grid px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider items-center" style={{ gridTemplateColumns: SUB_COLS, gap: "0.75rem", color: "var(--text-muted)", borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+            <div className="grid px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider items-center" style={{ gridTemplateColumns: SUB_COLS, gap: "0.75rem", color: "var(--text-muted)", borderBottom: "1px solid var(--border)", backgroundColor: "transparent" }}>
               <span>Subcontractor</span><span>Trade</span><span>Status</span><span>Service Area</span><span>Insurance</span><span>W-9</span><span>License</span><span className="text-center">Assignments</span><span className="text-right">Actions</span>
             </div>
             {filtered.length === 0 ? (
               <div className="py-14 text-center"><p className="text-sm" style={{ color: "var(--text-muted)" }}>No subcontractors match the current filters.</p></div>
             ) : filtered.map((s, i) => (
               <div key={s.id} onClick={() => setOpenId(s.id)} className="grid px-4 py-3 items-center cursor-pointer transition-colors hover:bg-[var(--bg-surface-2)]"
-                style={{ gridTemplateColumns: SUB_COLS, gap: "0.75rem", borderBottom: i < filtered.length - 1 ? "1px solid var(--border-subtle)" : "none" }}>
+                style={{ gridTemplateColumns: SUB_COLS, gap: "0.75rem", borderBottom: i < filtered.length - 1 ? "1px solid var(--border)" : "none" }}>
                 <div className="min-w-0 flex items-center gap-2">
                   <span className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: ACCENT + "1f" }}><HardHat className="w-4 h-4" style={{ color: ACCENT }} /></span>
                   <div className="min-w-0"><p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{s.companyName}</p><p className="text-[11px] truncate" style={{ color: "var(--text-muted)" }}>{s.primaryContactName ?? ""}</p></div>
@@ -231,7 +231,7 @@ function SubDrawer({ sub, onClose, onEdit, onChanged }: { sub: Subcontractor; on
             {assignments.length === 0 ? <Empty text="No project assignments yet." /> : (
               <div className="space-y-2">
                 {assignments.map(a => (
-                  <div key={a.id} className="rounded-lg px-3 py-2.5" style={{ border: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+                  <div key={a.id} className="rounded-lg px-3 py-2.5" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)" }}>
                     <div className="flex items-center justify-between gap-2 mb-1">
                       <div className="flex items-center gap-1.5 min-w-0">{a.projectName && <LinkedChip label={a.projectName} />}</div>
                       <Dot style={ASSIGNMENT_STATUS_STYLE[a.status]} />
@@ -250,7 +250,7 @@ function SubDrawer({ sub, onClose, onEdit, onChanged }: { sub: Subcontractor; on
           sub.documents.length === 0 ? <Empty text="No documents on file. Files are stored in the Documents app." /> : (
             <div className="space-y-1.5">
               {sub.documents.map(d => (
-                <div key={d.id} className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg" style={{ border: "1px solid var(--border-subtle)" }}>
+                <div key={d.id} className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg" style={{ border: "1px solid var(--border)" }}>
                   <span className="flex items-center gap-2 min-w-0"><FileText className="w-3.5 h-3.5 shrink-0" style={{ color: "var(--text-muted)" }} /><span className="text-sm truncate" style={{ color: "var(--text-primary)" }}>{DOC_KIND_LABELS[d.kind]}</span></span>
                   <DocPill status={d.status} />
                 </div>
@@ -270,7 +270,7 @@ function SubDrawer({ sub, onClose, onEdit, onChanged }: { sub: Subcontractor; on
 
 function CompRow({ label, status, detail }: { label: string; status: DocStatus; detail?: string }) {
   return (
-    <div className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg" style={{ border: "1px solid var(--border-subtle)" }}>
+    <div className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg" style={{ border: "1px solid var(--border)" }}>
       <div className="flex items-center gap-2">
         {status === "valid" ? <CheckCircle2 className="w-4 h-4" style={{ color: "#10b981" }} /> : <AlertTriangle className="w-4 h-4" style={{ color: "#ef4444" }} />}
         <div><p className="text-sm" style={{ color: "var(--text-primary)" }}>{label}</p>{detail && <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>{detail}</p>}</div>
@@ -305,7 +305,7 @@ function AssignmentModal({ subId, onClose, onSaved }: { subId: string; onClose: 
   return (
     <div className="fixed inset-0 z-[60] bg-black/40 flex items-center justify-center p-4" onClick={onClose}>
       <div className="w-full max-w-lg rounded-2xl overflow-hidden flex flex-col" onClick={e => e.stopPropagation()} style={{ backgroundColor: "var(--bg-surface)", boxShadow: "0 16px 48px rgba(0,0,0,0.24)" }}>
-        <div className="flex items-center justify-between px-5 py-4 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+        <div className="flex items-center justify-between px-5 py-4 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
           <p className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>New Assignment</p>
           <button onClick={onClose} style={{ color: "var(--text-muted)" }}><X className="w-4 h-4" /></button>
         </div>
@@ -321,7 +321,7 @@ function AssignmentModal({ subId, onClose, onSaved }: { subId: string; onClose: 
           </div>
           <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>Project/job links are mock placeholders — they connect to CRM Projects in a later phase.</p>
         </div>
-        <div className="px-5 py-3 flex items-center justify-end gap-2 shrink-0" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+        <div className="px-5 py-3 flex items-center justify-end gap-2 shrink-0" style={{ borderTop: "1px solid var(--border)" }}>
           <button onClick={onClose} className="text-sm font-medium px-3 py-2 rounded-lg" style={{ color: "var(--text-secondary)" }}>Cancel</button>
           <button onClick={save} className="text-sm font-medium px-4 py-2 rounded-lg text-white" style={{ backgroundColor: ACCENT }}>Save Assignment</button>
         </div>
@@ -370,7 +370,7 @@ function SubModal({ sub, onClose, onSaved }: { sub: Subcontractor | "new"; onClo
   return (
     <div className="fixed inset-0 z-[60] bg-black/40 flex items-center justify-center p-4" onClick={onClose}>
       <div className="w-full max-w-xl max-h-[92vh] rounded-2xl overflow-hidden flex flex-col" onClick={e => e.stopPropagation()} style={{ backgroundColor: "var(--bg-surface)", boxShadow: "0 16px 48px rgba(0,0,0,0.24)" }}>
-        <div className="flex items-center justify-between px-5 py-4 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+        <div className="flex items-center justify-between px-5 py-4 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
           <p className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>{isNew ? "Add Subcontractor" : "Edit Subcontractor"}</p>
           <button onClick={onClose} style={{ color: "var(--text-muted)" }}><X className="w-4 h-4" /></button>
         </div>
@@ -398,7 +398,7 @@ function SubModal({ sub, onClose, onSaved }: { sub: Subcontractor | "new"; onClo
           <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>Adding a subcontractor also creates its linked vendor master record. Compliance files live in the Documents app.</p>
         </div>
         {error && <div className="mx-5 mb-3 px-3 py-2 rounded-lg text-xs shrink-0" style={{ backgroundColor: "#fee2e2", color: "#991b1b" }}>{error}</div>}
-        <div className="px-5 py-3 flex items-center justify-end gap-2 shrink-0" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+        <div className="px-5 py-3 flex items-center justify-end gap-2 shrink-0" style={{ borderTop: "1px solid var(--border)" }}>
           <button onClick={onClose} className="text-sm font-medium px-3 py-2 rounded-lg" style={{ color: "var(--text-secondary)" }}>Cancel</button>
           <button onClick={save} className="text-sm font-medium px-4 py-2 rounded-lg text-white" style={{ backgroundColor: ACCENT }}>{isNew ? "Add Subcontractor" : "Save Changes"}</button>
         </div>

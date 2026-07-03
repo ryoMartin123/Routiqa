@@ -40,7 +40,7 @@ const NOTE_ICON: Record<LeadNoteType, typeof MessageSquare> = {
 // ─── Shared primitives (mirrors the Customer overview look) ──
 function Card({ title, children, className = "" }: { title: string; children: React.ReactNode; className?: string }) {
   return (
-    <div className={`rounded-xl p-4 ${className}`} style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+    <div className={`rounded-xl p-4 ${className}`} style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
       <p className="text-[10px] font-semibold uppercase tracking-widest mb-3" style={{ color: "var(--text-muted)" }}>{title}</p>
       {children}
     </div>
@@ -71,8 +71,8 @@ function SectionCard({
   className?: string;
 }) {
   return (
-    <div className={`rounded-xl overflow-hidden flex flex-col ${className}`} style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
-      <div className="flex items-center justify-between px-4 py-3 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+    <div className={`rounded-xl overflow-hidden flex flex-col ${className}`} style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
+      <div className="flex items-center justify-between px-4 py-3 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
         <div className="flex items-center gap-2">
           <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{title}</p>
           {count !== undefined && count > 0 && (
@@ -89,7 +89,7 @@ function SectionCard({
 function Row({ children, last }: { children: React.ReactNode; last: boolean }) {
   return (
     <div className="flex items-center px-4 py-3 hover:bg-[var(--bg-surface-2)] transition-colors"
-      style={!last ? { borderBottom: "1px solid var(--border-subtle)" } : undefined}>
+      style={!last ? { borderBottom: "1px solid var(--border)" } : undefined}>
       {children}
     </div>
   );
@@ -143,7 +143,7 @@ function OverviewTab({ id, onTab }: { id: string; onTab: (tab: string) => void }
       {/* ── Summary cards (compact) ─────────────────── */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2.5 shrink-0">
         {summary.map(c => (
-          <div key={c.label} className="rounded-xl px-3 py-2.5" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+          <div key={c.label} className="rounded-xl px-3 py-2.5" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
             <div className="flex items-center gap-1.5 mb-1">
               <c.icon className="w-3 h-3" style={{ color: c.accent ?? "var(--text-muted)" }} />
               <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>{c.label}</p>
@@ -180,7 +180,7 @@ function OverviewTab({ id, onTab }: { id: string; onTab: (tab: string) => void }
             {contactAddr && <DetailField icon={MapPin} label="Address" value={contactAddr} />}
           </div>
           {lead.notes && (
-            <div className="mt-4 pt-4" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+            <div className="mt-4 pt-4" style={{ borderTop: "1px solid var(--border)" }}>
               <p className="text-[10px] mb-1" style={{ color: "var(--text-muted)" }}>Notes</p>
               <p className="text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>{lead.notes}</p>
             </div>
@@ -248,8 +248,8 @@ function OverviewTab({ id, onTab }: { id: string; onTab: (tab: string) => void }
       )}
 
       {/* ── Quotes — full-width, fills the remaining vertical space ── */}
-      <div className="flex-1 min-h-0 rounded-xl flex flex-col overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
-        <div className="flex items-center justify-between px-4 py-3 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+      <div className="flex-1 min-h-0 rounded-xl flex flex-col overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
+        <div className="flex items-center justify-between px-4 py-3 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
           <div className="flex items-center gap-2">
             <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Quotes</p>
             {quotes.length > 0 && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>{quotes.length}</span>}
@@ -269,7 +269,7 @@ function OverviewTab({ id, onTab }: { id: string; onTab: (tab: string) => void }
                 return (
                   <Link key={q.id} href={`/quotes/${q.id}`}
                     className="rounded-lg p-3 transition-colors hover:bg-[var(--bg-surface-2)]"
-                    style={{ border: "1px solid var(--border-subtle)", textDecoration: "none" }}>
+                    style={{ border: "1px solid var(--border)", textDecoration: "none" }}>
                     <div className="flex items-start justify-between gap-2">
                       <p className="text-sm font-mono font-semibold truncate" style={{ color: "var(--text-primary)" }}>{q.quoteNumber}</p>
                       <StatusBadge label={s.label} color={s.color} size="sm" className="shrink-0" />
@@ -297,7 +297,7 @@ function TasksTab({ id }: { id: string }) {
           <Plus className="w-3.5 h-3.5" /> Add Task
         </button>
       </div>
-      <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+      <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
         {tasks.length === 0 ? (
           <div className="py-12 text-center"><p className="text-sm" style={{ color: "var(--text-muted)" }}>No tasks yet</p></div>
         ) : tasks.map((task, i) => {
@@ -305,7 +305,7 @@ function TasksTab({ id }: { id: string }) {
           const isCompleted = task.status === "completed";
           return (
             <div key={task.id} className="flex items-center gap-3 px-4 py-3 hover:bg-[var(--bg-surface-2)] transition-colors"
-              style={{ borderBottom: i < tasks.length - 1 ? "1px solid var(--border-subtle)" : "none" }}>
+              style={{ borderBottom: i < tasks.length - 1 ? "1px solid var(--border)" : "none" }}>
               <CheckSquare className="w-4 h-4 shrink-0" style={{ color: isCompleted ? "#10b981" : isOverdue ? "#dc2626" : "var(--text-muted)" }} />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium" style={{ color: isCompleted ? "var(--text-muted)" : "var(--text-primary)", textDecoration: isCompleted ? "line-through" : "none" }}>
@@ -338,13 +338,13 @@ function NotesTab({ id }: { id: string }) {
 
   return (
     <div className="space-y-4">
-      <div className="rounded-xl p-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+      <div className="rounded-xl p-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
         <textarea value={draft} onChange={e => setDraft(e.target.value)}
           placeholder="Add a note, log a call, or record a visit..."
           rows={3}
           className="w-full resize-none text-sm outline-none bg-transparent"
           style={{ color: "var(--text-primary)" }} />
-        <div className="flex items-center justify-between mt-3 pt-3" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+        <div className="flex items-center justify-between mt-3 pt-3" style={{ borderTop: "1px solid var(--border)" }}>
           <div className="flex gap-2">
             {(["note", "call", "email", "visit"] as const).map(t => (
               <button key={t} className="text-[11px] px-2 py-1 rounded-lg capitalize transition-colors"
@@ -367,7 +367,7 @@ function NotesTab({ id }: { id: string }) {
           {notes.map(note => {
             const Icon = NOTE_ICON[note.type];
             return (
-              <div key={note.id} className="rounded-xl p-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>
+              <div key={note.id} className="rounded-xl p-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
                 <div className="flex items-start gap-3">
                   <div className="w-7 h-7 rounded-full bg-indigo-100 flex items-center justify-center shrink-0">
                     <Icon className="w-3.5 h-3.5 text-indigo-600" />
@@ -449,14 +449,14 @@ function ConvertTab({ id }: { id: string }) {
         <div className="grid grid-cols-2 gap-4">
           <button onClick={() => setMode("job")}
             className="rounded-xl p-5 text-left transition-all hover:border-indigo-300"
-            style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+            style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
             <Briefcase className="w-6 h-6 mb-3" style={{ color: "#4f46e5" }} />
             <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Convert to Job</p>
             <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>A single unit of scheduled work assigned to a technician.</p>
           </button>
           <button onClick={() => setMode("project")}
             className="rounded-xl p-5 text-left transition-all hover:border-indigo-300"
-            style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+            style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
             <FolderKanban className="w-6 h-6 mb-3" style={{ color: "#4f46e5" }} />
             <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Convert to Project</p>
             <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>A larger scope with multiple jobs, phases, or milestones.</p>
@@ -466,7 +466,7 @@ function ConvertTab({ id }: { id: string }) {
 
       {/* Job form */}
       {mode === "job" && (
-        <div className="rounded-xl p-5 space-y-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+        <div className="rounded-xl p-5 space-y-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
           <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>New Job Details</p>
           <div>
             <label className="block text-xs font-medium mb-1" style={{ color: "var(--text-secondary)" }}>Job Title</label>
@@ -499,7 +499,7 @@ function ConvertTab({ id }: { id: string }) {
 
       {/* Project form */}
       {mode === "project" && (
-        <div className="rounded-xl p-5 space-y-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+        <div className="rounded-xl p-5 space-y-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
           <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>New Project Details</p>
           <div>
             <label className="block text-xs font-medium mb-1" style={{ color: "var(--text-secondary)" }}>Project Name</label>
@@ -551,7 +551,7 @@ function TimelineEvent({ icon: Icon, color, label, title, user, date, time, last
 
       {/* Content container — uniform regardless of content */}
       <div className="flex-1 min-w-0 rounded-xl px-4 py-3 mb-3 flex flex-col"
-        style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)", minHeight: 80 }}>
+        style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)", minHeight: 80 }}>
         <div className="flex items-start justify-between gap-3">
           <span className="inline-block text-[10px] font-semibold px-2 py-0.5 rounded-md shrink-0"
             style={{ backgroundColor: color + "1a", color }}>{label}</span>
@@ -643,7 +643,7 @@ function LeadActivityTab({ id }: { id: string }) {
     <div className="space-y-6">
       {!hasAnything && (
         <div className="rounded-xl p-10 text-center"
-          style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>
+          style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
           <p className="text-sm" style={{ color: "var(--text-muted)" }}>No activity yet on this lead.</p>
         </div>
       )}
@@ -690,12 +690,12 @@ function LeadQuotesTab({ id }: { id: string }) {
   const quotes = getQuotesForLead(id);
 
   return (
-    <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+    <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
       {wizard && (
         <QuoteTypeChooser preset={{ customerId: lead?.accountId, leadId: id, lockCustomer: Boolean(lead?.accountId) }}
           onClose={() => setWizard(false)} />
       )}
-      <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+      <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid var(--border)" }}>
         <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Quotes ({quotes.length})</p>
         <button onClick={() => setWizard(true)} className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg"
           style={{ backgroundColor: "#4f46e5", color: "#fff" }}>
@@ -709,7 +709,7 @@ function LeadQuotesTab({ id }: { id: string }) {
         return (
           <Link key={q.id} href={`/quotes/${q.id}`}
             className="flex items-center gap-4 px-4 py-3 hover:bg-[var(--bg-surface-2)] transition-colors"
-            style={{ borderBottom: i < quotes.length - 1 ? "1px solid var(--border-subtle)" : "none", textDecoration: "none" }}>
+            style={{ borderBottom: i < quotes.length - 1 ? "1px solid var(--border)" : "none", textDecoration: "none" }}>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-mono font-medium" style={{ color: "var(--text-primary)" }}>{q.quoteNumber}</p>
               <p className="text-xs mt-0.5 truncate" style={{ color: "var(--text-muted)" }}>{q.title}</p>
@@ -726,7 +726,7 @@ function LeadQuotesTab({ id }: { id: string }) {
 // ─── Stub tab ─────────────────────────────────────────────
 function StubTab({ label, phase }: { label: string; phase: string }) {
   return (
-    <div className="rounded-xl p-10 text-center" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>
+    <div className="rounded-xl p-10 text-center" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
       <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{label}</p>
       <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>Coming in {phase}</p>
     </div>
@@ -767,7 +767,7 @@ function LeadDetailContent({ params }: { params: Promise<{ id: string }> }) {
   return (
     <div className="flex flex-col h-full">
       {/* Sticky header */}
-      <div style={{ backgroundColor: "var(--bg-surface)", borderBottom: "1px solid var(--border-subtle)" }}>
+      <div style={{ backgroundColor: "var(--bg-surface)", borderBottom: "1px solid var(--border)" }}>
         <div className="flex items-center justify-between px-6 py-4">
           <div className="flex items-center gap-4 min-w-0">
             <Link href="/leads" className="flex items-center gap-1.5 text-sm shrink-0" style={{ color: "var(--text-secondary)" }}>
@@ -838,7 +838,7 @@ function LeadDetailContent({ params }: { params: Promise<{ id: string }> }) {
       {confirmDelete && (
         <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={() => setConfirmDelete(false)}>
           <div className="w-full max-w-md rounded-2xl overflow-hidden" onClick={e => e.stopPropagation()}
-            style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "0 16px 48px rgba(0,0,0,0.24)" }}>
+            style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "0 16px 48px rgba(0,0,0,0.24)" }}>
             <div className="px-6 py-5 flex items-start gap-3">
               <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: "#fee2e2" }}>
                 <AlertCircle className="w-5 h-5" style={{ color: "#dc2626" }} />
@@ -850,7 +850,7 @@ function LeadDetailContent({ params }: { params: Promise<{ id: string }> }) {
                 </p>
               </div>
             </div>
-            <div className="px-6 py-4 flex justify-end gap-2" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+            <div className="px-6 py-4 flex justify-end gap-2" style={{ borderTop: "1px solid var(--border)" }}>
               <button onClick={() => setConfirmDelete(false)} className="px-4 py-2 rounded-lg text-sm font-medium" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>Cancel</button>
               <button onClick={() => { deleteLead(id); router.push("/leads"); }} className="px-4 py-2 rounded-lg text-sm font-medium text-white" style={{ backgroundColor: "#dc2626" }}>Delete Lead</button>
             </div>

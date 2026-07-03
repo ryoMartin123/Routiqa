@@ -4,14 +4,14 @@ import { Delayed, Skeleton } from "@/components/ui/Skeleton";
 // loading→page hand-off doesn't jump. Without this, navigating from the cards
 // briefly showed the parent /projects cards-grid skeleton, then snapped to the
 // detail layout — the jitter. A close-matching skeleton keeps the swap still.
-const surface = { backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" } as const;
+const surface = { backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" } as const;
 
 export default function Loading() {
   return (
     <Delayed>
       <div className="flex flex-col h-full">
         {/* Header bar — back · title · actions, then the sub-tabs */}
-        <div style={{ backgroundColor: "var(--bg-surface)", borderBottom: "1px solid var(--border-subtle)" }}>
+        <div style={{ backgroundColor: "var(--bg-surface)", borderBottom: "1px solid var(--border)" }}>
           <div className="flex items-center justify-between px-6 py-4">
             <div className="flex items-center gap-4 min-w-0">
               <Skeleton className="h-4 w-20 rounded" />
@@ -65,7 +65,7 @@ export default function Loading() {
             {/* Row 3 — Jobs (2/3) + Open Tasks (1/3), fills remaining height */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 flex-1 min-h-0">
               <div className="lg:col-span-2 rounded-xl overflow-hidden flex flex-col" style={surface}>
-                <div className="px-4 py-3 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+                <div className="px-4 py-3 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
                   <Skeleton className="h-3.5 w-16 rounded" />
                 </div>
                 <div className="flex-1 min-h-0 p-4 space-y-3.5">
@@ -81,7 +81,7 @@ export default function Loading() {
                 </div>
               </div>
               <div className="rounded-xl overflow-hidden flex flex-col" style={surface}>
-                <div className="px-4 py-3 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+                <div className="px-4 py-3 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
                   <Skeleton className="h-3.5 w-24 rounded" />
                 </div>
                 <div className="flex-1 min-h-0 p-4 space-y-3">

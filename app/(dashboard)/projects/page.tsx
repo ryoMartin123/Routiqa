@@ -268,10 +268,10 @@ export default function ProjectsPage() {
       {view === "calendar" && <ProjectCalendar stages={stages} projects={lensFiltered} focus={calFocus} />}
 
       {view === "list" && (
-      <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+      <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
         {/* Column headers */}
         <div className="grid px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider select-none"
-          style={{ gridTemplateColumns: "2.5fr 1fr 1fr 1fr 1fr 1fr 1.5fr", color: "var(--text-muted)", borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+          style={{ gridTemplateColumns: "2.5fr 1fr 1fr 1fr 1fr 1fr 1.5fr", color: "var(--text-muted)", borderBottom: "1px solid var(--border)", backgroundColor: "transparent" }}>
           {([
             { label: "Project",     field: "name"         },
             { label: "Type",        field: null            },
@@ -300,7 +300,7 @@ export default function ProjectsPage() {
             return (
               <Link key={p.id} href={`/projects/${p.id}`}
                 className="grid px-4 py-3 items-center hover:bg-[var(--bg-surface-2)] transition-colors"
-                style={{ gridTemplateColumns: "2.5fr 1fr 1fr 1fr 1fr 1fr 1.5fr", borderBottom: i < displayed.length - 1 ? "1px solid var(--border-subtle)" : "none", textDecoration: "none" }}>
+                style={{ gridTemplateColumns: "2.5fr 1fr 1fr 1fr 1fr 1fr 1.5fr", borderBottom: i < displayed.length - 1 ? "1px solid var(--border)" : "none", textDecoration: "none" }}>
                 <div className="flex items-center gap-2.5 min-w-0">
                   <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: "var(--bg-input)" }}><FolderKanban className="w-3.5 h-3.5" style={{ color: "var(--text-muted)" }} /></div>
                   <div className="min-w-0">
@@ -325,7 +325,7 @@ export default function ProjectsPage() {
         </div>
 
         <div className="flex items-center justify-between px-4 py-3 text-xs"
-          style={{ borderTop: "1px solid var(--border-subtle)", color: "var(--text-muted)", backgroundColor: "var(--bg-surface-2)" }}>
+          style={{ borderTop: "1px solid var(--border)", color: "var(--text-muted)", backgroundColor: "transparent" }}>
           <span>Showing {displayed.length} of {lensFiltered.length} projects</span>
         </div>
       </div>
@@ -356,8 +356,8 @@ function ProjectTimeline({ projects, stageMap, onOpen }: {
     return <div className="rounded-xl p-12 text-center" style={{ border: "1px dashed var(--border)" }}><p className="text-sm" style={{ color: "var(--text-muted)" }}>No projects to plot.</p></div>;
   }
   return (
-    <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
-      <div className="px-4 py-2.5 flex items-center justify-between" style={{ borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+    <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
+      <div className="px-4 py-2.5 flex items-center justify-between" style={{ borderBottom: "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)" }}>
         <p className="text-xs font-semibold" style={{ color: "var(--text-primary)" }}>By target date</p>
         <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>Timeline — early preview</span>
       </div>
@@ -366,7 +366,7 @@ function ProjectTimeline({ projects, stageMap, onOpen }: {
         const stage = stageMap.get(p.stage ?? "");
         return (
           <button key={p.id} onClick={() => onOpen(p.id)} className="w-full grid items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-[var(--bg-surface-2)]"
-            style={{ gridTemplateColumns: "108px 1.6fr 2.4fr 60px", borderTop: i === 0 ? "none" : "1px solid var(--border-subtle)" }}>
+            style={{ gridTemplateColumns: "108px 1.6fr 2.4fr 60px", borderTop: i === 0 ? "none" : "1px solid var(--border)" }}>
             <span className="text-xs font-medium" style={{ color: p.targetDate ? "var(--text-secondary)" : "var(--text-muted)" }}>{p.targetDate ?? "No date"}</span>
             <div className="min-w-0">
               <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{p.name}</p>
@@ -390,7 +390,7 @@ function ProjectKanban({ stages, projects, onMove }: {
 }) {
   const [dropStage, setDropStage] = useState<string | null>(null);
   if (stages.length === 0) {
-    return <div className="rounded-xl p-10 text-center" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>
+    return <div className="rounded-xl p-10 text-center" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
       <p className="text-sm" style={{ color: "var(--text-muted)" }}>No active project stages. Add them in Settings → Projects → Stages.</p>
     </div>;
   }
@@ -423,7 +423,7 @@ function ProjectKanban({ stages, projects, onMove }: {
               onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setDropStage(null); }}
               onDrop={e => { e.preventDefault(); setDropStage(null); const id = e.dataTransfer.getData("text/plain"); if (id) onMove(id, stage.key); }}>
               {/* Flat stage header: colored dot · name · count · value */}
-              <div className="flex items-center gap-2 mb-3 pb-2 px-1 pt-1 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+              <div className="flex items-center gap-2 mb-3 pb-2 px-1 pt-1 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
                 <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: stage.color }} />
                 <p className="text-sm font-semibold truncate" style={{ color: "var(--text-primary)" }}>{stage.name}</p>
                 <span className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>{cards.length}</span>
@@ -451,7 +451,7 @@ function ProjectCard({ project }: { project: Project }) {
       draggable
       onDragStart={e => { e.dataTransfer.setData("text/plain", project.id); e.dataTransfer.effectAllowed = "move"; }}
       className="block rounded-xl p-3 mb-2 transition-all hover:shadow-md cursor-grab active:cursor-grabbing"
-      style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)", textDecoration: "none" }}>
+      style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)", textDecoration: "none" }}>
 
       {/* Customer + progress */}
       <div className="flex items-start justify-between gap-2 mb-1.5">
@@ -482,7 +482,7 @@ function ProjectCard({ project }: { project: Project }) {
       </div>
 
       {/* Assigned + target date */}
-      <div className="flex items-center justify-between pt-2" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+      <div className="flex items-center justify-between pt-2" style={{ borderTop: "1px solid var(--border)" }}>
         <div className="flex items-center gap-1.5 min-w-0">
           <div className="w-5 h-5 rounded-full bg-indigo-600 flex items-center justify-center text-[8px] font-bold text-white shrink-0" title={project.assignedTo}>
             {project.assignedToInitials || "—"}
@@ -569,10 +569,10 @@ function ProjectCalendar({ stages, projects, focus }: { stages: ProjectStage[]; 
 
   return (
     <div>
-      <div className="rounded-xl overflow-hidden" style={{ border: "1px solid var(--border-subtle)" }}>
+      <div className="rounded-xl overflow-hidden" style={{ border: "1px solid var(--border)" }}>
         <div className="grid grid-cols-7">
           {weekdays.map(w => (
-            <div key={w} className="px-2 py-2 text-[11px] font-semibold text-center" style={{ color: "var(--text-muted)", backgroundColor: "var(--bg-surface-2)", borderBottom: "1px solid var(--border-subtle)" }}>{w}</div>
+            <div key={w} className="px-2 py-2 text-[11px] font-semibold text-center" style={{ color: "var(--text-muted)", backgroundColor: "var(--bg-surface-2)", borderBottom: "1px solid var(--border)" }}>{w}</div>
           ))}
         </div>
 
@@ -585,12 +585,12 @@ function ProjectCalendar({ stages, projects, focus }: { stages: ProjectStage[]; 
           const laneRows = hidden > 0 ? MAX_LANES : maxVisLane;
           const minH     = Math.max(108, TOP + Math.max(1, laneRows) * LANE_H + (hidden ? 18 : 8));
           return (
-            <div key={w} className="relative grid grid-cols-7" style={{ minHeight: minH, borderBottom: w < 5 ? "1px solid var(--border-subtle)" : undefined }}>
+            <div key={w} className="relative grid grid-cols-7" style={{ minHeight: minH, borderBottom: w < 5 ? "1px solid var(--border)" : undefined }}>
               {weekDays.map((day, ci) => {
                 const inMonth = day.getMonth() === focus.getMonth();
                 const isToday = sameDay(day, today);
                 return (
-                  <div key={ci} className="px-2 pt-1.5" style={{ backgroundColor: inMonth ? "var(--bg-surface)" : "var(--bg-page)", borderRight: ci !== 6 ? "1px solid var(--border-subtle)" : undefined }}>
+                  <div key={ci} className="px-2 pt-1.5" style={{ backgroundColor: inMonth ? "var(--bg-surface)" : "var(--bg-page)", borderRight: ci !== 6 ? "1px solid var(--border)" : undefined }}>
                     <span className="text-[11px]"
                       style={{ color: isToday ? "#4f46e5" : inMonth ? "var(--text-secondary)" : "var(--text-muted)", fontWeight: isToday ? 700 : 500 }}
                       title={isToday ? "Today" : undefined}>{day.getDate()}</span>
@@ -649,7 +649,7 @@ function ProjectCalendar({ stages, projects, focus }: { stages: ProjectStage[]; 
           <>
             <div className="fixed inset-0 z-40" onClick={() => setPop(null)} />
             <div className="fixed z-50 rounded-xl overflow-hidden" style={{ left, top, width: 288, backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "0 12px 32px rgba(0,0,0,0.2)" }}>
-              <div className="flex items-center justify-between px-3 py-2" style={{ borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+              <div className="flex items-center justify-between px-3 py-2" style={{ borderBottom: "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)" }}>
                 <p className="text-xs font-semibold" style={{ color: "var(--text-primary)" }}>Week of {fmtMD(ws)} – {fmtMD(we)} · {list.length}</p>
                 <button onClick={() => setPop(null)} className="text-sm leading-none px-1" style={{ color: "var(--text-muted)" }}>✕</button>
               </div>
@@ -749,7 +749,7 @@ function ProjectsOverview({ projects, stages }: {
             </div>
           ))}
         </div>
-        <div className="mt-3 pt-3" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+        <div className="mt-3 pt-3" style={{ borderTop: "1px solid var(--border)" }}>
           <div className="flex items-center justify-between text-xs mb-1.5">
             <span style={{ color: "var(--text-muted)" }}>Avg. completion</span>
             <span className="font-semibold" style={{ color: "var(--text-primary)" }}>{avgProgress}%</span>
@@ -780,7 +780,7 @@ function ProjectsOverview({ projects, stages }: {
       <OvPanel title="By type">
         <div className="flex flex-wrap gap-2">
           {byType.map(([label, n]) => (
-            <div key={label} className="flex items-center gap-2 px-3 py-1.5 rounded-lg" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border-subtle)" }}>
+            <div key={label} className="flex items-center gap-2 px-3 py-1.5 rounded-lg" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}>
               <span className="text-xs" style={{ color: "var(--text-secondary)" }}>{label}</span>
               <span className="text-xs font-semibold" style={{ color: "var(--text-primary)" }}>{n}</span>
             </div>

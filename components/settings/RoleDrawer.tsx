@@ -47,7 +47,7 @@ export default function RoleDrawer({ role, canManage, onClose, onSaved, onEditFu
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
       <div className="relative w-full max-w-[520px] h-full flex flex-col" style={{ backgroundColor: "var(--bg-surface)", borderLeft: "1px solid var(--border)", boxShadow: "-16px 0 48px -12px rgba(0,0,0,0.3)" }}>
         {/* Header */}
-        <div className="px-5 py-4 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+        <div className="px-5 py-4 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-start gap-2.5 min-w-0">
               <span className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: "#e0e7ff" }}>
@@ -117,7 +117,7 @@ export default function RoleDrawer({ role, canManage, onClose, onSaved, onEditFu
                   <p className="text-sm" style={{ color: "var(--text-muted)" }}>No users are assigned this role yet.</p>
                 </div>
               ) : assigned.map((u) => (
-                <div key={u.id} className="flex items-center gap-2.5 px-3 py-2 rounded-lg" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border-subtle)" }}>
+                <div key={u.id} className="flex items-center gap-2.5 px-3 py-2 rounded-lg" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}>
                   <span className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-semibold shrink-0" style={{ backgroundColor: "#e0e7ff", color: "#4f46e5" }}>{u.initials}</span>
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{u.fullName}</p>
@@ -135,7 +135,7 @@ export default function RoleDrawer({ role, canManage, onClose, onSaved, onEditFu
 
         {/* Footer */}
         {editable && tab !== "overview" && tab !== "users" && (
-          <div className="px-5 py-3 flex items-center justify-end gap-2 shrink-0" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+          <div className="px-5 py-3 flex items-center justify-end gap-2 shrink-0" style={{ borderTop: "1px solid var(--border)" }}>
             <button onClick={() => setDraft(JSON.parse(JSON.stringify(role)))} disabled={!dirty}
               className="text-sm font-medium px-3 py-2 rounded-lg disabled:opacity-40" style={{ color: "var(--text-secondary)" }}>Discard</button>
             <button onClick={save} disabled={!dirty}
@@ -153,7 +153,7 @@ function Editable({ editable, children }: { editable: boolean; children: React.R
 
 function OvRow({ label, value, children }: { label: string; value?: string; children?: React.ReactNode }) {
   return (
-    <div className="flex items-start justify-between gap-4 py-2" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+    <div className="flex items-start justify-between gap-4 py-2" style={{ borderBottom: "1px solid var(--border)" }}>
       <span className="text-sm shrink-0" style={{ color: "var(--text-muted)" }}>{label}</span>
       <div className="text-right min-w-0">
         {children ?? <span className="text-sm" style={{ color: value ? "var(--text-primary)" : "var(--text-muted)" }}>{value || "—"}</span>}

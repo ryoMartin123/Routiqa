@@ -87,7 +87,7 @@ export default function AnalyticsBuilder({ initial, onSaved }: { initial: Report
                 {cfg.filters.map((f, i) => {
                   const def = FILTER_DEFS[f.field];
                   return (
-                    <div key={f.id} className="flex items-center gap-2 rounded-xl pl-3 pr-1.5 py-2" style={{ border: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface)" }}>
+                    <div key={f.id} className="flex items-center gap-2 rounded-xl pl-3 pr-1.5 py-2" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface)" }}>
                       <span className="text-[11px] font-semibold shrink-0" style={{ color: "var(--text-muted)" }}>{i === 0 ? "Where" : "and"}</span>
                       <span className="text-sm shrink-0" style={{ color: "var(--text-secondary)" }}>{def?.label ?? f.field}</span>
                       <span className="text-xs shrink-0" style={{ color: "var(--text-muted)" }}>is</span>
@@ -128,8 +128,8 @@ export default function AnalyticsBuilder({ initial, onSaved }: { initial: Report
 
         {/* ── Sticky live panel ── */}
         <aside className="lg:sticky lg:top-4">
-          <div className="rounded-2xl overflow-hidden" style={{ border: `1px solid ${ACCENT}33`, backgroundColor: "var(--bg-surface)", boxShadow: "var(--shadow-glow)" }}>
-            <div className="px-5 py-3 flex items-center gap-2" style={{ borderBottom: "1px solid var(--border-subtle)", backgroundColor: ACCENT + "0d" }}>
+          <div className="rounded-2xl overflow-hidden" style={{ border: `1px solid ${ACCENT}33`, backgroundColor: "var(--bg-surface)", boxShadow: "var(--shadow-card)" }}>
+            <div className="px-5 py-3 flex items-center gap-2" style={{ borderBottom: "1px solid var(--border)", backgroundColor: ACCENT + "0d" }}>
               <Sparkles className="w-4 h-4" style={{ color: ACCENT }} />
               <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Live preview</span>
               <span className="ml-auto text-[11px] px-1.5 py-0.5 rounded font-medium" style={{ backgroundColor: "var(--bg-surface-2)", color: "var(--text-muted)" }}>{viz.label}</span>
@@ -154,7 +154,7 @@ export default function AnalyticsBuilder({ initial, onSaved }: { initial: Report
               </div>
             )}
 
-            <div className="px-5 py-3" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+            <div className="px-5 py-3" style={{ borderTop: "1px solid var(--border)" }}>
               <p className="text-[10px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-muted)" }}>Checklist</p>
               <div className="space-y-1.5">
                 {checklist.map((c, i) => (
@@ -168,13 +168,13 @@ export default function AnalyticsBuilder({ initial, onSaved }: { initial: Report
               </div>
             </div>
 
-            <div className="px-5 py-3 grid grid-cols-3 gap-2 text-center" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+            <div className="px-5 py-3 grid grid-cols-3 gap-2 text-center" style={{ borderTop: "1px solid var(--border)" }}>
               <Mini label="Group by" value={GROUPINGS[cfg.groupBy].label.split(" ")[0]} />
               <Mini label="Filters" value={String(cfg.filters.length)} />
               <Mini label="Range" value={dateLabel} />
             </div>
 
-            <div className="px-5 py-4" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+            <div className="px-5 py-4" style={{ borderTop: "1px solid var(--border)" }}>
               <button onClick={save} disabled={!canSave} className="w-full min-h-[44px] rounded-xl flex items-center justify-center gap-2 text-sm font-semibold transition-opacity"
                 style={{ backgroundColor: ACCENT, color: "#fff", opacity: canSave ? 1 : 0.45 }}>
                 {saved ? <><Check className="w-4 h-4" /> Saved</> : <><Save className="w-4 h-4" /> Save widget</>}
@@ -202,7 +202,7 @@ function RailStep({ eyebrow, title, desc, icon: Icon, optional, last, children }
       <div className={`flex-1 min-w-0 ${last ? "pb-1" : "pb-8"}`}>
         <div className="flex items-center gap-2">
           <span className="text-[10px] font-bold uppercase tracking-[0.14em]" style={{ color: ACCENT }}>{eyebrow}</span>
-          {optional && <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-md" style={{ backgroundColor: "var(--bg-surface-2)", color: "var(--text-muted)", border: "1px solid var(--border-subtle)" }}>Optional</span>}
+          {optional && <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-md" style={{ backgroundColor: "var(--bg-surface-2)", color: "var(--text-muted)", border: "1px solid var(--border)" }}>Optional</span>}
         </div>
         <h3 className="text-[15px] font-semibold mt-0.5" style={{ color: "var(--text-primary)" }}>{title}</h3>
         {desc && <p className="text-xs mt-0.5 mb-3" style={{ color: "var(--text-muted)" }}>{desc}</p>}

@@ -50,7 +50,7 @@ export default function SharedBoards() {
         <div className="flex-1 min-h-0 overflow-x-auto thin-scroll-x">
           <div className="flex gap-4 h-full pb-2" style={{ minWidth: "min-content" }}>
             {board.columns.map((col, ci) => (
-              <div key={col.id} className="w-72 shrink-0 flex flex-col rounded-2xl" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border-subtle)" }}>
+              <div key={col.id} className="w-72 shrink-0 flex flex-col rounded-2xl" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}>
                 <div className="flex items-center justify-between px-3.5 py-2.5 shrink-0">
                   <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{col.title}</span>
                   <span className="text-xs font-medium tabular-nums" style={{ color: "var(--text-muted)" }}>{col.cards.length}</span>
@@ -77,7 +77,7 @@ export default function SharedBoards() {
 function Card({ card, canLeft, canRight, onMove, onDelete }: { card: BoardCard; canLeft: boolean; canRight: boolean; onMove: (dir: number) => void; onDelete: () => void }) {
   const labelColor = card.label ? LABELS[card.label] ?? "var(--text-muted)" : undefined;
   return (
-    <div className="group rounded-xl p-3" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+    <div className="group rounded-xl p-3" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
       {card.label && <span className="inline-block text-[10px] font-semibold px-1.5 py-0.5 rounded mb-1.5" style={{ backgroundColor: labelColor + "1a", color: labelColor }}>{card.label}</span>}
       <p className="text-sm leading-snug" style={{ color: "var(--text-primary)" }}>{card.title}</p>
       <div className="flex items-center justify-between mt-2">
@@ -125,7 +125,7 @@ function AddColumn({ onAdd }: { onAdd: (title: string) => void }) {
   return (
     <div className="w-72 shrink-0">
       {open ? (
-        <div className="rounded-2xl p-2.5" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border-subtle)" }}>
+        <div className="rounded-2xl p-2.5" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}>
           <input autoFocus value={val} onChange={e => setVal(e.target.value)} onKeyDown={e => { if (e.key === "Enter") submit(); if (e.key === "Escape") setOpen(false); }}
             placeholder="Column title…" className="w-full rounded-lg px-2.5 py-2 text-sm outline-none" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface)", color: "var(--text-primary)" }} />
           <div className="flex gap-2 mt-1.5">

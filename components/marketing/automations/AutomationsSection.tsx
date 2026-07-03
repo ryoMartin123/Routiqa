@@ -237,9 +237,9 @@ export default function AutomationsSection() {
           {visible.length === 0 ? (
             <p className="text-sm text-center py-12" style={{ color: "var(--text-muted)" }}>No automations match this filter.</p>
           ) : (
-            <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+            <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
               <div className="hidden md:grid px-5 py-2.5 text-[10px] font-semibold uppercase tracking-wider"
-                style={{ gridTemplateColumns: LIST_COLS, color: "var(--text-muted)", borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+                style={{ gridTemplateColumns: LIST_COLS, color: "var(--text-muted)", borderBottom: "1px solid var(--border)", backgroundColor: "transparent" }}>
                 <span>Automation</span><span>When</span><span>Then</span><span className="text-right">Contacts</span><span>Last run</span><span>Performance</span><span></span>
               </div>
               {visible.map((a, i) => <AutomationListRow key={a.id} a={a} last={i === visible.length - 1} {...rowProps(a)} />)}
@@ -319,7 +319,7 @@ function AutomationCard({ a, onOpen, showStatusOnHover }: { a: MarketingAutomati
       <p className="text-xs mt-2 line-clamp-1" style={{ color: "var(--text-secondary)" }}>{summarize(a)}</p>
       {/* Category + channel — same rectangular badges as the CRM job cards
           (status-style colored chip + muted type chip). */}
-      <div className="flex items-center gap-1.5 mt-3 pt-3" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+      <div className="flex items-center gap-1.5 mt-3 pt-3" style={{ borderTop: "1px solid var(--border)" }}>
         <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded inline-flex items-center gap-1 shrink-0" style={{ backgroundColor: cat.color + "22", color: cat.color }}>
           <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: cat.color }} />{cat.label}
         </span>
@@ -339,7 +339,7 @@ function AutomationListRow({ a, last, ...actions }: { a: MarketingAutomation; la
   const attn = automationWarnings(a).length > 0;
   return (
     <div className="md:grid flex flex-col gap-2 px-5 py-3.5 items-center cursor-pointer transition-colors hover:bg-[var(--bg-surface-2)]"
-      style={{ gridTemplateColumns: LIST_COLS, borderBottom: last ? "none" : "1px solid var(--border-subtle)" }}
+      style={{ gridTemplateColumns: LIST_COLS, borderBottom: last ? "none" : "1px solid var(--border)" }}
       onClick={actions.onEdit}>
       <div className="min-w-0 w-full pr-2">
         <div className="flex items-center gap-2">
@@ -461,7 +461,7 @@ function OverviewDashboard({ items, kpi }: { items: MarketingAutomation[]; kpi: 
 
 function StatTile({ icon: Icon, label, value, sub, color }: { icon: LucideIcon; label: string; value: string; sub: string; color: string }) {
   return (
-    <div className="rounded-xl p-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+    <div className="rounded-xl p-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
       <div className="flex items-center gap-2">
         <span className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: color + "1a" }}>
           <Icon className="w-4 h-4" style={{ color }} />
@@ -476,7 +476,7 @@ function StatTile({ icon: Icon, label, value, sub, color }: { icon: LucideIcon; 
 
 function DashCard({ title, subtitle, icon: Icon, children }: { title: string; subtitle?: string; icon: LucideIcon; children: React.ReactNode }) {
   return (
-    <div className="rounded-xl p-5" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+    <div className="rounded-xl p-5" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
       <div className="flex items-center gap-2 mb-4">
         <Icon className="w-4 h-4" style={{ color: ACCENT }} />
         <h2 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{title}</h2>

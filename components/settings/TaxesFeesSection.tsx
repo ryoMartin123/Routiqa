@@ -47,7 +47,7 @@ export default function TaxesFeesSection() {
               return (
                 <button key={t} onClick={() => toggleType(t)}
                   className="px-2.5 py-1 rounded-full text-xs font-medium transition-colors"
-                  style={on ? { backgroundColor: "#e0e7ff", color: "#3730a3", border: "1px solid #c7d2fe" } : { backgroundColor: "var(--bg-surface-2)", color: "var(--text-muted)", border: "1px solid var(--border-subtle)" }}>
+                  style={on ? { backgroundColor: "#e0e7ff", color: "#3730a3", border: "1px solid #c7d2fe" } : { backgroundColor: "var(--bg-surface-2)", color: "var(--text-muted)", border: "1px solid var(--border)" }}>
                   {ITEM_TYPE_CONFIG[t].label}
                 </button>
               );

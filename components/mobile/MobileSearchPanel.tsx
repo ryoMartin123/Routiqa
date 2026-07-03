@@ -58,7 +58,7 @@ export default function MobileSearchPanel({ open, onClose, inputRef: externalRef
                   {results.map((r, i) => {
                     const meta = SEARCH_TYPE_META[r.type]; const Icon = ICON[r.type];
                     return (
-                      <button key={`${r.type}-${r.id}`} onClick={() => go(r.href)} className="w-full flex items-center gap-3 px-4 py-2.5 text-left active:bg-[var(--bg-surface-2)]" style={{ borderTop: i ? "1px solid var(--border-subtle)" : "none" }}>
+                      <button key={`${r.type}-${r.id}`} onClick={() => go(r.href)} className="w-full flex items-center gap-3 px-4 py-2.5 text-left active:bg-[var(--bg-surface-2)]" style={{ borderTop: i ? "1px solid var(--border)" : "none" }}>
                         <span className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: meta.color + "1a" }}><Icon className="w-4 h-4" style={{ color: meta.color }} /></span>
                         <div className="min-w-0 flex-1">
                           <p className="text-sm font-semibold truncate" style={{ color: "var(--text-primary)" }}>{r.title}</p>

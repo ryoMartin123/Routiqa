@@ -28,7 +28,7 @@ export default function OpenWorkOrders() {
     <div className="rounded-xl overflow-hidden h-full min-h-0 flex flex-col"
       style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
       <div className="flex items-center justify-between px-4 py-3 shrink-0"
-        style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+        style={{ borderBottom: "1px solid var(--border)" }}>
         <div className="flex items-center gap-2">
           <ClipboardList className="w-4 h-4" style={{ color: "#4f46e5" }} />
           <h2 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Open Work Orders</h2>
@@ -56,7 +56,7 @@ export default function OpenWorkOrders() {
             return (
               <Link key={wo.id} href={`/jobs/${wo.jobId}`}
                 className="flex items-center gap-3 px-4 py-3 hover:bg-[var(--bg-surface-2)] transition-colors"
-                style={{ borderBottom: i < openWOs.length - 1 ? "1px solid var(--border-subtle)" : "none", textDecoration: "none" }}>
+                style={{ borderBottom: i < openWOs.length - 1 ? "1px solid var(--border)" : "none", textDecoration: "none" }}>
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-medium truncate" style={{ color: "var(--text-primary)" }}>{wo.title}</p>
                   <p className="text-[10px] truncate" style={{ color: "var(--text-muted)" }}>

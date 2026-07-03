@@ -11,7 +11,7 @@ export default function Loading() {
     <Delayed>
       <div className="flex flex-col h-full">
         {/* Sticky header */}
-        <div style={{ backgroundColor: "var(--bg-surface)", borderBottom: "1px solid var(--border-subtle)" }}>
+        <div style={{ backgroundColor: "var(--bg-surface)", borderBottom: "1px solid var(--border)" }}>
           {/* Top row */}
           <div className="flex items-center justify-between px-6 py-4">
             <div className="flex items-center gap-4 min-w-0">
@@ -42,7 +42,7 @@ export default function Loading() {
             {/* 5 stat cards */}
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2.5 shrink-0">
               {Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="rounded-xl px-3 py-2.5" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+                <div key={i} className="rounded-xl px-3 py-2.5" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
                   <div className="flex items-center gap-1.5 mb-2">
                     <Skeleton className="w-3 h-3 rounded" />
                     <Skeleton className="h-2.5 w-16 rounded" />

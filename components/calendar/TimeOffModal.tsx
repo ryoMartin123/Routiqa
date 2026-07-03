@@ -51,7 +51,7 @@ export default function TimeOffModal({ technicians, defaultDate, onClose, onSave
       <div className="w-full max-w-md rounded-2xl overflow-hidden" onClick={e => e.stopPropagation()}
         style={{ backgroundColor: "var(--bg-surface)", boxShadow: "0 16px 48px rgba(0,0,0,0.24)" }}>
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+        <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: "1px solid var(--border)" }}>
           <div className="flex items-center gap-2">
             <CalendarClock className="w-4 h-4" style={{ color: "#4f46e5" }} />
             <p className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>Add Time Off</p>
@@ -109,7 +109,7 @@ export default function TimeOffModal({ technicians, defaultDate, onClose, onSave
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 flex justify-end gap-2" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+        <div className="px-6 py-4 flex justify-end gap-2" style={{ borderTop: "1px solid var(--border)" }}>
           <button onClick={onClose} className="px-3 py-2 rounded-lg text-sm" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>Cancel</button>
           <button onClick={save} disabled={!canSave}
             className="px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-40" style={{ backgroundColor: "#4f46e5" }}>

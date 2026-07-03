@@ -38,13 +38,13 @@ export default function MobileMapPage() {
   return (
     <div>
       <MobileHeader title="My Route" subtitle={`${myJobs.length} stop${myJobs.length === 1 ? "" : "s"} today`} />
-      <div className="relative mx-4 rounded-2xl overflow-hidden" style={{ height: "calc(100dvh - 9rem)", minHeight: 380, border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+      <div className="relative mx-4 rounded-2xl overflow-hidden" style={{ height: "calc(100dvh - 9rem)", minHeight: 380, border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
         <GoogleMapView jobs={myJobs} techs={myTech ? [myTech] : []} route={route} selectedJobId={selId}
           onSelectJob={setSelId} flyTo={sel ? { lat: sel.lat, lng: sel.lng } : (myTech?.current ?? null)} showTechs cluster={false} />
 
         {/* Selected job → bottom sheet card */}
         {sel && (
-          <div className="absolute left-3 right-3 bottom-3 rounded-2xl p-3.5" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "0 12px 32px rgba(0,0,0,0.22)" }}>
+          <div className="absolute left-3 right-3 bottom-3 rounded-2xl p-3.5" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "0 12px 32px rgba(0,0,0,0.22)" }}>
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
                 <p className="text-base font-bold truncate" style={{ color: "var(--text-primary)" }}>{sel.customerName}</p>

@@ -25,7 +25,7 @@ export function JobHistoryList({ job }: { job: Job }) {
 
   if (events.length === 0) {
     return (
-      <div className="rounded-xl py-12 text-center" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>
+      <div className="rounded-xl py-12 text-center" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
         <p className="text-sm" style={{ color: "var(--text-muted)" }}>No status changes recorded yet.</p>
         <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>Every status update — by a tech, salesperson, or dispatcher — will be logged here.</p>
       </div>
@@ -35,7 +35,7 @@ export function JobHistoryList({ job }: { job: Job }) {
   return (
     <div className="max-w-2xl space-y-2">
       {events.map(e => (
-        <div key={e.id} className="rounded-xl p-3.5" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+        <div key={e.id} className="rounded-xl p-3.5" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
           <div className="flex items-center gap-2 flex-wrap">
             <StatusBadge label={labelOf(e.from)} color={colorOf(e.from)} />
             <ArrowRight className="w-3.5 h-3.5" style={{ color: "var(--text-muted)" }} />

@@ -50,10 +50,10 @@ export default function AgreementDocumentPreview({ data }: { data: AgreementDocD
   const otherTerms = data.terms.filter(t => t !== cancelTerm && t !== renewTerm);
 
   return (
-    <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>
+    <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
       {/* Header */}
       {has("header") && (
-        <div className="px-6 py-5" style={{ borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+        <div className="px-6 py-5" style={{ borderBottom: "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)" }}>
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>{data.title || "Service Agreement"}</p>

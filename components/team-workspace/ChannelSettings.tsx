@@ -47,7 +47,7 @@ export default function ChannelSettings() {
       <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-4">
         {/* Channel picker */}
         <div className="rounded-xl overflow-hidden h-fit" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
-          <p className="text-[10px] font-semibold uppercase tracking-widest px-3 py-2.5" style={{ color: "var(--text-muted)", borderBottom: "1px solid var(--border-subtle)" }}>Channels</p>
+          <p className="text-[10px] font-semibold uppercase tracking-widest px-3 py-2.5" style={{ color: "var(--text-muted)", borderBottom: "1px solid var(--border)" }}>Channels</p>
           <div className="p-1.5 max-h-[420px] overflow-y-auto thin-scroll-y">
             {channels.map(c => {
               const on = c.id === selected?.id;
@@ -68,7 +68,7 @@ export default function ChannelSettings() {
             <div className="p-10 text-center text-sm" style={{ color: "var(--text-muted)" }}>No channel selected.</div>
           ) : (
             <>
-              <div className="flex items-center gap-2.5 px-4 py-3" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+              <div className="flex items-center gap-2.5 px-4 py-3" style={{ borderBottom: "1px solid var(--border)" }}>
                 <span className="w-7 h-7 rounded-md flex items-center justify-center shrink-0 text-[11px] font-bold text-white" style={{ backgroundColor: selected.accent }}>{selected.name.replace(/[^a-zA-Z]/g, "").slice(0, 2).toUpperCase() || "CH"}</span>
                 <div className="min-w-0">
                   <p className="text-sm font-semibold truncate" style={{ color: "var(--text-primary)" }}>{selected.name}</p>
@@ -80,7 +80,7 @@ export default function ChannelSettings() {
                 {members.length === 0 ? (
                   <p className="px-4 py-8 text-center text-sm" style={{ color: "var(--text-muted)" }}>No members yet — add one below.</p>
                 ) : members.map(m => (
-                  <div key={m.name} className="flex items-center gap-3 px-4 py-2.5" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+                  <div key={m.name} className="flex items-center gap-3 px-4 py-2.5" style={{ borderTop: "1px solid var(--border)" }}>
                     <span className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0" style={{ backgroundColor: "#6b7280" }}>{initials(m.name)}</span>
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{m.name}</p>
@@ -93,7 +93,7 @@ export default function ChannelSettings() {
               </div>
 
               {/* Add member */}
-              <div className="flex items-center gap-2 px-4 py-3" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+              <div className="flex items-center gap-2 px-4 py-3" style={{ borderTop: "1px solid var(--border)" }}>
                 <input value={newName} onChange={e => setNewName(e.target.value)} onKeyDown={e => { if (e.key === "Enter") add(); }} placeholder="Add a member by name…" className="flex-1 rounded-lg px-3 py-2 text-sm outline-none" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)", color: "var(--text-primary)" }} />
                 <div className="w-36 shrink-0"><UiSelect size="sm" value={newRole} onChange={v => setNewRole(v as ChannelRole)} options={ROLE_OPTIONS} /></div>
                 <button onClick={add} disabled={!newName.trim()} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-40 shrink-0" style={{ backgroundColor: ACCENT }}><Plus className="w-3.5 h-3.5" /> Add</button>

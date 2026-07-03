@@ -82,7 +82,7 @@ export default function ProjectMap({ projectId, onOpenTab }: { projectId: string
   return (
     <div className="space-y-4">
       {/* Workflow header — a segmented bar (each step colored by status) + next step. */}
-      <div className="rounded-xl px-4 py-3.5 space-y-3" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>
+      <div className="rounded-xl px-4 py-3.5 space-y-3" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
         <div className="flex items-center gap-1">
           {allNodes.map(n => {
             const dim = n.status === "not_started";
@@ -143,7 +143,7 @@ function NodeCard({ node, deps, onClick }: { node: ProjectMapNode; deps: Project
   const canCreate = node.createable && !node.linkedLabel && node.status === "ready";
   return (
     <button onClick={onClick} className="w-full text-left rounded-lg overflow-hidden transition-all hover:-translate-y-0.5"
-      style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)", opacity: done ? 0.72 : 1 }}>
+      style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)", opacity: done ? 0.72 : 1 }}>
       <div style={{ height: 3, backgroundColor: sm.color }} />
       <div className="p-2.5">
         <div className="flex items-center justify-between gap-1 mb-1">
@@ -204,7 +204,7 @@ function NodeDetail({ node, allNodes, byId, onBack, onSelectNode, onOpenTab, onC
       {/* Back + header */}
       <button onClick={onBack} className="flex items-center gap-1.5 text-sm font-medium" style={{ color: "var(--text-secondary)" }}><ArrowLeft className="w-4 h-4" /> Project Map</button>
 
-      <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+      <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
         <div style={{ height: 4, backgroundColor: sm.color }} />
         <div className="p-5">
           <div className="flex items-start justify-between gap-3 flex-wrap">
@@ -239,7 +239,7 @@ function NodeDetail({ node, allNodes, byId, onBack, onSelectNode, onOpenTab, onC
               </div>
             )}
             <div className="mt-4">{primary}</div>
-            {node.notes && <p className="text-[11px] mt-3 pt-3" style={{ borderTop: "1px solid var(--border-subtle)", color: "var(--text-muted)" }}>{node.notes}</p>}
+            {node.notes && <p className="text-[11px] mt-3 pt-3" style={{ borderTop: "1px solid var(--border)", color: "var(--text-muted)" }}>{node.notes}</p>}
           </Card>
 
           <Card title="Before this can start" icon={GitBranch}>
@@ -252,7 +252,7 @@ function NodeDetail({ node, allNodes, byId, onBack, onSelectNode, onOpenTab, onC
                   const dDone = d.status === "completed";
                   const dTab = d.mirror ? SOURCE_TAB[d.mirror] : undefined;
                   return (
-                    <div key={d.id} className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg" style={{ border: "1px solid var(--border-subtle)", backgroundColor: dDone ? "transparent" : "var(--bg-surface-2)" }}>
+                    <div key={d.id} className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg" style={{ border: "1px solid var(--border)", backgroundColor: dDone ? "transparent" : "var(--bg-surface-2)" }}>
                       {dDone ? <Check className="w-4 h-4 shrink-0" style={{ color: "#10b981" }} /> : <Circle className="w-4 h-4 shrink-0" style={{ color: dm.color }} />}
                       <button onClick={() => onSelectNode(d.id)} className="text-sm font-medium text-left hover:underline flex-1 min-w-0 truncate" style={{ color: "var(--text-primary)" }}>{d.title}</button>
                       <span className="text-[11px] shrink-0" style={{ color: dm.color }}>{dm.label}</span>
@@ -312,8 +312,8 @@ function Meta({ icon: Icon, label, value }: { icon: typeof User; label: string; 
 }
 function Card({ title, icon: Icon, children }: { title: string; icon: typeof User; children: React.ReactNode }) {
   return (
-    <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
-      <div className="flex items-center gap-2 px-4 py-3" style={{ borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+    <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
+      <div className="flex items-center gap-2 px-4 py-3" style={{ borderBottom: "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)" }}>
         <Icon className="w-4 h-4" style={{ color: "var(--text-muted)" }} /><p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{title}</p>
       </div>
       <div className="p-4">{children}</div>
@@ -321,5 +321,5 @@ function Card({ title, icon: Icon, children }: { title: string; icon: typeof Use
   );
 }
 function SideLink({ icon: Icon, label, onClick }: { icon: typeof User; label: string; onClick: () => void }) {
-  return <button onClick={onClick} className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors hover:bg-[var(--bg-surface-2)]" style={{ border: "1px solid var(--border-subtle)", color: "var(--text-secondary)" }}><Icon className="w-3.5 h-3.5" style={{ color: ACCENT }} /> {label}</button>;
+  return <button onClick={onClick} className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors hover:bg-[var(--bg-surface-2)]" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}><Icon className="w-3.5 h-3.5" style={{ color: ACCENT }} /> {label}</button>;
 }

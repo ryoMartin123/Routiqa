@@ -153,7 +153,7 @@ export default function AccountSearchSelect({
           }}
         >
           {/* Search field */}
-          <div className="flex items-center gap-2 px-3 py-2.5" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+          <div className="flex items-center gap-2 px-3 py-2.5" style={{ borderBottom: "1px solid var(--border)" }}>
             <Search className="w-4 h-4 shrink-0" style={{ color: "var(--text-muted)" }} />
             <input
               ref={inputRef}

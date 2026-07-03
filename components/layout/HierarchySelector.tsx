@@ -33,7 +33,7 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <div style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+    <div style={{ borderBottom: "1px solid var(--border)" }}>
       <div
         className="flex items-center gap-1.5 px-4 py-2"
         style={{ backgroundColor: "var(--bg-surface-2)" }}
@@ -223,7 +223,7 @@ export default function HierarchySelector() {
           <div
             className="flex items-center gap-2.5 px-4 py-3"
             style={{
-              borderBottom: "1px solid var(--border-subtle)",
+              borderBottom: "1px solid var(--border)",
               backgroundColor: "var(--bg-surface-2)",
             }}
           >

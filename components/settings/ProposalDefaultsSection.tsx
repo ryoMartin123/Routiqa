@@ -39,7 +39,7 @@ function Labeled({ label, hint, children, full }: { label: string; hint?: string
 }
 function ToggleRow({ label, desc, on, onChange }: { label: string; desc: string; on: boolean; onChange: (v: boolean) => void }) {
   return (
-    <div className="flex items-center justify-between gap-4 py-3" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+    <div className="flex items-center justify-between gap-4 py-3" style={{ borderTop: "1px solid var(--border)" }}>
       <div><p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{label}</p><p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>{desc}</p></div>
       <Toggle on={on} onChange={onChange} />
     </div>
@@ -64,7 +64,7 @@ export default function ProposalDefaultsSection() {
 
   return (
     <div className="space-y-4">
-      <div className="rounded-xl p-3.5 flex items-start gap-2.5" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border-subtle)" }}>
+      <div className="rounded-xl p-3.5 flex items-start gap-2.5" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}>
         <Sliders className="w-4 h-4 shrink-0 mt-0.5" style={{ color: "var(--accent-text)" }} />
         <p className="text-xs leading-relaxed" style={{ color: "var(--text-secondary)" }}>
           Applied automatically when a new quote is created. Each quote type starts from its default Quote Design; reps can still override per quote.
@@ -72,7 +72,7 @@ export default function ProposalDefaultsSection() {
       </div>
 
       {/* Default designs by quote type */}
-      <div className="rounded-xl p-5" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+      <div className="rounded-xl p-5" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
         <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: "var(--text-muted)" }}>Default Quote Design by Type</p>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Labeled label="Quick Quote">
@@ -88,7 +88,7 @@ export default function ProposalDefaultsSection() {
       </div>
 
       {/* Document defaults */}
-      <div className="rounded-xl p-5" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+      <div className="rounded-xl p-5" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
         <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: "var(--text-muted)" }}>Document Defaults</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Labeled label="Default Expiration" hint="days"><input type="number" min={1} value={d.defaultExpirationDays} onChange={e => set("defaultExpirationDays", parseInt(e.target.value) || 0)} className="w-full rounded-lg px-3 py-2 text-sm outline-none" style={inputStyle} /></Labeled>
@@ -102,7 +102,7 @@ export default function ProposalDefaultsSection() {
       </div>
 
       {/* Pricing display */}
-      <div className="rounded-xl p-5" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+      <div className="rounded-xl p-5" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
         <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>Pricing &amp; Tax Display</p>
         <ToggleRow label="Show Tax Line" desc="Display tax as a separate line on customer-facing quotes." on={d.showTax} onChange={v => set("showTax", v)} />
         <ToggleRow label="Show Monthly Payment" desc="Show estimated monthly financed payment where available." on={d.showMonthlyPayment} onChange={v => set("showMonthlyPayment", v)} />

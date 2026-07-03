@@ -4,14 +4,14 @@ import { Delayed, Skeleton } from "@/components/ui/Skeleton";
 // agreement doesn't flash a mismatched layout: a header bar + tabs, then the
 // 6 summary cards and the details (2/3) + people/next-steps (1/3) grid that
 // fills the remaining height.
-const surface = { backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" } as const;
+const surface = { backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" } as const;
 
 export default function Loading() {
   return (
     <Delayed>
       <div className="flex flex-col h-full">
         {/* Header bar — back · title · actions, then sub-tabs */}
-        <div style={{ backgroundColor: "var(--bg-surface)", borderBottom: "1px solid var(--border-subtle)" }}>
+        <div style={{ backgroundColor: "var(--bg-surface)", borderBottom: "1px solid var(--border)" }}>
           <div className="flex items-center justify-between px-6 py-4">
             <div className="flex items-center gap-4 min-w-0">
               <Skeleton className="h-4 w-24 rounded" />

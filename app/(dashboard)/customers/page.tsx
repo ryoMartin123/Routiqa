@@ -164,7 +164,7 @@ export default function CustomersPage() {
         <div className="flex-1 flex justify-end gap-2">
           <button
             onClick={() => setModalOpen(true)}
-            className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-3 py-2 rounded-lg transition-colors"
+            className="btn-raised flex items-center gap-1.5 bg-indigo-600 text-white text-sm font-medium px-3.5 py-2 rounded-lg"
           >
             <Plus className="w-4 h-4" />
             New Customer
@@ -247,15 +247,15 @@ export default function CustomersPage() {
           </div>
         </div>
 
-        <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+        <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
         {/* Column headers */}
         <div
           className="grid px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider select-none"
           style={{
             gridTemplateColumns: "2fr 1fr 1fr 2.5fr 1fr 1fr",
             color: "var(--text-muted)",
-            borderBottom: "1px solid var(--border-subtle)",
-            backgroundColor: "var(--bg-surface-2)",
+            borderBottom: "1px solid var(--border)",
+            backgroundColor: "transparent",
           }}
         >
           {(
@@ -336,7 +336,7 @@ export default function CustomersPage() {
         {/* Footer */}
         <div
           className="flex items-center justify-between px-4 py-3 text-xs"
-          style={{ borderTop: "1px solid var(--border-subtle)", color: "var(--text-muted)", backgroundColor: "var(--bg-surface-2)" }}
+          style={{ borderTop: "1px solid var(--border)", color: "var(--text-muted)", backgroundColor: "transparent" }}
         >
           <span>Showing {displayed.length} of {contextFiltered.filter(tabFn).length} records</span>
           <div className="flex items-center gap-1">

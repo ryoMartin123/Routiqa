@@ -157,10 +157,10 @@ export default function InvoicesPage() {
         </div>
 
         {/* Table card */}
-        <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+        <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
         {/* Column headers */}
         <div className="grid px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider select-none"
-          style={{ gridTemplateColumns: "1fr 2fr 1.8fr 1.2fr 0.9fr 0.9fr 1fr", color: "var(--text-muted)", borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+          style={{ gridTemplateColumns: "1fr 2fr 1.8fr 1.2fr 0.9fr 0.9fr 1fr", color: "var(--text-muted)", borderBottom: "1px solid var(--border)", backgroundColor: "transparent" }}>
           {([
             { label: "Invoice #",    field: "invoiceNumber" },
             { label: "Title",        field: null            },
@@ -191,7 +191,7 @@ export default function InvoicesPage() {
             return (
               <Link key={inv.id} href={`/invoices/${inv.id}`}
                 className="grid px-4 py-3 items-center hover:bg-[var(--bg-surface-2)] transition-colors"
-                style={{ gridTemplateColumns: "1fr 2fr 1.8fr 1.2fr 0.9fr 0.9fr 1fr", borderBottom: i < displayed.length - 1 ? "1px solid var(--border-subtle)" : "none", textDecoration: "none" }}>
+                style={{ gridTemplateColumns: "1fr 2fr 1.8fr 1.2fr 0.9fr 0.9fr 1fr", borderBottom: i < displayed.length - 1 ? "1px solid var(--border)" : "none", textDecoration: "none" }}>
                 <span className="text-sm font-mono font-medium" style={{ color: "var(--text-primary)" }}>{inv.invoiceNumber}</span>
                 <div className="min-w-0">
                   <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{inv.title}</p>
@@ -221,7 +221,7 @@ export default function InvoicesPage() {
 
         {/* Footer */}
         <div className="flex items-center justify-between px-4 py-3 text-xs"
-          style={{ borderTop: "1px solid var(--border-subtle)", color: "var(--text-muted)", backgroundColor: "var(--bg-surface-2)" }}>
+          style={{ borderTop: "1px solid var(--border)", color: "var(--text-muted)", backgroundColor: "transparent" }}>
           <span>Showing {displayed.length} of {contextFiltered.length} invoices</span>
           <div className="flex gap-1">
             <button className="px-2 py-1 rounded" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>← Prev</button>

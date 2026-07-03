@@ -427,7 +427,7 @@ export default function PhotoGallery({ recordLevel, scope = {}, accountName, upl
 
       {/* ── Content ── */}
       {displayed.length === 0 ? (
-        <div className="rounded-xl py-16 text-center" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>
+        <div className="rounded-xl py-16 text-center" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
           <ImageIcon className="w-8 h-8 mx-auto mb-2 opacity-20" style={{ color: "var(--text-muted)" }} />
           <p className="text-sm" style={{ color: "var(--text-muted)" }}>No files match these filters.</p>
         </div>
@@ -485,7 +485,7 @@ function FileGrid({ files, catLabel, catColor, onOpen }: {
         const color = catColor(f.categoryKey);
         return (
           <button key={f.id} onClick={() => onOpen(f)} className="text-left rounded-xl overflow-hidden group transition-shadow hover:shadow-md"
-            style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+            style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
             <div className="aspect-[4/3] flex items-center justify-center relative"
               style={{ background: f.fileType === "image" ? `linear-gradient(135deg, ${color}22, ${color}44)` : "var(--bg-surface-2)" }}>
               <Icon className="w-8 h-8" style={{ color: f.fileType === "image" ? color : "var(--text-muted)" }} />
@@ -515,9 +515,9 @@ function FileList({ files, catLabel, catColor, onOpen, showAccount }: {
   files: PhotoFile[]; catLabel: (k: string) => string; catColor: (k: string) => string; onOpen: (f: PhotoFile) => void; showAccount: boolean;
 }) {
   return (
-    <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+    <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
       <div className="grid px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider"
-        style={{ gridTemplateColumns: showAccount ? "2.2fr 1.4fr 1.4fr 1fr 1fr" : "2.4fr 1.4fr 1fr 1fr", color: "var(--text-muted)", borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+        style={{ gridTemplateColumns: showAccount ? "2.2fr 1.4fr 1.4fr 1fr 1fr" : "2.4fr 1.4fr 1fr 1fr", color: "var(--text-muted)", borderBottom: "1px solid var(--border)", backgroundColor: "transparent" }}>
         <span>File</span>{showAccount && <span>Account</span>}<span>Linked To</span><span>Uploaded By</span><span>Date</span>
       </div>
       {files.map((f, i) => {
@@ -526,7 +526,7 @@ function FileList({ files, catLabel, catColor, onOpen, showAccount }: {
         return (
           <button key={f.id} onClick={() => onOpen(f)}
             className="w-full grid px-4 py-2.5 items-center text-left hover:bg-[var(--bg-surface-2)] transition-colors"
-            style={{ gridTemplateColumns: showAccount ? "2.2fr 1.4fr 1.4fr 1fr 1fr" : "2.4fr 1.4fr 1fr 1fr", borderBottom: i < files.length - 1 ? "1px solid var(--border-subtle)" : "none" }}>
+            style={{ gridTemplateColumns: showAccount ? "2.2fr 1.4fr 1.4fr 1fr 1fr" : "2.4fr 1.4fr 1fr 1fr", borderBottom: i < files.length - 1 ? "1px solid var(--border)" : "none" }}>
             <div className="flex items-center gap-2.5 min-w-0">
               <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: color + "22" }}>
                 <Icon className="w-3.5 h-3.5" style={{ color }} />
@@ -559,9 +559,9 @@ function FileDrawer({ file, catLabel, catColor, onClose }: {
     <>
       <div className="fixed inset-0 z-40 bg-black/40" onClick={onClose} />
       <div className="fixed inset-y-0 right-0 z-50 flex flex-col w-[440px] max-w-full"
-        style={{ backgroundColor: "var(--bg-surface)", borderLeft: "1px solid var(--border-subtle)", boxShadow: "-4px 0 24px rgba(0,0,0,0.18)" }}>
+        style={{ backgroundColor: "var(--bg-surface)", borderLeft: "1px solid var(--border)", boxShadow: "-4px 0 24px rgba(0,0,0,0.18)" }}>
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+        <div className="flex items-center justify-between px-5 py-4 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
           <p className="text-sm font-semibold truncate" style={{ color: "var(--text-primary)" }}>File Details</p>
           <button onClick={onClose} style={{ color: "var(--text-muted)" }}><X className="w-4 h-4" /></button>
         </div>
@@ -596,7 +596,7 @@ function FileDrawer({ file, catLabel, catColor, onClose }: {
             </div>
 
             {/* Meta */}
-            <div className="pt-3 space-y-1.5" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+            <div className="pt-3 space-y-1.5" style={{ borderTop: "1px solid var(--border)" }}>
               <div className="flex items-center justify-between"><span className="text-xs" style={{ color: "var(--text-muted)" }}>Uploaded by</span><span className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{file.uploadedBy}</span></div>
               <div className="flex items-center justify-between"><span className="text-xs" style={{ color: "var(--text-muted)" }}>Date</span><span className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{file.displayDate}</span></div>
               <div className="flex items-center justify-between"><span className="text-xs" style={{ color: "var(--text-muted)" }}>Location</span><span className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{LOCATION_NAME.get(file.locationId) ?? file.locationId}</span></div>
@@ -604,7 +604,7 @@ function FileDrawer({ file, catLabel, catColor, onClose }: {
 
             {/* Notes */}
             {file.notes && (
-              <div className="pt-3" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+              <div className="pt-3" style={{ borderTop: "1px solid var(--border)" }}>
                 <p className="text-[10px] font-semibold uppercase tracking-widest mb-1" style={{ color: "var(--text-muted)" }}>Notes</p>
                 <p className="text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>{file.notes}</p>
               </div>
@@ -612,7 +612,7 @@ function FileDrawer({ file, catLabel, catColor, onClose }: {
 
             {/* Tags */}
             {file.tags.length > 0 && (
-              <div className="pt-3" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+              <div className="pt-3" style={{ borderTop: "1px solid var(--border)" }}>
                 <p className="text-[10px] font-semibold uppercase tracking-widest mb-2" style={{ color: "var(--text-muted)" }}>Tags</p>
                 <div className="flex flex-wrap gap-1.5">
                   {file.tags.map(t => (
@@ -627,7 +627,7 @@ function FileDrawer({ file, catLabel, catColor, onClose }: {
         </div>
 
         {/* Actions */}
-        <div className="px-5 py-4 flex items-center gap-2 shrink-0" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+        <div className="px-5 py-4 flex items-center gap-2 shrink-0" style={{ borderTop: "1px solid var(--border)" }}>
           <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors"
             style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>
             <Pencil className="w-3.5 h-3.5" /> Edit
@@ -692,7 +692,7 @@ function UploadModal({ categories, onClose, onUpload }: {
     <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={onClose}>
       <div className="w-full max-w-md rounded-2xl overflow-hidden" onClick={e => e.stopPropagation()}
         style={{ backgroundColor: "var(--bg-surface)", boxShadow: "0 16px 48px rgba(0,0,0,0.24)" }}>
-        <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+        <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: "1px solid var(--border)" }}>
           <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Upload Files</p>
           <button onClick={onClose} style={{ color: "var(--text-muted)" }}><X className="w-4 h-4" /></button>
         </div>
@@ -722,7 +722,7 @@ function UploadModal({ categories, onClose, onUpload }: {
                 const Icon = FILE_ICON[ft];
                 return (
                   <div key={`${f.name}-${i}`} className="flex items-center gap-2.5 rounded-lg px-2.5 py-2"
-                    style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border-subtle)" }}>
+                    style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}>
                     <Icon className="w-4 h-4 shrink-0" style={{ color: ft === "image" ? "#4f46e5" : "var(--text-muted)" }} />
                     <div className="min-w-0 flex-1">
                       <p className="text-xs font-medium truncate" style={{ color: "var(--text-primary)" }}>{f.name}</p>
@@ -748,7 +748,7 @@ function UploadModal({ categories, onClose, onUpload }: {
               className="w-full rounded-lg px-3 py-2 text-sm outline-none" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface)", color: "var(--text-primary)" }} />
           </div>
         </div>
-        <div className="px-5 py-4 flex justify-end gap-2" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+        <div className="px-5 py-4 flex justify-end gap-2" style={{ borderTop: "1px solid var(--border)" }}>
           <button onClick={onClose} className="px-3 py-1.5 rounded-lg text-sm" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>Cancel</button>
           <button onClick={submit} disabled={!picked.length}
             className="px-4 py-1.5 rounded-lg text-sm font-medium text-white disabled:opacity-40" style={{ backgroundColor: "#4f46e5" }}>

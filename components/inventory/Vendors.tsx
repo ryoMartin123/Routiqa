@@ -134,10 +134,10 @@ export default function Vendors() {
       </div>
 
       {/* Table */}
-      <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+      <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
         <div className="overflow-x-auto thin-scroll-x">
           <div style={{ minWidth: 1080 }}>
-            <div className="grid px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider items-center" style={{ gridTemplateColumns: VEND_COLS, gap: "0.75rem", color: "var(--text-muted)", borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+            <div className="grid px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider items-center" style={{ gridTemplateColumns: VEND_COLS, gap: "0.75rem", color: "var(--text-muted)", borderBottom: "1px solid var(--border)", backgroundColor: "transparent" }}>
               <span>Vendor</span><span>Type</span><span>Primary Contact</span><span>Terms</span><span className="text-center">Open POs</span><span className="text-center">Preferred</span><span>Documents</span><span>Status</span><span className="text-right">Actions</span>
             </div>
             {filtered.length === 0 ? (
@@ -146,7 +146,7 @@ export default function Vendors() {
               const openPOs = openPosForVendor(v.id).length;
               return (
                 <div key={v.id} onClick={() => setOpenId(v.id)} className="grid px-4 py-3 items-center cursor-pointer transition-colors hover:bg-[var(--bg-surface-2)]"
-                  style={{ gridTemplateColumns: VEND_COLS, gap: "0.75rem", borderBottom: i < filtered.length - 1 ? "1px solid var(--border-subtle)" : "none" }}>
+                  style={{ gridTemplateColumns: VEND_COLS, gap: "0.75rem", borderBottom: i < filtered.length - 1 ? "1px solid var(--border)" : "none" }}>
                   <div className="min-w-0 flex items-center gap-2">
                     <span className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: ACCENT + "1f" }}><Building2 className="w-4 h-4" style={{ color: ACCENT }} /></span>
                     <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{v.name}</p>
@@ -227,7 +227,7 @@ function VendorDrawer({ vendor, onClose, onEdit }: { vendor: Vendor; onClose: ()
           pos.length === 0 ? <Empty text="No purchase orders for this vendor yet." /> : (
             <div className="space-y-2">
               {pos.map(po => (
-                <div key={po.id} className="rounded-lg px-3 py-2.5 flex items-center justify-between gap-2" style={{ border: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+                <div key={po.id} className="rounded-lg px-3 py-2.5 flex items-center justify-between gap-2" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)" }}>
                   <div className="min-w-0">
                     <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{po.number}</p>
                     <p className="text-[11px] truncate" style={{ color: "var(--text-muted)" }}>{po.lines.length} items · {money(poSubtotal(po))}{po.projectName ? ` · ${po.projectName}` : ""}</p>
@@ -242,7 +242,7 @@ function VendorDrawer({ vendor, onClose, onEdit }: { vendor: Vendor; onClose: ()
           priceItems.length === 0 ? <Empty text="No catalog items linked to this vendor." /> : (
             <div className="space-y-1.5">
               {priceItems.map(it => (
-                <div key={it.id} className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg" style={{ border: "1px solid var(--border-subtle)" }}>
+                <div key={it.id} className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg" style={{ border: "1px solid var(--border)" }}>
                   <span className="text-sm truncate" style={{ color: "var(--text-primary)" }}>{it.name}</span>
                   <span className="text-sm tabular-nums shrink-0" style={{ color: "var(--text-secondary)" }}>{money(it.cost)}</span>
                 </div>
@@ -259,7 +259,7 @@ function VendorDrawer({ vendor, onClose, onEdit }: { vendor: Vendor; onClose: ()
             {vendor.documents.length === 0 ? <Empty text="No documents on file." /> : (
               <div className="space-y-1.5">
                 {vendor.documents.map(d => (
-                  <div key={d.id} className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg" style={{ border: "1px solid var(--border-subtle)" }}>
+                  <div key={d.id} className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg" style={{ border: "1px solid var(--border)" }}>
                     <span className="flex items-center gap-2 min-w-0"><FileText className="w-3.5 h-3.5 shrink-0" style={{ color: "var(--text-muted)" }} /><span className="text-sm truncate" style={{ color: "var(--text-primary)" }}>{DOC_KIND_LABELS[d.kind]}</span></span>
                     <DocBadge status={d.status} expiresOn={d.expiresOn} />
                   </div>
@@ -324,7 +324,7 @@ function VendorModal({ vendor, onClose, onSaved }: { vendor: Vendor | "new"; onC
   return (
     <div className="fixed inset-0 z-[60] bg-black/40 flex items-center justify-center p-4" onClick={onClose}>
       <div className="w-full max-w-xl max-h-[92vh] rounded-2xl overflow-hidden flex flex-col" onClick={e => e.stopPropagation()} style={{ backgroundColor: "var(--bg-surface)", boxShadow: "0 16px 48px rgba(0,0,0,0.24)" }}>
-        <div className="flex items-center justify-between px-5 py-4 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+        <div className="flex items-center justify-between px-5 py-4 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
           <p className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>{isNew ? "Add Vendor" : "Edit Vendor"}</p>
           <button onClick={onClose} style={{ color: "var(--text-muted)" }}><X className="w-4 h-4" /></button>
         </div>
@@ -349,7 +349,7 @@ function VendorModal({ vendor, onClose, onSaved }: { vendor: Vendor | "new"; onC
           <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>Documents (W-9, COI, agreements) are stored in the Documents app and linked here in a later phase.</p>
         </div>
         {error && <div className="mx-5 mb-3 px-3 py-2 rounded-lg text-xs shrink-0" style={{ backgroundColor: "#fee2e2", color: "#991b1b" }}>{error}</div>}
-        <div className="px-5 py-3 flex items-center justify-end gap-2 shrink-0" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+        <div className="px-5 py-3 flex items-center justify-end gap-2 shrink-0" style={{ borderTop: "1px solid var(--border)" }}>
           <button onClick={onClose} className="text-sm font-medium px-3 py-2 rounded-lg" style={{ color: "var(--text-secondary)" }}>Cancel</button>
           <button onClick={save} className="text-sm font-medium px-4 py-2 rounded-lg text-white" style={{ backgroundColor: ACCENT }}>{isNew ? "Add Vendor" : "Save Changes"}</button>
         </div>

@@ -106,8 +106,8 @@ function ProjectsInline({ projects, companyId, locationId }: { projects: Project
   const stageMap = new Map(getProjectStages({ companyId, locationId }).map(st => [st.key, st]));
 
   return (
-    <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
-      <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+    <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
+      <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)" }}>
         <div className="flex items-center gap-2">
           <FolderKanban className="w-4 h-4" style={{ color: "var(--text-muted)" }} />
           <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Active Projects</span>
@@ -117,7 +117,7 @@ function ProjectsInline({ projects, companyId, locationId }: { projects: Project
       </div>
 
       {/* Column headers */}
-      <div className="grid px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider" style={{ gridTemplateColumns: "2.5fr 1fr 1fr 1fr 1fr 1fr", color: "var(--text-muted)", borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+      <div className="grid px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider" style={{ gridTemplateColumns: "2.5fr 1fr 1fr 1fr 1fr 1fr", color: "var(--text-muted)", borderBottom: "1px solid var(--border)", backgroundColor: "transparent" }}>
         <span>Project</span><span>Type</span><span>Status</span><span>Target Date</span><span>Progress</span><span>Value</span>
       </div>
 
@@ -128,7 +128,7 @@ function ProjectsInline({ projects, companyId, locationId }: { projects: Project
         return (
           <Link key={p.id} href={`/projects/${p.id}`}
             className="grid px-4 py-3 items-center hover:bg-[var(--bg-surface-2)] transition-colors"
-            style={{ gridTemplateColumns: "2.5fr 1fr 1fr 1fr 1fr 1fr", borderBottom: i < filtered.length - 1 ? "1px solid var(--border-subtle)" : "none", textDecoration: "none" }}
+            style={{ gridTemplateColumns: "2.5fr 1fr 1fr 1fr 1fr 1fr", borderBottom: i < filtered.length - 1 ? "1px solid var(--border)" : "none", textDecoration: "none" }}
           >
             <div className="flex items-center gap-2.5 min-w-0">
               <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: "var(--bg-input)" }}><FolderKanban className="w-3.5 h-3.5" style={{ color: "var(--text-muted)" }} /></div>
@@ -360,12 +360,12 @@ export default function JobsPage() {
 
         {/* Projects tab keeps its inline list; otherwise the list table or cards grid */}
         {isProjects ? (
-          <div className="rounded-xl overflow-hidden p-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+          <div className="rounded-xl overflow-hidden p-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
             <ProjectsInline projects={allProjects} companyId={effectiveCompanyId} locationId={effectiveLocationId} />
           </div>
         ) : moduleView === "cards" ? (
           displayed.length === 0 ? (
-            <div className="rounded-xl py-16 text-center" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>
+            <div className="rounded-xl py-16 text-center" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
               <p className="text-sm" style={{ color: "var(--text-muted)" }}>No jobs match the current filter.</p>
             </div>
           ) : (
@@ -374,11 +374,11 @@ export default function JobsPage() {
             </div>
           )
         ) : (
-          <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+          <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
           <>
             {/* Column headers */}
             <div className="grid px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider select-none"
-              style={{ gridTemplateColumns: gridCols, color: "var(--text-muted)", borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+              style={{ gridTemplateColumns: gridCols, color: "var(--text-muted)", borderBottom: "1px solid var(--border)", backgroundColor: "transparent" }}>
               {([
                 { label: "Job / Customer",  field: "customerName"  },
                 { label: "Type",            field: "type"          },
@@ -404,7 +404,7 @@ export default function JobsPage() {
                 return (
                   <Link key={job.id} href={`/jobs/${job.id}`}
                     className="grid px-4 py-3 items-center hover:bg-[var(--bg-surface-2)] transition-colors"
-                    style={{ gridTemplateColumns: gridCols, borderBottom: i < displayed.length - 1 ? "1px solid var(--border-subtle)" : "none", textDecoration: "none" }}>
+                    style={{ gridTemplateColumns: gridCols, borderBottom: i < displayed.length - 1 ? "1px solid var(--border)" : "none", textDecoration: "none" }}>
                     {/* Job / Customer */}
                     <div className="flex items-center gap-2.5 min-w-0">
                       <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: "var(--bg-input)" }}><Calendar className="w-3.5 h-3.5" style={{ color: "var(--text-muted)" }} /></div>
@@ -443,7 +443,7 @@ export default function JobsPage() {
 
             {/* Footer */}
             <div className="flex items-center justify-between px-4 py-3 text-xs"
-              style={{ borderTop: "1px solid var(--border-subtle)", color: "var(--text-muted)", backgroundColor: "var(--bg-surface-2)" }}>
+              style={{ borderTop: "1px solid var(--border)", color: "var(--text-muted)", backgroundColor: "transparent" }}>
               <span>Showing {displayed.length} of {contextFiltered.filter(tabFn).length} jobs</span>
               <div className="flex gap-1">
                 <button className="px-2 py-1 rounded" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>← Prev</button>
@@ -474,7 +474,7 @@ function JobCard({ job, statusConfig, showAmount }: {
   return (
     <Link href={`/jobs/${job.id}`}
       className="group block rounded-lg p-3 transition-all hover:-translate-y-0.5 hover:shadow-md"
-      style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", borderLeft: `3px solid ${s.color}`, textDecoration: "none" }}>
+      style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", borderLeft: `3px solid ${s.color}`, textDecoration: "none" }}>
       <div className="flex items-start justify-between gap-2 mb-1.5">
         <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
           <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded inline-flex items-center gap-1 shrink-0" style={{ backgroundColor: s.color + "22", color: s.color }}>
@@ -487,7 +487,7 @@ function JobCard({ job, statusConfig, showAmount }: {
       </div>
       <p className="text-sm font-semibold truncate" style={{ color: "var(--text-primary)" }}>{job.title}</p>
       {job.customerName && <p className="text-xs truncate" style={{ color: "var(--text-secondary)" }}>{job.customerName}</p>}
-      <div className="flex items-center justify-between gap-2 mt-2 pt-2" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+      <div className="flex items-center justify-between gap-2 mt-2 pt-2" style={{ borderTop: "1px solid var(--border)" }}>
         <span className="text-[10px] truncate" style={{ color: "var(--text-muted)" }}>
           {job.scheduledDate ? `${job.scheduledDate}${job.scheduledTime ? ` · ${job.scheduledTime}` : ""}` : "Unscheduled"}
         </span>

@@ -156,7 +156,7 @@ export default function NotificationBell() {
       {open && (
         <div className="absolute right-0 mt-2 w-80 rounded-xl overflow-hidden z-50"
           style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "0 12px 32px rgba(0,0,0,0.18)" }}>
-          <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+          <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid var(--border)" }}>
             <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Notifications</p>
             <div className="flex items-center gap-2">
               {hasStored && (
@@ -184,7 +184,7 @@ export default function NotificationBell() {
               return (
                 <Link key={`${n.id}-${n.kind}`} href={n.href} onClick={() => setOpen(false)}
                   className="group/notif flex items-start gap-3 px-4 py-3 transition-colors hover:bg-[var(--bg-surface-2)]"
-                  style={{ borderBottom: i < items.length - 1 ? "1px solid var(--border-subtle)" : "none", textDecoration: "none", backgroundColor: isUnread ? "var(--accent-soft-bg)" : undefined }}>
+                  style={{ borderBottom: i < items.length - 1 ? "1px solid var(--border)" : "none", textDecoration: "none", backgroundColor: isUnread ? "var(--accent-soft-bg)" : undefined }}>
                   <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5" style={{ backgroundColor: meta.bg }}>
                     <meta.icon className="w-3.5 h-3.5" style={{ color: meta.color }} />
                   </div>
@@ -210,7 +210,7 @@ export default function NotificationBell() {
 
           <Link href="/tasks" onClick={() => setOpen(false)}
             className="block px-4 py-2.5 text-center text-xs font-medium transition-colors hover:bg-[var(--bg-surface-2)]"
-            style={{ borderTop: "1px solid var(--border-subtle)", color: "var(--accent-text)", textDecoration: "none" }}>
+            style={{ borderTop: "1px solid var(--border)", color: "var(--accent-text)", textDecoration: "none" }}>
             View all tasks
           </Link>
         </div>

@@ -47,7 +47,7 @@ export default function MobileSettingsPage() {
 
 function ToggleRow({ icon: Icon, label, on, onToggle, divider = true }: { icon: React.ElementType; label: string; on: boolean; onToggle: () => void; divider?: boolean }) {
   return (
-    <button onClick={onToggle} className="w-full flex items-center gap-3 px-4 py-3.5" style={{ borderTop: divider ? "1px solid var(--border-subtle)" : "none" }}>
+    <button onClick={onToggle} className="w-full flex items-center gap-3 px-4 py-3.5" style={{ borderTop: divider ? "1px solid var(--border)" : "none" }}>
       <Icon className="w-4 h-4 shrink-0" style={{ color: "var(--text-secondary)" }} />
       <span className="text-sm flex-1 text-left" style={{ color: "var(--text-primary)" }}>{label}</span>
       <span className="w-10 h-6 rounded-full relative shrink-0 transition-colors" style={{ backgroundColor: on ? ACCENT : "var(--bg-input)" }}>

@@ -6,7 +6,7 @@ import {
   ArrowLeft, Pencil, Trash2,
   Phone, Mail, MapPin, Building2, Calendar,
   CheckCircle, Circle, AlertCircle,
-  ChevronRight, Plus, MessageSquare, Info, MoreVertical,
+  ChevronRight, Plus, MessageSquare, Info,
   UserPlus, User, Home, TrendingUp, Tag, Layers,
   Briefcase, ClipboardList, FilePen, FileCheck,
   Receipt, DollarSign, FileText, RefreshCw,
@@ -38,6 +38,7 @@ import { getActivityEvents } from "@/lib/activity/data";
 import { type ActivityEvent, type EventType } from "@/lib/activity/types";
 import Commentable from "@/components/comments/Commentable";
 import DetailTabs from "@/components/shared/DetailTabs";
+import ActionsMenu from "@/components/shared/ActionsMenu";
 import RecordTasks from "@/components/tasks/RecordTasks";
 import AgreementSummaryCard from "@/components/agreements/AgreementSummaryCard";
 import JobWizard from "@/components/jobs/JobWizard";
@@ -201,7 +202,7 @@ function OverviewTab({ id, onTab }: { id: string; onTab: (tab: string) => void }
       {/* ── Summary cards (compact) ─────────────────── */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2.5 shrink-0">
         {summary.map(c => (
-          <div key={c.label} className="rounded-xl px-3 py-2.5" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+          <div key={c.label} className="rounded-xl px-3 py-2.5" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
             <div className="flex items-center gap-1.5 mb-1">
               <c.icon className="w-3 h-3" style={{ color: c.accent ?? "var(--text-muted)" }} />
               <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>{c.label}</p>
@@ -241,7 +242,7 @@ function OverviewTab({ id, onTab }: { id: string; onTab: (tab: string) => void }
         <div className="h-full flex flex-col gap-4">
           <SectionCard title="Active Work" count={openJobs.length} action={{ label: "View all", onClick: () => onTab("Jobs") }}>
             {nextApptJob && (
-              <div className="px-4 py-3" style={{ borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+              <div className="px-4 py-3" style={{ borderBottom: "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)" }}>
                 <p className="text-[10px] font-semibold uppercase tracking-wider mb-0.5" style={{ color: "var(--text-muted)" }}>Next scheduled</p>
                 <div className="flex items-center justify-between gap-3">
                   <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{nextApptJob.title}</p>
@@ -307,8 +308,8 @@ function OverviewTab({ id, onTab }: { id: string; onTab: (tab: string) => void }
       </div>
 
       {/* ── Agreements — full-width, fills the remaining vertical space ── */}
-      <div className="flex-1 min-h-0 rounded-xl flex flex-col overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
-        <div className="flex items-center justify-between px-4 py-3 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+      <div className="flex-1 min-h-0 rounded-xl flex flex-col overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
+        <div className="flex items-center justify-between px-4 py-3 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
           <div className="flex items-center gap-2">
             <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Agreements</p>
             {activeAgreements.length > 0 && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>{activeAgreements.length}</span>}
@@ -328,7 +329,7 @@ function OverviewTab({ id, onTab }: { id: string; onTab: (tab: string) => void }
                 return (
                   <Link key={a.id} href={`/agreements/${a.id}`}
                     className="rounded-lg p-3 transition-colors hover:bg-[var(--bg-surface-2)]"
-                    style={{ border: "1px solid var(--border-subtle)", textDecoration: "none" }}>
+                    style={{ border: "1px solid var(--border)", textDecoration: "none" }}>
                     <div className="flex items-start justify-between gap-2">
                       <p className="text-sm font-semibold truncate" style={{ color: "var(--text-primary)" }}>{a.type}</p>
                       <StatusBadge label={meta?.label ?? a.status} color={meta?.color ?? "#6b7280"} size="sm" className="shrink-0" />
@@ -433,7 +434,7 @@ function ContactCard({
       </div>
 
       {contact.notes && (
-        <div className="mt-3 pt-3" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+        <div className="mt-3 pt-3" style={{ borderTop: "1px solid var(--border)" }}>
           <p className="text-xs" style={{ color: "var(--text-secondary)" }}>{contact.notes}</p>
         </div>
       )}
@@ -645,7 +646,7 @@ function PropertyCard({ property, onEdit }: { property: Property; onEdit: () => 
       boxShadow: "var(--shadow-card)",
     }}>
       {/* Header */}
-      <div className="flex items-start justify-between px-5 py-4" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+      <div className="flex items-start justify-between px-5 py-4" style={{ borderBottom: "1px solid var(--border)" }}>
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             <p className="text-sm font-semibold truncate" style={{ color: "var(--text-primary)" }}>
@@ -676,7 +677,7 @@ function PropertyCard({ property, onEdit }: { property: Property; onEdit: () => 
         </div>
 
         {property.accessNotes && (
-          <div className="mt-1 pt-3" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+          <div className="mt-1 pt-3" style={{ borderTop: "1px solid var(--border)" }}>
             <p className="text-[10px] font-semibold uppercase tracking-wider mb-1" style={{ color: "var(--text-muted)" }}>Notes</p>
             <p className="text-xs leading-relaxed" style={{ color: "var(--text-secondary)" }}>{property.accessNotes}</p>
           </div>
@@ -908,7 +909,7 @@ function JobsTab({ id }: { id: string }) {
                 key={job.id}
                 href={jobHref(job.id)}
                 className="grid px-4 py-3 items-center hover:bg-[var(--bg-surface-2)] transition-colors"
-                style={{ gridTemplateColumns: "1.5fr 1fr 1fr 1fr 1fr 1fr", borderBottom: i < jobs.length - 1 ? "1px solid var(--border-subtle)" : "none", textDecoration: "none" }}
+                style={{ gridTemplateColumns: "1.5fr 1fr 1fr 1fr 1fr 1fr", borderBottom: i < jobs.length - 1 ? "1px solid var(--border)" : "none", textDecoration: "none" }}
               >
                 <span className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{job.title}</span>
                 <span className="text-sm" style={{ color: "var(--text-secondary)" }}>{job.type}</span>
@@ -1010,7 +1011,7 @@ function NotesTab({ id }: { id: string }) {
   return (
     <div className="space-y-4">
       {/* Add note */}
-      <div className="rounded-xl p-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+      <div className="rounded-xl p-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
         <textarea
           value={draft}
           onChange={e => setDraft(e.target.value)}
@@ -1019,7 +1020,7 @@ function NotesTab({ id }: { id: string }) {
           className="w-full resize-none text-sm outline-none bg-transparent"
           style={{ color: "var(--text-primary)" }}
         />
-        <div className="flex items-center justify-between mt-3 pt-3" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+        <div className="flex items-center justify-between mt-3 pt-3" style={{ borderTop: "1px solid var(--border)" }}>
           <div className="flex gap-1">
             {(["note", "call", "email", "visit"] as const).map(t => (
               <button key={t} onClick={() => setNoteType(t)}
@@ -1051,7 +1052,7 @@ function NotesTab({ id }: { id: string }) {
           {notes.map((note) => {
             const Icon = NOTE_ICON[note.type];
             return (
-              <div key={note.id} className="rounded-xl p-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>
+              <div key={note.id} className="rounded-xl p-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
                 <div className="flex items-start gap-3">
                   <div className="w-7 h-7 rounded-full bg-indigo-100 flex items-center justify-center shrink-0">
                     <Icon className="w-3.5 h-3.5 text-indigo-600" />
@@ -1098,7 +1099,7 @@ function EquipmentTab({ id }: { id: string }) {
         <TableCard cols="">
           <div
             className="grid px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider"
-            style={{ gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr 1fr 1fr", color: "var(--text-muted)", borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}
+            style={{ gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr 1fr 1fr", color: "var(--text-muted)", borderBottom: "1px solid var(--border)", backgroundColor: "transparent" }}
           >
             {["Equipment", "Brand", "Model", "Serial #", "Installed", "Last Service", "Status"].map(h => <span key={h}>{h}</span>)}
           </div>
@@ -1108,7 +1109,7 @@ function EquipmentTab({ id }: { id: string }) {
               <div
                 key={eq.id}
                 className="grid px-4 py-3 items-center hover:bg-[var(--bg-surface-2)] transition-colors"
-                style={{ gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr 1fr 1fr", borderBottom: i < items.length - 1 ? "1px solid var(--border-subtle)" : "none" }}
+                style={{ gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr 1fr 1fr", borderBottom: i < items.length - 1 ? "1px solid var(--border)" : "none" }}
               >
                 <div>
                   <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{eq.name}</p>
@@ -1152,12 +1153,12 @@ function BillingSection({
   return (
     <div
       className="rounded-xl overflow-hidden"
-      style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}
+      style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}
     >
       {/* Header */}
       <div
         className="flex items-center justify-between px-4 py-3"
-        style={{ borderBottom: "1px solid var(--border-subtle)" }}
+        style={{ borderBottom: "1px solid var(--border)" }}
       >
         <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{title}</p>
         <button
@@ -1176,7 +1177,7 @@ function BillingSection({
         style={{
           gridTemplateColumns: `repeat(${cols.length}, 1fr)`,
           color: "var(--text-muted)",
-          borderBottom: "1px solid var(--border-subtle)",
+          borderBottom: "1px solid var(--border)",
           backgroundColor: "var(--bg-surface-2)",
         }}
       >
@@ -1220,8 +1221,8 @@ function BillingTab({ id }: { id: string }) {
 
   function Section({ title, onNew, children }: { title: string; onNew?: () => void; children: React.ReactNode }) {
     return (
-      <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
-        <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+      <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
+        <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid var(--border)" }}>
           <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{title}</p>
           <button onClick={onNew} disabled={!onNew}
             className="flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-lg disabled:opacity-40"
@@ -1257,7 +1258,7 @@ function BillingTab({ id }: { id: string }) {
         ) : (
           <>
             <div className="grid px-4 py-2 text-[10px] font-semibold uppercase tracking-wider"
-              style={{ gridTemplateColumns: "1fr 2fr 1.2fr 0.8fr 0.8fr", color: "var(--text-muted)", borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+              style={{ gridTemplateColumns: "1fr 2fr 1.2fr 0.8fr 0.8fr", color: "var(--text-muted)", borderBottom: "1px solid var(--border)", backgroundColor: "transparent" }}>
               <span>Quote #</span><span>Title</span><span>Linked To</span><span>Status</span><span className="text-right">Total</span>
             </div>
             {quotes.map((q, i) => {
@@ -1265,7 +1266,7 @@ function BillingTab({ id }: { id: string }) {
               return (
                 <Link key={q.id} href={`/quotes/${q.id}`}
                   className="grid px-4 py-3 items-center hover:bg-[var(--bg-surface-2)] transition-colors"
-                  style={{ gridTemplateColumns: "1fr 2fr 1.2fr 0.8fr 0.8fr", borderBottom: i < quotes.length - 1 ? "1px solid var(--border-subtle)" : "none", textDecoration: "none" }}>
+                  style={{ gridTemplateColumns: "1fr 2fr 1.2fr 0.8fr 0.8fr", borderBottom: i < quotes.length - 1 ? "1px solid var(--border)" : "none", textDecoration: "none" }}>
                   <span className="text-sm font-mono font-medium" style={{ color: "var(--text-primary)" }}>{q.quoteNumber}</span>
                   <span className="text-sm truncate" style={{ color: "var(--text-secondary)" }}>{q.title}</span>
                   <span className="text-xs truncate" style={{ color: "var(--text-muted)" }}>{q.linkedLabel ?? "—"}</span>
@@ -1288,7 +1289,7 @@ function BillingTab({ id }: { id: string }) {
         ) : (
           <>
             <div className="grid px-4 py-2 text-[10px] font-semibold uppercase tracking-wider"
-              style={{ gridTemplateColumns: "1fr 2fr 1.2fr 0.8fr 0.7fr 0.7fr", color: "var(--text-muted)", borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+              style={{ gridTemplateColumns: "1fr 2fr 1.2fr 0.8fr 0.7fr 0.7fr", color: "var(--text-muted)", borderBottom: "1px solid var(--border)", backgroundColor: "transparent" }}>
               <span>Invoice #</span><span>Title</span><span>Linked To</span><span>Status</span><span className="text-right">Total</span><span className="text-right">Balance</span>
             </div>
             {invoices.map((inv, i) => {
@@ -1296,7 +1297,7 @@ function BillingTab({ id }: { id: string }) {
               return (
                 <Link key={inv.id} href={`/invoices/${inv.id}`}
                   className="grid px-4 py-3 items-center hover:bg-[var(--bg-surface-2)] transition-colors"
-                  style={{ gridTemplateColumns: "1fr 2fr 1.2fr 0.8fr 0.7fr 0.7fr", borderBottom: i < invoices.length - 1 ? "1px solid var(--border-subtle)" : "none", textDecoration: "none" }}>
+                  style={{ gridTemplateColumns: "1fr 2fr 1.2fr 0.8fr 0.7fr 0.7fr", borderBottom: i < invoices.length - 1 ? "1px solid var(--border)" : "none", textDecoration: "none" }}>
                   <span className="text-sm font-mono font-medium" style={{ color: "var(--text-primary)" }}>{inv.invoiceNumber}</span>
                   <span className="text-sm truncate" style={{ color: "var(--text-secondary)" }}>{inv.title}</span>
                   <span className="text-xs truncate" style={{ color: "var(--text-muted)" }}>{inv.linkedLabel ?? "—"}</span>
@@ -1489,7 +1490,7 @@ function HistoryTab({ id, onTab }: { id: string; onTab: (tab: string) => void })
                 className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-colors"
                 style={active
                   ? { backgroundColor: color + "1f", color, border: `1px solid ${color}59` }
-                  : { backgroundColor: "transparent", color: "var(--text-muted)", border: "1px solid var(--border-subtle)" }}>
+                  : { backgroundColor: "transparent", color: "var(--text-muted)", border: "1px solid var(--border)" }}>
                 {c.label}
                 <span className="text-[10px]" style={{ color: active ? color : "var(--text-muted)", opacity: 0.8 }}>{n}</span>
               </button>
@@ -1499,7 +1500,7 @@ function HistoryTab({ id, onTab }: { id: string; onTab: (tab: string) => void })
       </div>
 
       {filtered.length === 0 ? (
-        <div className="py-12 text-center rounded-xl" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>
+        <div className="py-12 text-center rounded-xl" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
           <p className="text-sm" style={{ color: "var(--text-muted)" }}>No matching history.</p>
         </div>
       ) : (
@@ -1578,7 +1579,7 @@ function HistoryTab({ id, onTab }: { id: string; onTab: (tab: string) => void })
 // ─── Stub tab ─────────────────────────────────────────────
 function StubTab({ label, link }: { label: string; link?: string }) {
   return (
-    <div className="rounded-xl p-10 text-center" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>
+    <div className="rounded-xl p-10 text-center" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
       <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{label}</p>
       <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>Coming in Phase 1</p>
       {link && <Link href={link} className="mt-2 block text-xs font-medium text-indigo-600 hover:text-indigo-700">Open {label} module →</Link>}
@@ -1599,7 +1600,6 @@ function CustomerDetailContent({ params }: { params: Promise<{ id: string }> }) 
   const [tab, setTabState] = useState(urlTab && TABS.includes(urlTab) ? urlTab : "Overview");
   const [editing, setEditing]   = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [actionsOpen, setActionsOpen] = useState(false);
   const [createModal, setCreateModal] = useState<null | "job" | "quote" | "lead">(null);
   const [refreshKey, setRefreshKey] = useState(0);   // bump to re-read customer after an edit
 
@@ -1630,7 +1630,7 @@ function CustomerDetailContent({ params }: { params: Promise<{ id: string }> }) 
   return (
     <div className="flex flex-col h-full">
       {/* Sticky header */}
-      <div style={{ backgroundColor: "var(--bg-surface)", borderBottom: "1px solid var(--border-subtle)" }}>
+      <div style={{ backgroundColor: "var(--bg-surface)", borderBottom: "1px solid var(--border)" }}>
         {/* Top row */}
         <div className="flex items-center justify-between px-6 py-4">
           <div className="flex items-center gap-4 min-w-0">
@@ -1662,49 +1662,22 @@ function CustomerDetailContent({ params }: { params: Promise<{ id: string }> }) 
               <Briefcase className="w-3.5 h-3.5" /> Create Job
             </button>
 
-            {/* More menu — secondary create actions + account management */}
-            <div className="relative">
-              <button onClick={() => setActionsOpen(o => !o)} aria-label="More actions"
-                className="flex items-center justify-center w-9 h-9 rounded-lg transition-colors hover:bg-[var(--bg-surface-2)]"
-                style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>
-                <MoreVertical className="w-4 h-4" />
-              </button>
-              {actionsOpen && (
-                <>
-                  {/* click-away catcher */}
-                  <button aria-hidden tabIndex={-1} onClick={() => setActionsOpen(false)} className="fixed inset-0 z-40 cursor-default" />
-                  <div className="absolute right-0 top-full mt-1.5 z-50 w-48 rounded-xl overflow-hidden py-1"
-                    style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "0 12px 32px rgba(0,0,0,0.18)" }}>
-                    {([
-                      { icon: FilePen,       label: "Create Quote",  onClick: () => setCreateModal("quote") },
-                      { icon: TrendingUp,    label: "Create Lead",   onClick: () => setCreateModal("lead") },
-                      { icon: MessageSquare, label: "Add Note",      onClick: () => setTab("Notes") },
-                      { icon: Receipt,       label: "Create Invoice",onClick: () => setTab("Billing") },
-                      { icon: Paperclip,     label: "Upload File",   onClick: () => setTab("Photos & Files") },
-                      { icon: Smartphone,    label: "Send Message",  onClick: () => setTab("Communication") },
-                    ] as const).map(item => (
-                      <button key={item.label} onClick={() => { setActionsOpen(false); item.onClick(); }}
-                        className="flex items-center gap-2 w-full px-3 py-2 text-sm transition-colors hover:bg-[var(--bg-surface-2)]" style={{ color: "var(--text-primary)" }}>
-                        <item.icon className="w-3.5 h-3.5" style={{ color: "var(--text-muted)" }} /> {item.label}
-                      </button>
-                    ))}
-                    <div className="h-px my-1" style={{ backgroundColor: "var(--border-subtle)" }} />
-                    <button onClick={() => { setActionsOpen(false); setEditing(true); }}
-                      className="flex items-center gap-2 w-full px-3 py-2 text-sm transition-colors hover:bg-[var(--bg-surface-2)]" style={{ color: "var(--text-primary)" }}>
-                      <Pencil className="w-3.5 h-3.5" style={{ color: "var(--text-muted)" }} /> Edit Account
-                    </button>
-                    <button onClick={() => { setActionsOpen(false); setConfirmDelete(true); }}
-                      className="flex items-center gap-2 w-full px-3 py-2 text-sm transition-colors hover:bg-red-50" style={{ color: "#dc2626" }}>
-                      <Trash2 className="w-3.5 h-3.5" /> Delete
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
+            {/* More menu — secondary create actions + account management. Shared
+                ActionsMenu (4-dot glyph) so every detail header matches. */}
+            <ActionsMenu actions={[
+              { icon: FilePen,       label: "Create Quote",   onClick: () => setCreateModal("quote") },
+              { icon: TrendingUp,    label: "Create Lead",    onClick: () => setCreateModal("lead") },
+              { icon: MessageSquare, label: "Add Note",       onClick: () => setTab("Notes") },
+              { icon: Receipt,       label: "Create Invoice", onClick: () => setTab("Billing") },
+              { icon: Paperclip,     label: "Upload File",    onClick: () => setTab("Photos & Files") },
+              { icon: Smartphone,    label: "Send Message",   onClick: () => setTab("Communication") },
+              { icon: Pencil,        label: "Edit Account",   onClick: () => setEditing(true), separated: true },
+              { icon: Trash2,        label: "Delete",         onClick: () => setConfirmDelete(true), danger: true },
+            ]} />
           </div>
         </div>
 
-        {/* Sub-tabs — same flat pill as the main tabs, in amber instead of indigo */}
+        {/* Sub-tabs — a single custom glyph marks the active tab */}
         <DetailTabs tabs={TABS} active={tab} onChange={setTab} className="px-6 py-2" />
       </div>
 
@@ -1759,7 +1732,7 @@ function CustomerDetailContent({ params }: { params: Promise<{ id: string }> }) 
       {confirmDelete && (
         <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={() => setConfirmDelete(false)}>
           <div className="w-full max-w-md rounded-2xl overflow-hidden" onClick={e => e.stopPropagation()}
-            style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "0 16px 48px rgba(0,0,0,0.24)" }}>
+            style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "0 16px 48px rgba(0,0,0,0.24)" }}>
             <div className="px-6 py-5">
               <div className="flex items-start gap-3">
                 <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: "#fee2e2" }}>
@@ -1773,7 +1746,7 @@ function CustomerDetailContent({ params }: { params: Promise<{ id: string }> }) 
                 </div>
               </div>
             </div>
-            <div className="px-6 py-4 flex justify-end gap-2" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+            <div className="px-6 py-4 flex justify-end gap-2" style={{ borderTop: "1px solid var(--border)" }}>
               <button onClick={() => setConfirmDelete(false)}
                 className="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
                 style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>
@@ -1831,7 +1804,7 @@ function Val({ children }: { children: React.ReactNode }) {
 
 function Card({ title, children, className = "" }: { title: string; children: React.ReactNode; className?: string }) {
   return (
-    <div className={`rounded-xl p-4 ${className}`} style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+    <div className={`rounded-xl p-4 ${className}`} style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
       <p className="text-[10px] font-semibold uppercase tracking-widest mb-3" style={{ color: "var(--text-muted)" }}>{title}</p>
       {children}
     </div>
@@ -1857,8 +1830,8 @@ function SectionCard({
   className?: string;
 }) {
   return (
-    <div className={`rounded-xl overflow-hidden flex flex-col ${className}`} style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
-      <div className="flex items-center justify-between px-4 py-3 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+    <div className={`rounded-xl overflow-hidden flex flex-col ${className}`} style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
+      <div className="flex items-center justify-between px-4 py-3 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
         <div className="flex items-center gap-2">
           <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{title}</p>
           {count > 0 && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>{count}</span>}
@@ -1872,7 +1845,7 @@ function SectionCard({
 
 function Row({ children, last }: { children: React.ReactNode; last: boolean }) {
   return (
-    <div className="flex items-center px-4 py-3 hover:bg-[var(--bg-surface-2)] transition-colors" style={!last ? { borderBottom: "1px solid var(--border-subtle)" } : undefined}>
+    <div className="flex items-center px-4 py-3 hover:bg-[var(--bg-surface-2)] transition-colors" style={!last ? { borderBottom: "1px solid var(--border)" } : undefined}>
       {children}
     </div>
   );
@@ -1889,7 +1862,7 @@ function Empty({ text, children }: { text: string; children?: React.ReactNode })
 
 function StubContent({ label, children }: { label: string; children?: React.ReactNode }) {
   return (
-    <div className="rounded-xl p-8 text-center" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>
+    <div className="rounded-xl p-8 text-center" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
       <p className="text-sm" style={{ color: "var(--text-muted)" }}>{label}</p>
       {children}
     </div>
@@ -1898,7 +1871,7 @@ function StubContent({ label, children }: { label: string; children?: React.Reac
 
 function TableCard({ cols, children }: { cols: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+    <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
       {children}
     </div>
   );
@@ -1906,7 +1879,7 @@ function TableCard({ cols, children }: { cols: string; children: React.ReactNode
 
 function TableHead({ cols }: { cols: string[] }) {
   return (
-    <div className={`grid px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider`} style={{ gridTemplateColumns: `repeat(${cols.length}, 1fr)`, color: "var(--text-muted)", borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+    <div className={`grid px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider`} style={{ gridTemplateColumns: `repeat(${cols.length}, 1fr)`, color: "var(--text-muted)", borderBottom: "1px solid var(--border)", backgroundColor: "transparent" }}>
       {cols.map(c => <span key={c}>{c}</span>)}
     </div>
   );
@@ -1914,7 +1887,7 @@ function TableHead({ cols }: { cols: string[] }) {
 
 function TableRow({ cols, last, children }: { cols: string; last: boolean; children: React.ReactNode }) {
   return (
-    <div className="grid px-4 py-3 items-center hover:bg-[var(--bg-surface-2)] transition-colors" style={{ gridTemplateColumns: cols, borderBottom: !last ? "1px solid var(--border-subtle)" : "none" }}>
+    <div className="grid px-4 py-3 items-center hover:bg-[var(--bg-surface-2)] transition-colors" style={{ gridTemplateColumns: cols, borderBottom: !last ? "1px solid var(--border)" : "none" }}>
       {children}
     </div>
   );

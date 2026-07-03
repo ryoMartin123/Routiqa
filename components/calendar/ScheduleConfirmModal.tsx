@@ -5,8 +5,9 @@ import { X, CalendarClock } from "lucide-react";
 import Select from "@/components/ui/Select";
 import DatePicker from "@/components/ui/DatePicker";
 import TimePicker from "@/components/ui/TimePicker";
+import NumberStepper from "@/components/ui/NumberStepper";
 import type { UnscheduledItem } from "@/lib/calendar/types";
-import { todayYMD, isPastDateTime, isOutsideHours, formatHour } from "@/lib/utils/schedule";
+import { isPastDateTime, isOutsideHours, formatHour, minTimeFor, minBookableYMD } from "@/lib/utils/schedule";
 
 export interface ScheduleDraft {
   tech: string;
@@ -39,7 +40,7 @@ export default function ScheduleConfirmModal({
     <div className="fixed inset-0 z-[60] bg-black/40 flex items-center justify-center p-4" onClick={onClose}>
       <div className="w-full max-w-md rounded-2xl overflow-hidden" onClick={e => e.stopPropagation()}
         style={{ backgroundColor: "var(--bg-surface)", boxShadow: "0 16px 48px rgba(0,0,0,0.24)" }}>
-        <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+        <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: "1px solid var(--border)" }}>
           <div className="flex items-center gap-2">
             <CalendarClock className="w-4 h-4" style={{ color: "#4f46e5" }} />
             <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Schedule Job</p>
@@ -61,10 +62,10 @@ export default function ScheduleConfirmModal({
 
           <div className="grid grid-cols-2 gap-3">
             <Field label="Date">
-              <DatePicker value={d.date} onChange={v => set("date", v)} clearable={false} min={todayYMD()} />
+              <DatePicker value={d.date} onChange={v => set("date", v)} clearable={false} min={minBookableYMD(dayEnd)} />
             </Field>
             <Field label="Time">
-              <TimePicker value={d.time} onChange={v => set("time", v)} />
+              <TimePicker value={d.time} onChange={v => set("time", v)} minTime={minTimeFor(d.date)} />
             </Field>
           </div>
 
@@ -75,8 +76,7 @@ export default function ScheduleConfirmModal({
           )}
 
           <Field label="Duration (minutes)">
-            <input type="number" min={15} step={15} value={d.durationMinutes} onChange={e => set("durationMinutes", parseInt(e.target.value) || 60)}
-              className="w-full rounded-lg px-3 py-2 text-sm outline-none" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface)", color: "var(--text-primary)" }} />
+            <NumberStepper min={15} step={15} suffix="min" value={String(d.durationMinutes)} onChange={v => set("durationMinutes", parseInt(v, 10) || 60)} />
           </Field>
 
           {outsideHours && !isPast && (
@@ -92,7 +92,7 @@ export default function ScheduleConfirmModal({
           )}
         </div>
 
-        <div className="px-5 py-4 flex justify-end gap-2" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+        <div className="px-5 py-4 flex justify-end gap-2" style={{ borderTop: "1px solid var(--border)" }}>
           <button onClick={onClose} className="px-3 py-1.5 rounded-lg text-sm" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>Cancel</button>
           <button onClick={() => onConfirm(d)} disabled={!d.date || !d.time || isPast || outsideHours || conflict}
             className="px-4 py-1.5 rounded-lg text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 transition-colors">

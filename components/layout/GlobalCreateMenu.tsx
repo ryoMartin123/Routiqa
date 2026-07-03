@@ -52,7 +52,7 @@ export default function GlobalCreateMenu() {
       <button
         onClick={() => setOpen(true)}
         title="Create"
-        className="flex items-center justify-center w-9 h-9 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white transition-colors"
+        className="plus-glow flex items-center justify-center w-9 h-9 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white transition-colors"
         aria-haspopup="dialog" aria-expanded={open}
       >
         <Plus className="w-5 h-5" />
@@ -62,9 +62,9 @@ export default function GlobalCreateMenu() {
       {open && (
         <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={() => setOpen(false)}>
           <div role="dialog" aria-modal="true" className="w-full max-w-lg rounded-2xl overflow-hidden" onClick={e => e.stopPropagation()}
-            style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "0 16px 48px rgba(0,0,0,0.24)" }}>
+            style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "0 16px 48px rgba(0,0,0,0.24)" }}>
             {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+            <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: "1px solid var(--border)" }}>
               <p className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>Create new</p>
               <button onClick={() => setOpen(false)} style={{ color: "var(--text-muted)" }}><X className="w-4 h-4" /></button>
             </div>
@@ -120,7 +120,7 @@ function Tile({ icon: Icon, label, sublabel, onClick }: { icon: typeof UserPlus;
   return (
     <button onClick={onClick}
       className="flex items-center gap-3 p-3 rounded-xl text-left transition-colors hover:bg-[var(--bg-surface-2)]"
-      style={{ border: "1px solid var(--border-subtle)" }}>
+      style={{ border: "1px solid var(--border)" }}>
       <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: "var(--accent-soft-bg)" }}>
         <Icon className="w-4 h-4" style={{ color: "var(--accent-text)" }} />
       </div>

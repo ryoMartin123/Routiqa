@@ -126,10 +126,10 @@ export default function UsersDirectory({ users, canManage, onOpenUser }: {
       </div>
 
       {/* Table — grid layout (matches the Access Matrix) */}
-      <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+      <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
         <div className="overflow-x-auto thin-scroll-x">
           <div style={{ minWidth: 880 }}>
-            <div className="grid px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider items-center" style={{ gridTemplateColumns: DIR_COLS, gap: "0.75rem", color: "var(--text-muted)", borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+            <div className="grid px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider items-center" style={{ gridTemplateColumns: DIR_COLS, gap: "0.75rem", color: "var(--text-muted)", borderBottom: "1px solid var(--border)", backgroundColor: "transparent" }}>
               <span>User</span><span>Role</span><span>Scope / Layer</span><span>App Access</span><span>Status</span><span className="text-right">Actions</span>
             </div>
             {filtered.length === 0 ? (

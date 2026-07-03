@@ -147,7 +147,7 @@ export function TableSkeleton({ rows = 8, cols = 4 }: { rows?: number; cols?: nu
       </div>
       {/* Rows */}
       {Array.from({ length: rows }).map((_, r) => (
-        <div key={r} className="flex items-center gap-4 px-4 py-3.5" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+        <div key={r} className="flex items-center gap-4 px-4 py-3.5" style={{ borderTop: "1px solid var(--border)" }}>
           {Array.from({ length: cols }).map((_, c) => (
             <div key={c} className={cn("flex items-center gap-2.5", c === 0 ? "w-40" : "flex-1 max-w-[8rem]")}>
               {c === 0 && <SkeletonCircle size={28} />}
@@ -200,7 +200,7 @@ export function ProjectCardsSkeleton({ count = 6 }: { count?: number }) {
   return (
     <div className="grid gap-3 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
       {Array.from({ length: count }).map((_, i) => (
-        <div key={i} className="rounded-xl overflow-hidden flex flex-col" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+        <div key={i} className="rounded-xl overflow-hidden flex flex-col" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
           <Skeleton className="h-[3px] rounded-none" />
           <div className="p-4 flex-1">
             {/* Title + health pill */}
@@ -239,7 +239,7 @@ export function ProjectCardsSkeleton({ count = 6 }: { count?: number }) {
               ))}
             </div>
             {/* Footer — team avatars + open */}
-            <div className="flex items-center justify-between mt-4 pt-3" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+            <div className="flex items-center justify-between mt-4 pt-3" style={{ borderTop: "1px solid var(--border)" }}>
               <div className="flex -space-x-1.5">
                 <SkeletonCircle size={24} />
                 <SkeletonCircle size={24} />
@@ -273,7 +273,7 @@ export function BoardSkeleton({ columns = 4, cards = 3 }: { columns?: number; ca
 }
 
 // ─── Detail / fill shells ─────────────────────────────────
-const surface = { backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" } as const;
+const surface = { backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" } as const;
 
 // Board (pipeline) skeleton whose card counts reflect the real total — spread
 // across columns. 0 total → column headers only (no fake cards).
@@ -311,7 +311,7 @@ function BoardCountSkeleton({ total, columns = 5 }: { total: number; columns?: n
 function DetailFill() {
   return (
     <div className="flex flex-col h-full">
-      <div style={{ backgroundColor: "var(--bg-surface)", borderBottom: "1px solid var(--border-subtle)" }}>
+      <div style={{ backgroundColor: "var(--bg-surface)", borderBottom: "1px solid var(--border)" }}>
         <div className="flex items-center justify-between px-6 py-4">
           <div className="flex items-center gap-4 min-w-0">
             <Skeleton className="h-4 w-20 rounded" />

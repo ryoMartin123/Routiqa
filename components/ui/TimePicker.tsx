@@ -15,6 +15,7 @@ interface Props {
   minuteStep?: number;
   startHour?: number;
   endHour?: number;
+  minTime?: string;         // "HH:MM" lower bound — earlier slots are blocked out (e.g. today's past times)
 }
 
 function fmt12(hhmm: string): string {
@@ -71,9 +72,11 @@ function matches(opt: string, q: string): boolean {
   return fmt12(opt).toLowerCase().includes(t);
 }
 
-export default function TimePicker({ value, onChange, placeholder = "Select time", size = "md", className, minuteStep = 15, startHour = 6, endHour = 21 }: Props) {
+export default function TimePicker({ value, onChange, placeholder = "Select time", size = "md", className, minuteStep = 15, startHour = 6, endHour = 21, minTime }: Props) {
   const [open, setOpen] = useState(false);
-  const [query, setQuery] = useState("");
+  // null = field is showing the current value, list unfiltered (nothing typed yet);
+  // a string = the user is actively typing/filtering.
+  const [query, setQuery] = useState<string | null>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const selRef = useRef<HTMLButtonElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -83,46 +86,50 @@ export default function TimePicker({ value, onChange, placeholder = "Select time
     for (let h = startHour; h <= endHour; h++) {
       for (let m = 0; m < 60; m += minuteStep) {
         if (h === endHour && m > 0) break;
-        out.push(`${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`);
+        const hhmm = `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+        if (minTime && hhmm < minTime) continue;   // past slots are blocked out entirely
+        out.push(hhmm);
       }
     }
     return out;
-  }, [minuteStep, startHour, endHour]);
+  }, [minuteStep, startHour, endHour, minTime]);
 
-  const filtered = useMemo(() => options.filter(o => matches(o, query)), [options, query]);
+  const filtered = useMemo(() => options.filter(o => matches(o, query ?? "")), [options, query]);
 
   useEffect(() => {
     if (!open) return;
     const onDoc = (e: MouseEvent) => {
-      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) { setOpen(false); setQuery(""); }
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) { setOpen(false); setQuery(null); }
     };
     document.addEventListener("mousedown", onDoc);
-    // Bring the selected slot into view when opening without a query.
-    if (!query) requestAnimationFrame(() => selRef.current?.scrollIntoView({ block: "center" }));
+    // Nothing typed yet → show the whole list, scrolled to the current slot.
+    if (query === null) requestAnimationFrame(() => selRef.current?.scrollIntoView({ block: "center" }));
     return () => document.removeEventListener("mousedown", onDoc);
   }, [open, query]);
 
-  const select = (o: string) => { onChange(o); setOpen(false); setQuery(""); };
+  const select = (o: string) => { onChange(o); setOpen(false); setQuery(null); };
 
-  // Commit whatever's typed: prefer the top filtered slot, fall back to a parsed
-  // free-form time, clear the value on an empty field, otherwise keep the old value.
+  // Commit whatever's typed: nothing typed keeps the value; empty clears it;
+  // otherwise prefer the top filtered slot, else a parsed free-form time (rejected
+  // if it falls before minTime).
   const commit = () => {
-    const t = query.trim();
     if (!open) return;
+    if (query === null) { setOpen(false); return; }
+    const t = query.trim();
     if (t === "") onChange("");
     else if (filtered.length) onChange(filtered[0]);
-    else { const p = parseTime(t); if (p) onChange(p); }
+    else { const p = parseTime(t); if (p && (!minTime || p >= minTime)) onChange(p); }
     setOpen(false);
-    setQuery("");
+    setQuery(null);
   };
 
   const pad = size === "sm" ? "px-2.5 py-1.5 text-xs" : "px-3 py-2 text-sm";
 
   return (
     <div ref={wrapRef} className={`relative ${className ?? "w-full"}`}>
-      {/* Clicking anywhere in the field (incl. the clock icon) focuses the input
-          and opens the list — the input alone isn't the whole hit target. */}
-      <div onMouseDown={e => { if (e.target !== inputRef.current) { e.preventDefault(); inputRef.current?.focus(); } }}
+      {/* The text region keeps the I-beam (type) cursor; the clock icon is the
+          explicit clickable trigger (pointer cursor) for the dropdown. */}
+      <div
         className={`w-full flex items-center justify-between gap-2 rounded-lg transition-colors cursor-text ${pad}`}
         style={{
           border: `1px solid ${open ? "#a5b4fc" : "var(--border)"}`,
@@ -132,19 +139,33 @@ export default function TimePicker({ value, onChange, placeholder = "Select time
         <input
           ref={inputRef}
           type="text"
-          value={open ? query : fmt12(value)}
+          value={open ? (query ?? fmt12(value)) : fmt12(value)}
           placeholder={placeholder}
-          onFocus={() => { setOpen(true); setQuery(fmt12(value)); }}
+          // Open with the FULL list (query stays null) and select the text so the
+          // first keystroke replaces it — no backspacing to see all the times.
+          onFocus={() => { setOpen(true); setQuery(null); requestAnimationFrame(() => inputRef.current?.select()); }}
           onChange={e => { setQuery(e.target.value); if (!open) setOpen(true); }}
           onKeyDown={e => {
             if (e.key === "Enter") { e.preventDefault(); commit(); }
-            else if (e.key === "Escape") { setOpen(false); setQuery(""); (e.target as HTMLInputElement).blur(); }
+            else if (e.key === "Escape") { setOpen(false); setQuery(null); (e.target as HTMLInputElement).blur(); }
           }}
           onBlur={commit}
-          className="flex-1 min-w-0 bg-transparent outline-none"
+          className="flex-1 min-w-0 bg-transparent outline-none cursor-text"
           style={{ color: value || query ? "var(--text-primary)" : "var(--text-muted)" }}
         />
-        <Clock className="w-3.5 h-3.5 shrink-0" style={{ color: "var(--text-muted)" }} />
+        {/* Clock = the dropdown trigger. onMouseDown (not onClick) fires before the
+            input's onBlur, and preventDefault keeps focus stable. Toggles the list —
+            works even right after picking a slot, when the input still holds focus. */}
+        <button type="button" tabIndex={-1} aria-label="Show times"
+          onMouseDown={e => {
+            e.preventDefault();
+            if (open) { setOpen(false); setQuery(null); }
+            else { setOpen(true); setQuery(null); inputRef.current?.focus(); requestAnimationFrame(() => inputRef.current?.select()); }
+          }}
+          className="shrink-0 flex items-center cursor-pointer transition-colors"
+          style={{ color: open ? "#6366f1" : "var(--text-muted)" }}>
+          <Clock className="w-3.5 h-3.5" />
+        </button>
       </div>
 
       {open && (

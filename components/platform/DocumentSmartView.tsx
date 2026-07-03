@@ -128,10 +128,10 @@ export default function DocumentSmartView({ config }: { config: SmartViewConfig 
       </div>
 
       {/* Table */}
-      <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+      <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
         <div className="overflow-x-auto thin-scroll-x">
           <div style={{ minWidth: 920 }}>
-            <div className="grid px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider items-center" style={{ gridTemplateColumns: cols, gap: "0.75rem", color: "var(--text-muted)", borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+            <div className="grid px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider items-center" style={{ gridTemplateColumns: cols, gap: "0.75rem", color: "var(--text-muted)", borderBottom: "1px solid var(--border)", backgroundColor: "transparent" }}>
               <span>Name</span><span>Category</span><span>Status</span>{config.reviewColumn && <span>Review</span>}<span>Owner</span><span>Linked App</span><span>Visibility</span>{(config.ackColumn || config.trainingColumn) && <span>{config.ackColumn ? "Ack." : "Required"}</span>}<span>Updated</span>
             </div>
             {docs.length === 0 ? (
@@ -140,7 +140,7 @@ export default function DocumentSmartView({ config }: { config: SmartViewConfig 
               const Icon = DOC_TYPE_ICON[d.type] ?? FileText;
               return (
                 <button key={d.id} onClick={() => setOpenId(d.id)} className="w-full grid px-4 py-3 items-center text-left transition-colors hover:bg-[var(--bg-surface-2)]"
-                  style={{ gridTemplateColumns: cols, gap: "0.75rem", borderBottom: i < docs.length - 1 ? "1px solid var(--border-subtle)" : "none", backgroundColor: openId === d.id ? ACCENT + "14" : "transparent" }}>
+                  style={{ gridTemplateColumns: cols, gap: "0.75rem", borderBottom: i < docs.length - 1 ? "1px solid var(--border)" : "none", backgroundColor: openId === d.id ? ACCENT + "14" : "transparent" }}>
                   <span className="flex items-center gap-2 min-w-0">
                     <Icon className="w-4 h-4 shrink-0" style={{ color: ACCENT }} />
                     <span className="text-sm truncate" style={{ color: "var(--text-primary)" }}>{d.title}</span>
@@ -178,7 +178,7 @@ function DocDrawer({ doc, config, onClose, onDuplicate, onArchive }: { doc: DocI
     <div className="fixed inset-0 z-50 flex justify-end">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
       <div className="relative h-full w-full max-w-md flex flex-col" style={{ backgroundColor: "var(--bg-surface)", borderLeft: "1px solid var(--border)", boxShadow: "-16px 0 48px -12px rgba(0,0,0,0.3)" }}>
-        <div className="px-5 py-4 flex items-center justify-between gap-2 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+        <div className="px-5 py-4 flex items-center justify-between gap-2 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
           <div className="flex items-center gap-2 min-w-0"><Icon className="w-5 h-5 shrink-0" style={{ color: ACCENT }} /><p className="text-base font-semibold truncate" style={{ color: "var(--text-primary)" }}>{doc.title}</p></div>
           <button onClick={onClose} style={{ color: "var(--text-muted)" }}><X className="w-4 h-4" /></button>
         </div>
@@ -202,7 +202,7 @@ function DocDrawer({ doc, config, onClose, onDuplicate, onArchive }: { doc: DocI
           )}
           {(config.ackColumn || config.trainingColumn) && <p className="text-[11px] mt-4 rounded-lg px-3 py-2" style={{ backgroundColor: "var(--bg-surface-2)", color: "var(--text-muted)" }}>{config.ackColumn ? "Acknowledgement tracking" : "Training assignment & completion"} lands in a later phase (My Portal).</p>}
         </div>
-        <div className="px-5 py-3 grid grid-cols-3 gap-2 shrink-0" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+        <div className="px-5 py-3 grid grid-cols-3 gap-2 shrink-0" style={{ borderTop: "1px solid var(--border)" }}>
           <Link href="/documents/library" className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm text-white col-span-1" style={{ backgroundColor: ACCENT }}><ExternalLink className="w-3.5 h-3.5" /> Open</Link>
           <button onClick={onDuplicate} className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}><Copy className="w-3.5 h-3.5" /> Duplicate</button>
           <button onClick={onArchive} className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm" style={{ border: "1px solid var(--border)", color: isArch ? "#10b981" : "#dc2626" }}><Archive className="w-3.5 h-3.5" /> {isArch ? "Restore" : "Archive"}</button>
@@ -227,7 +227,7 @@ function CreateDocModal({ config, onClose, onCreated }: { config: SmartViewConfi
   return (
     <div className="fixed inset-0 z-[60] bg-black/40 flex items-center justify-center p-4" onClick={onClose}>
       <div className="w-full max-w-md rounded-2xl overflow-hidden flex flex-col" onClick={e => e.stopPropagation()} style={{ backgroundColor: "var(--bg-surface)", boxShadow: "0 16px 48px rgba(0,0,0,0.24)" }}>
-        <div className="flex items-center justify-between px-5 py-4 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}><p className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>{config.createLabel}</p><button onClick={onClose} style={{ color: "var(--text-muted)" }}><X className="w-4 h-4" /></button></div>
+        <div className="flex items-center justify-between px-5 py-4 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}><p className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>{config.createLabel}</p><button onClick={onClose} style={{ color: "var(--text-muted)" }}><X className="w-4 h-4" /></button></div>
         <div className="p-5 space-y-3">
           <F label="Title"><input value={title} onChange={e => setTitle(e.target.value)} className={inp} style={inpStyle} autoFocus /></F>
           <F label={`Type`}><div className="px-3 py-2 rounded-lg text-sm" style={{ ...inpStyle, color: "var(--text-secondary)" }}>{config.createType}</div></F>
@@ -237,7 +237,7 @@ function CreateDocModal({ config, onClose, onCreated }: { config: SmartViewConfi
             <F label="Visibility"><UiSelect value={visibility} onChange={v => setVisibility(v as DocVisibility)} options={DOC_VISIBILITIES.map(x => ({ value: x, label: x }))} /></F>
           </div>
         </div>
-        <div className="px-5 py-3 flex items-center justify-end gap-2 shrink-0" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+        <div className="px-5 py-3 flex items-center justify-end gap-2 shrink-0" style={{ borderTop: "1px solid var(--border)" }}>
           <button onClick={onClose} className="text-sm font-medium px-3 py-2 rounded-lg" style={{ color: "var(--text-secondary)" }}>Cancel</button>
           <button onClick={save} className="text-sm font-medium px-4 py-2 rounded-lg text-white" style={{ backgroundColor: ACCENT }}>Create</button>
         </div>

@@ -93,7 +93,7 @@ export default function AppSwitcher() {
               </Link>
             );
           })}
-          <div className="mt-1 pt-1" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+          <div className="mt-1 pt-1" style={{ borderTop: "1px solid var(--border)" }}>
             <Link
               href="/welcome"
               onClick={() => setOpen(false)}

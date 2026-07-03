@@ -32,7 +32,7 @@ function Toggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void 
 function Card({ children }: { children: React.ReactNode }) {
   return (
     <div className="rounded-xl p-5"
-      style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+      style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
       {children}
     </div>
   );
@@ -168,21 +168,21 @@ function TasksTab() {
       {showAdd && <Form />}
 
       {/* Task types table */}
-      <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
-        <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+      <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
+        <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)" }}>
           <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Task Types
             <span className="ml-2 text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>{s.types.length}</span></p>
           {!showAdd && <button onClick={startAdd} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-white" style={{ backgroundColor: "#4f46e5" }}><Plus className="w-3.5 h-3.5" /> Add Type</button>}
         </div>
         <div className="grid px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider"
-          style={{ gridTemplateColumns: "auto 2fr 1.4fr 0.8fr auto", gap: "0.75rem", color: "var(--text-muted)", borderBottom: "1px solid var(--border-subtle)" }}>
+          style={{ gridTemplateColumns: "auto 2fr 1.4fr 0.8fr auto", gap: "0.75rem", color: "var(--text-muted)", borderBottom: "1px solid var(--border)" }}>
           <span>Order</span><span>Type</span><span>Key</span><span className="text-center">Active</span><span />
         </div>
         {sorted.map((t, i) => editingId === t.id ? (
-          <div key={t.id} className="p-4" style={{ borderBottom: i < sorted.length - 1 ? "1px solid var(--border-subtle)" : "none" }}><Form /></div>
+          <div key={t.id} className="p-4" style={{ borderBottom: i < sorted.length - 1 ? "1px solid var(--border)" : "none" }}><Form /></div>
         ) : (
           <div key={t.id} className="grid px-4 py-3 items-center hover:bg-[var(--bg-surface-2)] transition-colors"
-            style={{ gridTemplateColumns: "auto 2fr 1.4fr 0.8fr auto", gap: "0.75rem", borderBottom: i < sorted.length - 1 ? "1px solid var(--border-subtle)" : "none", opacity: t.active ? 1 : 0.5 }}>
+            style={{ gridTemplateColumns: "auto 2fr 1.4fr 0.8fr auto", gap: "0.75rem", borderBottom: i < sorted.length - 1 ? "1px solid var(--border)" : "none", opacity: t.active ? 1 : 0.5 }}>
             <div className="flex flex-col">
               <button onClick={() => move(t.id, -1)} disabled={i === 0} className="disabled:opacity-20" style={{ color: "var(--text-muted)" }}><ChevronUp className="w-3.5 h-3.5" /></button>
               <button onClick={() => move(t.id, 1)} disabled={i === sorted.length - 1} className="disabled:opacity-20" style={{ color: "var(--text-muted)" }}><ChevronDown className="w-3.5 h-3.5" /></button>
@@ -268,7 +268,7 @@ function CommentsToggleRow({ title, description, on, onChange }: {
   title: string; description: string; on: boolean; onChange: (v: boolean) => void;
 }) {
   return (
-    <div className="flex items-center justify-between gap-4 py-3" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+    <div className="flex items-center justify-between gap-4 py-3" style={{ borderBottom: "1px solid var(--border)" }}>
       <div className="min-w-0">
         <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{title}</p>
         <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>{description}</p>
@@ -364,7 +364,7 @@ export default function TasksSettingsSection() {
   return (
     <div className="space-y-5">
       <div className="flex items-center gap-1 p-1 rounded-xl w-fit"
-        style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border-subtle)" }}>
+        style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}>
         {TABS.map(t => {
           const active = tab === t.key;
           return (

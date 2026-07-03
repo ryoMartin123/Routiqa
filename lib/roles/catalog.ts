@@ -56,6 +56,7 @@ export const MASK_LABELS: Record<FieldMask, { label: string; description: string
   finance_internal_pricing: { label: "Internal pricing",    description: "Internal price book and list pricing." },
   finance_cost_margin:     { label: "Cost & margin",       description: "Item cost, markup, and profit margin on quotes/jobs." },
   finance_totals:          { label: "Financial totals",    description: "Quote/invoice totals, balances, and payment amounts." },
+  finance_field_pricing:   { label: "Field pricing",        description: "Line-item prices on work orders in the field / mobile app. Turn on to let techs see and quote pricing on site." },
   finance_payroll:         { label: "Payroll / labor cost", description: "Technician pay rates and internal labor cost." },
   comms_internal_notes:    { label: "Internal notes",      description: "Internal-only notes hidden from customer-facing views." },
   sales_other_commissions: { label: "Others' commissions", description: "Commission figures for other sales reps." },

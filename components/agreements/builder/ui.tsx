@@ -6,7 +6,7 @@
 import { Plus, Pencil, Trash2, Check } from "lucide-react";
 
 export const inputStyle: React.CSSProperties = { border: "1px solid var(--border)", backgroundColor: "var(--bg-surface)", color: "var(--text-primary)" };
-export const cardStyle: React.CSSProperties = { backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border-subtle)" };
+export const cardStyle: React.CSSProperties = { backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" };
 
 export function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
@@ -108,7 +108,7 @@ export function SummaryCard({ title, meta, badges, expanded, onToggle, onRemove,
         )}
       </div>
       {expanded && children && (
-        <div className="px-4 pb-4" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+        <div className="px-4 pb-4" style={{ borderTop: "1px solid var(--border)" }}>
           <div className="pt-3">{children}</div>
         </div>
       )}

@@ -27,7 +27,7 @@ export default function OptionImageInput({ value, onChange, accent }: {
   return (
     <div>
       {value ? (
-        <div className="relative rounded-lg overflow-hidden" style={{ border: "1px solid var(--border-subtle)" }}>
+        <div className="relative rounded-lg overflow-hidden" style={{ border: "1px solid var(--border)" }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={value} alt="Option" style={{ width: "100%", height: "96px", objectFit: "cover", display: "block" }} />
           <button onClick={() => onChange(undefined)} title="Remove image"

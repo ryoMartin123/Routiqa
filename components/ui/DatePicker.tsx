@@ -145,7 +145,7 @@ export default function DatePicker({ value, onChange, placeholder = "Select date
             })}
           </div>
 
-          <div className="flex items-center justify-between mt-2 pt-2" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+          <div className="flex items-center justify-between mt-2 pt-2" style={{ borderTop: "1px solid var(--border)" }}>
             <button type="button" disabled={!!outOfRange(today)} onClick={() => choose(new Date())} className="text-xs font-medium disabled:opacity-30 disabled:cursor-not-allowed" style={{ color: "var(--accent-text)" }}>Today</button>
             {clearable && value && (
               <button type="button" onClick={() => { onChange(""); setOpen(false); }} className="text-xs" style={{ color: "var(--text-muted)" }}>Clear</button>

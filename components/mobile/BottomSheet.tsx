@@ -39,7 +39,7 @@ export default function BottomSheet({
         style={{
           transform: open ? `translateY(${dragY}px)` : "translateY(110%)",
           transition: dragging.current ? "none" : "transform 0.34s cubic-bezier(0.22,1,0.36,1)",
-          backgroundColor: "var(--bg-surface)", borderTop: "1px solid var(--border-subtle)",
+          backgroundColor: "var(--bg-surface)", borderTop: "1px solid var(--border)",
           boxShadow: "0 -16px 48px rgba(0,0,0,0.4)",
         }}>
         {/* Drag zone — handle + header */}

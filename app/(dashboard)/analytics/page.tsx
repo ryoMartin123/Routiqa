@@ -73,7 +73,7 @@ function ReportCard({ cfg, onOpen, onChange }: { cfg: ReportConfig; onOpen: () =
   const source = sourceById(cfg.source); const metric = metricById(cfg.metric); const viz = vizById(cfg.viz);
   const isTemplate = !!cfg.template;
   return (
-    <div className="group rounded-2xl overflow-hidden flex flex-col transition-transform hover:-translate-y-0.5" style={{ border: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface)", boxShadow: "var(--shadow-glow)" }}>
+    <div className="group rounded-2xl overflow-hidden flex flex-col transition-transform hover:-translate-y-0.5" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface)", boxShadow: "var(--shadow-card)" }}>
       <button onClick={onOpen} className="text-left p-4 pb-2">
         <div className="flex items-center justify-between gap-2">
           <p className="text-sm font-semibold truncate" style={{ color: "var(--text-primary)" }}>{cfg.name || "Untitled widget"}</p>
@@ -84,7 +84,7 @@ function ReportCard({ cfg, onOpen, onChange }: { cfg: ReportConfig; onOpen: () =
       <button onClick={onOpen} className="px-4 text-left" style={{ height: 132 }}>
         <ChartView result={result} viz={cfg.viz} metricLabel={metric?.label ?? ""} compact />
       </button>
-      <div className="flex items-center justify-between px-3 py-2 mt-2" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+      <div className="flex items-center justify-between px-3 py-2 mt-2" style={{ borderTop: "1px solid var(--border)" }}>
         {isTemplate ? (
           <>
             <span className="inline-flex items-center gap-1 text-[11px] font-medium" style={{ color: ACCENT }}><Sparkles className="w-3 h-3" /> CRM template</span>

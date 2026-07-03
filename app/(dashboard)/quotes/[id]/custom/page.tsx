@@ -300,7 +300,7 @@ export default function CustomProposalBuilder({ params }: { params: Promise<{ id
   return (
     <div className="flex flex-col h-full" style={{ backgroundColor: "var(--bg-page)" }}>
       {/* ── Top bar ── */}
-      <div className="flex items-center gap-3 px-5 py-2.5 shrink-0" style={{ backgroundColor: "var(--bg-surface)", borderBottom: "1px solid var(--border-subtle)" }}>
+      <div className="flex items-center gap-3 px-5 py-2.5 shrink-0" style={{ backgroundColor: "var(--bg-surface)", borderBottom: "1px solid var(--border)" }}>
         <Link href={`/quotes/${id}`} className="flex items-center gap-1.5 text-sm shrink-0 transition-colors hover:opacity-80" style={{ color: "var(--text-secondary)" }}><ArrowLeft className="w-4 h-4" /> Quotes</Link>
         <div className="w-px h-5" style={{ backgroundColor: "var(--border)" }} />
         <span className="flex items-center gap-1.5 text-[11px] font-semibold px-2 py-0.5 rounded-full shrink-0" style={{ backgroundColor: accent + "1a", color: accent }}><SlidersHorizontal className="w-3 h-3" /> Custom Proposal</span>
@@ -433,8 +433,8 @@ export default function CustomProposalBuilder({ params }: { params: Promise<{ id
 function PricingSidebar({ pricing, accent, onEdit }: { pricing: NonNullable<QuoteRecord["pricing"]>; accent: string; onEdit: () => void }) {
   return (
     <aside className="shrink-0 sticky self-start" style={{ width: "250px", top: "8px" }}>
-      <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
-        <div className="flex items-center gap-2 px-3.5 py-3" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+      <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
+        <div className="flex items-center gap-2 px-3.5 py-3" style={{ borderBottom: "1px solid var(--border)" }}>
           <Lock className="w-3.5 h-3.5" style={{ color: "var(--text-muted)" }} />
           <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-secondary)" }}>Internal Pricing</span>
           <span className="ml-auto text-[9px] font-semibold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: "var(--bg-surface-2)", color: "var(--text-muted)" }}>Rep only</span>
@@ -453,7 +453,7 @@ function PricingSidebar({ pricing, accent, onEdit }: { pricing: NonNullable<Quot
         <div className="px-3.5 pb-3.5">
           <button onClick={onEdit} className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-medium transition-colors hover:bg-[var(--bg-surface-2)]" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}><Pencil className="w-3.5 h-3.5" /> Edit pricing</button>
         </div>
-        <div className="px-3.5 py-2.5" style={{ borderTop: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+        <div className="px-3.5 py-2.5" style={{ borderTop: "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)" }}>
           <p className="text-[10px] leading-relaxed" style={{ color: "var(--text-muted)" }}>Never shown to the customer. Add a <span style={{ fontWeight: 600 }}>Price Summary</span> or <span style={{ fontWeight: 600 }}>Line Items</span> section to show a number.</p>
         </div>
       </div>
@@ -651,7 +651,7 @@ function ContentBlockDrawer({ accent, onClose, onDragStart, onDragEnd, onAppend 
       </div>
 
       {/* Search + filter */}
-      <div className="px-4 py-3 space-y-2 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+      <div className="px-4 py-3 space-y-2 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
         <div className="relative">
           <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2" style={{ color: "var(--text-muted)" }} />
           <input value={q} onChange={e => setQ(e.target.value)} placeholder="Search blocks…"
@@ -673,7 +673,7 @@ function ContentBlockDrawer({ accent, onClose, onDragStart, onDragEnd, onAppend 
               onClick={() => onAppend(b)}
               title="Drag onto the proposal, or click to append"
               className="group rounded-lg p-2.5 cursor-grab active:cursor-grabbing transition-all hover:shadow-md"
-              style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>
+              style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
               <div className="flex items-start gap-2">
                 <GripVertical className="w-3.5 h-3.5 shrink-0 mt-0.5 opacity-40 group-hover:opacity-100 transition-opacity" style={{ color: "var(--text-muted)" }} />
                 <div className="min-w-0 flex-1">
@@ -687,7 +687,7 @@ function ContentBlockDrawer({ accent, onClose, onDragStart, onDragEnd, onAppend 
         </div>
 
       {/* Footer hint */}
-      <div className="px-4 py-2.5 shrink-0" style={{ borderTop: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+      <div className="px-4 py-2.5 shrink-0" style={{ borderTop: "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)" }}>
         <p className="text-[10px] leading-relaxed" style={{ color: "var(--text-muted)" }}>Drag a block into any gap on the proposal, or click to append. Edits here never change the master block.</p>
       </div>
     </div>
@@ -829,7 +829,7 @@ function SectionEditorModal(props: {
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-3" style={{ backgroundColor: "rgba(15,18,25,0.55)" }} onClick={props.onClose}>
       <div className="flex flex-col rounded-2xl overflow-hidden" style={{ width: "min(1560px, 98vw)", height: "94vh", backgroundColor: "var(--bg-surface)", boxShadow: "0 24px 80px rgba(0,0,0,0.5)" }} onClick={e => e.stopPropagation()}>
         {/* Header */}
-        <div className="flex items-center gap-3 px-4 py-2.5 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface)" }}>
+        <div className="flex items-center gap-3 px-4 py-2.5 shrink-0" style={{ borderBottom: "1px solid var(--border)", backgroundColor: "var(--bg-surface)" }}>
           <span className="flex items-center gap-1.5 text-[11px] font-semibold px-2 py-1 rounded-lg shrink-0" style={{ backgroundColor: accent + "1a", color: accent }}>{BLOCK_LABELS[block.type]}</span>
           {showLabelField ? (
             <input value={block.title} onChange={e => ctx.patchBlock(block.id, { title: e.target.value })} placeholder="Section label (shown above the section)"
@@ -854,7 +854,7 @@ function SectionEditorModal(props: {
             <BlockSettings sel={block} ctx={ctx} />
           </div>
           {/* Resizer */}
-          <div onPointerDown={startResize} title="Drag to resize" className="shrink-0 flex items-center justify-center cursor-col-resize group/resize" style={{ width: "8px", backgroundColor: "var(--bg-surface-2)", borderLeft: "1px solid var(--border-subtle)", borderRight: "1px solid var(--border-subtle)" }}>
+          <div onPointerDown={startResize} title="Drag to resize" className="shrink-0 flex items-center justify-center cursor-col-resize group/resize" style={{ width: "8px", backgroundColor: "var(--bg-surface-2)", borderLeft: "1px solid var(--border)", borderRight: "1px solid var(--border)" }}>
             <span className="rounded-full transition-colors group-hover/resize:bg-[var(--accent-text)]" style={{ width: "3px", height: "36px", backgroundColor: "var(--border)" }} />
           </div>
           <div ref={previewRef} className="flex-1 overflow-y-auto thin-scroll-y" style={{ backgroundColor: "#e5e7eb", minWidth: 0 }}>
@@ -1006,7 +1006,7 @@ function BlockSettings({ sel, ctx }: { sel: QuoteBlock; ctx: SettingsCtx }) {
     return (<div className="space-y-3">
       <p className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>Photos</p>
       {imgs.map((im, i) => (
-        <div key={im.id} className="rounded-lg p-2.5 space-y-2" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border-subtle)" }}>
+        <div key={im.id} className="rounded-lg p-2.5 space-y-2" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}>
           <div className="flex items-center justify-between"><span className="text-[11px]" style={{ color: "var(--text-muted)" }}>Photo {i + 1}</span><button onClick={() => setImages(imgs.filter(x => x.id !== im.id))} className="p-1 rounded" style={{ color: "var(--text-muted)" }}><Trash2 className="w-3.5 h-3.5" /></button></div>
           <OptionImageInput value={im.src} onChange={src => setImages(imgs.map(x => x.id === im.id ? { ...x, src: src ?? "" } : x))} accent={accent} />
           <input value={im.caption ?? ""} onChange={e => setImages(imgs.map(x => x.id === im.id ? { ...x, caption: e.target.value } : x))} placeholder="Caption" className="w-full rounded-lg px-2.5 py-1.5 text-xs outline-none focus:ring-2" style={inputStyle} />
@@ -1029,7 +1029,7 @@ function BlockSettings({ sel, ctx }: { sel: QuoteBlock; ctx: SettingsCtx }) {
   if (sel.type === "price_summary") return (<>
     <label className="flex items-center gap-2 text-sm cursor-pointer" style={{ color: "var(--text-secondary)" }}><input type="checkbox" checked={s.itemized ?? true} onChange={e => ctx.setBlockSettings(sel.id, { itemized: e.target.checked })} className="accent-indigo-600" /> Itemized (list each line)</label>
     <label className="flex items-center gap-2 text-sm cursor-pointer" style={{ color: "var(--text-secondary)" }}><input type="checkbox" checked={s.showMonthly ?? false} onChange={e => ctx.setBlockSettings(sel.id, { showMonthly: e.target.checked })} className="accent-indigo-600" /> Show monthly financing estimate</label>
-    <div className="rounded-lg p-3" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border-subtle)" }}><div className="flex items-center justify-between"><span className="text-xs" style={{ color: "var(--text-muted)" }}>Customer total</span><span className="text-base font-bold tabular-nums" style={{ color: "var(--text-primary)" }}>{fmt(ctx.totals.total)}</span></div></div>
+    <div className="rounded-lg p-3" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}><div className="flex items-center justify-between"><span className="text-xs" style={{ color: "var(--text-muted)" }}>Customer total</span><span className="text-base font-bold tabular-nums" style={{ color: "var(--text-primary)" }}>{fmt(ctx.totals.total)}</span></div></div>
     <ReadOnlyNote>The total comes from the Line Items section. Edit a Line Items section to change it.</ReadOnlyNote>
   </>);
 
@@ -1050,7 +1050,7 @@ function LineItemsEditor({ ctx }: { ctx: SettingsCtx }) {
     <div className="space-y-3">
       <div className="flex items-center gap-3"><button onClick={ctx.showCatalog} className="flex items-center gap-1 text-xs font-medium" style={{ color: accent }}><Package className="w-3.5 h-3.5" /> Catalog</button><button onClick={ctx.addItem} className="flex items-center gap-1 text-xs font-medium" style={{ color: "var(--text-secondary)" }}><Plus className="w-3.5 h-3.5" /> Custom line</button></div>
       {ctx.items.map(it => (
-        <div key={it.id} className="rounded-lg p-2.5 space-y-2" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border-subtle)" }}>
+        <div key={it.id} className="rounded-lg p-2.5 space-y-2" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}>
           {it.itemId && <div className="flex items-center gap-1 text-[10px] font-semibold" style={{ color: "var(--accent-text)" }}><Tag className="w-2.5 h-2.5" /> From catalog</div>}
           <input value={it.name} onChange={e => ctx.setItem(it.id, { name: e.target.value })} placeholder="Item name" className="w-full rounded-lg px-2.5 py-1.5 text-sm outline-none focus:ring-2" style={inputStyle} />
           <input value={it.description} onChange={e => ctx.setItem(it.id, { description: e.target.value })} placeholder="Description" className="w-full rounded-lg px-2.5 py-1.5 text-xs outline-none focus:ring-2" style={inputStyle} />

@@ -169,10 +169,10 @@ export default function TasksPage() {
         </div>
 
         {/* Table card */}
-        <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+        <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
         {/* Column headers */}
         <div className="grid px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider"
-          style={{ gridTemplateColumns: "2.5fr 1fr 2fr 1fr 1fr 0.4fr", color: "var(--text-muted)", borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+          style={{ gridTemplateColumns: "2.5fr 1fr 2fr 1fr 1fr 0.4fr", color: "var(--text-muted)", borderBottom: "1px solid var(--border)", backgroundColor: "transparent" }}>
           <span>Task</span>
           <span>Type</span>
           <span>Linked To</span>
@@ -212,7 +212,7 @@ export default function TasksPage() {
                 className={`grid px-4 py-3 items-center transition-opacity ${isCompleting ? "task-completing" : ""}`}
                 style={{
                   gridTemplateColumns: "2.5fr 1fr 2fr 1fr 1fr 0.4fr",
-                  borderBottom: i < displayed.length - 1 ? "1px solid var(--border-subtle)" : "none",
+                  borderBottom: i < displayed.length - 1 ? "1px solid var(--border)" : "none",
                   opacity: isCompleted ? 0.5 : 1,
                 }}>
 
@@ -314,7 +314,7 @@ export default function TasksPage() {
 
         {/* Footer */}
         <div className="px-4 py-3 text-xs"
-          style={{ borderTop: "1px solid var(--border-subtle)", color: "var(--text-muted)", backgroundColor: "var(--bg-surface-2)" }}>
+          style={{ borderTop: "1px solid var(--border)", color: "var(--text-muted)", backgroundColor: "transparent" }}>
           {contextFiltered.filter(t => t.status !== "completed").length} open ·{" "}
           {contextFiltered.filter(t => t.status === "completed").length} completed
         </div>
@@ -337,7 +337,7 @@ export default function TasksPage() {
 // ─── Stat card ────────────────────────────────────────────
 function Stat({ icon: Icon, label, value, color }: { icon: typeof ListChecks; label: string; value: number; color: string }) {
   return (
-    <div className="rounded-xl p-4 flex items-center gap-3" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+    <div className="rounded-xl p-4 flex items-center gap-3" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
       <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: color + "22" }}>
         <Icon className="w-4 h-4" style={{ color }} />
       </div>
@@ -389,7 +389,7 @@ function TasksOverview({ tasks }: { tasks: Task[] }) {
       </div>
 
       {typeRows.length > 0 && (
-        <div className="rounded-xl p-5" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+        <div className="rounded-xl p-5" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
           <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: "var(--text-muted)" }}>Open tasks by type</p>
           <div className="space-y-2">
             {typeRows.map(([type, n]) => (
@@ -541,10 +541,10 @@ function CommentsTab() {
       </div>
 
       {/* Table card */}
-      <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+      <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
       {/* Column headers */}
       <div className="grid px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider"
-        style={{ gridTemplateColumns: COMMENT_COLS, gap: "0.75rem", color: "var(--text-muted)", borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+        style={{ gridTemplateColumns: COMMENT_COLS, gap: "0.75rem", color: "var(--text-muted)", borderBottom: "1px solid var(--border)", backgroundColor: "transparent" }}>
         <span>Comment</span><span>Location</span><span>Status</span><span>Replies</span><span>Date</span><span />
       </div>
 
@@ -566,7 +566,7 @@ function CommentsTab() {
 
         if (isEditing) {
           return (
-            <div key={t.root.id} className="px-4 py-3" style={{ borderBottom: last ? "none" : "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+            <div key={t.root.id} className="px-4 py-3" style={{ borderBottom: last ? "none" : "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)" }}>
               <textarea value={editValue} onChange={e => setEditValue(e.target.value)} rows={3} autoFocus
                 className="w-full rounded-lg px-3 py-2 text-sm outline-none resize-none thin-scroll-y"
                 style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface)", color: "var(--text-primary)" }} />
@@ -580,7 +580,7 @@ function CommentsTab() {
 
         return (
           <div key={t.root.id} className="grid px-4 py-3 items-center group/crow hover:bg-[var(--bg-surface-2)] transition-colors"
-            style={{ gridTemplateColumns: COMMENT_COLS, gap: "0.75rem", borderBottom: last ? "none" : "1px solid var(--border-subtle)", opacity: t.root.resolved ? 0.65 : 1 }}>
+            style={{ gridTemplateColumns: COMMENT_COLS, gap: "0.75rem", borderBottom: last ? "none" : "1px solid var(--border)", opacity: t.root.resolved ? 0.65 : 1 }}>
             {/* Comment */}
             <div className="flex items-center gap-2.5 min-w-0">
               <span className="w-6 h-6 rounded-full bg-indigo-600 flex items-center justify-center text-[8px] font-bold text-white shrink-0">{t.root.authorInitials}</span>

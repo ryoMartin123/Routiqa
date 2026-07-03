@@ -158,7 +158,7 @@ export default function MarketingSettingsSection() {
 function TemplateRow({ template: t, onEdit, onDelete }: { template: MarketingTemplate; onEdit: () => void; onDelete: () => void }) {
   const cfg = CAMPAIGN_TYPE_CONFIG[t.type];
   return (
-    <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg" style={{ border: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+    <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)" }}>
       <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: "var(--bg-input)" }}>
         {t.channel === "sms" ? <Mail className="w-3.5 h-3.5" style={{ color: cfg.color }} /> : <Mail className="w-3.5 h-3.5" style={{ color: cfg.color }} />}
       </div>

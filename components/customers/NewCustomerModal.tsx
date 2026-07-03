@@ -106,7 +106,7 @@ function buildCustomer(
 // ─── Step progress indicator ──────────────────────────────
 function StepProgress({ current }: { current: number }) {
   return (
-    <div className="flex items-center px-6 py-4" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+    <div className="flex items-center px-6 py-4" style={{ borderBottom: "1px solid var(--border)" }}>
       {STEPS.map((label, i) => {
         const n = i + 1;
         const done = n < current; const active = n === current;
@@ -283,7 +283,7 @@ function QuickAddContent({ onClose, onCreated, forceStatus }: {
           </Field>
         )}
       </div>
-      <div className="px-6 py-4 flex gap-2" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+      <div className="px-6 py-4 flex gap-2" style={{ borderTop: "1px solid var(--border)" }}>
         <button onClick={() => handleSave("Prospect")} disabled={!data.name.trim() || (needsLocationChoice && !data.locationId)}
           className="flex-1 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-40"
           style={{ border: "1px solid var(--border)", color: "var(--text-secondary)", backgroundColor: "var(--bg-surface)" }}>
@@ -550,7 +550,7 @@ function WizardContent({ onClose, onCreated, forceStatus }: {
         {step === 3 && <Step3 data={data} set={set} errors={errors} clearError={clearError} onContactNameEdit={() => setContactNameEdited(true)} />}
         {step === 4 && <Step4 data={data} set={set} />}
       </div>
-      <div className="px-6 py-4 flex items-center justify-between gap-2" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+      <div className="px-6 py-4 flex items-center justify-between gap-2" style={{ borderTop: "1px solid var(--border)" }}>
         <button onClick={() => step > 1 ? setStep(s => (s - 1) as 1 | 2 | 3 | 4) : onClose()}
           className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
           style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>
@@ -601,9 +601,9 @@ export default function NewCustomerModal({ open, onClose, onCreated, forceStatus
     <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={onClose}>
       <div className="w-full max-w-2xl max-h-[90vh] flex flex-col rounded-2xl overflow-hidden"
         onClick={e => e.stopPropagation()}
-        style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "0 16px 48px rgba(0,0,0,0.24)" }}>
+        style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "0 16px 48px rgba(0,0,0,0.24)" }}>
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-5 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+        <div className="flex items-center justify-between px-6 py-5 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
           <div>
             <h2 className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>New Customer</h2>
             <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
@@ -616,7 +616,7 @@ export default function NewCustomerModal({ open, onClose, onCreated, forceStatus
         </div>
         {/* Mode toggle — only when Quick Add is enabled for the org */}
         {quickAddEnabled && (
-          <div className="flex gap-1 px-6 py-3 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+          <div className="flex gap-1 px-6 py-3 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
             {(["quick", "full"] as const).map(m => (
               <button key={m} onClick={() => setMode(m)}
                 className="flex-1 py-1.5 rounded-lg text-xs font-semibold capitalize transition-all"

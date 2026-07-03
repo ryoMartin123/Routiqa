@@ -28,7 +28,7 @@ export default function MobileCustomersPage() {
         ) : (
           <Card>
             {customers.map((c, i) => (
-              <Link key={c.id} href={`/mobile/customers/${c.id}`} className="flex items-center gap-3 px-4 py-3 active:bg-[var(--bg-surface-2)]" style={{ borderTop: i ? "1px solid var(--border-subtle)" : "none" }}>
+              <Link key={c.id} href={`/mobile/customers/${c.id}`} className="flex items-center gap-3 px-4 py-3 active:bg-[var(--bg-surface-2)]" style={{ borderTop: i ? "1px solid var(--border)" : "none" }}>
                 <span className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white shrink-0" style={{ backgroundColor: ACCENT }}>{c.initials}</span>
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-semibold truncate" style={{ color: "var(--text-primary)" }}>{c.name}</p>

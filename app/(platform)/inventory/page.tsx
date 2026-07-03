@@ -105,7 +105,7 @@ export default function InventoryDashboard() {
               const Icon = ACTIVITY_ICON[a.kind];
               return (
                 <li key={a.id} className="flex items-start gap-2.5">
-                  <span className="w-6 h-6 rounded-md flex items-center justify-center shrink-0 mt-0.5" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border-subtle)" }}>
+                  <span className="w-6 h-6 rounded-md flex items-center justify-center shrink-0 mt-0.5" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}>
                     <Icon className="w-3 h-3" style={{ color: "var(--text-secondary)" }} />
                   </span>
                   <div className="min-w-0">
@@ -145,7 +145,7 @@ function Panel({ title, icon: Icon, accent, href, children }: {
 
 function Mini({ label, value, icon: Icon }: { label: string; value: number; icon: typeof Boxes }) {
   return (
-    <div className="rounded-lg px-3 py-2 flex items-center gap-2.5" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border-subtle)" }}>
+    <div className="rounded-lg px-3 py-2 flex items-center gap-2.5" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}>
       <Icon className="w-4 h-4 shrink-0" style={{ color: "var(--text-muted)" }} />
       <div>
         <p className="text-lg font-bold leading-none" style={{ color: "var(--text-primary)" }}>{value}</p>

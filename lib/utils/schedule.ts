@@ -28,6 +28,37 @@ export function isPastDateTime(ymd: string, hm?: string): boolean {
   return when.getTime() < now.getTime();
 }
 
+// TimePicker `minTime` for a given day (yyyy-mm-dd): when the date is TODAY,
+// returns the current "HH:MM" rounded UP to the next step so past times are
+// blocked out of the list entirely; for a future day (or none) returns undefined
+// (all times allowed). Past days are already blocked by the DatePicker `min`.
+export function minTimeFor(ymd: string, stepMinutes = 15): string | undefined {
+  if (!ymd || ymd !== todayYMD()) return undefined;
+  const now = new Date();
+  let total = now.getHours() * 60 + now.getMinutes();
+  total = Math.ceil(total / stepMinutes) * stepMinutes;   // round up to the next slot
+  if (total >= 24 * 60) return "23:59";                    // late-night: nothing left today
+  const h = Math.floor(total / 60), m = total % 60;
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+}
+
+// Local "yyyy-mm-dd" for tomorrow.
+export function tomorrowYMD(): string {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+// Earliest day still bookable given the board's closing hour: TODAY when a slot
+// remains before close, otherwise TOMORROW. Pass as the DatePicker `min` so a day
+// with no available times left (e.g. it's 11pm and the board closed at 9pm) can't
+// be selected at all — it lines up with what the TimePicker would show.
+export function minBookableYMD(endHour = 21, stepMinutes = 15): string {
+  const now = new Date();
+  const mins = Math.ceil((now.getHours() * 60 + now.getMinutes()) / stepMinutes) * stepMinutes;
+  return mins < endHour * 60 ? todayYMD() : tomorrowYMD();
+}
+
 // ─── Dispatch board working-hours window ──────────────────
 // True when a timed slot starts before the board opens, or its duration would
 // run past closing — i.e. it falls outside the allocated hours.

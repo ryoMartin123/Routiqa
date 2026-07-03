@@ -19,7 +19,7 @@ export default function MobileSearchPage() {
     <div>
       <MobileHeader title="Search" back />
       <div className="px-4">
-        <div className="flex items-center gap-2 rounded-2xl px-3.5 py-3 mb-4" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface)", boxShadow: "var(--shadow-glow)" }}>
+        <div className="flex items-center gap-2 rounded-2xl px-3.5 py-3 mb-4" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface)", boxShadow: "var(--shadow-card)" }}>
           <Search className="w-5 h-5 shrink-0" style={{ color: "var(--text-muted)" }} />
           <input autoFocus value={q} onChange={e => setQ(e.target.value)} placeholder="Search customers, jobs, invoices…" className="bg-transparent text-base outline-none w-full" style={{ color: "var(--text-primary)" }} />
           {q && <button onClick={() => setQ("")}><X className="w-4 h-4" style={{ color: "var(--text-muted)" }} /></button>}
@@ -35,7 +35,7 @@ export default function MobileSearchPage() {
             {results.map(r => {
               const meta = SEARCH_TYPE_META[r.type]; const Icon = ICON[r.type];
               return (
-                <Link key={`${r.type}-${r.id}`} href={r.href} className="flex items-center gap-3 rounded-2xl p-3 active:scale-[0.99] transition-transform" style={{ border: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface)" }}>
+                <Link key={`${r.type}-${r.id}`} href={r.href} className="flex items-center gap-3 rounded-2xl p-3 active:scale-[0.99] transition-transform" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface)" }}>
                   <span className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: meta.color + "1a" }}><Icon className="w-5 h-5" style={{ color: meta.color }} /></span>
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold truncate" style={{ color: "var(--text-primary)" }}>{r.title}</p>

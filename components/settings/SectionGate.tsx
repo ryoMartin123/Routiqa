@@ -32,7 +32,7 @@ export default function SectionGate({
 
   return (
     <div className="rounded-xl p-6 flex flex-col items-center text-center gap-3"
-      style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+      style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
       <div className="w-11 h-11 rounded-full flex items-center justify-center" style={{ backgroundColor: meta.color + "18" }}>
         <Lock className="w-5 h-5" style={{ color: meta.color }} />
       </div>

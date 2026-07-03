@@ -31,7 +31,7 @@ export default function InvoicesDue() {
     <div className="rounded-xl overflow-hidden h-full min-h-0 flex flex-col"
       style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
       <div className="flex items-center justify-between px-5 py-4 shrink-0"
-        style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+        style={{ borderBottom: "1px solid var(--border)" }}>
         <div className="flex items-center gap-2">
           <Receipt className="w-4 h-4" style={{ color: "#4f46e5" }} />
           <h2 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Invoices Due</h2>
@@ -59,7 +59,7 @@ export default function InvoicesDue() {
             return (
               <Link key={inv.id} href={`/invoices/${inv.id}`}
                 className="flex items-center gap-3 px-5 py-3 hover:bg-[var(--bg-surface-2)] transition-colors"
-                style={{ borderBottom: i < invoices.length - 1 ? "1px solid var(--border-subtle)" : "none", textDecoration: "none" }}>
+                style={{ borderBottom: i < invoices.length - 1 ? "1px solid var(--border)" : "none", textDecoration: "none" }}>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{inv.customerName}</p>
                   <p className="text-xs truncate" style={{ color: "var(--text-muted)" }}>{inv.invoiceNumber} · Due {inv.dueDate}</p>

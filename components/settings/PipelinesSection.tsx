@@ -213,9 +213,9 @@ export default function PipelinesSection() {
 
       {/* Table */}
       <div className="rounded-xl overflow-hidden"
-        style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+        style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
         <div className="flex items-center justify-between px-4 py-3"
-          style={{ borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+          style={{ borderBottom: "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)" }}>
           <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
             Pipeline Stages
             <span className="ml-2 text-[10px] font-bold px-1.5 py-0.5 rounded-full"
@@ -231,19 +231,19 @@ export default function PipelinesSection() {
         </div>
 
         <div className="grid px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider"
-          style={{ gridTemplateColumns: "auto 2fr 1.5fr 1fr 1fr auto", gap: "1rem", color: "var(--text-muted)", borderBottom: "1px solid var(--border-subtle)" }}>
+          style={{ gridTemplateColumns: "auto 2fr 1.5fr 1fr 1fr auto", gap: "1rem", color: "var(--text-muted)", borderBottom: "1px solid var(--border)" }}>
           <span>Order</span><span>Stage</span><span>Key</span><span>Category</span><span className="text-center">Active</span><span />
         </div>
 
         {sorted.map((s, i) => (
           editingId === s.id ? (
-            <div key={s.id} className="p-4" style={{ borderBottom: i < sorted.length - 1 ? "1px solid var(--border-subtle)" : "none" }}>
+            <div key={s.id} className="p-4" style={{ borderBottom: i < sorted.length - 1 ? "1px solid var(--border)" : "none" }}>
               {FormCard()}
             </div>
           ) : (
             <div key={s.id}
               className="grid px-4 py-3 items-center hover:bg-[var(--bg-surface-2)] transition-colors"
-              style={{ gridTemplateColumns: "auto 2fr 1.5fr 1fr 1fr auto", gap: "1rem", borderBottom: i < sorted.length - 1 ? "1px solid var(--border-subtle)" : "none", opacity: s.active ? 1 : 0.5 }}>
+              style={{ gridTemplateColumns: "auto 2fr 1.5fr 1fr 1fr auto", gap: "1rem", borderBottom: i < sorted.length - 1 ? "1px solid var(--border)" : "none", opacity: s.active ? 1 : 0.5 }}>
               {/* Reorder */}
               <div className="flex flex-col">
                 <button onClick={() => move(s.id, -1)} disabled={i === 0} className="disabled:opacity-20" style={{ color: "var(--text-muted)" }}>

@@ -88,13 +88,13 @@ export default function CommentModeController() {
         down instead of gliding in from the left. */}
     <div className="fixed top-0 left-0 right-0 z-[60] mt-2 flex justify-center pointer-events-none">
     <div data-comment-ui
-      className="comment-mode-banner pointer-events-auto flex items-center gap-3 px-4 py-2 rounded-full"
+      className="comment-mode-banner pointer-events-auto flex items-center gap-3 px-4 py-2.5 rounded-xl"
       style={{ backgroundColor: "#2a2415", color: "#d8b566", border: "1px solid #4a3d20", boxShadow: "0 8px 24px rgba(0,0,0,0.28)" }}>
       <MessageSquarePlus className="w-4 h-4 shrink-0" />
       <span className="text-sm font-medium whitespace-nowrap">Comment mode — click anywhere to comment</span>
       {count > 0 && (
         <button onClick={() => openPath(path, pageLabel(path), undefined, tab)}
-          className="text-xs font-semibold px-2 py-0.5 rounded-full"
+          className="text-xs font-semibold px-2 py-0.5 rounded-md"
           style={{ backgroundColor: "#4a3d20", color: "#d8b566" }}>
           {count} here
         </button>

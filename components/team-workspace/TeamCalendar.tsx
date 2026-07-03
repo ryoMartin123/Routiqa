@@ -88,8 +88,8 @@ export default function TeamCalendar() {
 
       <div className="grid lg:grid-cols-[1fr_300px] gap-5 items-start">
         {/* Month grid */}
-        <div className="rounded-2xl overflow-hidden" style={{ border: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface)", boxShadow: "var(--shadow-card)" }}>
-          <div className="grid grid-cols-7" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+        <div className="rounded-2xl overflow-hidden" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface)", boxShadow: "var(--shadow-card)" }}>
+          <div className="grid grid-cols-7" style={{ borderBottom: "1px solid var(--border)" }}>
             {DOW.map(d => <div key={d} className="text-center text-[11px] font-semibold uppercase tracking-wider py-2" style={{ color: "var(--text-muted)" }}>{d}</div>)}
           </div>
           <div className="grid grid-cols-7">
@@ -98,7 +98,7 @@ export default function TeamCalendar() {
               const evs = events[key] ?? [];
               return (
                 <button key={i} onClick={() => setSelected(key)} className="text-left p-1.5 min-h-[88px] align-top transition-colors hover:bg-[var(--bg-surface-2)]"
-                  style={{ borderRight: (i + 1) % 7 ? "1px solid var(--border-subtle)" : "none", borderBottom: "1px solid var(--border-subtle)", backgroundColor: isSel ? ACCENT + "0d" : "transparent", opacity: inMonth ? 1 : 0.4 }}>
+                  style={{ borderRight: (i + 1) % 7 ? "1px solid var(--border)" : "none", borderBottom: "1px solid var(--border)", backgroundColor: isSel ? ACCENT + "0d" : "transparent", opacity: inMonth ? 1 : 0.4 }}>
                   <div className="flex justify-end">
                     <span className={`text-xs font-semibold w-6 h-6 flex items-center justify-center rounded-full ${isToday ? "text-white" : ""}`} style={{ backgroundColor: isToday ? ACCENT : "transparent", color: isToday ? "#fff" : "var(--text-secondary)" }}>{dt.getDate()}</span>
                   </div>
@@ -119,13 +119,13 @@ export default function TeamCalendar() {
 
         {/* Side: selected day + upcoming */}
         <div className="space-y-4">
-          <div className="rounded-2xl p-4" style={{ border: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface)", boxShadow: "var(--shadow-card)" }}>
+          <div className="rounded-2xl p-4" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface)", boxShadow: "var(--shadow-card)" }}>
             <p className="text-sm font-semibold mb-2.5" style={{ color: "var(--text-primary)" }}>{new Date(selected).toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}</p>
             {selEvents.length === 0 ? <p className="text-xs" style={{ color: "var(--text-muted)" }}>Nothing scheduled.</p> : (
               <div className="space-y-2">{selEvents.map(e => <EventRow key={e.id} e={e} />)}</div>
             )}
           </div>
-          <div className="rounded-2xl p-4" style={{ border: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface)", boxShadow: "var(--shadow-card)" }}>
+          <div className="rounded-2xl p-4" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface)", boxShadow: "var(--shadow-card)" }}>
             <p className="text-[11px] font-semibold uppercase tracking-wider mb-2.5" style={{ color: "var(--text-muted)" }}>Upcoming</p>
             <div className="space-y-2.5">
               {upcoming.map(({ k, e }) => (

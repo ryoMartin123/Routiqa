@@ -80,7 +80,7 @@ export default function AgreementDetailPage({ params }: { params: Promise<{ id: 
 
   return (
     <div className="flex flex-col h-full">
-      <div style={{ backgroundColor: "var(--bg-surface)", borderBottom: "1px solid var(--border-subtle)" }}>
+      <div style={{ backgroundColor: "var(--bg-surface)", borderBottom: "1px solid var(--border)" }}>
         <DetailHeader agreement={agreement} actions={actions} menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
         <DetailTabs tabs={TABS} active={activeTab} onChange={setActiveTab} className="px-6 pb-2" />
       </div>

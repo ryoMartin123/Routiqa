@@ -167,7 +167,7 @@ export default function OfferLibrarySection() {
       {groups.length === 0 ? (
         <EmptyState />
       ) : filtered.length === 0 ? (
-        <div className="rounded-xl py-14 text-center" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>
+        <div className="rounded-xl py-14 text-center" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
           <p className="text-sm" style={{ color: "var(--text-muted)" }}>No offer groups match the current filters.</p>
         </div>
       ) : view === "cards" ? (
@@ -193,7 +193,7 @@ export default function OfferLibrarySection() {
 
 function EmptyState() {
   return (
-    <div className="rounded-xl py-16 text-center" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>
+    <div className="rounded-xl py-16 text-center" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
       <Package className="w-8 h-8 mx-auto mb-3" style={{ color: "var(--text-muted)" }} />
       <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>No offer groups yet</p>
       <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>Create one to build reusable Good / Better / Best offers and packages.</p>
@@ -204,7 +204,7 @@ function EmptyState() {
 function SummaryCard({ label, value, icon: Icon, warn, sub }: { label: string; value: number; icon: typeof Package; warn?: boolean; sub?: string }) {
   const danger = warn && value > 0;
   return (
-    <div className="rounded-xl p-3.5" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+    <div className="rounded-xl p-3.5" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
       <div className="flex items-center justify-between">
         <p className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>{label}</p>
         <Icon className="w-4 h-4" style={{ color: danger ? "#b45309" : "var(--text-muted)" }} />
@@ -244,7 +244,7 @@ function GroupCard({ g, usedIn, onOpen, onPreview, onDuplicate, onArchive }: {
 }) {
   const st = STATUS_STYLE[g.status];
   return (
-    <div className="rounded-2xl overflow-hidden flex flex-col" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+    <div className="rounded-2xl overflow-hidden flex flex-col" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
       <div className="px-4 pt-3.5 pb-3 flex-1">
         <div className="flex items-start justify-between gap-2">
           <button onClick={onOpen} className="text-sm font-semibold leading-snug text-left hover:underline" style={{ color: "var(--text-primary)" }}>{g.name}</button>
@@ -261,7 +261,7 @@ function GroupCard({ g, usedIn, onOpen, onPreview, onDuplicate, onArchive }: {
         {g.description && <p className="text-xs mt-2 leading-snug" style={{ color: "var(--text-muted)", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{g.description}</p>}
         <div className="mt-2.5"><TierPreview g={g} /></div>
       </div>
-      <div className="px-4 py-2.5 grid grid-cols-3 gap-2 text-center" style={{ borderTop: "1px solid var(--border-subtle)", borderBottom: "1px solid var(--border-subtle)" }}>
+      <div className="px-4 py-2.5 grid grid-cols-3 gap-2 text-center" style={{ borderTop: "1px solid var(--border)", borderBottom: "1px solid var(--border)" }}>
         <Stat label="Options" value={`${g.options.length}`} />
         <Stat label="Price range" value={fmtPriceRange(g)} />
         <Stat label="Used in" value={`${usedIn}`} />
@@ -287,10 +287,10 @@ function OfferTable({ groups, usageCount, onOpen, onPreview, onDuplicate, onArch
   onOpen: (id: string) => void; onPreview: (id: string) => void; onDuplicate: (id: string) => void; onArchive: (id: string) => void;
 }) {
   return (
-    <div className="rounded-xl overflow-hidden overflow-x-auto thin-scroll-x" style={{ border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+    <div className="rounded-xl overflow-hidden overflow-x-auto thin-scroll-x" style={{ border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
       <table className="w-full text-sm" style={{ backgroundColor: "var(--bg-surface)", minWidth: 980 }}>
         <thead>
-          <tr style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+          <tr style={{ borderBottom: "1px solid var(--border)" }}>
             {["Offer Group", "Industry", "Category", "Options", "Price Range", "Used In", "Status", "Needs Attention", "Last Updated", ""].map((h, i) => (
               <th key={i} className="text-left font-semibold px-3 py-2.5 text-[11px] uppercase tracking-wide whitespace-nowrap" style={{ color: "var(--text-muted)" }}>{h}</th>
             ))}
@@ -300,7 +300,7 @@ function OfferTable({ groups, usageCount, onOpen, onPreview, onDuplicate, onArch
           {groups.map(g => {
             const st = STATUS_STYLE[g.status];
             return (
-              <tr key={g.id} className="transition-[background-color] hover:bg-[var(--bg-surface-2)]" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+              <tr key={g.id} className="transition-[background-color] hover:bg-[var(--bg-surface-2)]" style={{ borderBottom: "1px solid var(--border)" }}>
                 <td className="px-3 py-2.5">
                   <button onClick={() => onOpen(g.id)} className="font-medium text-left hover:underline" style={{ color: "var(--text-primary)" }}>{g.name}</button>
                   {g.size && <span className="ml-1.5 text-[11px]" style={{ color: "var(--text-muted)" }}>· {g.size}</span>}
@@ -421,12 +421,12 @@ function OfferGroupEditor({ groupId, onBack }: { groupId: string; onBack: () => 
         </div>
       </div>
 
-      <div className="pb-2" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+      <div className="pb-2" style={{ borderBottom: "1px solid var(--border)" }}>
         <StatusTabs active={tab} onChange={k => setTab(k as EditorTab)}
           tabs={EDITOR_TABS.map(t => ({ key: t.key, label: t.label, icon: t.icon }))} />
       </div>
 
-      <div className="rounded-xl p-5" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+      <div className="rounded-xl p-5" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
         {tab === "overview" && <OverviewTab g={g} patch={patch} />}
         {tab === "options" && <OptionsTab g={g} setOptions={setOptions} onEditDetails={(id) => { setActiveOptId(id); setTab("included"); }} />}
         {tab === "included" && (g.options.length === 0 ? <Empty msg="Add options first." /> : <>{optionSelector}{activeOpt && <IncludedItemsEditor opt={activeOpt} onChange={p => updateOption(activeOpt.id, p)} />}</>)}
@@ -490,12 +490,12 @@ function OptionsTab({ g, setOptions, onEditDetails }: { g: OfferGroup; setOption
             const primary = o.primaryImageId ? o.images.find(im => im.id === o.primaryImageId) : o.images[0];
             const missing = [!(o.price > 0) && "price", o.images.length === 0 && "image", !o.title.trim() && "title"].filter(Boolean) as string[];
             return (
-            <div key={o.id} className="rounded-xl p-3 space-y-2" style={{ backgroundColor: "var(--bg-surface-2)", border: o.recommended ? "1.5px solid var(--accent-text)" : "1px solid var(--border-subtle)" }}>
+            <div key={o.id} className="rounded-xl p-3 space-y-2" style={{ backgroundColor: "var(--bg-surface-2)", border: o.recommended ? "1.5px solid var(--accent-text)" : "1px solid var(--border)" }}>
               <div className="flex items-center gap-1.5">
                 {/* Primary image thumbnail */}
                 {primary ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={primary.url} alt="" className="w-8 h-8 rounded-md object-cover shrink-0" style={{ border: "1px solid var(--border-subtle)" }} />
+                  <img src={primary.url} alt="" className="w-8 h-8 rounded-md object-cover shrink-0" style={{ border: "1px solid var(--border)" }} />
                 ) : (
                   <span className="w-8 h-8 rounded-md flex items-center justify-center shrink-0" style={{ backgroundColor: "var(--bg-input)" }}><ImageIcon className="w-3.5 h-3.5" style={{ color: "var(--text-muted)" }} /></span>
                 )}
@@ -553,7 +553,7 @@ function IncludedItemsEditor({ opt, onChange }: { opt: OfferOption; onChange: (p
       {items.length === 0 ? <Empty msg="No included items yet." /> : (
         <div className="space-y-1.5">
           {items.map(it => (
-            <div key={it.id} className="flex items-center gap-2 rounded-lg px-2.5 py-1.5" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border-subtle)" }}>
+            <div key={it.id} className="flex items-center gap-2 rounded-lg px-2.5 py-1.5" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}>
               <input value={it.name} onChange={e => update(it.id, { name: e.target.value })} className="flex-1 min-w-0 bg-transparent text-sm outline-none" style={{ color: "var(--text-primary)" }} />
               {it.itemId && <span className="text-[9px] px-1.5 py-0.5 rounded shrink-0" style={{ backgroundColor: "var(--accent-soft-bg)", color: "var(--accent-text)" }}>Catalog</span>}
               <div className="flex items-center gap-1 shrink-0"><span className="text-[10px]" style={{ color: "var(--text-muted)" }}>$</span><input type="number" min={0} value={it.price ?? ""} onChange={e => update(it.id, { price: e.target.value === "" ? undefined : parseFloat(e.target.value) || 0 })} className="w-20 rounded px-1.5 py-0.5 text-xs outline-none" style={inpStyle} /></div>
@@ -575,11 +575,11 @@ function CatalogPicker({ onPick, onClose }: { onPick: (it: OfferIncludedItem) =>
   return (
     <div className="fixed inset-0 z-[80] bg-black/45 flex items-center justify-center p-4" onClick={onClose}>
       <div className="w-full max-w-lg max-h-[80vh] flex flex-col rounded-2xl overflow-hidden" onClick={e => e.stopPropagation()} style={{ backgroundColor: "var(--bg-surface)", boxShadow: "0 24px 70px rgba(0,0,0,0.4)" }}>
-        <div className="flex items-center justify-between px-5 py-3.5 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+        <div className="flex items-center justify-between px-5 py-3.5 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
           <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Add from Items &amp; Services</p>
           <button onClick={onClose} style={{ color: "var(--text-muted)" }}><X className="w-5 h-5" /></button>
         </div>
-        <div className="px-5 py-3 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+        <div className="px-5 py-3 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
           <div className="relative"><Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "var(--text-muted)" }} /><input value={q} onChange={e => setQ(e.target.value)} placeholder="Search items…" className="w-full rounded-lg pl-9 pr-3 py-2 text-sm outline-none" style={inpStyle} autoFocus /></div>
         </div>
         <div className="flex-1 overflow-y-auto thin-scroll-y p-2">
@@ -642,7 +642,7 @@ function ImagesEditor({ opt, onChange }: { opt: OfferOption; onChange: (p: Parti
           {imgs.map((im, i) => {
             const isPrimary = im.id === primaryId;
             return (
-              <div key={im.id} className="rounded-xl overflow-hidden flex flex-col" style={{ backgroundColor: "var(--bg-surface-2)", border: isPrimary ? "1.5px solid var(--accent-text)" : "1px solid var(--border-subtle)" }}>
+              <div key={im.id} className="rounded-xl overflow-hidden flex flex-col" style={{ backgroundColor: "var(--bg-surface-2)", border: isPrimary ? "1.5px solid var(--accent-text)" : "1px solid var(--border)" }}>
                 <div className="relative">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={im.url} alt={im.caption ?? ""} style={{ width: "100%", height: "100px", objectFit: "cover", display: "block" }} />
@@ -680,7 +680,7 @@ function PricingTab({ g, patch, updateOption }: { g: OfferGroup; patch: (p: Part
         <p className="text-xs font-medium mb-2" style={{ color: "var(--text-secondary)" }}>Per-option pricing</p>
         <div className="space-y-1.5">
           {g.options.map(o => (
-            <div key={o.id} className="flex items-center gap-3 rounded-lg px-3 py-2" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border-subtle)" }}>
+            <div key={o.id} className="flex items-center gap-3 rounded-lg px-3 py-2" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}>
               <span className="flex-1 text-sm truncate" style={{ color: "var(--text-primary)" }}>{o.title}</span>
               <span className="text-sm font-semibold" style={{ color: "var(--text-secondary)" }}>{fmtMoney(o.price)}{o.monthlyPrice ? ` · ${fmtMoney(o.monthlyPrice)}/mo` : ""}</span>
               <label className="flex items-center gap-1.5 text-xs cursor-pointer" style={{ color: "var(--text-muted)" }}>
@@ -717,7 +717,7 @@ function DisplayTab({ g, patch }: { g: OfferGroup; patch: (p: Partial<OfferGroup
       </Field>
       <div>
         <p className="text-xs font-medium mb-2" style={{ color: "var(--text-secondary)" }}>Field toggles</p>
-        <div className="grid sm:grid-cols-2 gap-x-6 gap-y-1 rounded-lg p-3" style={{ border: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+        <div className="grid sm:grid-cols-2 gap-x-6 gap-y-1 rounded-lg p-3" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)" }}>
           {TOGGLES.map(tog => (
             <label key={tog.key} className="flex items-center justify-between py-1.5 cursor-pointer">
               <span className="text-sm" style={{ color: "var(--text-primary)" }}>{tog.label}</span>
@@ -742,7 +742,7 @@ function UsageTab({ g }: { g: OfferGroup }) {
         ) : (
           <div className="space-y-1.5">
             {using.map(sb => (
-              <div key={sb.id} className="flex items-center gap-2 rounded-lg px-3 py-2" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border-subtle)" }}>
+              <div key={sb.id} className="flex items-center gap-2 rounded-lg px-3 py-2" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}>
                 <Package className="w-3.5 h-3.5" style={{ color: "var(--text-muted)" }} />
                 <span className="text-sm" style={{ color: "var(--text-primary)" }}>{sb.name}</span>
               </div>
@@ -754,7 +754,7 @@ function UsageTab({ g }: { g: OfferGroup }) {
         <p className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: "var(--text-muted)" }}>Quotes created from it</p>
         <p className="text-xs" style={{ color: "var(--text-muted)" }}>Quote-level usage tracking is coming soon. Quotes copy this offer&apos;s data at creation time.</p>
       </div>
-      <div className="rounded-lg px-3 py-2.5 flex items-start gap-2" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border-subtle)" }}>
+      <div className="rounded-lg px-3 py-2.5 flex items-start gap-2" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}>
         <Copy className="w-3.5 h-3.5 mt-0.5 shrink-0" style={{ color: "var(--text-muted)" }} />
         <p className="text-[11px] leading-snug" style={{ color: "var(--text-muted)" }}>When a proposal or quote uses this offer group, its data is <strong>copied</strong> into that proposal/quote — so older quotes never change when you edit this master offer group later.</p>
       </div>
@@ -776,7 +776,7 @@ function ActivityTab({ g }: { g: OfferGroup }) {
       {events.map((e, i) => (
         <div key={i} className="flex gap-3">
           <div className="flex flex-col items-center">
-            <span className="w-7 h-7 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border-subtle)" }}>
+            <span className="w-7 h-7 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}>
               <e.icon className="w-3.5 h-3.5" style={{ color: "var(--text-secondary)" }} />
             </span>
             {i < events.length - 1 && <span className="w-px flex-1 my-1" style={{ backgroundColor: "var(--border-subtle)" }} />}
@@ -878,7 +878,7 @@ export function OfferGroupPreview({ group }: { group: OfferGroup }) {
 function OfferGroupPreviewModal({ group, onClose }: { group: OfferGroup; onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-[80] flex flex-col" style={{ backgroundColor: "rgba(17,24,39,0.7)" }}>
-      <div className="flex items-center justify-between gap-3 px-5 py-3 shrink-0" style={{ backgroundColor: "var(--bg-surface)", borderBottom: "1px solid var(--border-subtle)" }}>
+      <div className="flex items-center justify-between gap-3 px-5 py-3 shrink-0" style={{ backgroundColor: "var(--bg-surface)", borderBottom: "1px solid var(--border)" }}>
         <p className="text-sm font-semibold flex items-center gap-2 min-w-0" style={{ color: "var(--text-primary)" }}><Eye className="w-4 h-4 shrink-0" style={{ color: "var(--accent-text)" }} /> <span className="truncate">{group.name} — Preview</span></p>
         <button onClick={onClose} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)", backgroundColor: "var(--bg-surface)" }}><X className="w-4 h-4" /> Close</button>
       </div>
@@ -903,11 +903,11 @@ export function OfferGroupPicker({ industry, onPick, onClose }: { industry?: Sal
   return (
     <div className="fixed inset-0 z-[70] bg-black/45 flex items-center justify-center p-4" onClick={onClose}>
       <div className="w-full max-w-4xl max-h-[88vh] flex flex-col rounded-2xl overflow-hidden" onClick={e => e.stopPropagation()} style={{ backgroundColor: "var(--bg-surface)", boxShadow: "0 24px 70px rgba(0,0,0,0.4)" }}>
-        <div className="flex items-center justify-between px-5 py-3.5 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+        <div className="flex items-center justify-between px-5 py-3.5 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
           <p className="text-base font-semibold flex items-center gap-2" style={{ color: "var(--text-primary)" }}><Package className="w-4 h-4" style={{ color: "var(--accent-text)" }} /> Add from Offer Library</p>
           <button onClick={onClose} style={{ color: "var(--text-muted)" }}><X className="w-5 h-5" /></button>
         </div>
-        <div className="px-5 py-3 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+        <div className="px-5 py-3 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
           <div className="relative"><Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "var(--text-muted)" }} /><input value={q} onChange={e => setQ(e.target.value)} placeholder="Search offer groups…" className="w-full rounded-lg pl-9 pr-3 py-2 text-sm outline-none" style={inpStyle} /></div>
         </div>
         <div className="flex-1 overflow-y-auto thin-scroll-y p-5">
@@ -916,7 +916,7 @@ export function OfferGroupPicker({ industry, onPick, onClose }: { industry?: Sal
               {filtered.map(g => {
                 const range = offerPriceRange(g);
                 return (
-                  <div key={g.id} className="rounded-xl p-3.5 flex flex-col" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+                  <div key={g.id} className="rounded-xl p-3.5 flex flex-col" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
                     <div className="flex items-center gap-1.5 flex-wrap"><p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{g.name}</p></div>
                     <div className="flex items-center gap-1.5 mt-1 flex-wrap"><Chip>{INDUSTRY_LABELS[g.industry]}</Chip><Chip subtle>{g.options.length} options</Chip>{range && <Chip subtle>{range.min === range.max ? fmtMoney(range.min) : `${fmtMoney(range.min)}–${fmtMoney(range.max)}`}</Chip>}</div>
                     {g.description && <p className="text-[11px] mt-1.5 leading-snug" style={{ color: "var(--text-muted)" }}>{g.description}</p>}

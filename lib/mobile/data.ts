@@ -7,6 +7,7 @@ import { getAllJobs, updateJob, type Job, type JobStatus } from "@/lib/jobs/data
 import { getStaffedUsers, type AppUser } from "@/lib/users/data";
 import { getAllTasks, type Task } from "@/lib/tasks/data";
 import { todayYMD } from "@/lib/utils/schedule";
+import { capsFor, type MobileCaps } from "./permissions";
 
 const TECH_ROLES = new Set(["field_technician", "installer"]);
 const ACTING_KEY = "routiqa-mobile-acting-user"; // lets us pin a tech for the demo
@@ -69,19 +70,31 @@ export function getMobileUser(): AppUser {
   return getCurrentTech();
 }
 
+// ── Capabilities ──────────────────────────────────────────
+// What the acting user can see/do, resolved from the SAME roles the CRM
+// declares (lib/roles). The whole mobile app gates off this.
+export function getMobileCaps(): MobileCaps {
+  return capsFor(getCurrentTech());
+}
+
 // ── My jobs ───────────────────────────────────────────────
 const DONE: JobStatus[] = ["completed", "invoiced", "closed"];
-const sortByTime = (a: Job, b: Job) => (a.scheduledTime || "").localeCompare(b.scheduledTime || "");
+// 12-hour times don't sort as strings ("1:00 PM" < "11:00 AM") — parse to minutes.
+function timeVal(t?: string): number {
+  const m = t?.match(/(\d+):(\d+)\s*(AM|PM)/i);
+  if (!m) return 24 * 60;   // unscheduled sinks to the end
+  const h = (parseInt(m[1], 10) % 12) + (m[3].toUpperCase() === "PM" ? 12 : 0);
+  return h * 60 + parseInt(m[2], 10);
+}
+const sortByTime = (a: Job, b: Job) => timeVal(a.scheduledTime) - timeVal(b.scheduledTime);
 
-// DEV: surface EVERY dispatch-scheduled job in the mobile preview, so anything you
-// put on the dispatch board shows up here for testing — regardless of who it's
-// assigned to. Flip to false to scope back to the signed-in tech's own jobs once
-// real permissions/users land.
-export const MOBILE_DEV_ALL_JOBS = true;
-
+// Scoped exactly like the CRM: jobs.view "all" (owner/manager/dispatcher) sees
+// every open job; "own" (field tech, installer) sees only their assignments.
 export function getMyJobs(): Job[] {
+  const caps = getMobileCaps();
+  if (caps.jobs === "none") return [];
   const open = getAllJobs().filter(j => j.status !== "canceled");
-  if (MOBILE_DEV_ALL_JOBS) return open;
+  if (caps.jobs === "all") return open;
   const me = getCurrentTech();
   return open.filter(j => j.assignedTo === me?.fullName);
 }

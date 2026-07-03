@@ -35,7 +35,7 @@ export default function MobileDispatchPage() {
             {techs.map((t, i) => {
               const sc = TECH_STATUS_CONFIG[t.status];
               return (
-                <div key={t.name} className="flex items-center gap-3 px-4 py-3" style={{ borderTop: i ? "1px solid var(--border-subtle)" : "none" }}>
+                <div key={t.name} className="flex items-center gap-3 px-4 py-3" style={{ borderTop: i ? "1px solid var(--border)" : "none" }}>
                   <span className="w-9 h-9 rounded-lg flex items-center justify-center text-[11px] font-bold text-white shrink-0" style={{ backgroundColor: sc.color }}>{t.initials}</span>
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{t.name}</p>
@@ -54,7 +54,7 @@ export default function MobileDispatchPage() {
               {todayJobs.slice(0, 12).map(j => {
                 const m = MARKER_CONFIG[j.kind];
                 return (
-                  <Link key={j.id} href={`/mobile/jobs/${j.id}`} className="flex items-center gap-3 rounded-2xl p-3" style={{ border: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface)" }}>
+                  <Link key={j.id} href={`/mobile/jobs/${j.id}`} className="flex items-center gap-3 rounded-2xl p-3" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface)" }}>
                     <span className="w-1 h-9 rounded-full shrink-0" style={{ backgroundColor: m.color }} />
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-semibold truncate" style={{ color: "var(--text-primary)" }}>{j.customerName}</p>

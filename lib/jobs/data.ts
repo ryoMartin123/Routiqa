@@ -105,6 +105,9 @@ export interface WorkOrderLineItem {
   description: string;
   qty: number;
   unitPrice: number;        // dollars
+  itemId?: string;          // catalog item (lib/items) this line was pulled from — snapshot + back-ref
+  taxable?: boolean;        // carried onto the invoice line (defaults by kind if unset)
+  unitCost?: number;        // snapshotted internal cost for margin (masked from field techs)
 }
 
 export interface WorkOrder {

@@ -45,7 +45,7 @@ export default function InheritanceChip({
 
   return (
     <div className="flex items-center justify-between gap-3 rounded-lg px-3 py-2"
-      style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border-subtle)" }}>
+      style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}>
       <span className="flex items-center gap-2 text-xs" style={{ color: "var(--text-secondary)" }}>
         <ArrowDownToLine className="w-3.5 h-3.5 shrink-0" style={{ color: "var(--text-muted)" }} />
         Inherited from <span className="font-semibold">{sourceLabel(source)}</span>. Editing &amp; saving will override it at {meta.label}.

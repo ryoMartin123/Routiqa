@@ -49,8 +49,8 @@ export default function ScopeSwitcherModal({ sectionLayers, onClose }: { section
   return (
     <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={onClose}>
       <div role="dialog" aria-modal="true" className="w-full max-w-md rounded-2xl overflow-hidden" onClick={e => e.stopPropagation()}
-        style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "0 16px 48px rgba(0,0,0,0.24)" }}>
-        <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+        style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "0 16px 48px rgba(0,0,0,0.24)" }}>
+        <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: "1px solid var(--border)" }}>
           <div>
             <p className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>Change editing scope</p>
             <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>Choose which level changes to this section apply to.</p>
@@ -90,7 +90,7 @@ export default function ScopeSwitcherModal({ sectionLayers, onClose }: { section
           })}
         </div>
 
-        <div className="px-6 py-4 flex justify-end" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+        <div className="px-6 py-4 flex justify-end" style={{ borderTop: "1px solid var(--border)" }}>
           <button onClick={onClose} className="px-4 py-2 rounded-lg text-sm font-medium bg-indigo-600 hover:bg-indigo-700 text-white transition-colors">Done</button>
         </div>
       </div>

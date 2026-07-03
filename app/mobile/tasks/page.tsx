@@ -32,7 +32,7 @@ export default function MobileTasksPage() {
           <Section key={g.title} title={`${g.title} · ${g.items.length}`}>
             <Card>
               {g.items.map((t, i) => (
-                <div key={t.id} className="flex items-start gap-3 px-4 py-3.5" style={{ borderTop: i ? "1px solid var(--border-subtle)" : "none" }}>
+                <div key={t.id} className="flex items-start gap-3 px-4 py-3.5" style={{ borderTop: i ? "1px solid var(--border)" : "none" }}>
                   <button onClick={() => complete(t.id)} className="mt-0.5 active:scale-90 transition-transform" aria-label="Complete">
                     <Square className="w-5 h-5" style={{ color: "var(--text-muted)" }} />
                   </button>

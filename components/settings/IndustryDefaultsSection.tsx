@@ -27,8 +27,8 @@ function PreviewModal({ tpl, onClose, onApply }: {
     <>
       <div className="fixed inset-0 z-40 bg-black/40" onClick={onClose} />
       <div className="fixed inset-y-0 right-0 z-50 flex flex-col w-[560px] max-w-full"
-        style={{ backgroundColor: "var(--bg-surface)", borderLeft: "1px solid var(--border-subtle)", boxShadow: "-4px 0 24px rgba(0,0,0,0.12)" }}>
-        <div className="flex items-center justify-between px-6 py-5 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+        style={{ backgroundColor: "var(--bg-surface)", borderLeft: "1px solid var(--border)", boxShadow: "-4px 0 24px rgba(0,0,0,0.12)" }}>
+        <div className="flex items-center justify-between px-6 py-5 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: "var(--bg-surface-2)" }}>
               <Factory className="w-4.5 h-4.5" style={{ color: "#4f46e5" }} />
@@ -53,7 +53,7 @@ function PreviewModal({ tpl, onClose, onApply }: {
                 <div className="flex flex-wrap gap-1.5">
                   {items.map(it => (
                     <span key={it} className="text-xs px-2.5 py-1 rounded-lg"
-                      style={{ backgroundColor: "var(--bg-surface-2)", color: "var(--text-secondary)", border: "1px solid var(--border-subtle)" }}>
+                      style={{ backgroundColor: "var(--bg-surface-2)", color: "var(--text-secondary)", border: "1px solid var(--border)" }}>
                       {it}
                     </span>
                   ))}
@@ -72,7 +72,7 @@ function PreviewModal({ tpl, onClose, onApply }: {
         </div>
 
         {tpl.status === "available" && tpl.key !== "custom" && (
-          <div className="px-6 py-4 shrink-0" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+          <div className="px-6 py-4 shrink-0" style={{ borderTop: "1px solid var(--border)" }}>
             <button onClick={onApply}
               className="w-full py-2.5 rounded-lg text-sm font-medium text-white" style={{ backgroundColor: "#4f46e5" }}>
               Apply This Template

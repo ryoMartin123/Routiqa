@@ -63,7 +63,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 function Divider() {
-  return <div style={{ borderTop: "1px solid var(--border-subtle)" }} />;
+  return <div style={{ borderTop: "1px solid var(--border)" }} />;
 }
 
 function Avatars({ users }: { users: AppUser[] }) {
@@ -98,7 +98,7 @@ function ChildRow({ icon: Icon, name, sub, active, onClick }: {
   return (
     <button onClick={onClick}
       className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-left transition-colors hover:opacity-90"
-      style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border-subtle)" }}>
+      style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}>
       <Icon className="w-3.5 h-3.5 shrink-0" style={{ color: "var(--text-muted)" }} />
       <span className="text-sm font-medium flex-1 truncate" style={{ color: "var(--text-primary)" }}>{name}</span>
       {sub && <span className="text-[11px] truncate" style={{ color: "var(--text-muted)" }}>{sub}</span>}
@@ -183,7 +183,7 @@ function DetailHeader({ type, name, actions }: { type: NodeType; name: string; a
                   style={{ color: "var(--text-primary)" }}>
                   <UserPlus className="w-4 h-4" /> Assign users
                 </button>
-                <div className="my-1" style={{ borderTop: "1px solid var(--border-subtle)" }} />
+                <div className="my-1" style={{ borderTop: "1px solid var(--border)" }} />
                 {!isOrg && (
                   <button onClick={() => { setMoreOpen(false); actions.onToggleStatus(); }}
                     className="w-full flex items-center gap-2.5 px-3 py-2 text-sm transition-colors hover:bg-[var(--bg-surface-2)]"

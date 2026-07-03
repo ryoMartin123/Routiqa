@@ -40,8 +40,8 @@ export default function TermsConditionsSection() {
       <SectionHeader title="Terms & Conditions" subtitle="Reusable terms blocks for quotes and invoices."
         right={<SaveButtons onSave={save} onReset={reset} dirty={dirty} saved={saved} />} />
 
-      <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
-        <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+      <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
+        <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)" }}>
           <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Terms Blocks <span className="ml-2 text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>{blocks.length}</span></p>
           <button onClick={addBlock} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-white" style={{ backgroundColor: "#4f46e5" }}>
             <Plus className="w-3.5 h-3.5" /> Add Block
@@ -49,7 +49,7 @@ export default function TermsConditionsSection() {
         </div>
 
         {sorted.map((b, i) => (
-          <div key={b.id} style={{ borderBottom: i < sorted.length - 1 ? "1px solid var(--border-subtle)" : "none", opacity: b.active ? 1 : 0.55 }}>
+          <div key={b.id} style={{ borderBottom: i < sorted.length - 1 ? "1px solid var(--border)" : "none", opacity: b.active ? 1 : 0.55 }}>
             {editingId === b.id ? (
               <div className="p-4 space-y-3">
                 <input value={b.name} onChange={e => patch(b.id, { name: e.target.value })} placeholder="Block name" className={inputCls} style={inputStyle} />

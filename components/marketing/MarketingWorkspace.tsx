@@ -108,7 +108,7 @@ export default function MarketingWorkspace({ section }: { section: MarketingSect
         <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))" }}>
           {PERFORMANCE_METRICS.map(label => (
             <div key={label} className="rounded-xl px-4 py-3.5"
-              style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+              style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
               <p className="text-[11px] font-medium truncate" style={{ color: "var(--text-muted)" }}>{label}</p>
               <p className="text-xl font-bold mt-1" style={{ color: "var(--text-secondary)" }}>—</p>
             </div>
@@ -188,9 +188,9 @@ export default function MarketingWorkspace({ section }: { section: MarketingSect
 
       {/* ── Campaigns ── */}
       {section === "campaigns" && (
-        <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+        <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
           <div className="grid px-5 py-2.5 text-[10px] font-semibold uppercase tracking-wider"
-            style={{ gridTemplateColumns: "2.4fr 1.4fr 1.4fr 0.8fr 1.6fr 0.8fr", color: "var(--text-muted)", borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+            style={{ gridTemplateColumns: "2.4fr 1.4fr 1.4fr 0.8fr 1.6fr 0.8fr", color: "var(--text-muted)", borderBottom: "1px solid var(--border)", backgroundColor: "transparent" }}>
             <span>Campaign</span><span>Type</span><span>Audience</span><span className="text-right">Recipients</span><span>Performance</span><span className="text-right">Status</span>
           </div>
           {campaigns.length === 0 ? (
@@ -201,7 +201,7 @@ export default function MarketingWorkspace({ section }: { section: MarketingSect
             const openPct = c.stats && c.stats.delivered > 0 ? Math.round((c.stats.opened / c.stats.delivered) * 100) : null;
             return (
               <Commentable key={c.id} inset anchor={{ recordType: "marketing", recordId: c.id, recordLabel: c.name }}>
-              <div className="grid px-5 py-3 items-center" style={{ gridTemplateColumns: "2.4fr 1.4fr 1.4fr 0.8fr 1.6fr 0.8fr", borderBottom: i < campaigns.length - 1 ? "1px solid var(--border-subtle)" : "none" }}>
+              <div className="grid px-5 py-3 items-center" style={{ gridTemplateColumns: "2.4fr 1.4fr 1.4fr 0.8fr 1.6fr 0.8fr", borderBottom: i < campaigns.length - 1 ? "1px solid var(--border)" : "none" }}>
                 <div className="min-w-0 pr-2">
                   <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{c.name}</p>
                   <p className="text-[10px] mt-0.5" style={{ color: "var(--text-muted)" }}>{c.sentAt ? `Sent ${c.sentAt}` : `Created ${c.createdAt}`}</p>
@@ -238,7 +238,7 @@ export default function MarketingWorkspace({ section }: { section: MarketingSect
           {auds.map(a => {
             const AI = AUDIENCE_ICON[a.key] ?? Users; const n = counts[a.key] ?? 0;
             return (
-              <div key={a.key} className="rounded-xl p-4 flex flex-col" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+              <div key={a.key} className="rounded-xl p-4 flex flex-col" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
                 <div className="flex items-start justify-between gap-2">
                   <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: "var(--bg-input)" }}>
                     <AI className="w-4 h-4" style={{ color: "#e11d48" }} />
@@ -264,7 +264,7 @@ export default function MarketingWorkspace({ section }: { section: MarketingSect
           {templates.map(t => {
             const tc = CAMPAIGN_TYPE_CONFIG[t.type]; const TI = TYPE_ICON[t.type];
             return (
-              <div key={t.id} className="rounded-xl p-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+              <div key={t.id} className="rounded-xl p-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
                 <div className="flex items-center gap-2 mb-2">
                   <TI className="w-3.5 h-3.5 shrink-0" style={{ color: tc.color }} />
                   <p className="text-sm font-semibold truncate flex-1" style={{ color: "var(--text-primary)" }}>{t.name}</p>
@@ -303,7 +303,7 @@ function DashPanel({ title, icon: Icon, accent, rows, empty }: {
       ) : (
         <ul className="space-y-1">
           {rows.map(r => (
-            <li key={r.key} className="flex items-center justify-between gap-3 py-1.5" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+            <li key={r.key} className="flex items-center justify-between gap-3 py-1.5" style={{ borderTop: "1px solid var(--border)" }}>
               <span className="text-sm truncate" style={{ color: "var(--text-secondary)" }}>{r.left}</span>
               <span className="text-xs font-medium shrink-0" style={{ color: "var(--text-muted)" }}>{r.right}</span>
             </li>

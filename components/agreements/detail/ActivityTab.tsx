@@ -29,7 +29,7 @@ export default function ActivityTab({ agreement }: { agreement: CustomerAgreemen
 
   if (entries.length === 0) {
     return (
-      <div className="py-12 text-center rounded-xl" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>
+      <div className="py-12 text-center rounded-xl" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
         <p className="text-sm" style={{ color: "var(--text-muted)" }}>No activity yet</p>
       </div>
     );
@@ -53,7 +53,7 @@ export default function ActivityTab({ agreement }: { agreement: CustomerAgreemen
 
             {/* Content container — uniform regardless of content */}
             <div className="flex-1 min-w-0 rounded-xl px-4 py-3 mb-3 flex flex-col"
-              style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)", minHeight: 80 }}>
+              style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)", minHeight: 80 }}>
               <div className="flex items-start justify-between gap-3">
                 <span className="inline-block text-[10px] font-semibold px-2 py-0.5 rounded-md shrink-0"
                   style={{ backgroundColor: e.color + "1a", color: e.color }}>{e.label}</span>

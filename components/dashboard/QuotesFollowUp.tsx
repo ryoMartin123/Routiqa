@@ -18,7 +18,7 @@ export default function QuotesFollowUp() {
     <div className="rounded-xl overflow-hidden h-full min-h-full flex flex-col"
       style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
       <div className="flex items-center justify-between px-4 py-3"
-        style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+        style={{ borderBottom: "1px solid var(--border)" }}>
         <div className="flex items-center gap-2">
           <FilePen className="w-4 h-4" style={{ color: "#6d28d9" }} />
           <h2 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Quotes — Follow-Up</h2>
@@ -41,7 +41,7 @@ export default function QuotesFollowUp() {
           {quotes.map((q, i) => (
             <Link key={q.id} href={`/quotes/${q.id}`}
               className="flex flex-1 min-h-[58px] items-center gap-3 px-4 py-3 hover:bg-[var(--bg-surface-2)] transition-colors"
-              style={{ borderBottom: i < quotes.length - 1 ? "1px solid var(--border-subtle)" : "none", textDecoration: "none" }}>
+              style={{ borderBottom: i < quotes.length - 1 ? "1px solid var(--border)" : "none", textDecoration: "none" }}>
               <div className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: "var(--bg-input)" }}>
                 <FileText className="w-3 h-3" style={{ color: "var(--text-muted)" }} />
               </div>

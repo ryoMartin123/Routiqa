@@ -29,7 +29,7 @@ export default function CatalogPicker({ items, showCost, onAdd, onClose }: {
       <div className="w-full max-w-2xl max-h-[88vh] flex flex-col rounded-2xl overflow-hidden" onClick={e => e.stopPropagation()}
         style={{ backgroundColor: "var(--bg-surface)", boxShadow: "0 16px 48px rgba(0,0,0,0.3)" }}>
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+        <div className="flex items-center justify-between px-5 py-4 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
           <div className="flex items-center gap-2">
             <Package className="w-4 h-4" style={{ color: "#4f46e5" }} />
             <p className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>Add from Catalog</p>
@@ -38,7 +38,7 @@ export default function CatalogPicker({ items, showCost, onAdd, onClose }: {
         </div>
 
         {/* Toolbar */}
-        <div className="flex items-center gap-2 px-5 py-3 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+        <div className="flex items-center gap-2 px-5 py-3 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
           <div className="flex items-center gap-2 rounded-lg px-3 py-2 flex-1" style={{ backgroundColor: "var(--bg-input)" }}>
             <Search className="w-3.5 h-3.5 shrink-0" style={{ color: "var(--text-muted)" }} />
             <input value={q} onChange={e => setQ(e.target.value)} placeholder="Search items or SKU…" autoFocus
@@ -89,7 +89,7 @@ export default function CatalogPicker({ items, showCost, onAdd, onClose }: {
         </div>
 
         {/* Footer */}
-        <div className="px-5 py-4 flex items-center justify-between shrink-0" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+        <div className="px-5 py-4 flex items-center justify-between shrink-0" style={{ borderTop: "1px solid var(--border)" }}>
           <span className="text-xs" style={{ color: "var(--text-muted)" }}>{selectedCount} selected</span>
           <div className="flex items-center gap-2">
             <button onClick={onClose} className="px-3 py-1.5 rounded-lg text-sm" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>Cancel</button>

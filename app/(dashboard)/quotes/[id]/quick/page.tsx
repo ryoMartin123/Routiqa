@@ -192,7 +192,7 @@ export default function QuickQuotePage({ params }: { params: Promise<{ id: strin
   return (
     <div className="flex flex-col h-full" style={{ backgroundColor: "var(--bg-page)" }}>
       {/* Top bar */}
-      <div className="flex items-center gap-3 px-5 py-3 shrink-0" style={{ backgroundColor: "var(--bg-surface)", borderBottom: "1px solid var(--border-subtle)" }}>
+      <div className="flex items-center gap-3 px-5 py-3 shrink-0" style={{ backgroundColor: "var(--bg-surface)", borderBottom: "1px solid var(--border)" }}>
         <Link href={`/quotes/${id}`} className="flex items-center gap-1.5 text-sm shrink-0" style={{ color: "var(--text-secondary)" }}>
           <ArrowLeft className="w-4 h-4" /> Quote
         </Link>
@@ -245,7 +245,7 @@ export default function QuickQuotePage({ params }: { params: Promise<{ id: strin
         ) : (
           <div className="mx-auto space-y-4" style={{ maxWidth: "760px" }}>
             {/* Customer / property summary */}
-            <div className="rounded-xl p-4 flex flex-wrap items-center gap-x-6 gap-y-2" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+            <div className="rounded-xl p-4 flex flex-wrap items-center gap-x-6 gap-y-2" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
               <div className="flex items-center gap-2">
                 <User className="w-3.5 h-3.5" style={{ color: "var(--text-muted)" }} />
                 <div>
@@ -265,7 +265,7 @@ export default function QuickQuotePage({ params }: { params: Promise<{ id: strin
             </div>
 
             {/* Title + expiry */}
-            <div className="rounded-xl p-4 space-y-3" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+            <div className="rounded-xl p-4 space-y-3" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="sm:col-span-2">
                   <label className="block text-xs font-medium mb-1" style={{ color: "var(--text-secondary)" }}>Quote Title</label>
@@ -280,8 +280,8 @@ export default function QuickQuotePage({ params }: { params: Promise<{ id: strin
             </div>
 
             {/* Line items */}
-            <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
-              <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+            <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
+              <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid var(--border)" }}>
                 <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Line Items</p>
                 <div className="flex items-center gap-3">
                   <button onClick={() => setShowCatalog(true)} className="flex items-center gap-1 text-xs font-medium" style={{ color: accent }}><Package className="w-3.5 h-3.5" /> Add from Catalog</button>
@@ -294,7 +294,7 @@ export default function QuickQuotePage({ params }: { params: Promise<{ id: strin
                   <p className="text-sm text-center py-6" style={{ color: "var(--text-muted)" }}>No items yet — add from the catalog or a custom line.</p>
                 )}
                 {items.map(it => (
-                  <div key={it.id} className="rounded-lg p-2.5 space-y-2" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border-subtle)" }}>
+                  <div key={it.id} className="rounded-lg p-2.5 space-y-2" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}>
                     <div className="flex items-center gap-2">
                       {it.itemId && <span className="flex items-center gap-1 text-[10px] font-semibold shrink-0" style={{ color: "var(--accent-text)" }}><Tag className="w-2.5 h-2.5" /> Catalog</span>}
                       <input value={it.name} onChange={e => setItem(it.id, { name: e.target.value })} placeholder="Item name" className="flex-1 rounded-lg px-2.5 py-1.5 text-sm outline-none" style={inputStyle} />
@@ -316,7 +316,7 @@ export default function QuickQuotePage({ params }: { params: Promise<{ id: strin
               </div>
 
               {/* Totals */}
-              <div className="px-4 py-3 space-y-1.5" style={{ borderTop: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+              <div className="px-4 py-3 space-y-1.5" style={{ borderTop: "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)" }}>
                 <div className="flex items-center justify-between">
                   <span className="text-xs" style={{ color: "var(--text-muted)" }}>Subtotal</span>
                   <span className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{fmt(totals.subtotal)}</span>
@@ -329,7 +329,7 @@ export default function QuickQuotePage({ params }: { params: Promise<{ id: strin
                   </div>
                   <span className="text-sm" style={{ color: "var(--text-secondary)" }}>{fmt(totals.tax)}</span>
                 </div>
-                <div className="flex items-center justify-between pt-1.5" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+                <div className="flex items-center justify-between pt-1.5" style={{ borderTop: "1px solid var(--border)" }}>
                   <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Total</span>
                   <span className="text-lg font-bold" style={{ color: accent }}>{fmt(totals.total)}</span>
                 </div>
@@ -337,7 +337,7 @@ export default function QuickQuotePage({ params }: { params: Promise<{ id: strin
             </div>
 
             {/* Customer notes / terms */}
-            <div className="rounded-xl p-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+            <div className="rounded-xl p-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
               <label className="block text-xs font-medium mb-1" style={{ color: "var(--text-secondary)" }}>Notes / Terms <span style={{ color: "var(--text-muted)" }}>(shown on the quote)</span></label>
               <textarea value={customerNotes} onChange={e => setCustomerNotes(e.target.value)} rows={3} placeholder="Scheduling, terms, scope notes…"
                 className="w-full rounded-lg px-3 py-2 text-sm outline-none resize-none" style={inputStyle} />

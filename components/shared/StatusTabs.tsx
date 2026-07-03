@@ -26,6 +26,7 @@ export default function StatusTabs({ tabs, active, onChange, className = "", acc
     ["--accent-soft-border" as string]: accent + "59",
     ["--accent-text" as string]: accent,
   } as React.CSSProperties) : undefined;
+
   return (
     <div className={`flex items-center gap-0.5 flex-wrap ${className}`} style={accentVars}>
       {tabs.map(t => {

@@ -5,8 +5,9 @@ import { X, CalendarClock, FileText, Search, ChevronDown, Check } from "lucide-r
 import Select from "@/components/ui/Select";
 import DatePicker from "@/components/ui/DatePicker";
 import TimePicker from "@/components/ui/TimePicker";
+import NumberStepper from "@/components/ui/NumberStepper";
 import type { CustomerAgreement, AgreementVisit } from "@/lib/agreements/data";
-import { todayYMD, isPastDateTime, isOutsideHours, formatHour } from "@/lib/utils/schedule";
+import { isPastDateTime, isOutsideHours, formatHour, minTimeFor, minBookableYMD } from "@/lib/utils/schedule";
 
 export interface VisitScheduleDraft {
   agreementId: string;
@@ -74,7 +75,7 @@ export default function ScheduleVisitModal({
     <div className="fixed inset-0 z-[60] bg-black/40 flex items-center justify-center p-4" onClick={onClose}>
       <div className="w-full max-w-md rounded-2xl overflow-hidden" onClick={e => e.stopPropagation()}
         style={{ backgroundColor: "var(--bg-surface)", boxShadow: "0 16px 48px rgba(0,0,0,0.24)" }}>
-        <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+        <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: "1px solid var(--border)" }}>
           <div className="flex items-center gap-2">
             <CalendarClock className="w-4 h-4" style={{ color: "#4f46e5" }} />
             <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Schedule Agreement Visit</p>
@@ -118,16 +119,15 @@ export default function ScheduleVisitModal({
 
             <div className="grid grid-cols-2 gap-3">
               <Field label="Date">
-                <DatePicker value={date} onChange={setDate} clearable={false} min={todayYMD()} />
+                <DatePicker value={date} onChange={setDate} clearable={false} min={minBookableYMD(dayEnd)} />
               </Field>
               <Field label="Time">
-                <TimePicker value={time} onChange={setTime} />
+                <TimePicker value={time} onChange={setTime} minTime={minTimeFor(date)} />
               </Field>
             </div>
 
             <Field label="Duration (minutes)">
-              <input type="number" min={15} step={15} value={durationMinutes} onChange={e => setDuration(parseInt(e.target.value) || 90)}
-                className="w-full rounded-lg px-3 py-2 text-sm outline-none" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface)", color: "var(--text-primary)" }} />
+              <NumberStepper min={15} step={15} suffix="min" value={String(durationMinutes)} onChange={v => setDuration(parseInt(v, 10) || 90)} />
             </Field>
 
             {isPast && (
@@ -149,7 +149,7 @@ export default function ScheduleVisitModal({
           </div>
         )}
 
-        <div className="px-5 py-4 flex justify-end gap-2" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+        <div className="px-5 py-4 flex justify-end gap-2" style={{ borderTop: "1px solid var(--border)" }}>
           <button onClick={onClose} className="px-3 py-1.5 rounded-lg text-sm" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>Cancel</button>
           {!empty && (
             <button onClick={() => valid && onConfirm({ agreementId, visitId, tech, date, time, durationMinutes })} disabled={!valid}
@@ -218,7 +218,7 @@ function AgreementPicker({ agreements, value, onChange }: {
       {open && (
         <div className="absolute left-0 right-0 z-50 mt-1.5 rounded-xl overflow-hidden"
           style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "0 12px 32px rgba(0,0,0,0.16)" }}>
-          <div className="flex items-center gap-2 px-3 py-2.5" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+          <div className="flex items-center gap-2 px-3 py-2.5" style={{ borderBottom: "1px solid var(--border)" }}>
             <Search className="w-4 h-4 shrink-0" style={{ color: "var(--text-muted)" }} />
             <input ref={inputRef} value={query} onChange={e => setQuery(e.target.value)}
               placeholder="Search by customer, type, or number…"

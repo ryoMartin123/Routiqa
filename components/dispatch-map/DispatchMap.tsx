@@ -197,8 +197,8 @@ export default function DispatchMap({ dateFilter }: { dateFilter: MapDateFilter 
       <div className="flex-1 flex gap-3 min-h-0">
 
         {/* ── Left rail: switch between Queue and Details (inspector + AI) ── */}
-        <aside className="w-80 shrink-0 flex flex-col rounded-2xl overflow-hidden" style={{ border: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface)", boxShadow: "var(--shadow-card)" }}>
-          <div className="p-2 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+        <aside className="w-80 shrink-0 flex flex-col rounded-2xl overflow-hidden" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface)", boxShadow: "var(--shadow-card)" }}>
+          <div className="p-2 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
             <div className="flex items-center rounded-lg overflow-hidden" style={{ border: "1px solid var(--border)" }}>
               {([{ k: "queue", label: "Queue", icon: ListChecks }, { k: "details", label: "Details", icon: Layers }] as const).map(p => (
                 <button key={p.k} onClick={() => setPanelMode(p.k)} className="flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 text-xs font-medium transition-colors"
@@ -211,7 +211,7 @@ export default function DispatchMap({ dateFilter }: { dateFilter: MapDateFilter 
 
           {panelMode === "queue" ? (
             <>
-              <div className="p-3 space-y-2.5 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+              <div className="p-3 space-y-2.5 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
                 <div className="flex items-center gap-2 rounded-lg px-2.5 py-1.5" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)" }}>
                   <Search className="w-3.5 h-3.5 shrink-0" style={{ color: "var(--text-muted)" }} />
                   <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search jobs, customers, address…" className="bg-transparent text-sm outline-none w-full" style={{ color: "var(--text-primary)" }} />
@@ -241,7 +241,7 @@ export default function DispatchMap({ dateFilter }: { dateFilter: MapDateFilter 
                 )}
               </div>
 
-              <div className="px-3 py-2.5 grid grid-cols-4 gap-1 shrink-0" style={{ borderTop: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+              <div className="px-3 py-2.5 grid grid-cols-4 gap-1 shrink-0" style={{ borderTop: "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)" }}>
                 <MiniStat value={stats.jobs} label="Jobs" />
                 <MiniStat value={stats.unassigned} label="Unassigned" color={stats.unassigned ? "#6b7280" : undefined} />
                 <MiniStat value={stats.delayed} label="Delayed" color={stats.delayed ? "#dc2626" : undefined} />
@@ -257,7 +257,7 @@ export default function DispatchMap({ dateFilter }: { dateFilter: MapDateFilter 
                   ? <TechInspector tech={selTechObj} route={selRoute} next={techNext(selTechObj.name)} meta={routeMeta} onClose={() => setSelTech(null)} />
                   : <OverviewInspector stats={stats} techs={techs} jobCountOf={techJobCount} onPickTech={pickTech} />}
               </div>
-              <div className="p-2 shrink-0" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+              <div className="p-2 shrink-0" style={{ borderTop: "1px solid var(--border)" }}>
                 <AiInsights suggestions={liveSuggestions} open={aiOpen} onToggle={() => setAiOpen(v => !v)}
                   contextLabel={selJob ? selJob.customerName : selTechObj ? selTechObj.name : undefined}
                   onApply={applySuggestion} onDismiss={s => setDismissed(d => new Set(d).add(s.id))} onFocusJob={id => id && pickJob(id)} />
@@ -283,7 +283,7 @@ export default function DispatchMap({ dateFilter }: { dateFilter: MapDateFilter 
                 <button onClick={() => setShowStatus(false)} className="p-0.5 rounded hover:bg-[var(--bg-surface-2)]" title="Hide"><X className="w-3 h-3" style={{ color: "var(--text-muted)" }} /></button>
               </div>
             ) : (
-              <button onClick={() => setShowStatus(true)} title="Show info" className="pointer-events-auto p-2 rounded-lg" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)", color: "var(--text-secondary)" }}><Info className="w-4 h-4" /></button>
+              <button onClick={() => setShowStatus(true)} title="Show info" className="pointer-events-auto p-2 rounded-lg" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)", color: "var(--text-secondary)" }}><Info className="w-4 h-4" /></button>
             )}
             {/* Layers — one button toggles the whole menu of map filters */}
             <div className="pointer-events-auto relative" ref={layersRef}>
@@ -304,7 +304,7 @@ export default function DispatchMap({ dateFilter }: { dateFilter: MapDateFilter 
 
           {/* Legend (dismissible) */}
           {showLegend ? (
-            <div className="absolute bottom-3 left-3 z-[400] rounded-lg pl-3 pr-2 py-2 flex flex-wrap items-center gap-x-3 gap-y-1 max-w-[60%]" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+            <div className="absolute bottom-3 left-3 z-[400] rounded-lg pl-3 pr-2 py-2 flex flex-wrap items-center gap-x-3 gap-y-1 max-w-[60%]" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
               {KINDS.map(k => (
                 <span key={k} className="flex items-center gap-1.5 text-[10px]" style={{ color: "var(--text-secondary)" }}>
                   <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: MARKER_CONFIG[k].color }} /> {MARKER_CONFIG[k].label}
@@ -313,7 +313,7 @@ export default function DispatchMap({ dateFilter }: { dateFilter: MapDateFilter 
               <button onClick={() => setShowLegend(false)} className="p-0.5 rounded hover:bg-[var(--bg-surface-2)]" title="Hide legend"><X className="w-3 h-3" style={{ color: "var(--text-muted)" }} /></button>
             </div>
           ) : (
-            <button onClick={() => setShowLegend(true)} title="Show legend" className="absolute bottom-3 left-3 z-[400] p-2 rounded-lg" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)", color: "var(--text-secondary)" }}><Palette className="w-4 h-4" /></button>
+            <button onClick={() => setShowLegend(true)} title="Show legend" className="absolute bottom-3 left-3 z-[400] p-2 rounded-lg" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)", color: "var(--text-secondary)" }}><Palette className="w-4 h-4" /></button>
           )}
         </div>
       </div>
@@ -577,7 +577,7 @@ function AiInsights({ suggestions, contextLabel, open, onToggle, onApply, onDism
 }) {
   return (
     <div className="rounded-2xl overflow-hidden shrink-0" style={{ border: `1px solid ${ACCENT}33`, backgroundColor: "var(--bg-surface)", boxShadow: "var(--shadow-card)" }}>
-      <button onClick={onToggle} className="w-full px-4 py-2.5 flex items-center gap-2" style={{ borderBottom: open ? "1px solid var(--border-subtle)" : "none", backgroundColor: ACCENT + "0d" }}>
+      <button onClick={onToggle} className="w-full px-4 py-2.5 flex items-center gap-2" style={{ borderBottom: open ? "1px solid var(--border)" : "none", backgroundColor: ACCENT + "0d" }}>
         <Sparkles className="w-4 h-4 shrink-0" style={{ color: ACCENT }} />
         <span className="min-w-0 text-left">
           <span className="block text-sm font-semibold truncate" style={{ color: "var(--text-primary)" }}>Dispatch Assistant</span>
@@ -594,7 +594,7 @@ function AiInsights({ suggestions, contextLabel, open, onToggle, onApply, onDism
             const Icon = s.kind === "risk" ? AlertTriangle : s.kind === "reorder" ? ListChecks : s.kind === "reassign" ? RouteIcon : Truck;
             const conf = s.confidence ? CONFIDENCE[s.confidence] : null;
             return (
-              <div key={s.id} className="rounded-lg p-2.5" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border-subtle)" }}>
+              <div key={s.id} className="rounded-lg p-2.5" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}>
                 <div className="flex items-start gap-2">
                   <span className="w-5 h-5 rounded-md flex items-center justify-center shrink-0 mt-0.5" style={{ backgroundColor: (s.kind === "risk" ? AMBER : ACCENT) + "1a" }}>
                     <Icon className="w-3 h-3" style={{ color: s.kind === "risk" ? AMBER : ACCENT }} />
@@ -638,7 +638,7 @@ function LayerRow({ icon: Icon, label, active, onClick }: { icon: typeof Users; 
 }
 function Kpi({ icon: Icon, label, value, color }: { icon: typeof MapPin; label: string; value: number; color: string }) {
   return (
-    <div className="rounded-xl p-3" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border-subtle)" }}>
+    <div className="rounded-xl p-3" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}>
       <div className="flex items-center gap-1.5">
         <Icon className="w-3.5 h-3.5" style={{ color }} />
         <span className="text-[10px] font-semibold uppercase tracking-wider truncate" style={{ color: "var(--text-muted)" }}>{label}</span>

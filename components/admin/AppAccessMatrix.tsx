@@ -228,10 +228,10 @@ function ByUser({ users, userRoles, userScope, access, hasOverride, onUser }: {
   onUser: (id: string) => void;
 }) {
   return (
-    <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+    <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
       <div className="overflow-x-auto thin-scroll-x">
         <div style={{ minWidth: 1320 }}>
-          <div className="grid px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider items-center" style={{ gridTemplateColumns: USER_COLS, color: "var(--text-muted)", borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+          <div className="grid px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider items-center" style={{ gridTemplateColumns: USER_COLS, color: "var(--text-muted)", borderBottom: "1px solid var(--border)", backgroundColor: "transparent" }}>
             <span>User</span><span>Role</span><span>Company / Location</span>
             <AppHeaderCells />
             <span className="text-center">Overrides</span><span>Status</span>
@@ -294,10 +294,10 @@ function ByRole({ roles, usersByRole, onEdit }: {
   onEdit: (key: string) => void;
 }) {
   return (
-    <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+    <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
       <div className="overflow-x-auto thin-scroll-x">
         <div style={{ minWidth: 1240 }}>
-          <div className="grid px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider items-center" style={{ gridTemplateColumns: ROLE_COLS, color: "var(--text-muted)", borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+          <div className="grid px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider items-center" style={{ gridTemplateColumns: ROLE_COLS, color: "var(--text-muted)", borderBottom: "1px solid var(--border)", backgroundColor: "transparent" }}>
             <span>Role</span><span className="text-center">Users</span><span>Default Scope</span>
             <AppHeaderCells />
             <span className="text-right">Action</span>
@@ -347,7 +347,7 @@ function ByRole({ roles, usersByRole, onEdit }: {
 function ByApp({ apps, roles, users }: { apps: PlatformAppId[]; roles: RoleDefinition[]; users: AppUser[] }) {
   if (apps.length === 0) {
     return (
-      <div className="rounded-xl py-14 text-center" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>
+      <div className="rounded-xl py-14 text-center" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
         <p className="text-sm" style={{ color: "var(--text-muted)" }}>No apps match the current search or filter.</p>
       </div>
     );

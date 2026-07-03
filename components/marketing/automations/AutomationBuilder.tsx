@@ -124,7 +124,7 @@ export default function AutomationBuilder({
           <p className="text-sm mt-1 truncate" style={{ color: "var(--text-muted)" }}>{subtitle}</p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <span className="text-[11px] font-semibold px-2.5 py-1 rounded-lg" style={{ backgroundColor: sc.bg, color: sc.color, border: "1px solid var(--border-subtle)" }}>{sc.label}</span>
+          <span className="text-[11px] font-semibold px-2.5 py-1 rounded-lg" style={{ backgroundColor: sc.bg, color: sc.color, border: "1px solid var(--border)" }}>{sc.label}</span>
         </div>
       </div>
 
@@ -150,7 +150,7 @@ export default function AutomationBuilder({
                 {draft.conditions.map((c, i) => {
                   const f = getConditionField(c.field);
                   return (
-                    <div key={c.id} className="flex items-center gap-2 flex-wrap rounded-xl pl-2.5 pr-1.5 py-2" style={{ border: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface)" }}>
+                    <div key={c.id} className="flex items-center gap-2 flex-wrap rounded-xl pl-2.5 pr-1.5 py-2" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface)" }}>
                       <span className="text-[11px] font-semibold shrink-0" style={{ color: "var(--text-muted)" }}>{i === 0 ? "Where" : "and"}</span>
                       <div className="flex-1 min-w-[130px]">
                         <Select size="sm" value={c.field} options={CONDITION_FIELDS.map(x => ({ value: x.key, label: x.label }))}
@@ -257,7 +257,7 @@ export default function AutomationBuilder({
         {/* Sticky live summary */}
         <aside className="lg:sticky lg:top-6">
           <div className="rounded-2xl overflow-hidden" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface)", boxShadow: "var(--shadow-card)" }}>
-            <div className="px-5 py-3.5 flex items-center gap-2" style={{ borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+            <div className="px-5 py-3.5 flex items-center gap-2" style={{ borderBottom: "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)" }}>
               <ScrollText className="w-4 h-4" style={{ color: ACCENT }} />
               <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Live summary</span>
             </div>
@@ -272,12 +272,12 @@ export default function AutomationBuilder({
                 <Req label="Action" ok={!!draft.actionKey} />
               </div>
             </div>
-            <div className="px-5 py-3 grid grid-cols-3 gap-2 text-center" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+            <div className="px-5 py-3 grid grid-cols-3 gap-2 text-center" style={{ borderTop: "1px solid var(--border)" }}>
               <Mini label="Conditions" value={String(draft.conditions.length)} />
               <Mini label="Timing" value={timingLabel} />
               <Mini label="Safeguards" value={String(draft.safety.length)} />
             </div>
-            <div className="px-5 py-4 flex items-center gap-2" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+            <div className="px-5 py-4 flex items-center gap-2" style={{ borderTop: "1px solid var(--border)" }}>
               <button onClick={() => save("active")} disabled={!canPrimary}
                 className="flex-1 text-sm font-medium text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-40" style={{ backgroundColor: ACCENT }}>
                 {primaryLabel}
@@ -323,7 +323,7 @@ function RailStep({ eyebrow, title, desc, icon: Icon, optional, last, children }
       <div className={`flex-1 min-w-0 ${last ? "pb-1" : "pb-8"}`}>
         <div className="flex items-center gap-2">
           <span className="text-[10px] font-bold uppercase tracking-[0.14em]" style={{ color: ACCENT }}>{eyebrow}</span>
-          {optional && <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-md" style={{ backgroundColor: "var(--bg-surface-2)", color: "var(--text-muted)", border: "1px solid var(--border-subtle)" }}>Optional</span>}
+          {optional && <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-md" style={{ backgroundColor: "var(--bg-surface-2)", color: "var(--text-muted)", border: "1px solid var(--border)" }}>Optional</span>}
         </div>
         <h3 className="text-[15px] font-semibold mt-0.5" style={{ color: "var(--text-primary)" }}>{title}</h3>
         {desc && <p className="text-xs mt-0.5 mb-3" style={{ color: "var(--text-muted)" }}>{desc}</p>}

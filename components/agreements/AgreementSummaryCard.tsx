@@ -50,9 +50,9 @@ export default function AgreementSummaryCard({ agreement }: { agreement: Custome
   }
 
   return (
-    <div className="rounded-2xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+    <div className="rounded-2xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
       {/* Header */}
-      <div className="flex items-start justify-between gap-3 px-5 py-4" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+      <div className="flex items-start justify-between gap-3 px-5 py-4" style={{ borderBottom: "1px solid var(--border)" }}>
         <div className="min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <p className="text-base font-semibold truncate" style={{ color: "var(--text-primary)" }}>{agreement.type}</p>
@@ -123,7 +123,7 @@ export default function AgreementSummaryCard({ agreement }: { agreement: Custome
 
 function Tile({ icon: Icon, label, value, sub }: { icon: typeof Calendar; label: string; value: string; sub?: string }) {
   return (
-    <div className="rounded-xl p-3" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border-subtle)" }}>
+    <div className="rounded-xl p-3" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}>
       <div className="flex items-center gap-1.5 mb-1">
         <Icon className="w-3 h-3 shrink-0" style={{ color: "var(--text-muted)" }} />
         <span className="text-[10px] font-semibold uppercase tracking-wider truncate" style={{ color: "var(--text-muted)" }}>{label}</span>

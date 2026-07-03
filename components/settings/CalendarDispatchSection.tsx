@@ -76,7 +76,7 @@ function SettingsCard({ icon: Icon, title, subtitle, children, action }: {
   icon: typeof Clock; title: string; subtitle: string; children: React.ReactNode; action?: React.ReactNode;
 }) {
   return (
-    <div className="rounded-xl p-5" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+    <div className="rounded-xl p-5" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-start gap-3">
           <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: "var(--bg-surface-2)" }}>
@@ -127,7 +127,7 @@ function ChipMulti({ all, selected, onToggle, labels }: { all: string[]; selecte
             className="px-2.5 py-1 rounded-full text-xs font-medium transition-colors"
             style={on
               ? { backgroundColor: "#e0e7ff", color: "#3730a3", border: "1px solid #c7d2fe" }
-              : { backgroundColor: "var(--bg-surface-2)", color: "var(--text-muted)", border: "1px solid var(--border-subtle)" }}>
+              : { backgroundColor: "var(--bg-surface-2)", color: "var(--text-muted)", border: "1px solid var(--border)" }}>
             {on && <Check className="w-3 h-3 inline mr-1 -mt-0.5" />}{labels?.[opt] ?? opt}
           </button>
         );
@@ -193,11 +193,11 @@ function PeoplePicker({ title, allNames, suggested, selected, onToggle, emptyLab
         <div className="fixed inset-0 z-[60] bg-black/40 flex items-center justify-center p-4" onClick={() => setOpen(false)}>
           <div className="w-full max-w-md max-h-[80vh] flex flex-col rounded-2xl overflow-hidden" onClick={e => e.stopPropagation()}
             style={{ backgroundColor: "var(--bg-surface)", boxShadow: "0 16px 48px rgba(0,0,0,0.24)" }}>
-            <div className="flex items-center justify-between px-5 py-3.5 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+            <div className="flex items-center justify-between px-5 py-3.5 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
               <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{title}</p>
               <button onClick={() => setOpen(false)} style={{ color: "var(--text-muted)" }}><X className="w-4 h-4" /></button>
             </div>
-            <div className="px-5 py-2.5 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+            <div className="px-5 py-2.5 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
               <div className="flex items-center gap-2 rounded-lg px-2.5 py-1.5" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)" }}>
                 <Search className="w-3.5 h-3.5 shrink-0" style={{ color: "var(--text-muted)" }} />
                 <input autoFocus value={q} onChange={e => setQ(e.target.value)} placeholder="Search people…" className="w-full text-sm outline-none bg-transparent" style={{ color: "var(--text-primary)" }} />
@@ -220,7 +220,7 @@ function PeoplePicker({ title, allNames, suggested, selected, onToggle, emptyLab
                 <p className="px-3 py-3 text-xs" style={{ color: "var(--text-muted)" }}>No people match.</p>
               )}
             </div>
-            <div className="px-5 py-3 flex items-center justify-between shrink-0" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+            <div className="px-5 py-3 flex items-center justify-between shrink-0" style={{ borderTop: "1px solid var(--border)" }}>
               <span className="text-xs" style={{ color: "var(--text-muted)" }}>{selected.length} selected</span>
               <button onClick={() => setOpen(false)} className="px-4 py-1.5 rounded-lg text-sm font-medium text-white" style={{ backgroundColor: "#4f46e5" }}>Done</button>
             </div>
@@ -273,11 +273,11 @@ function TagPicker({ title, all, selected, onToggle, emptyLabel, searchPlacehold
         <div className="fixed inset-0 z-[60] bg-black/40 flex items-center justify-center p-4" onClick={() => setOpen(false)}>
           <div className="w-full max-w-md max-h-[80vh] flex flex-col rounded-2xl overflow-hidden" onClick={e => e.stopPropagation()}
             style={{ backgroundColor: "var(--bg-surface)", boxShadow: "0 16px 48px rgba(0,0,0,0.24)" }}>
-            <div className="flex items-center justify-between px-5 py-3.5 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+            <div className="flex items-center justify-between px-5 py-3.5 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
               <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{title}</p>
               <button onClick={() => setOpen(false)} style={{ color: "var(--text-muted)" }}><X className="w-4 h-4" /></button>
             </div>
-            <div className="px-5 py-2.5 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+            <div className="px-5 py-2.5 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
               <div className="flex items-center gap-2 rounded-lg px-2.5 py-1.5" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)" }}>
                 <Search className="w-3.5 h-3.5 shrink-0" style={{ color: "var(--text-muted)" }} />
                 <input autoFocus value={q} onChange={e => setQ(e.target.value)} placeholder={searchPlaceholder ?? "Search…"} className="w-full text-sm outline-none bg-transparent" style={{ color: "var(--text-primary)" }} />
@@ -288,7 +288,7 @@ function TagPicker({ title, all, selected, onToggle, emptyLabel, searchPlacehold
                 ? <p className="px-3 py-3 text-xs" style={{ color: "var(--text-muted)" }}>No matches.</p>
                 : list.map(v => <PersonRow key={v} name={labelOf(v)} checked={selected.includes(v)} onToggle={() => onToggle(v)} />)}
             </div>
-            <div className="px-5 py-3 flex items-center justify-between shrink-0" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+            <div className="px-5 py-3 flex items-center justify-between shrink-0" style={{ borderTop: "1px solid var(--border)" }}>
               <span className="text-xs" style={{ color: "var(--text-muted)" }}>{selected.length} selected</span>
               <button onClick={() => setOpen(false)} className="px-4 py-1.5 rounded-lg text-sm font-medium text-white" style={{ backgroundColor: "#4f46e5" }}>Done</button>
             </div>
@@ -339,7 +339,7 @@ function MultiSelect({ options, selected, onToggle, placeholder }: {
       {open && (
         <div className="absolute left-0 right-0 z-50 mt-1 rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "0 12px 32px rgba(0,0,0,0.18)" }}>
           {options.length > 6 && (
-            <div className="flex items-center gap-2 px-2.5 py-2" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+            <div className="flex items-center gap-2 px-2.5 py-2" style={{ borderBottom: "1px solid var(--border)" }}>
               <Search className="w-3.5 h-3.5 shrink-0" style={{ color: "var(--text-muted)" }} />
               <input autoFocus value={q} onChange={e => setQ(e.target.value)} placeholder="Search…"
                 className="w-full text-sm outline-none bg-transparent" style={{ color: "var(--text-primary)" }} />
@@ -427,7 +427,7 @@ export default function CalendarDispatchSection({ activeModule, onOpen, onBack }
             return (
               <button key={c.key} onClick={() => onOpen(c.key, c.label)}
                 className="flex items-start gap-3 p-4 rounded-xl text-left w-full transition-all group hover:shadow-md cursor-pointer"
-                style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+                style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: "var(--bg-surface-2)" }}>
                   <Icon className="w-4 h-4" style={{ color: "#4f46e5" }} />
                 </div>
@@ -679,7 +679,7 @@ export default function CalendarDispatchSection({ activeModule, onOpen, onBack }
                     );
                   })}
                 </div>
-                <div className="mt-5 pt-4" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+                <div className="mt-5 pt-4" style={{ borderTop: "1px solid var(--border)" }}>
                   <FieldLabel>Dispatch board mode</FieldLabel>
                   <Segmented<DispatchMode> value={defaultsVal.defaultDispatchMode}
                     onChange={v => editSection("defaults", sc => { sc.defaults!.defaultDispatchMode = v; })}
@@ -775,7 +775,7 @@ export default function CalendarDispatchSection({ activeModule, onOpen, onBack }
                     </div>
                   </div>
                 ) : (
-                  <div key={b.id} className="flex items-center gap-3 px-3 py-2.5 rounded-lg" style={{ border: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)", opacity: b.active ? 1 : 0.5 }}>
+                  <div key={b.id} className="flex items-center gap-3 px-3 py-2.5 rounded-lg" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)", opacity: b.active ? 1 : 0.5 }}>
                     <div className="flex flex-col">
                       <button onClick={() => moveBlock(b.id, -1)} disabled={i === 0} className="disabled:opacity-20" style={{ color: "var(--text-muted)" }}><ChevronUp className="w-3.5 h-3.5" /></button>
                       <button onClick={() => moveBlock(b.id, 1)} disabled={i === sortedBlocks.length - 1} className="disabled:opacity-20" style={{ color: "var(--text-muted)" }}><ChevronDown className="w-3.5 h-3.5" /></button>
@@ -848,7 +848,7 @@ export default function CalendarDispatchSection({ activeModule, onOpen, onBack }
               </div>
               <div className="space-y-1">
                 {layersVal.map(layer => (
-                  <div key={layer.type} className="grid items-center px-1 py-2 rounded-lg" style={{ gridTemplateColumns: "1fr auto auto auto", gap: "1.5rem", borderTop: "1px solid var(--border-subtle)", opacity: layer.enabled ? 1 : 0.5 }}>
+                  <div key={layer.type} className="grid items-center px-1 py-2 rounded-lg" style={{ gridTemplateColumns: "1fr auto auto auto", gap: "1.5rem", borderTop: "1px solid var(--border)", opacity: layer.enabled ? 1 : 0.5 }}>
                     <div className="flex items-center gap-2.5 min-w-0">
                       <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: layer.color }} />
                       <span className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{LAYER_LABEL(layer.type)}</span>
@@ -938,7 +938,7 @@ function BoardRow({ board, onEdit, onRemove, onSetDefault }: {
     ...(board.roleKeys ?? []).map(k => `${getRoleLabel(k)} (role)`),
   ];
   return (
-    <div className="rounded-xl p-4" style={{ border: board.isDefault ? "1px solid #c7d2fe" : "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+    <div className="rounded-xl p-4" style={{ border: board.isDefault ? "1px solid #c7d2fe" : "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)" }}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
@@ -1083,7 +1083,7 @@ function QueueViewCard({ view, first, last, expanded, onToggleExpand, onMove, on
         )}
       </div>
       {expanded && (
-        <div className="px-3 pb-3" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+        <div className="px-3 pb-3" style={{ borderTop: "1px solid var(--border)" }}>
           {locked
             ? <SystemViewSettings view={view} onPatch={onPatch} />
             : <CustomViewSettings view={view} onPatch={onPatch} onToggleFilter={onToggleFilter} onSetDue={onSetDue} />}

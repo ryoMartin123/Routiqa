@@ -80,7 +80,7 @@ export function FeaturePlaceholder({
           </li>
         ))}
       </ul>
-      <p className="text-[11px] mt-4 pt-3" style={{ borderTop: "1px solid var(--border-subtle)", color: "var(--text-muted)" }}>
+      <p className="text-[11px] mt-4 pt-3" style={{ borderTop: "1px solid var(--border)", color: "var(--text-muted)" }}>
         Structure and access are wired now; full functionality lands in a later phase.
       </p>
     </div>

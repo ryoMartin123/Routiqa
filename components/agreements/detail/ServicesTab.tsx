@@ -57,7 +57,7 @@ export default function ServicesTab({ agreement }: { agreement: CustomerAgreemen
     <div className="space-y-4">
       {groups.map(g => (
         <Card key={g.key} className="overflow-hidden">
-          <div className="flex items-center gap-2 px-4 py-3" style={{ borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+          <div className="flex items-center gap-2 px-4 py-3" style={{ borderBottom: "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)" }}>
             <Wrench className="w-3.5 h-3.5" style={{ color: g.color }} />
             <SectionLabel>{SERVICE_SCOPE_LABELS[g.key]} ({g.items.length})</SectionLabel>
           </div>
@@ -65,7 +65,7 @@ export default function ServicesTab({ agreement }: { agreement: CustomerAgreemen
             const vn = visitName(s.visitId);
             return (
               <div key={s.id} className="flex items-start justify-between gap-3 px-4 py-3"
-                style={{ borderBottom: i < g.items.length - 1 ? "1px solid var(--border-subtle)" : "none" }}>
+                style={{ borderBottom: i < g.items.length - 1 ? "1px solid var(--border)" : "none" }}>
                 <div className="min-w-0">
                   <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>
                     {s.quantity > 1 ? `${s.quantity}× ` : ""}{s.name}

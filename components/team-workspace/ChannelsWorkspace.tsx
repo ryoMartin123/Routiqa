@@ -92,7 +92,7 @@ export default function ChannelsWorkspace() {
     <div className="h-full flex min-h-0">
       {/* Left — channel list */}
       <aside className="w-72 shrink-0 flex flex-col" style={{ borderRight: "1px solid var(--border)", backgroundColor: "var(--bg-page)" }}>
-        <div className="p-2.5 shrink-0 flex items-center gap-1.5" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+        <div className="p-2.5 shrink-0 flex items-center gap-1.5" style={{ borderBottom: "1px solid var(--border)" }}>
           <div className="relative flex-1 min-w-0">
             <div className="flex items-center gap-2 rounded-lg px-2.5 py-1.5" style={{ backgroundColor: "var(--bg-input)" }}>
               <Hash className="w-3.5 h-3.5 shrink-0" style={{ color: "var(--text-muted)" }} />
@@ -122,7 +122,7 @@ export default function ChannelsWorkspace() {
                         )}
                         {messageHits.length > 0 && (
                           <>
-                            <p className="text-[10px] font-semibold uppercase tracking-wider px-3 pt-2 pb-1" style={{ color: "var(--text-muted)", borderTop: channelHits.length ? "1px solid var(--border-subtle)" : "none" }}>Messages</p>
+                            <p className="text-[10px] font-semibold uppercase tracking-wider px-3 pt-2 pb-1" style={{ color: "var(--text-muted)", borderTop: channelHits.length ? "1px solid var(--border)" : "none" }}>Messages</p>
                             {messageHits.map(({ c, p }) => (
                               <button key={p.id} onClick={() => openResult(c.id)} className="w-full flex items-start gap-2.5 px-3 py-1.5 text-left transition-colors hover:bg-[var(--bg-surface-2)]">
                                 <span className="w-6 h-6 rounded-md flex items-center justify-center shrink-0 text-[9px] font-bold text-white mt-0.5" style={{ backgroundColor: c.accent }}>{channelInitials(c.name)}</span>
@@ -159,7 +159,7 @@ export default function ChannelsWorkspace() {
                   <button onClick={() => { setMenuOpen(false); setCreateOpen(true); }} className="w-full flex items-center gap-2 px-3 py-2.5 text-sm font-medium transition-colors hover:bg-[var(--bg-surface-2)]" style={{ color: "var(--text-primary)" }}>
                     <Plus className="w-4 h-4" style={{ color: ACCENT }} /> Create Channel
                   </button>
-                  <div className="p-3 space-y-2" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+                  <div className="p-3 space-y-2" style={{ borderTop: "1px solid var(--border)" }}>
                     <div className="flex items-center">
                       <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Filter</span>
                       {activeFilters > 0 && <button onClick={() => setFType("all")} className="ml-auto text-[11px]" style={{ color: "var(--accent-text)" }}>Clear</button>}
@@ -252,7 +252,7 @@ function ChannelWorkspace({ channel, refresh, tick, detailsOpen, onToggleDetails
   return (
     <>
       {/* Channel header — name + description · details toggle */}
-      <div className="px-5 pt-4 pb-3 shrink-0 flex items-start gap-2" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+      <div className="px-5 pt-4 pb-3 shrink-0 flex items-start gap-2" style={{ borderBottom: "1px solid var(--border)" }}>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <h2 className="text-base font-semibold truncate" style={{ color: "var(--text-primary)" }}>{channel.name}</h2>
@@ -418,7 +418,7 @@ function PostActionsMenu({ post: p, structured, refresh, onReplyAction }: {
           <div className="absolute right-0 bottom-full mb-1 z-50 w-56 rounded-xl overflow-hidden py-1" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "0 12px 32px rgba(0,0,0,0.2)" }}>
             {/* Reactions — common ones up front, any emoji on request (one per user) */}
             <ReactionPicker onPick={react} />
-            <div className="my-1" style={{ borderTop: "1px solid var(--border-subtle)" }} />
+            <div className="my-1" style={{ borderTop: "1px solid var(--border)" }} />
             <button onClick={() => { onReplyAction(); setOpen(false); }} className="w-full flex items-center gap-2.5 px-3 py-2 text-sm transition-colors hover:bg-[var(--bg-surface-2)]" style={{ color: "var(--text-primary)" }}>
               {structured ? <MessagesSquare className="w-4 h-4 shrink-0" /> : <Reply className="w-4 h-4 shrink-0" />}
               {structured ? "View thread" : "Reply"}
@@ -612,7 +612,7 @@ function Composer({ channel, refresh, taRef, replyingTo, onClearReply }: {
   }
 
   return (
-    <div className="shrink-0 px-4 py-3" style={{ borderTop: "1px solid var(--border-subtle)", backgroundColor: "transparent" }}>
+    <div className="shrink-0 px-4 py-3" style={{ borderTop: "1px solid var(--border)", backgroundColor: "transparent" }}>
       {/* Quoted reply preview (WhatsApp-style) */}
       {replyingTo && (
         <div className="mb-1.5">
@@ -654,10 +654,10 @@ function Composer({ channel, refresh, taRef, replyingTo, onClearReply }: {
                         {special ? st.label : "Message"}<ChevronRight className="w-3.5 h-3.5" style={{ color: "var(--text-muted)" }} />
                       </span>
                     </MenuItem>
-                    <div className="my-1" style={{ borderTop: "1px solid var(--border-subtle)" }} />
+                    <div className="my-1" style={{ borderTop: "1px solid var(--border)" }} />
                     <MenuItem icon={ImageIcon} label="Upload image" onClick={() => imageInputRef.current?.click()} />
                     <MenuItem icon={FileText} label="Upload document" onClick={() => docInputRef.current?.click()} />
-                    <div className="my-1" style={{ borderTop: "1px solid var(--border-subtle)" }} />
+                    <div className="my-1" style={{ borderTop: "1px solid var(--border)" }} />
                     <MenuItem icon={Mic} label="Record audio" soon />
                     <MenuItem icon={Video} label="Record video" soon />
                   </>
@@ -666,13 +666,13 @@ function Composer({ channel, refresh, taRef, replyingTo, onClearReply }: {
                     <button onClick={() => setMenuView("root")} className="w-full flex items-center gap-1.5 px-3 py-2 text-[11px] font-semibold uppercase tracking-wider transition-colors hover:bg-[var(--bg-surface-2)]" style={{ color: "var(--text-muted)" }}>
                       <ArrowLeft className="w-3.5 h-3.5" /> Post type
                     </button>
-                    <div className="my-0.5" style={{ borderTop: "1px solid var(--border-subtle)" }} />
+                    <div className="my-0.5" style={{ borderTop: "1px solid var(--border)" }} />
                     <MenuItem icon={MessagesSquare} label="Message" onClick={() => { setPostType("message"); closeMenu(); }} check={postType === "message"} />
                     {SPECIAL_POST_TYPES.map(t => {
                       const s = POST_TYPE_STYLE[t]; const I = POST_TYPE_ICON[t];
                       return <MenuItem key={t} icon={I} iconColor={s.color} label={s.label} onClick={() => { setPostType(t); closeMenu(); }} check={postType === t} />;
                     })}
-                    <div className="my-1" style={{ borderTop: "1px solid var(--border-subtle)" }} />
+                    <div className="my-1" style={{ borderTop: "1px solid var(--border)" }} />
                     <MenuItem icon={CheckCircle2} iconColor="#f59e0b" label="Require acknowledgment" onClick={() => setRequireAck(v => !v)} check={requireAck} />
                   </>
                 )}
@@ -748,7 +748,7 @@ function ThreadModal({ post: p, channel, refresh, onClose }: {
   return (
     <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={onClose}>
       <div className="w-full max-w-lg max-h-[80vh] flex flex-col rounded-2xl overflow-hidden" onClick={e => e.stopPropagation()} style={{ backgroundColor: "var(--bg-surface)", boxShadow: "0 24px 64px rgba(0,0,0,0.4)" }}>
-      <div className="px-4 py-3 shrink-0 flex items-center justify-between gap-2" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+      <div className="px-4 py-3 shrink-0 flex items-center justify-between gap-2" style={{ borderBottom: "1px solid var(--border)" }}>
         <div className="min-w-0">
           <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Thread</p>
           <p className="text-[11px] truncate" style={{ color: "var(--text-muted)" }}>{channel.name}</p>
@@ -758,7 +758,7 @@ function ThreadModal({ post: p, channel, refresh, onClose }: {
 
       <div className="flex-1 overflow-y-auto thin-scroll-y px-4 py-3">
         {/* Root post */}
-        <div className="pb-3 mb-3" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+        <div className="pb-3 mb-3" style={{ borderBottom: "1px solid var(--border)" }}>
           <div className="flex items-center gap-2 mb-1">
             <span className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-bold text-white shrink-0" style={{ backgroundColor: "#6b7280" }}>{initials(p.author)}</span>
             <span className="text-xs font-semibold" style={{ color: "var(--text-primary)" }}>{p.author}</span>
@@ -789,7 +789,7 @@ function ThreadModal({ post: p, channel, refresh, onClose }: {
         <div ref={endRef} />
       </div>
 
-      <div className="shrink-0 px-3 py-3" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+      <div className="shrink-0 px-3 py-3" style={{ borderTop: "1px solid var(--border)" }}>
         <div className="flex items-end gap-1.5 rounded-xl px-2 py-1.5" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}>
           <textarea value={reply} onChange={e => setReply(e.target.value)} rows={1} placeholder="Reply…"
             className="flex-1 bg-transparent text-sm outline-none resize-none thin-scroll-y py-1.5" style={{ color: "var(--text-primary)", maxHeight: 140 }}
@@ -949,7 +949,7 @@ function CreateChannelModal({ onClose, onCreated }: { onClose: () => void; onCre
   return (
     <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={onClose}>
       <div className="w-full max-w-lg rounded-2xl overflow-hidden" onClick={e => e.stopPropagation()} style={{ backgroundColor: "var(--bg-surface)", boxShadow: "0 16px 48px rgba(0,0,0,0.24)" }}>
-        <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+        <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: "1px solid var(--border)" }}>
           <p className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>Create Channel</p>
           <button onClick={onClose} style={{ color: "var(--text-muted)" }}><X className="w-4 h-4" /></button>
         </div>
@@ -963,7 +963,7 @@ function CreateChannelModal({ onClose, onCreated }: { onClose: () => void; onCre
           <Field label="Company / location context" hint="Optional"><input value={context} onChange={e => setContext(e.target.value)} placeholder="e.g. Augusta Branch" className={inp} style={inpStyle} /></Field>
           <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>Members and roles can be managed after creating the channel.</p>
         </div>
-        <div className="px-5 py-3 flex items-center justify-end gap-2" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+        <div className="px-5 py-3 flex items-center justify-end gap-2" style={{ borderTop: "1px solid var(--border)" }}>
           <button onClick={onClose} className="text-sm font-medium px-3 py-2 rounded-lg" style={{ color: "var(--text-secondary)" }}>Cancel</button>
           <button onClick={create} disabled={!valid} className="text-sm font-medium px-4 py-2 rounded-lg text-white disabled:opacity-40" style={{ backgroundColor: ACCENT }}>Create Channel</button>
         </div>
@@ -983,7 +983,7 @@ function EditChannelDrawer({ channel, onClose, onSaved, onArchived }: { channel:
     <div className="fixed inset-0 z-50 flex justify-end">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
       <div className="relative w-full max-w-[460px] h-full flex flex-col" style={{ backgroundColor: "var(--bg-surface)", borderLeft: "1px solid var(--border)", boxShadow: "-16px 0 48px -12px rgba(0,0,0,0.3)" }}>
-        <div className="flex items-center justify-between px-5 py-4 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+        <div className="flex items-center justify-between px-5 py-4 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
           <p className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>Channel Settings</p>
           <button onClick={onClose} className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-[var(--bg-surface-2)]" style={{ color: "var(--text-secondary)" }}><X className="w-4 h-4" /></button>
         </div>
@@ -1002,12 +1002,12 @@ function EditChannelDrawer({ channel, onClose, onSaved, onArchived }: { channel:
             <Field label="Visibility"><UiSelect value={visibility} onChange={v => setVisibility(v as ChannelVisibility)} options={VISIBILITY_OPTIONS.map(v => ({ value: v, label: VISIBILITY_LABELS[v] }))} /></Field>
           </div>
           <Field label="Company / location context" hint="Optional"><input value={context} onChange={e => setContext(e.target.value)} className={inp} style={inpStyle} /></Field>
-          <div className="rounded-lg px-3 py-2.5 flex items-center gap-2" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border-subtle)" }}>
+          <div className="rounded-lg px-3 py-2.5 flex items-center gap-2" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}>
             <Users className="w-3.5 h-3.5 shrink-0" style={{ color: "var(--text-muted)" }} />
             <span className="text-xs" style={{ color: "var(--text-muted)" }}>Member &amp; manager management arrives with the permission model.</span>
           </div>
         </div>
-        <div className="px-5 py-3 flex items-center justify-between gap-2 shrink-0" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+        <div className="px-5 py-3 flex items-center justify-between gap-2 shrink-0" style={{ borderTop: "1px solid var(--border)" }}>
           <div className="flex items-center gap-1.5">
             {channel.status !== "archived" && <button onClick={() => { if (confirm(`Archive ${channel.name}?`)) { archiveChannel(channel.id); onArchived(); } }} className="flex items-center gap-1.5 text-sm font-medium px-3 py-2 rounded-lg" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}><Archive className="w-3.5 h-3.5" /> Archive</button>}
             <button onClick={() => alert("Delete is a placeholder — channels are archived for now.")} className="p-2 rounded-lg" style={{ border: "1px solid var(--border)", color: "#dc2626" }} title="Delete (placeholder)"><Trash2 className="w-3.5 h-3.5" /></button>

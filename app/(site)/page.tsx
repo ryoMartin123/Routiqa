@@ -1,7 +1,7 @@
 import Hero from "@/components/site/sections/Hero";
 import ProblemSection from "@/components/site/sections/ProblemSection";
 import SolutionSection from "@/components/site/sections/SolutionSection";
-import PlatformGrid from "@/components/site/sections/PlatformGrid";
+import AppEcosystemGrid from "@/components/site/sections/AppEcosystemGrid";
 import ProductShowcase from "@/components/site/sections/ProductShowcase";
 import WhyRoutiqa from "@/components/site/sections/WhyRoutiqa";
 import DesignPartnerSection from "@/components/site/sections/DesignPartnerSection";
@@ -13,7 +13,7 @@ export default function HomePage() {
       <Hero />
       <ProblemSection />
       <SolutionSection />
-      <PlatformGrid />
+      <AppEcosystemGrid />
       <ProductShowcase withIds />
       <WhyRoutiqa />
       <DesignPartnerSection />

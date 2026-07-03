@@ -44,17 +44,17 @@ function LineItemsTable({ invoiceId }: { invoiceId: string }) {
   const invoice = getInvoice(invoiceId)!;
 
   return (
-    <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+    <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
       {/* Header */}
       <div className="grid px-5 py-3 text-[10px] font-semibold uppercase tracking-wider"
-        style={{ gridTemplateColumns: "3fr 0.6fr 1fr 1fr", color: "var(--text-muted)", borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+        style={{ gridTemplateColumns: "3fr 0.6fr 1fr 1fr", color: "var(--text-muted)", borderBottom: "1px solid var(--border)", backgroundColor: "transparent" }}>
         <span>Description</span><span className="text-right">Qty</span>
         <span className="text-right">Unit Price</span><span className="text-right">Total</span>
       </div>
 
       {invoice.lineItems.map((item, i) => (
         <div key={item.id} className="grid px-5 py-3 items-start"
-          style={{ gridTemplateColumns: "3fr 0.6fr 1fr 1fr", borderBottom: i < invoice.lineItems.length - 1 ? "1px solid var(--border-subtle)" : "none" }}>
+          style={{ gridTemplateColumns: "3fr 0.6fr 1fr 1fr", borderBottom: i < invoice.lineItems.length - 1 ? "1px solid var(--border)" : "none" }}>
           <div>
             <p className="text-sm" style={{ color: "var(--text-primary)" }}>{item.description}</p>
             {item.notes && <p className="text-xs mt-0.5 italic" style={{ color: "var(--text-muted)" }}>{item.notes}</p>}
@@ -77,7 +77,7 @@ function LineItemsTable({ invoiceId }: { invoiceId: string }) {
             <span className="text-sm" style={{ color: "var(--text-secondary)" }}>{fmt(invoice.tax)}</span>
           </div>
         )}
-        <div className="flex justify-between pt-2" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+        <div className="flex justify-between pt-2" style={{ borderTop: "1px solid var(--border)" }}>
           <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Total</span>
           <span className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>{fmt(invoice.total)}</span>
         </div>
@@ -87,7 +87,7 @@ function LineItemsTable({ invoiceId }: { invoiceId: string }) {
             <span className="text-sm font-semibold text-emerald-600">–{fmt(invoice.total)}</span>
           </div>
         )}
-        <div className="flex justify-between pt-2" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+        <div className="flex justify-between pt-2" style={{ borderTop: "1px solid var(--border)" }}>
           <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Balance Due</span>
           <span className="text-lg font-bold"
             style={{ color: invoice.balanceDue > 0 ? (invoice.status === "past_due" ? "#dc2626" : "var(--text-primary)") : "#10b981" }}>
@@ -121,7 +121,7 @@ function DetailsTab({ id }: { id: string }) {
     <div className="grid grid-cols-3 gap-6">
       {/* ── Left ─────────────────────────────────── */}
       <div className="space-y-4">
-        <div className="rounded-xl p-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+        <div className="rounded-xl p-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
           <p className="text-[10px] font-semibold uppercase tracking-widest mb-3" style={{ color: "var(--text-muted)" }}>Invoice Info</p>
           <div className="space-y-2.5">
             <div className="flex justify-between"><span className="text-xs" style={{ color: "var(--text-muted)" }}>Status</span>
@@ -154,7 +154,7 @@ function DetailsTab({ id }: { id: string }) {
         </div>
 
         {/* Customer */}
-        <div className="rounded-xl p-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+        <div className="rounded-xl p-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
           <p className="text-[10px] font-semibold uppercase tracking-widest mb-3" style={{ color: "var(--text-muted)" }}>Customer</p>
           {customer ? (
             <Link href={`/customers/${customer.id}`} className="flex items-start gap-3 hover:opacity-80 transition-opacity">
@@ -175,7 +175,7 @@ function DetailsTab({ id }: { id: string }) {
 
         {/* Source quote */}
         {sourceQuote && (
-          <div className="rounded-xl p-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+          <div className="rounded-xl p-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
             <p className="text-[10px] font-semibold uppercase tracking-widest mb-3" style={{ color: "var(--text-muted)" }}>From Quote</p>
             <Link href={`/quotes/${sourceQuote.id}`} className="flex items-center gap-3 hover:opacity-80 transition-opacity">
               <div className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center shrink-0">
@@ -192,7 +192,7 @@ function DetailsTab({ id }: { id: string }) {
 
         {/* Linked record */}
         {invoice.linkedLabel && invoice.linkedType !== "quote" && (
-          <div className="rounded-xl p-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+          <div className="rounded-xl p-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
             <p className="text-[10px] font-semibold uppercase tracking-widest mb-3" style={{ color: "var(--text-muted)" }}>Linked To</p>
             <Link href={linkedHref} className="flex items-center gap-3 hover:opacity-80 transition-opacity">
               <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center shrink-0">
@@ -226,7 +226,7 @@ function PaymentModal({ balanceDue, invoiceNumber, onSubmit, onClose }: {
     <div className="fixed inset-0 z-[60] bg-black/40 flex items-center justify-center p-4" onClick={onClose}>
       <div className="w-full max-w-sm rounded-2xl overflow-hidden" onClick={e => e.stopPropagation()}
         style={{ backgroundColor: "var(--bg-surface)", boxShadow: "0 16px 48px rgba(0,0,0,0.24)" }}>
-        <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+        <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: "1px solid var(--border)" }}>
           <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Record Payment</p>
           <button onClick={onClose} style={{ color: "var(--text-muted)" }}><X className="w-4 h-4" /></button>
         </div>
@@ -238,7 +238,7 @@ function PaymentModal({ balanceDue, invoiceNumber, onSubmit, onClose }: {
               className="w-full rounded-lg px-3 py-2 text-sm outline-none" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface)", color: "var(--text-primary)" }} />
           </div>
         </div>
-        <div className="px-5 py-4 flex justify-end gap-2" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+        <div className="px-5 py-4 flex justify-end gap-2" style={{ borderTop: "1px solid var(--border)" }}>
           <button onClick={onClose} className="px-3 py-1.5 rounded-lg text-sm" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>Cancel</button>
           <button onClick={() => onSubmit(val)} disabled={val <= 0}
             className="px-4 py-1.5 rounded-lg text-sm font-medium text-white disabled:opacity-40" style={{ backgroundColor: "#10b981" }}>
@@ -311,7 +311,7 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
 
   return (
     <div className="flex flex-col h-full">
-      <div style={{ backgroundColor: "var(--bg-surface)", borderBottom: "1px solid var(--border-subtle)" }}>
+      <div style={{ backgroundColor: "var(--bg-surface)", borderBottom: "1px solid var(--border)" }}>
         <div className="flex items-center justify-between px-6 py-4">
           <div className="flex items-center gap-4 min-w-0">
             <Link href="/invoices" className="flex items-center gap-1.5 text-sm shrink-0" style={{ color: "var(--text-secondary)" }}>
@@ -397,7 +397,7 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
       {showPreview && (
         <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={() => setShowPreview(false)}>
           <div className="w-full max-w-2xl max-h-[92vh] overflow-y-auto rounded-2xl" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-4 py-2 rounded-t-2xl" style={{ backgroundColor: "var(--bg-surface)", borderBottom: "1px solid var(--border-subtle)" }}>
+            <div className="flex items-center justify-between px-4 py-2 rounded-t-2xl" style={{ backgroundColor: "var(--bg-surface)", borderBottom: "1px solid var(--border)" }}>
               <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Invoice Preview</p>
               <button onClick={() => setShowPreview(false)} style={{ color: "var(--text-muted)" }}><X className="w-4 h-4" /></button>
             </div>
@@ -430,12 +430,12 @@ function InvoiceNotesTab({ invoice, onSaved }: { invoice: InvoiceRecord; onSaved
   }
   return (
     <div className="max-w-2xl space-y-4">
-      <div className="rounded-xl p-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+      <div className="rounded-xl p-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
         <label className="block text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: "var(--text-muted)" }}>Invoice Notes <span className="normal-case font-normal">(shown on the invoice)</span></label>
         <textarea value={customerNotes} onChange={e => setCustomerNotes(e.target.value)} rows={4} placeholder="Payment terms, remittance details…"
           className="w-full rounded-lg px-3 py-2 text-sm outline-none resize-none" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface)", color: "var(--text-primary)" }} />
       </div>
-      <div className="rounded-xl p-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+      <div className="rounded-xl p-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
         <label className="block text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: "var(--text-muted)" }}>Internal Notes <span className="normal-case font-normal">(team only)</span></label>
         <textarea value={internalNotes} onChange={e => setInternalNotes(e.target.value)} rows={3} placeholder="Internal context not shown to the customer…"
           className="w-full rounded-lg px-3 py-2 text-sm outline-none resize-none" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface)", color: "var(--text-primary)" }} />
@@ -459,7 +459,7 @@ function InvoiceHistoryTab({ invoice }: { invoice: InvoiceRecord }) {
   if (invoice.status === "void") events.push({ label: "Invoice voided" });
 
   return (
-    <div className="max-w-2xl rounded-xl p-5" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+    <div className="max-w-2xl rounded-xl p-5" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
       <p className="text-xs font-semibold uppercase tracking-widest mb-4" style={{ color: "var(--text-muted)" }}>History</p>
       <div className="space-y-0">
         {events.map((e, i) => (

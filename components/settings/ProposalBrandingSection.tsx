@@ -34,14 +34,14 @@ export default function ProposalBrandingSection() {
 
   return (
     <div className="space-y-4">
-      <div className="rounded-xl p-3.5 flex items-start gap-2.5" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border-subtle)" }}>
+      <div className="rounded-xl p-3.5 flex items-start gap-2.5" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}>
         <Palette className="w-4 h-4 shrink-0 mt-0.5" style={{ color: "var(--accent-text)" }} />
         <p className="text-xs leading-relaxed" style={{ color: "var(--text-secondary)" }}>
           Your logo, brand color, company info, and footer carry through every Quote Design — quotes, previews, and PDFs. Set them once here.
         </p>
       </div>
 
-      <div className="rounded-xl p-5" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+      <div className="rounded-xl p-5" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Labeled label="Logo URL" hint="placeholder"><input value={b.logoUrl} onChange={e => set("logoUrl", e.target.value)} placeholder="https://…" className="w-full rounded-lg px-3 py-2 text-sm outline-none" style={inputStyle} /></Labeled>
           <Labeled label="Brand / Accent Color">

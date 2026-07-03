@@ -3,7 +3,7 @@
 import { useMemo, useState, useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import {
-  Inbox, Search, SlidersHorizontal, Eye, EyeOff,
+  Search, SlidersHorizontal, Eye, EyeOff,
   ChevronLeft, ChevronRight, ChevronUp, ChevronDown, LayoutGrid, LayoutList, CalendarDays, CalendarRange, CalendarClock,
   Plus, Briefcase, X, Users, MapPin, Building2, Check, Globe, Map as MapIcon, RotateCcw, Link2,
 } from "lucide-react";
@@ -722,7 +722,7 @@ export default function CalendarPage() {
           <div className="relative">
             <button onClick={() => !noTechs && setCreateMenuOpen(o => !o)} disabled={noTechs}
               title={noTechs ? "Add technicians in Settings → Users & Roles first" : "Add to board"}
-              className="flex items-center justify-center w-8 h-8 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              className="plus-glow flex items-center justify-center w-8 h-8 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none"
               aria-haspopup="menu" aria-expanded={createMenuOpen}>
               <Plus className="w-4 h-4" />
             </button>
@@ -730,36 +730,22 @@ export default function CalendarPage() {
               <>
                 <div className="fixed inset-0 z-40" onClick={() => setCreateMenuOpen(false)} />
                 <div role="menu" className="absolute right-0 mt-1.5 w-52 rounded-xl overflow-hidden z-50 py-1"
-                  style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "0 12px 32px rgba(0,0,0,0.18)" }}>
+                  style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "0 12px 32px rgba(0,0,0,0.18)" }}>
                   <p className="text-[10px] font-semibold uppercase tracking-widest px-3 pt-2 pb-1" style={{ color: "var(--text-muted)" }}>Add to board</p>
-                  <button onClick={() => { setCreateMenuOpen(false); setShowJobWizard(true); }}
-                    className="w-full flex items-center gap-3 px-3 py-2 text-left transition-colors hover:bg-[var(--bg-surface-2)]">
-                    <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: "var(--accent-soft-bg)" }}>
-                      <Briefcase className="w-4 h-4" style={{ color: "var(--accent-text)" }} />
-                    </div>
-                    <div className="min-w-0"><p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>New Job</p><p className="text-[11px]" style={{ color: "var(--text-muted)" }}>Schedulable work</p></div>
-                  </button>
-                  <button onClick={() => { setCreateMenuOpen(false); setShowReturnVisit(true); }}
-                    className="w-full flex items-center gap-3 px-3 py-2 text-left transition-colors hover:bg-[var(--bg-surface-2)]">
-                    <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: "var(--accent-soft-bg)" }}>
-                      <RotateCcw className="w-4 h-4" style={{ color: "var(--accent-text)" }} />
-                    </div>
-                    <div className="min-w-0"><p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>Return Visit</p><p className="text-[11px]" style={{ color: "var(--text-muted)" }}>2nd visit on an existing job</p></div>
-                  </button>
-                  <button onClick={() => { setCreateMenuOpen(false); setVisitSchedErr(null); setShowVisitScheduler(true); }}
-                    className="w-full flex items-center gap-3 px-3 py-2 text-left transition-colors hover:bg-[var(--bg-surface-2)]">
-                    <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: "var(--accent-soft-bg)" }}>
-                      <CalendarDays className="w-4 h-4" style={{ color: "var(--accent-text)" }} />
-                    </div>
-                    <div className="min-w-0"><p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>Agreement Visit</p><p className="text-[11px]" style={{ color: "var(--text-muted)" }}>Book a planned visit</p></div>
-                  </button>
-                  <button onClick={() => { setCreateMenuOpen(false); setTimeOffOpen(true); }}
-                    className="w-full flex items-center gap-3 px-3 py-2 text-left transition-colors hover:bg-[var(--bg-surface-2)]">
-                    <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: "var(--accent-soft-bg)" }}>
-                      <CalendarClock className="w-4 h-4" style={{ color: "var(--accent-text)" }} />
-                    </div>
-                    <div className="min-w-0"><p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>Time Off</p><p className="text-[11px]" style={{ color: "var(--text-muted)" }}>PTO / blocked time</p></div>
-                  </button>
+                  {([
+                    { label: "New Job", sub: "Schedulable work", icon: Briefcase, onClick: () => { setCreateMenuOpen(false); setShowJobWizard(true); } },
+                    { label: "Return Visit", sub: "2nd visit on an existing job", icon: RotateCcw, onClick: () => { setCreateMenuOpen(false); setShowReturnVisit(true); } },
+                    { label: "Agreement Visit", sub: "Book a planned visit", icon: CalendarDays, onClick: () => { setCreateMenuOpen(false); setVisitSchedErr(null); setShowVisitScheduler(true); } },
+                    { label: "Time Off", sub: "PTO / blocked time", icon: CalendarClock, onClick: () => { setCreateMenuOpen(false); setTimeOffOpen(true); } },
+                  ] as const).map(entry => (
+                    <button key={entry.label} onClick={entry.onClick}
+                      className="w-full flex items-center gap-3 px-3 py-2 text-left transition-colors hover:bg-[var(--bg-surface-2)]">
+                      <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: "var(--accent-soft-bg)" }}>
+                        <entry.icon className="w-4 h-4" style={{ color: "var(--accent-text)" }} />
+                      </div>
+                      <div className="min-w-0"><p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{entry.label}</p><p className="text-[11px]" style={{ color: "var(--text-muted)" }}>{entry.sub}</p></div>
+                    </button>
+                  ))}
                 </div>
               </>
             )}
@@ -768,10 +754,11 @@ export default function CalendarPage() {
           {/* Filter — Board is the first filter; layers fold in here too */}
           <div className="relative" ref={filtersRef}>
             <button onClick={() => setFiltersOpen(o => !o)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors"
-              style={{ border: `1px solid ${activeFilters ? "var(--accent-soft-border)" : "var(--border)"}`, backgroundColor: activeFilters ? "var(--accent-soft-bg)" : "var(--bg-surface)", color: activeFilters ? "var(--accent-text)" : "var(--text-secondary)" }}>
-              <SlidersHorizontal className="w-3.5 h-3.5" /> Filter
-              {activeFilters > 0 && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: "var(--accent-soft-2-bg)", color: "var(--accent-text)" }}>{activeFilters}</span>}
+              className="group flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-all duration-200 active:scale-95 hover:brightness-[0.98]"
+              style={{ border: `1px solid ${activeFilters || filtersOpen ? "var(--accent-soft-border)" : "var(--border)"}`, backgroundColor: activeFilters || filtersOpen ? "var(--accent-soft-bg)" : "var(--bg-surface)", color: activeFilters || filtersOpen ? "var(--accent-text)" : "var(--text-secondary)" }}>
+              {/* Sliders "tune" into place — rotates on hover, locks vertical while open. */}
+              <SlidersHorizontal className={`w-3.5 h-3.5 transition-transform duration-300 ease-out ${filtersOpen ? "rotate-90" : "group-hover:rotate-90 group-hover:scale-110"}`} /> Filter
+              {activeFilters > 0 && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full animate-[pulse_1.6s_ease-in-out_2]" style={{ backgroundColor: "var(--accent-soft-2-bg)", color: "var(--accent-text)" }}>{activeFilters}</span>}
             </button>
             {filtersOpen && (
               <div className="absolute right-0 top-full mt-2 z-50 rounded-xl p-4 w-72" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "0 12px 32px rgba(0,0,0,0.18)" }}>
@@ -803,7 +790,7 @@ export default function CalendarPage() {
 
                   {/* Layers — show/hide item types on the board */}
                   {availableLayers.length > 0 && (
-                    <div className="pt-1.5" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+                    <div className="pt-1.5" style={{ borderTop: "1px solid var(--border)" }}>
                       <div className="flex items-center justify-between mb-1.5">
                         <p className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Layers</p>
                         <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>{activeLayerCount}/{availableLayers.length} shown</span>
@@ -887,7 +874,7 @@ export default function CalendarPage() {
           no valid board slot under the cursor (off-board or over a taken slot). */}
       {qDragPos && draggedQueueItem && !overValidSlot && (
         <div className="fixed z-[100] pointer-events-none rounded-lg p-2.5 w-56"
-          style={{ left: qDragPos.x + 14, top: qDragPos.y + 14, backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", borderLeft: `3px solid ${draggedQueueItem.color}`, boxShadow: "0 8px 24px rgba(0,0,0,0.22)" }}>
+          style={{ left: qDragPos.x + 14, top: qDragPos.y + 14, backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", borderLeft: `3px solid ${draggedQueueItem.color}`, boxShadow: "0 8px 24px rgba(0,0,0,0.22)" }}>
           <p className="text-sm font-semibold truncate" style={{ color: "var(--text-primary)" }}>{draggedQueueItem.title}</p>
           {draggedQueueItem.customerName && <p className="text-[11px] truncate" style={{ color: "var(--text-secondary)" }}>{draggedQueueItem.customerName}</p>}
           <p className="text-[10px] mt-0.5" style={{ color: "var(--text-muted)" }}>{draggedQueueItem.durationMinutes}m · drop on a free slot</p>
@@ -955,9 +942,27 @@ function DispatchBoard({ focus, mode, items, roster, availability, dayStart, day
     document.addEventListener("dragend", onEnd);
     return () => document.removeEventListener("dragend", onEnd);
   }, []);
-  // Brief "can't overlap" notice when a move/drop would land on another job.
-  const [overlapMsg, setOverlapMsg] = useState(false);
-  function flashOverlap() { setOverlapMsg(true); window.setTimeout(() => setOverlapMsg(false), 2200); }
+  // Brief notice when a move/drop is rejected (overlap, or a return visit dropped
+  // out of order). Holds the message text; null = hidden.
+  const [rejectMsg, setRejectMsg] = useState<string | null>(null);
+  function flashOverlap(msg = "Jobs can't overlap — that slot is already taken.") {
+    setRejectMsg(msg); window.setTimeout(() => setRejectMsg(null), 2600);
+  }
+
+  // A linked visit must stay in order: a later visit can't start before an earlier
+  // visit of the same job ends, and an earlier visit can't run past a later one.
+  // Visit order is stable (creation order via visitIndex), so this never flips.
+  function visitOrderViolation(item: CalendarItem, startMin: number, durationMinutes: number): boolean {
+    if (!item.jobId || !item.visitIndex) return false;
+    const end = startMin + durationMinutes;
+    return dayItems.some(s => {
+      if (s.id === item.id || s.jobId !== item.jobId || !s.visitIndex) return false;
+      const sStart = startMinOf(s), sEnd = sStart + s.durationMinutes;
+      if (s.visitIndex < item.visitIndex!) return startMin < sEnd;   // must start after the earlier visit ends
+      if (s.visitIndex > item.visitIndex!) return end > sStart;      // must end before the later visit starts
+      return false;
+    });
+  }
 
   // Would a block of [startMin, startMin+dur) overlap another timed item in the
   // same tech lane today? Jobs can't sit on top of one another.
@@ -1040,7 +1045,11 @@ function DispatchBoard({ focus, mode, items, roster, availability, dayStart, day
       } else { curDur = clamp(snap(mm - base), 30, totalMin - base); curStart = base; }
       // Reassigning to a different tech is always a move, never a click.
       if (curTech !== originTech) moved = true;
-      setPreview({ id: item.id, startMin: curStart, durationMinutes: curDur, tech: curTech });
+      // Only enter the live "tracking" preview once it's an actual drag. A click
+      // carries a few px of jitter; without this guard that jitter flips the card
+      // into tracking mode and flickers its subline (customer → time readout)
+      // before the click resolves to a selection.
+      if (moved) setPreview({ id: item.id, startMin: curStart, durationMinutes: curDur, tech: curTech });
     };
     const onUp = () => {
       window.removeEventListener("mousemove", onMove);
@@ -1052,6 +1061,14 @@ function DispatchBoard({ focus, mode, items, roster, availability, dayStart, day
         const targetTech = kind === "move" ? curTech : originTech;
         // Reject a move/resize that would overlap another job in the lane — revert.
         if (laneOverlap(targetTech, curStart, curDur, item.id)) { flashOverlap(); return; }
+        // A linked/return visit must stay after the first visit — never let a drag
+        // reorder the visits of the same job.
+        if (visitOrderViolation(item, curStart, curDur)) {
+          flashOverlap(item.visitIndex === 1
+            ? "The first visit must stay before the return visit."
+            : "A return visit must stay after the first visit.");
+          return;
+        }
         const nd = new Date(focus); nd.setHours(dayStart + Math.floor(curStart / 60), curStart % 60, 0, 0);
         onMoveResize(item.id, nd, curDur, kind === "move" ? curTech : undefined);
       } else {
@@ -1064,11 +1081,11 @@ function DispatchBoard({ focus, mode, items, roster, availability, dayStart, day
 
   return (
     <div className="relative">
-      {/* Overlap warning — jobs can't be stacked on the same tech/time. */}
-      {overlapMsg && (
-        <div className="fixed left-1/2 bottom-6 -translate-x-1/2 z-50 flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium shadow-lg"
+      {/* Rejected-move notice — overlap, or a return visit dropped out of order. */}
+      {rejectMsg && (
+        <div role="alert" className="fixed left-1/2 top-20 -translate-x-1/2 z-50 flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium shadow-lg"
           style={{ backgroundColor: "#fee2e2", color: "#991b1b", border: "1px solid #fecaca" }}>
-          <X className="w-4 h-4" /> Jobs can&apos;t overlap — that slot is already taken.
+          <X className="w-4 h-4" /> {rejectMsg}
         </div>
       )}
       {/* Current-time box — OUTSIDE the board container (which clips), pinned above
@@ -1080,13 +1097,13 @@ function DispatchBoard({ focus, mode, items, roster, availability, dayStart, day
           {now.label}
         </div>
       )}
-      <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+      <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
         {/* Header */}
-        <div className="flex" style={{ borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+        <div className="flex" style={{ borderBottom: "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)" }}>
           <div className="w-[180px] shrink-0 px-3 py-2 text-[10px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Technician</div>
         <div className="flex-1 flex relative">
           {labels.map(l => (
-            <div key={l.key} className="px-1 py-1.5 text-[10px] font-semibold text-center whitespace-nowrap" style={{ flex: l.span, color: "var(--text-muted)", borderLeft: "1px solid var(--border-subtle)" }}>{l.label}</div>
+            <div key={l.key} className="px-1 py-1.5 text-[10px] font-semibold text-center whitespace-nowrap" style={{ flex: l.span, color: "var(--text-muted)", borderLeft: "1px solid var(--border)" }}>{l.label}</div>
           ))}
           {/* Now-line continues through the time-header row */}
           {now != null && (
@@ -1113,9 +1130,9 @@ function DispatchBoard({ focus, mode, items, roster, availability, dayStart, day
         const openHrs = Math.max(0, Math.round((totalMin - bookedMin) / 60));
         const isDropTarget = dragTech === tech.name || (preview != null && preview.tech === tech.name);
         return (
-          <div key={tech.name || "__unassigned"} className="flex" style={{ borderBottom: ri < rows.length - 1 ? "1px solid var(--border-subtle)" : "none", backgroundColor: isUnassigned ? "var(--warning-soft-bg)" : undefined }}>
+          <div key={tech.name || "__unassigned"} className="flex" style={{ borderBottom: ri < rows.length - 1 ? "1px solid var(--border)" : "none", backgroundColor: isUnassigned ? "var(--warning-soft-bg)" : undefined }}>
             {/* Tech cell */}
-            <div className="w-[180px] shrink-0 px-3 py-2.5 flex items-start gap-2" style={{ borderRight: "1px solid var(--border-subtle)" }}>
+            <div className="w-[180px] shrink-0 px-3 py-2.5 flex items-start gap-2" style={{ borderRight: "1px solid var(--border)" }}>
               {/* Rounded-square tech tile — matches the technician markers on the map. */}
               <div className="w-7 h-7 rounded-lg flex items-center justify-center text-[9px] font-bold shrink-0"
                 style={{ backgroundColor: isUnassigned ? "var(--warning-soft-border)" : "#4f46e5", color: isUnassigned ? "var(--warning-text)" : "#fff" }}>{tech.initials}</div>
@@ -1318,13 +1335,11 @@ function UnscheduledQueue({ items, views, tab, setTab, search, setSearch, onSele
   const [layout, setLayout] = useState<"cards" | "list">("cards");
 
   return (
-    <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+    <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
       {/* Header */}
-      <div className="flex items-center justify-between gap-3 px-4 py-3 flex-wrap" style={{ borderBottom: collapsed ? "none" : "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+      <div className="flex items-center justify-between gap-3 px-4 py-3 flex-wrap" style={{ backgroundColor: "var(--bg-surface-2)" }}>
         <div className="flex items-center gap-2">
-          <Inbox className="w-4 h-4" style={{ color: "var(--text-muted)" }} />
           <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Unscheduled Queue</p>
-          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>{items.length}</span>
         </div>
         <div className="flex items-center gap-2">
           {!collapsed && (
@@ -1356,10 +1371,12 @@ function UnscheduledQueue({ items, views, tab, setTab, search, setSearch, onSele
           </button>
         </div>
       </div>
-      {!collapsed && (
-        <>
+      {/* Collapsible content — grid-rows height transition for a smooth collapse */}
+      <div style={{ display: "grid", gridTemplateRows: collapsed ? "0fr" : "1fr", transition: "grid-template-rows 0.32s cubic-bezier(0.4,0,0.2,1)" }}>
+        <div style={{ overflow: "hidden", minHeight: 0 }}>
+          <div style={{ borderTop: "1px solid var(--border)", opacity: collapsed ? 0 : 1, transition: "opacity 0.22s ease" }}>
           {/* Triage tabs — one per configured queue view */}
-          <div className="flex items-center gap-0.5 px-3 py-2 flex-wrap" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+          <div className="flex items-center gap-0.5 px-3 py-2 flex-wrap" style={{ borderBottom: "1px solid var(--border)" }}>
             {views.map(v => {
               const active = (activeView?.key ?? tab) === v.key; const c = countForView(items, v);
               // Configured views are curated in Settings (active + "Show as tab"),
@@ -1369,7 +1386,8 @@ function UnscheduledQueue({ items, views, tab, setTab, search, setSearch, onSele
                   className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-colors"
                   style={{ backgroundColor: active ? "var(--accent-soft-bg)" : "transparent", color: active ? "var(--accent-text)" : "var(--text-muted)", border: `1px solid ${active ? "var(--accent-soft-border)" : "transparent"}` }}>
                   {v.color && <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: v.color }} />}
-                  {v.name}<span className="text-[10px] font-bold px-1 py-0.5 rounded-full" style={{ backgroundColor: active ? "var(--accent-soft-2-bg)" : "var(--bg-input)", color: active ? "var(--accent-text)" : "var(--text-muted)" }}>{c}</span>
+                  {v.name}
+                  {c > 0 && <span className="text-[11px] font-semibold tabular-nums" style={{ color: active ? "var(--accent-text)" : "var(--text-muted)" }}>{c}</span>}
                 </button>
               );
             })}
@@ -1383,13 +1401,14 @@ function UnscheduledQueue({ items, views, tab, setTab, search, setSearch, onSele
                 {filtered.map(u => <QueueCard key={u.id} item={u} onSelect={onSelect} />)}
               </div>
             ) : (
-              <div className="rounded-lg overflow-hidden" style={{ border: "1px solid var(--border-subtle)" }}>
+              <div className="rounded-lg overflow-hidden" style={{ border: "1px solid var(--border)" }}>
                 {filtered.map((u, i) => <QueueRow key={u.id} item={u} onSelect={onSelect} last={i === filtered.length - 1} />)}
               </div>
             )}
           </div>
-        </>
-      )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -1419,7 +1438,7 @@ function QueueRow({ item: u, onSelect, last }: { item: UnscheduledItem; onSelect
       onDragEnd={() => { draggedQueueItem = null; overValidSlot = false; }}
       onClick={() => onSelect(u)}
       className="flex items-center gap-3 px-3 py-2.5 cursor-grab active:cursor-grabbing transition-colors hover:bg-[var(--bg-surface-2)]"
-      style={{ borderBottom: last ? "none" : "1px solid var(--border-subtle)", borderLeft: `3px solid ${u.color}` }}>
+      style={{ borderBottom: last ? "none" : "1px solid var(--border)", borderLeft: `3px solid ${u.color}` }}>
       <StatusBadge label={cfg.label} color={cfg.color} size="sm" className="shrink-0" />
       <div className="min-w-0 flex-1">
         <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{u.title}</p>
@@ -1439,7 +1458,7 @@ function QueueCard({ item: u, onSelect }: { item: UnscheduledItem; onSelect: (u:
       onDragEnd={() => { draggedQueueItem = null; overValidSlot = false; }}
       onClick={() => onSelect(u)}
       className="rounded-lg p-3 cursor-grab active:cursor-grabbing transition-shadow hover:shadow-md"
-      style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", borderLeft: `3px solid ${u.color}` }}>
+      style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", borderLeft: `3px solid ${u.color}` }}>
       <div className="flex items-start justify-between gap-2 mb-1">
         <div className="flex items-center gap-1.5 min-w-0">
           <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded inline-flex items-center gap-1 shrink-0" style={{ backgroundColor: cfg.color + "22", color: cfg.color }}>
@@ -1453,7 +1472,7 @@ function QueueCard({ item: u, onSelect }: { item: UnscheduledItem; onSelect: (u:
       </div>
       <p className="text-sm font-semibold truncate" style={{ color: "var(--text-primary)" }}>{u.title}</p>
       {u.customerName && <p className="text-xs truncate" style={{ color: "var(--text-secondary)" }}>{u.customerName}{u.city ? ` · ${u.city}` : ""}</p>}
-      <div className="flex items-center justify-between mt-2 pt-2" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+      <div className="flex items-center justify-between mt-2 pt-2" style={{ borderTop: "1px solid var(--border)" }}>
         <span className="text-[10px] truncate" style={{ color: "var(--text-muted)" }}>{u.reason}</span>
         <span className="text-[10px] shrink-0 ml-2" style={{ color: "var(--text-muted)" }}>{u.durationMinutes}m{u.preferredDate ? ` · ${u.preferredDate}` : ""}</span>
       </div>
@@ -1473,14 +1492,14 @@ function ItemChip({ item, onSelect }: { item: CalendarItem; onSelect: (i: Calend
 function WeekView({ focus, items, onSelect }: { focus: Date; items: CalendarItem[]; onSelect: (i: CalendarItem) => void }) {
   const weekStart = startOfWeek(focus); const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)); const today = new Date();
   return (
-    <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+    <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
       <div className="grid grid-cols-7">
         {days.map((day, di) => {
           const dayItems = items.filter(i => isSameDay(i.start, day)).sort((a, b) => Number(b.allDay) - Number(a.allDay) || a.start.getTime() - b.start.getTime());
           const isToday = isSameDay(day, today);
           return (
-            <div key={di} style={{ borderLeft: di > 0 ? "1px solid var(--border-subtle)" : "none", minHeight: "400px" }}>
-              <div className="px-2 py-2 text-center" style={{ borderBottom: "1px solid var(--border-subtle)", backgroundColor: isToday ? "var(--accent-soft-bg)" : "var(--bg-surface-2)" }}>
+            <div key={di} style={{ borderLeft: di > 0 ? "1px solid var(--border)" : "none", minHeight: "400px" }}>
+              <div className="px-2 py-2 text-center" style={{ borderBottom: "1px solid var(--border)", backgroundColor: isToday ? "var(--accent-soft-bg)" : "var(--bg-surface-2)" }}>
                 <p className="text-[10px] uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>{day.toLocaleDateString("en-US", { weekday: "short" })}</p>
                 <p className="text-sm font-bold" style={{ color: isToday ? "var(--accent-text)" : "var(--text-primary)" }}>{day.getDate()}</p>
               </div>
@@ -1498,10 +1517,10 @@ function DayView({ focus, items, dayStart, dayEnd, onSelect }: { focus: Date; it
   const hours = Array.from({ length: Math.max(1, dayEnd - dayStart) }, (_, i) => dayStart + i);
   const minutesFromStart = (d: Date) => (d.getHours() - dayStart) * 60 + d.getMinutes();
   return (
-    <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
-      {allDay.length > 0 && <div className="p-2 space-y-1.5" style={{ borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>{allDay.map(i => <ItemChip key={i.id} item={i} onSelect={onSelect} />)}</div>}
+    <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
+      {allDay.length > 0 && <div className="p-2 space-y-1.5" style={{ borderBottom: "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)" }}>{allDay.map(i => <ItemChip key={i.id} item={i} onSelect={onSelect} />)}</div>}
       <div className="relative" style={{ height: `${hours.length * HOUR_PX}px` }}>
-        {hours.map((h, i) => <div key={h} className="absolute left-0 right-0 flex" style={{ top: `${i*HOUR_PX}px`, height: `${HOUR_PX}px`, borderTop: "1px solid var(--border-subtle)" }}><span className="text-[10px] px-2 pt-1 shrink-0 w-14" style={{ color: "var(--text-muted)" }}>{hourLabel(h)}</span></div>)}
+        {hours.map((h, i) => <div key={h} className="absolute left-0 right-0 flex" style={{ top: `${i*HOUR_PX}px`, height: `${HOUR_PX}px`, borderTop: "1px solid var(--border)" }}><span className="text-[10px] px-2 pt-1 shrink-0 w-14" style={{ color: "var(--text-muted)" }}>{hourLabel(h)}</span></div>)}
         {timed.map(i => {
           const top = Math.max(0, (minutesFromStart(i.start)/60)*HOUR_PX); const height = Math.max(24, (i.durationMinutes/60)*HOUR_PX - 2);
           return (
@@ -1520,8 +1539,8 @@ function MonthView({ focus, items, onSelect }: { focus: Date; items: CalendarIte
   const monthStart = startOfMonth(focus); const gridStart = startOfWeek(monthStart);
   const days = Array.from({ length: 42 }, (_, i) => addDays(gridStart, i)); const today = new Date();
   return (
-    <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
-      <div className="grid grid-cols-7" style={{ borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+    <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
+      <div className="grid grid-cols-7" style={{ borderBottom: "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)" }}>
         {["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map(d => <div key={d} className="px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-center" style={{ color: "var(--text-muted)" }}>{d}</div>)}
       </div>
       <div className="grid grid-cols-7">
@@ -1529,7 +1548,7 @@ function MonthView({ focus, items, onSelect }: { focus: Date; items: CalendarIte
           const inMonth = day.getMonth() === focus.getMonth(); const isToday = isSameDay(day, today);
           const dayItems = items.filter(i => isSameDay(i.start, day));
           return (
-            <div key={di} className="p-1" style={{ minHeight: "92px", borderLeft: di % 7 > 0 ? "1px solid var(--border-subtle)" : "none", borderTop: di >= 7 ? "1px solid var(--border-subtle)" : "none", opacity: inMonth ? 1 : 0.4 }}>
+            <div key={di} className="p-1" style={{ minHeight: "92px", borderLeft: di % 7 > 0 ? "1px solid var(--border)" : "none", borderTop: di >= 7 ? "1px solid var(--border)" : "none", opacity: inMonth ? 1 : 0.4 }}>
               <p className="text-[10px] font-bold text-right px-1" style={{ color: isToday ? "var(--accent-text)" : "var(--text-muted)" }}>{day.getDate()}</p>
               <div className="space-y-0.5 mt-0.5">
                 {dayItems.slice(0, 3).map(i => (

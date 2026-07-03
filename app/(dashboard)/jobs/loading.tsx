@@ -5,7 +5,7 @@ import { useSectionCount } from "@/lib/ui/skeleton-count";
 
 // Jobs defaults to the Cards view, so the loading state mirrors the job cards.
 // Data-aware: render as many cards as there are jobs (0 → shell only).
-const surface = { backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" } as const;
+const surface = { backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" } as const;
 
 export default function Loading() {
   const count = useSectionCount("jobs");
@@ -47,7 +47,7 @@ export default function Loading() {
               </div>
               <Skeleton className="h-4 w-2/3 rounded mb-1.5" />
               <Skeleton className="h-3 w-1/2 rounded" />
-              <div className="flex items-center justify-between mt-3 pt-2" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+              <div className="flex items-center justify-between mt-3 pt-2" style={{ borderTop: "1px solid var(--border)" }}>
                 <Skeleton className="h-3 w-24 rounded" />
                 <div className="flex items-center gap-1.5">
                   <SkeletonCircle size={20} />

@@ -54,7 +54,7 @@ export default function MarketingEmptyState({
           <div className="flex flex-wrap justify-center gap-1.5">
             {suggestions.map(s => (
               <span key={s} className="text-xs px-2.5 py-1 rounded-full"
-                style={{ backgroundColor: "var(--bg-surface-2)", color: "var(--text-secondary)", border: "1px solid var(--border-subtle)" }}>
+                style={{ backgroundColor: "var(--bg-surface-2)", color: "var(--text-secondary)", border: "1px solid var(--border)" }}>
                 {s}
               </span>
             ))}

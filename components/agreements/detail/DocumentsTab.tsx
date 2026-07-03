@@ -41,13 +41,13 @@ export default function DocumentsTab({ agreement }: { agreement: CustomerAgreeme
         </Card>
 
         <Card className="overflow-hidden">
-          <div className="px-4 py-3" style={{ borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+          <div className="px-4 py-3" style={{ borderBottom: "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)" }}>
             <SectionLabel>Official Records</SectionLabel>
           </div>
           {records.map(({ icon: Icon, label, meta, action }, i) => (
             <button key={label} onClick={action} disabled={!action}
               className={`w-full flex items-center justify-between px-4 py-3 text-left ${action ? "cursor-pointer hover:bg-[var(--bg-surface-2)]" : "cursor-default"} transition-colors`}
-              style={{ borderBottom: i < records.length - 1 ? "1px solid var(--border-subtle)" : "none" }}>
+              style={{ borderBottom: i < records.length - 1 ? "1px solid var(--border)" : "none" }}>
               <span className="flex items-center gap-2.5 min-w-0">
                 <Icon className="w-4 h-4 shrink-0" style={{ color: "var(--text-muted)" }} />
                 <span className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{label}</span>

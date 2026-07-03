@@ -26,7 +26,7 @@ export default function QuotePreview({ data }: { data: QuotePreviewData }) {
   const optional = data.lineItems.filter(li => li.optional);
 
   return (
-    <div className="rounded-xl overflow-hidden" style={{ position: "relative", backgroundColor: "#ffffff", border: "1px solid var(--border-subtle)", color: "#111827" }}>
+    <div className="rounded-xl overflow-hidden" style={{ position: "relative", backgroundColor: "#ffffff", border: "1px solid var(--border)", color: "#111827" }}>
       {/* Status stamp (e.g. APPROVED) */}
       {data.stamp && (
         <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none", zIndex: 10 }}>

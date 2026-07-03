@@ -83,7 +83,7 @@ export default function LeadEditModal({ lead, onClose, onSaved }: {
       <div className="w-full max-w-lg max-h-[92vh] flex flex-col rounded-2xl overflow-hidden" onClick={e => e.stopPropagation()}
         style={{ backgroundColor: "var(--bg-surface)", boxShadow: "0 16px 48px rgba(0,0,0,0.24)" }}>
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+        <div className="flex items-center justify-between px-6 py-4 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
           <div className="flex items-center gap-2 min-w-0">
             <Pencil className="w-4 h-4 shrink-0" style={{ color: "#4f46e5" }} />
             <div className="min-w-0">
@@ -126,7 +126,7 @@ export default function LeadEditModal({ lead, onClose, onSaved }: {
           </div>
 
           {isProspect && (
-            <div className="rounded-xl p-3 space-y-3" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border-subtle)" }}>
+            <div className="rounded-xl p-3 space-y-3" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}>
               <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>Prospect Contact</p>
               <div>
                 <label className={labelCls} style={labelStyle}>Name *</label>
@@ -158,7 +158,7 @@ export default function LeadEditModal({ lead, onClose, onSaved }: {
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 flex justify-end gap-2 shrink-0" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+        <div className="px-6 py-4 flex justify-end gap-2 shrink-0" style={{ borderTop: "1px solid var(--border)" }}>
           <button onClick={onClose} className="px-3 py-2 rounded-lg text-sm" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>Cancel</button>
           <button onClick={handleSave} disabled={!canSave}
             className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-40" style={{ backgroundColor: "#4f46e5" }}>

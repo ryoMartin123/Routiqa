@@ -153,8 +153,8 @@ function SimpleCrud<T extends { id: string; active: boolean; order: number }>({
   return (
     <div className="space-y-4">
       {adding && Form()}
-      <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
-        <div className="flex items-center justify-between gap-3 px-4 py-3" style={{ borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+      <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
+        <div className="flex items-center justify-between gap-3 px-4 py-3" style={{ borderBottom: "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)" }}>
           <p className="text-sm font-semibold shrink-0" style={{ color: "var(--text-primary)" }}>{title}
             <span className="ml-2 text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>{items.length}</span></p>
           <div className="flex items-center gap-2">
@@ -167,10 +167,10 @@ function SimpleCrud<T extends { id: string; active: boolean; order: number }>({
         ) : shown.length === 0 ? (
           <div className="py-10 text-center"><p className="text-sm" style={{ color: "var(--text-muted)" }}>No matches for “{query}”.</p></div>
         ) : shown.map((it, i) => editing && !adding && editing.id === it.id ? (
-          <div key={it.id} className="p-4" style={{ borderBottom: i < shown.length - 1 ? "1px solid var(--border-subtle)" : "none" }}>{Form()}</div>
+          <div key={it.id} className="p-4" style={{ borderBottom: i < shown.length - 1 ? "1px solid var(--border)" : "none" }}>{Form()}</div>
         ) : (
           <div key={it.id} className="flex items-center gap-3 px-4 py-3 hover:bg-[var(--bg-surface-2)] transition-colors"
-            style={{ borderBottom: i < shown.length - 1 ? "1px solid var(--border-subtle)" : "none", opacity: it.active ? 1 : 0.5 }}>
+            style={{ borderBottom: i < shown.length - 1 ? "1px solid var(--border)" : "none", opacity: it.active ? 1 : 0.5 }}>
             <div className="min-w-0 flex-1">
               <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{String(it[primaryKey])}</p>
               {subtitleKey && <p className="text-[11px] truncate" style={{ color: "var(--text-muted)" }}>{String(it[subtitleKey] ?? "")}</p>}
@@ -224,8 +224,8 @@ function TemplatesTab({ register }: { register: Saver }) {
   return (
     <div className="space-y-4">
       {editing && <TemplateEditorModal template={editing} isNew={adding} onCancel={cancel} onSave={handleSaved} />}
-      <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
-        <div className="flex items-center justify-between gap-3 px-4 py-3" style={{ borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+      <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
+        <div className="flex items-center justify-between gap-3 px-4 py-3" style={{ borderBottom: "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)" }}>
           <p className="text-sm font-semibold shrink-0" style={{ color: "var(--text-primary)" }}>Agreement Templates
             <span className="ml-2 text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>{items.length}</span></p>
           <div className="flex items-center gap-2">
@@ -234,14 +234,14 @@ function TemplatesTab({ register }: { register: Saver }) {
           </div>
         </div>
         <div className="grid px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider"
-          style={{ gridTemplateColumns: "2.2fr 1fr 0.8fr 0.8fr 0.7fr 96px", gap: "0.75rem", color: "var(--text-muted)", borderBottom: "1px solid var(--border-subtle)" }}>
+          style={{ gridTemplateColumns: "2.2fr 1fr 0.8fr 0.8fr 0.7fr 96px", gap: "0.75rem", color: "var(--text-muted)", borderBottom: "1px solid var(--border)" }}>
           <span>Template</span><span>Industry</span><span>Services</span><span>Visits</span><span>Status</span><span />
         </div>
         {shown.length === 0 ? (
           <div className="py-10 text-center"><p className="text-sm" style={{ color: "var(--text-muted)" }}>{items.length === 0 ? "No templates yet." : `No matches for “${query}”.`}</p></div>
         ) : shown.map((t, i) => (
           <div key={t.id} className="grid px-4 py-3 items-center hover:bg-[var(--bg-surface-2)] transition-colors"
-            style={{ gridTemplateColumns: "2.2fr 1fr 0.8fr 0.8fr 0.7fr 96px", gap: "0.75rem", borderBottom: i < shown.length - 1 ? "1px solid var(--border-subtle)" : "none", opacity: t.active ? 1 : 0.5 }}>
+            style={{ gridTemplateColumns: "2.2fr 1fr 0.8fr 0.8fr 0.7fr 96px", gap: "0.75rem", borderBottom: i < shown.length - 1 ? "1px solid var(--border)" : "none", opacity: t.active ? 1 : 0.5 }}>
             <div className="min-w-0"><p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{t.name}</p><p className="text-[11px] truncate" style={{ color: "var(--text-muted)" }}>{t.description}</p></div>
             <span className="text-xs" style={{ color: "var(--text-secondary)" }}>{t.industry}</span>
             <span className="text-xs" style={{ color: "var(--text-secondary)" }}>{t.services.length}</span>
@@ -258,7 +258,7 @@ function TemplatesTab({ register }: { register: Saver }) {
       </div>
 
       {/* Numbering */}
-      <div className="rounded-xl p-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+      <div className="rounded-xl p-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
         <div className="flex items-center gap-2 mb-3"><Hash className="w-3.5 h-3.5" style={{ color: "#4f46e5" }} /><p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Agreement Numbering</p></div>
         <div className="grid grid-cols-3 gap-3">
           <div><label className="block text-xs font-medium mb-1" style={{ color: "var(--text-secondary)" }}>Prefix</label>
@@ -301,8 +301,8 @@ function SchedulesList({ register }: { register: Saver }) {
     <div className="space-y-3">
       {editing && <VisitScheduleTemplateEditorModal template={editing} isNew={adding} onCancel={cancel} onSave={handleSaved} />}
       <p className="text-xs" style={{ color: "var(--text-secondary)" }}>Reusable visit schedules — <span style={{ fontWeight: 600 }}>when we go</span>. Load these into an agreement to fill in its visits.</p>
-      <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
-        <div className="flex items-center justify-between gap-3 px-4 py-3" style={{ borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+      <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
+        <div className="flex items-center justify-between gap-3 px-4 py-3" style={{ borderBottom: "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)" }}>
           <p className="text-sm font-semibold shrink-0" style={{ color: "var(--text-primary)" }}>Schedule Templates
             <span className="ml-2 text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>{items.length}</span></p>
           <div className="flex items-center gap-2">
@@ -311,14 +311,14 @@ function SchedulesList({ register }: { register: Saver }) {
           </div>
         </div>
         <div className="grid px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider"
-          style={{ gridTemplateColumns: "2.4fr 1fr 0.7fr 96px", gap: "0.75rem", color: "var(--text-muted)", borderBottom: "1px solid var(--border-subtle)" }}>
+          style={{ gridTemplateColumns: "2.4fr 1fr 0.7fr 96px", gap: "0.75rem", color: "var(--text-muted)", borderBottom: "1px solid var(--border)" }}>
           <span>Schedule</span><span>Industry</span><span>Visits</span><span />
         </div>
         {shown.length === 0 ? (
           <div className="py-10 text-center"><p className="text-sm" style={{ color: "var(--text-muted)" }}>{items.length === 0 ? "No visit schedules yet." : `No matches for “${query}”.`}</p></div>
         ) : shown.map((t, i) => (
           <div key={t.id} className="grid px-4 py-3 items-center hover:bg-[var(--bg-surface-2)] transition-colors"
-            style={{ gridTemplateColumns: "2.4fr 1fr 0.7fr 96px", gap: "0.75rem", borderBottom: i < shown.length - 1 ? "1px solid var(--border-subtle)" : "none", opacity: t.active ? 1 : 0.5 }}>
+            style={{ gridTemplateColumns: "2.4fr 1fr 0.7fr 96px", gap: "0.75rem", borderBottom: i < shown.length - 1 ? "1px solid var(--border)" : "none", opacity: t.active ? 1 : 0.5 }}>
             <div className="min-w-0"><p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{t.name}</p><p className="text-[11px] truncate" style={{ color: "var(--text-muted)" }}>{t.description}</p></div>
             <span className="text-xs" style={{ color: "var(--text-secondary)" }}>{t.industry}</span>
             <span className="text-xs" style={{ color: "var(--text-secondary)" }}>{t.visits.length}</span>
@@ -362,8 +362,8 @@ function ScopesList({ register }: { register: Saver }) {
     <div className="space-y-3">
       {editing && <ServiceScopeTemplateEditorModal template={editing} isNew={adding} onCancel={cancel} onSave={handleSaved} />}
       <p className="text-xs" style={{ color: "var(--text-secondary)" }}>Reusable service groups — <span style={{ fontWeight: 600 }}>what we do</span>. Load these into an agreement to fill in its services.</p>
-      <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
-        <div className="flex items-center justify-between gap-3 px-4 py-3" style={{ borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+      <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
+        <div className="flex items-center justify-between gap-3 px-4 py-3" style={{ borderBottom: "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)" }}>
           <p className="text-sm font-semibold shrink-0" style={{ color: "var(--text-primary)" }}>Scope Templates
             <span className="ml-2 text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>{items.length}</span></p>
           <div className="flex items-center gap-2">
@@ -372,14 +372,14 @@ function ScopesList({ register }: { register: Saver }) {
           </div>
         </div>
         <div className="grid px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider"
-          style={{ gridTemplateColumns: "2.4fr 1fr 0.7fr 96px", gap: "0.75rem", color: "var(--text-muted)", borderBottom: "1px solid var(--border-subtle)" }}>
+          style={{ gridTemplateColumns: "2.4fr 1fr 0.7fr 96px", gap: "0.75rem", color: "var(--text-muted)", borderBottom: "1px solid var(--border)" }}>
           <span>Service Scope</span><span>Industry</span><span>Services</span><span />
         </div>
         {shown.length === 0 ? (
           <div className="py-10 text-center"><p className="text-sm" style={{ color: "var(--text-muted)" }}>{items.length === 0 ? "No service scopes yet." : `No matches for “${query}”.`}</p></div>
         ) : shown.map((t, i) => (
           <div key={t.id} className="grid px-4 py-3 items-center hover:bg-[var(--bg-surface-2)] transition-colors"
-            style={{ gridTemplateColumns: "2.4fr 1fr 0.7fr 96px", gap: "0.75rem", borderBottom: i < shown.length - 1 ? "1px solid var(--border-subtle)" : "none", opacity: t.active ? 1 : 0.5 }}>
+            style={{ gridTemplateColumns: "2.4fr 1fr 0.7fr 96px", gap: "0.75rem", borderBottom: i < shown.length - 1 ? "1px solid var(--border)" : "none", opacity: t.active ? 1 : 0.5 }}>
             <div className="min-w-0"><p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{t.name}</p><p className="text-[11px] truncate" style={{ color: "var(--text-muted)" }}>{t.description}</p></div>
             <span className="text-xs" style={{ color: "var(--text-secondary)" }}>{t.industry}</span>
             <span className="text-xs" style={{ color: "var(--text-secondary)" }}>{t.services.length}</span>
@@ -629,7 +629,7 @@ export default function AgreementsSettingsSection({ activeModule, onOpen, onBack
             return (
               <button key={m.key} onClick={() => onOpen(m.key, m.label)}
                 className="flex items-start gap-3 p-4 rounded-xl text-left w-full transition-all group hover:shadow-md cursor-pointer"
-                style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+                style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: "var(--bg-surface-2)" }}>
                   <Icon className="w-4 h-4" style={{ color: "#4f46e5" }} />
                 </div>

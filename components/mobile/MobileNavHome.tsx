@@ -33,7 +33,7 @@ const ACCENT = "#4f46e5";
 const GLASS: React.CSSProperties = {
   backgroundColor: "color-mix(in srgb, var(--bg-surface) 80%, transparent)",
   backdropFilter: "blur(18px)", WebkitBackdropFilter: "blur(18px)",
-  border: "1px solid var(--border-subtle)", boxShadow: "0 8px 24px -8px rgba(0,0,0,0.35)",
+  border: "1px solid var(--border)", boxShadow: "0 8px 24px -8px rgba(0,0,0,0.35)",
 };
 
 export default function MobileNavHome() {
@@ -120,7 +120,7 @@ export default function MobileNavHome() {
             {recent.map(e => {
               const m = activityMeta(e.eventType); const Icon = m.icon;
               return (
-                <Link key={e.id} href={`/mobile/customers/${e.customerId}`} className="shrink-0 w-[15rem] rounded-2xl p-3.5 active:scale-[0.99] transition-transform" style={{ border: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface)", boxShadow: "var(--shadow-glow)" }}>
+                <Link key={e.id} href={`/mobile/customers/${e.customerId}`} className="shrink-0 w-[15rem] rounded-2xl p-3.5 active:scale-[0.99] transition-transform" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface)", boxShadow: "var(--shadow-card)" }}>
                   <div className="flex items-center gap-2 mb-2">
                     <span className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: m.color + "1a" }}><Icon className="w-3.5 h-3.5" style={{ color: m.color }} /></span>
                     <span className="text-[11px] font-semibold truncate" style={{ color: m.color }}>{activityLabel(e.eventType)}</span>
@@ -141,7 +141,7 @@ export default function MobileNavHome() {
           <p className="text-xs mb-2 px-4" style={{ color: "var(--text-muted)" }}>Today’s route</p>
           <div className="flex gap-2.5 overflow-x-auto thin-scroll-x pb-1 px-4">
             {todayJobs.slice(0, 6).map(j => (
-              <Link key={j.id} href={`/mobile/jobs/${j.id}`} className="shrink-0 w-44 rounded-2xl p-3" style={{ border: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface)", boxShadow: "var(--shadow-glow)" }}>
+              <Link key={j.id} href={`/mobile/jobs/${j.id}`} className="shrink-0 w-44 rounded-2xl p-3" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface)", boxShadow: "var(--shadow-card)" }}>
                 <p className="text-[11px] mb-1" style={{ color: "var(--text-muted)" }}>{prettyType(j.type)} · {j.scheduledTime || "—"}{current?.id === j.id ? " · now" : ""}</p>
                 <p className="text-sm font-semibold leading-snug truncate" style={{ color: "var(--text-primary)" }}>{j.customerName}</p>
               </Link>
@@ -152,7 +152,7 @@ export default function MobileNavHome() {
 
       {/* Navigation */}
       <div className="px-3 pt-2">{primary.map(it => <NavRow key={it.href} {...it} />)}</div>
-      <div className="mx-5 my-2" style={{ borderTop: "1px solid var(--border-subtle)" }} />
+      <div className="mx-5 my-2" style={{ borderTop: "1px solid var(--border)" }} />
       <div className="px-3">{secondary.map(it => <NavRow key={it.href} {...it} />)}</div>
       {apps.length > 0 && (
         <>

@@ -202,7 +202,7 @@ export default function CustomFieldsSection() {
               style={{
                 backgroundColor: active ? "#4f46e5" : "var(--bg-surface-2)",
                 color:            active ? "#fff"    : "var(--text-secondary)",
-                border:           active ? "none"    : "1px solid var(--border-subtle)",
+                border:           active ? "none"    : "1px solid var(--border)",
               }}>
               {RECORD_TYPE_LABELS[rt]}
               {count > 0 && (
@@ -345,11 +345,11 @@ export default function CustomFieldsSection() {
 
       {/* Table card */}
       <div className="rounded-xl overflow-hidden"
-        style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+        style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
 
         {/* Table header */}
         <div className="flex items-center justify-between px-5 py-3"
-          style={{ borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+          style={{ borderBottom: "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)" }}>
           <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
             {RECORD_TYPE_LABELS[activeType]} Fields
             {typeFields.length > 0 && (
@@ -373,7 +373,7 @@ export default function CustomFieldsSection() {
           style={{
             gridTemplateColumns: "2fr 1.5fr 1.2fr 0.8fr 0.8fr 0.8fr auto",
             color: "var(--text-muted)",
-            borderBottom: "1px solid var(--border-subtle)",
+            borderBottom: "1px solid var(--border)",
           }}>
           <span>Label</span>
           <span>Key</span>
@@ -405,7 +405,7 @@ export default function CustomFieldsSection() {
                 className="grid px-5 py-3 items-center transition-colors hover:bg-[var(--bg-surface-2)]"
                 style={{
                   gridTemplateColumns: "2fr 1.5fr 1.2fr 0.8fr 0.8fr 0.8fr auto",
-                  borderBottom: isLast ? "none" : "1px solid var(--border-subtle)",
+                  borderBottom: isLast ? "none" : "1px solid var(--border)",
                   opacity: dimmed ? 0.5 : 1,
                 }}>
 

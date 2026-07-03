@@ -14,7 +14,7 @@ const ACCENT = "#4f46e5";
 const GLASS: React.CSSProperties = {
   backgroundColor: "color-mix(in srgb, var(--bg-surface) 82%, transparent)",
   backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)",
-  border: "1px solid var(--border-subtle)", boxShadow: "0 10px 34px -8px rgba(0,0,0,0.4)",
+  border: "1px solid var(--border)", boxShadow: "0 10px 34px -8px rgba(0,0,0,0.4)",
 };
 
 export default function MobileCommandBar() {
@@ -33,7 +33,7 @@ export default function MobileCommandBar() {
           <Search className="w-5 h-5 shrink-0" style={{ color: "var(--text-muted)" }} />
           <span className="text-sm" style={{ color: "var(--text-muted)" }}>Search all of Routiqa…</span>
         </button>
-        <button onClick={() => setSheet(true)} aria-label="Quick actions" aria-expanded={sheet} className="pointer-events-auto w-[52px] h-[52px] rounded-full flex items-center justify-center shrink-0 transition-transform active:scale-95" style={{ backgroundColor: ACCENT, boxShadow: "0 10px 28px -6px " + ACCENT + "99" }}>
+        <button onClick={() => setSheet(true)} aria-label="Quick actions" aria-expanded={sheet} className="plus-glow pointer-events-auto w-[52px] h-[52px] rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: ACCENT }}>
           <Plus className="w-6 h-6 text-white" />
         </button>
       </div>
@@ -59,7 +59,7 @@ function QuickActions({ open, onClose }: { open: boolean; onClose: () => void })
     <div className={`fixed inset-0 z-[60] flex flex-col justify-end ${open ? "" : "pointer-events-none"}`} onClick={onClose}>
       <div className="absolute inset-0 transition-opacity duration-300 ease-out" style={{ backgroundColor: "rgba(0,0,0,0.45)", opacity: open ? 1 : 0 }} />
       <div onClick={e => e.stopPropagation()} className="relative rounded-t-3xl p-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] transition-transform duration-300"
-        style={{ transform: open ? "translateY(0)" : "translateY(110%)", transitionTimingFunction: open ? "cubic-bezier(0.22,1,0.36,1)" : "cubic-bezier(0.55,0,1,0.45)", backgroundColor: "var(--bg-surface)", borderTop: "1px solid var(--border-subtle)", boxShadow: "0 -16px 48px rgba(0,0,0,0.35)" }}>
+        style={{ transform: open ? "translateY(0)" : "translateY(110%)", transitionTimingFunction: open ? "cubic-bezier(0.22,1,0.36,1)" : "cubic-bezier(0.55,0,1,0.45)", backgroundColor: "var(--bg-surface)", borderTop: "1px solid var(--border)", boxShadow: "0 -16px 48px rgba(0,0,0,0.35)" }}>
         <div className="w-9 h-1 rounded-full mx-auto mb-3" style={{ backgroundColor: "var(--border)" }} />
         <div className="flex items-center justify-between mb-3">
           <p className="text-base font-bold" style={{ color: "var(--text-primary)" }}>Quick actions</p>
@@ -67,7 +67,7 @@ function QuickActions({ open, onClose }: { open: boolean; onClose: () => void })
         </div>
         <div className="grid grid-cols-3 gap-2.5">
           {ACTIONS.map(a => (
-            <button key={a.label} onClick={() => go(a.href)} className="flex flex-col items-center gap-2 py-3.5 rounded-2xl active:scale-[0.97] transition-transform" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border-subtle)" }}>
+            <button key={a.label} onClick={() => go(a.href)} className="flex flex-col items-center gap-2 py-3.5 rounded-2xl active:scale-[0.97] transition-transform" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}>
               <span className="w-11 h-11 rounded-full flex items-center justify-center" style={{ backgroundColor: a.color + "1a" }}><a.icon className="w-5 h-5" style={{ color: a.color }} /></span>
               <span className="text-[11px] font-medium text-center leading-tight" style={{ color: "var(--text-primary)" }}>{a.label}</span>
             </button>

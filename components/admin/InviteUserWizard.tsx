@@ -158,7 +158,7 @@ export default function InviteUserWizard({ onClose, onCreated }: {
       <div className="w-full max-w-2xl max-h-[92vh] rounded-2xl overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}
         style={{ backgroundColor: "var(--bg-surface)", boxShadow: "0 16px 48px rgba(0,0,0,0.24)" }}>
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+        <div className="flex items-center justify-between px-5 py-4 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: "#e0e7ff" }}>
               <UserIcon className="w-4 h-4" style={{ color: "#a855f7" }} />
@@ -217,7 +217,7 @@ export default function InviteUserWizard({ onClose, onCreated }: {
               </div>
               <div className="space-y-2">
                 {rows.map((r, i) => (
-                  <div key={i} className="rounded-lg p-3 space-y-2" style={{ border: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+                  <div key={i} className="rounded-lg p-3 space-y-2" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)" }}>
                     <div className="flex items-center gap-2">
                       <div className="flex-1"><UiSelect value={r.role} onChange={v => changeRole(i, v as RoleKey)} options={roleOptions} size="sm" /></div>
                       {rows.length > 1 && <button onClick={() => removeRow(i)} title="Remove" className="p-1.5 rounded-md" style={{ color: "var(--text-muted)" }}><Trash2 className="w-3.5 h-3.5" /></button>}
@@ -241,10 +241,10 @@ export default function InviteUserWizard({ onClose, onCreated }: {
             <div className="space-y-5 max-w-xl mx-auto w-full">
               {/* Profile — label left, value gets the full right column (wraps, no squish) */}
               <ReviewSection label="Profile">
-                <div className="rounded-xl overflow-hidden" style={{ border: "1px solid var(--border-subtle)" }}>
+                <div className="rounded-xl overflow-hidden" style={{ border: "1px solid var(--border)" }}>
                   {([["Name", fullName || "—"], ["Email", email || "—"], ...(phone.trim() ? [["Phone", phone] as [string, string]] : [])] as [string, string][]).map(([l, v], i) => (
                     <div key={l} className="grid grid-cols-[92px_1fr] gap-4 px-4 py-2.5 items-baseline"
-                      style={{ borderTop: i ? "1px solid var(--border-subtle)" : "none", backgroundColor: "var(--bg-surface)" }}>
+                      style={{ borderTop: i ? "1px solid var(--border)" : "none", backgroundColor: "var(--bg-surface)" }}>
                       <span className="text-xs" style={{ color: "var(--text-muted)" }}>{l}</span>
                       <span className="text-sm font-medium break-words min-w-0" style={{ color: "var(--text-primary)" }}>{v}</span>
                     </div>
@@ -255,7 +255,7 @@ export default function InviteUserWizard({ onClose, onCreated }: {
               <ReviewSection label="Roles & scope" hint={`Data scope: ${dataScope}`}>
                 <div className="space-y-1.5">
                   {rows.map((r, i) => (
-                    <div key={i} className="grid grid-cols-[1fr_auto] gap-3 items-center rounded-lg px-4 py-2.5" style={{ border: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface)" }}>
+                    <div key={i} className="grid grid-cols-[1fr_auto] gap-3 items-center rounded-lg px-4 py-2.5" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface)" }}>
                       <span className="text-sm font-medium min-w-0 truncate" style={{ color: "var(--text-primary)" }}>{getRoleLabel(r.role)}</span>
                       <span className="text-xs px-2 py-0.5 rounded-full text-right" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-secondary)" }}>
                         {r.level === "org" ? "Org-wide" : (targetOptions(r.level).find(o => o.value === r.targetId)?.label ?? LEVEL_LABEL[r.level])}
@@ -273,7 +273,7 @@ export default function InviteUserWizard({ onClose, onCreated }: {
                 </div>
               </ReviewSection>
 
-              <div className="rounded-lg px-3.5 py-2.5 flex items-start gap-2" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border-subtle)" }}>
+              <div className="rounded-lg px-3.5 py-2.5 flex items-start gap-2" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}>
                 <ShieldCheck className="w-3.5 h-3.5 mt-0.5 shrink-0" style={{ color: "#a855f7" }} />
                 <p className="text-[11px] leading-snug" style={{ color: "var(--text-muted)" }}>The user will be created as <strong>Invited</strong> and emailed an invitation to set their password.</p>
               </div>
@@ -284,7 +284,7 @@ export default function InviteUserWizard({ onClose, onCreated }: {
         {error && <div className="mx-5 mb-3 px-3 py-2 rounded-lg text-xs shrink-0" style={{ backgroundColor: "#fee2e2", color: "#991b1b" }}>{error}</div>}
 
         {/* Footer */}
-        <div className="shrink-0 px-5 py-3 flex items-center justify-between gap-2" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+        <div className="shrink-0 px-5 py-3 flex items-center justify-between gap-2" style={{ borderTop: "1px solid var(--border)" }}>
           <button onClick={step === 0 ? onClose : back} className="flex items-center gap-1.5 text-sm font-medium px-3 py-2 rounded-lg transition-colors hover:bg-[var(--bg-surface-2)]" style={{ color: "var(--text-secondary)" }}>
             {step === 0 ? "Cancel" : <><ArrowLeft className="w-3.5 h-3.5" /> Back</>}
           </button>

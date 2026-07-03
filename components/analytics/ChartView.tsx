@@ -108,7 +108,7 @@ export default function ChartView({ result, viz, metricLabel, compact }: { resul
         </tr></thead>
         <tbody>
           {points.map((p, i) => (
-            <tr key={i} style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+            <tr key={i} style={{ borderBottom: "1px solid var(--border)" }}>
               <td className="py-2" style={{ color: "var(--text-secondary)" }}>{p.label}</td>
               <td className="py-2 text-right tabular-nums font-medium" style={{ color: "var(--text-primary)" }}>{fmtFull(p.value)}</td>
             </tr>

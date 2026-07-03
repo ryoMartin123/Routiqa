@@ -107,10 +107,10 @@ export default function DetailHeader({ agreement, actions, menuOpen, setMenuOpen
                   {menuItem(Copy, "Duplicate", actions.duplicate)}
                   {menuItem(Upload, "Upload Document", actions.uploadDocument)}
                   {menuItem(Download, "Download PDF", actions.downloadPdf)}
-                  <div style={{ borderTop: "1px solid var(--border-subtle)" }} />
+                  <div style={{ borderTop: "1px solid var(--border)" }} />
                   {agreement.status !== "canceled" && menuItem(XCircle, "Cancel Agreement", actions.cancel)}
                   {menuItem(Archive, "Archive", actions.archive)}
-                  <div style={{ borderTop: "1px solid var(--border-subtle)" }} />
+                  <div style={{ borderTop: "1px solid var(--border)" }} />
                   {menuItem(Trash2, "Delete", actions.remove, true)}
                 </div>
               </>

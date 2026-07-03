@@ -12,6 +12,7 @@ import { getJobsForProject } from "@/lib/jobs/data";
 import { projectTypeLabel, type ProjectStage } from "@/lib/projects/settings";
 import { statusBucket, projectHealth, HEALTH_META } from "@/lib/projects/lenses";
 import { projectMapSummary } from "@/lib/projects/map";
+import StatusBadge from "@/components/shared/StatusBadge";
 
 const OPEN_JOB = (s: string) => !["completed", "closed", "canceled", "invoiced", "no_show"].includes(s);
 const initials = (name: string) => { const p = name.trim().split(/\s+/); return (p.length >= 2 ? p[0][0] + p[p.length - 1][0] : name.slice(0, 2)).toUpperCase(); };
@@ -55,7 +56,7 @@ function Card({ project: p, stagesByKey, onOpen }: { project: Project; stagesByK
 
   return (
     <button onClick={() => onOpen(p.id)} className="group text-left rounded-xl overflow-hidden flex flex-col transition-all hover:-translate-y-0.5"
-      style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+      style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
       <div style={{ height: 3, backgroundColor: hm.color }} />
       <div className="p-4 flex-1 flex flex-col">
         {/* Title + health */}
@@ -66,7 +67,8 @@ function Card({ project: p, stagesByKey, onOpen }: { project: Project; stagesByK
               {p.customerName}<span style={{ opacity: 0.5 }}>·</span><MapPin className="w-3 h-3 shrink-0" />{p.locationName}
             </p>
           </div>
-          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0" style={{ backgroundColor: hm.bg, color: hm.color }}>{hm.label}</span>
+          {/* Health as a dot + label (moved off the filled pill, matching the CRM). */}
+          <StatusBadge label={hm.label} color={hm.color} size="sm" className="shrink-0 mt-0.5" />
         </div>
 
         {/* Type + stage */}
@@ -92,7 +94,7 @@ function Card({ project: p, stagesByKey, onOpen }: { project: Project; stagesByK
             <div className="min-w-0"><p className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: "#dc2626" }}>Blocked</p><p className="text-xs truncate" style={{ color: "#991b1b" }}>{blocker.blockedReason ?? blocker.title}</p></div>
           </div>
         ) : next ? (
-          <div className="flex items-start gap-1.5 mt-3 rounded-lg px-2.5 py-1.5" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border-subtle)" }}>
+          <div className="flex items-start gap-1.5 mt-3 rounded-lg px-2.5 py-1.5" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}>
             <ChevronRight className="w-3.5 h-3.5 mt-0.5 shrink-0" style={{ color: "var(--accent-text)" }} />
             <div className="min-w-0"><p className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>Next step</p><p className="text-xs truncate" style={{ color: "var(--text-primary)" }}>{next.title}</p></div>
           </div>
@@ -107,7 +109,7 @@ function Card({ project: p, stagesByKey, onOpen }: { project: Project; stagesByK
         </div>
 
         {/* Footer — team + open */}
-        <div className="flex items-center justify-between mt-3 pt-3" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+        <div className="flex items-center justify-between mt-3 pt-3" style={{ borderTop: "1px solid var(--border)" }}>
           <div className="flex -space-x-1.5">
             {team.slice(0, 3).map((n, i) => (
               <span key={n} title={n} className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-bold text-white" style={{ backgroundColor: ["#6366f1", "#0ea5e9", "#10b981"][i % 3], boxShadow: "0 0 0 2px var(--bg-surface)" }}>{initials(n)}</span>

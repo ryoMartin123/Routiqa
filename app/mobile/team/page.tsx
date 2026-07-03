@@ -29,7 +29,7 @@ export default function MobileTeamPage() {
         <Section title="Channels">
           <Card>
             {channels.slice(0, 8).map((c, i) => (
-              <div key={c.id} className="flex items-center gap-3 px-4 py-3" style={{ borderTop: i ? "1px solid var(--border-subtle)" : "none" }}>
+              <div key={c.id} className="flex items-center gap-3 px-4 py-3" style={{ borderTop: i ? "1px solid var(--border)" : "none" }}>
                 <Hash className="w-4 h-4 shrink-0" style={{ color: "var(--text-muted)" }} />
                 <div className="min-w-0 flex-1"><p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{c.name}</p><p className="text-xs" style={{ color: "var(--text-muted)" }}>{c.membersCount} members</p></div>
                 {c.unreadCount > 0 && <span className="text-[11px] font-bold px-1.5 py-0.5 rounded-md" style={{ backgroundColor: TEAL + "1f", color: TEAL }}>{c.unreadCount}</span>}
@@ -42,7 +42,7 @@ export default function MobileTeamPage() {
           {actions.length === 0 ? <Card className="px-4 py-6"><EmptyState icon={ListChecks} title="All clear" /></Card> : (
             <Card>
               {actions.slice(0, 6).map((a, i) => (
-                <div key={a.id} className="flex items-center gap-3 px-4 py-3" style={{ borderTop: i ? "1px solid var(--border-subtle)" : "none" }}>
+                <div key={a.id} className="flex items-center gap-3 px-4 py-3" style={{ borderTop: i ? "1px solid var(--border)" : "none" }}>
                   <ListChecks className="w-4 h-4 shrink-0" style={{ color: "#f59e0b" }} />
                   <p className="text-sm flex-1 truncate" style={{ color: "var(--text-primary)" }}>{a.title}</p>
                 </div>
@@ -55,7 +55,7 @@ export default function MobileTeamPage() {
           <Section title="Announcements">
             <Card>
               {announcements.slice(0, 4).map((a, i) => (
-                <div key={a.id} className="flex items-start gap-3 px-4 py-3" style={{ borderTop: i ? "1px solid var(--border-subtle)" : "none" }}>
+                <div key={a.id} className="flex items-start gap-3 px-4 py-3" style={{ borderTop: i ? "1px solid var(--border)" : "none" }}>
                   <Megaphone className="w-4 h-4 mt-0.5 shrink-0" style={{ color: "#a855f7" }} />
                   <div className="min-w-0"><p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{a.title}</p><p className="text-xs" style={{ color: "var(--text-muted)" }}>{a.date}</p></div>
                 </div>

@@ -126,7 +126,7 @@ export default function AccountCombobox({
           style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "0 12px 32px rgba(0,0,0,0.16)" }}
         >
           {/* Search box */}
-          <div className="flex items-center gap-2 px-2.5 py-2" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+          <div className="flex items-center gap-2 px-2.5 py-2" style={{ borderBottom: "1px solid var(--border)" }}>
             <Search className="w-3.5 h-3.5 shrink-0" style={{ color: "var(--text-muted)" }} />
             <input
               ref={inputRef}
@@ -181,7 +181,7 @@ export default function AccountCombobox({
               onMouseEnter={() => setActiveIdx(createRowIdx)}
               className="w-full flex items-center gap-2 px-2.5 py-2.5 text-sm font-medium transition-colors"
               style={{
-                borderTop: "1px solid var(--border-subtle)",
+                borderTop: "1px solid var(--border)",
                 backgroundColor: activeIdx === createRowIdx ? "var(--bg-surface-2)" : "transparent",
                 color: "var(--accent-text)",
               }}

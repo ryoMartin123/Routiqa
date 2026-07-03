@@ -1,10 +1,12 @@
 import { PrimaryCta, GhostCta } from "@/components/site/ui";
+import Reveal from "@/components/site/Reveal";
 import Link from "next/link";
 import { APP_LOGIN_HREF } from "@/components/site/nav";
 
 export default function FinalCta() {
   return (
     <section className="site-hero-bg">
+      <Reveal>
       <div className="mx-auto max-w-7xl px-5 lg:px-8 py-24 lg:py-28 text-center">
         <h2 className="text-3xl lg:text-5xl font-bold tracking-tight leading-[1.08]" style={{ color: "var(--text-primary)" }}>
           Run your service business<br className="hidden sm:block" /> as <span className="site-gradient-text">one connected system</span>
@@ -20,6 +22,7 @@ export default function FinalCta() {
           Already have an account? <Link href={APP_LOGIN_HREF} className="font-semibold" style={{ color: "var(--accent-text)" }}>Log in</Link>
         </p>
       </div>
+      </Reveal>
     </section>
   );
 }

@@ -32,7 +32,7 @@ export default function MobileAdminPage() {
         <Section title="Manage">
           <Card>
             {links.map((l, i) => (
-              <Link key={l.label} href={l.href} className="flex items-center gap-3 px-4 py-3.5 active:bg-[var(--bg-surface-2)]" style={{ borderTop: i ? "1px solid var(--border-subtle)" : "none" }}>
+              <Link key={l.label} href={l.href} className="flex items-center gap-3 px-4 py-3.5 active:bg-[var(--bg-surface-2)]" style={{ borderTop: i ? "1px solid var(--border)" : "none" }}>
                 <span className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: PURPLE + "1a" }}><l.icon className="w-4 h-4" style={{ color: PURPLE }} /></span>
                 <div className="min-w-0 flex-1"><p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{l.label}</p><p className="text-xs" style={{ color: "var(--text-muted)" }}>{l.sub}</p></div>
                 <ChevronRight className="w-4 h-4 shrink-0" style={{ color: "var(--text-muted)" }} />
@@ -44,7 +44,7 @@ export default function MobileAdminPage() {
         <Section title="Recent users">
           <Card>
             {users.slice(0, 8).map((u, i) => (
-              <div key={u.id} className="flex items-center gap-3 px-4 py-3" style={{ borderTop: i ? "1px solid var(--border-subtle)" : "none" }}>
+              <div key={u.id} className="flex items-center gap-3 px-4 py-3" style={{ borderTop: i ? "1px solid var(--border)" : "none" }}>
                 <span className="w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-bold text-white shrink-0" style={{ backgroundColor: PURPLE }}>{u.initials}</span>
                 <div className="min-w-0 flex-1"><p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{u.fullName}</p><p className="text-xs truncate" style={{ color: "var(--text-muted)" }}>{u.email}</p></div>
               </div>

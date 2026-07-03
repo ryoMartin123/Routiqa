@@ -107,7 +107,7 @@ export default function ProjectMaterialsVendors({ projectId, projectName }: { pr
             {assignments.map(a => {
               const sub = getSubcontractor(a.subcontractorId);
               return (
-                <div key={a.id} className="rounded-lg px-3 py-2.5" style={{ border: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface)" }}>
+                <div key={a.id} className="rounded-lg px-3 py-2.5" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface)" }}>
                   <div className="flex items-center justify-between gap-2 mb-1">
                     <div className="flex items-center gap-2 min-w-0">
                       <span className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{sub?.companyName ?? "Subcontractor"}</span>
@@ -143,7 +143,7 @@ export default function ProjectMaterialsVendors({ projectId, projectName }: { pr
               const Icon = ACTIVITY_ICON[ev.kind] ?? Activity;
               return (
                 <li key={ev.id} className="flex items-start gap-2.5">
-                  <span className="w-6 h-6 rounded-md flex items-center justify-center shrink-0 mt-0.5" style={{ backgroundColor: ev.kind === "compliance" ? "#fee2e2" : "var(--bg-surface-2)", border: "1px solid var(--border-subtle)" }}>
+                  <span className="w-6 h-6 rounded-md flex items-center justify-center shrink-0 mt-0.5" style={{ backgroundColor: ev.kind === "compliance" ? "#fee2e2" : "var(--bg-surface-2)", border: "1px solid var(--border)" }}>
                     <Icon className="w-3 h-3" style={{ color: ev.kind === "compliance" ? "#dc2626" : "var(--text-secondary)" }} />
                   </span>
                   <div className="min-w-0"><p className="text-sm" style={{ color: "var(--text-primary)" }}>{ev.text}</p><p className="text-[11px]" style={{ color: "var(--text-muted)" }}>{ev.when}</p></div>
@@ -170,8 +170,8 @@ const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 // ─── Layout helpers ───────────────────────────────────────
 function Section({ title, icon: Icon, action, children }: { title: string; icon: typeof Package; action?: React.ReactNode; children: React.ReactNode }) {
   return (
-    <div className="rounded-xl overflow-hidden flex flex-col h-full" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
-      <div className="flex items-center justify-between px-4 py-3 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+    <div className="rounded-xl overflow-hidden flex flex-col h-full" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
+      <div className="flex items-center justify-between px-4 py-3 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
         <div className="flex items-center gap-2"><Icon className="w-4 h-4" style={{ color: "var(--text-muted)" }} /><p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{title}</p></div>
         {action}
       </div>
@@ -199,7 +199,7 @@ function Table({ head, children }: { head: string[]; children: React.ReactNode }
   );
 }
 function Row({ cells }: { cells: React.ReactNode[] }) {
-  return <tr style={{ borderTop: "1px solid var(--border-subtle)" }}>{cells.map((c, i) => <td key={i} className="px-3 py-2.5" style={{ color: "var(--text-secondary)" }}>{c}</td>)}</tr>;
+  return <tr style={{ borderTop: "1px solid var(--border)" }}>{cells.map((c, i) => <td key={i} className="px-3 py-2.5" style={{ color: "var(--text-secondary)" }}>{c}</td>)}</tr>;
 }
 function CompPill({ label, status }: { label: string; status: DocStatus }) {
   const ok = status === "valid";
@@ -214,12 +214,12 @@ function Modal({ title, onClose, children, footer }: { title: string; onClose: (
   return (
     <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={onClose}>
       <div className="w-full max-w-lg max-h-[90vh] rounded-2xl overflow-hidden flex flex-col" onClick={e => e.stopPropagation()} style={{ backgroundColor: "var(--bg-surface)", boxShadow: "0 16px 48px rgba(0,0,0,0.24)" }}>
-        <div className="flex items-center justify-between px-5 py-4 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+        <div className="flex items-center justify-between px-5 py-4 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
           <p className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>{title}</p>
           <button onClick={onClose} style={{ color: "var(--text-muted)" }}><X className="w-4 h-4" /></button>
         </div>
         <div className="flex-1 overflow-y-auto p-5 space-y-3">{children}</div>
-        <div className="px-5 py-3 flex items-center justify-end gap-2 shrink-0" style={{ borderTop: "1px solid var(--border-subtle)" }}>{footer}</div>
+        <div className="px-5 py-3 flex items-center justify-end gap-2 shrink-0" style={{ borderTop: "1px solid var(--border)" }}>{footer}</div>
       </div>
     </div>
   );

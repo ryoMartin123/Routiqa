@@ -83,7 +83,7 @@ export default function WorkOrderWizard({ preset, onClose, onCreated }: {
       <div className="w-full max-w-lg max-h-[90vh] flex flex-col rounded-2xl overflow-hidden" onClick={e => e.stopPropagation()}
         style={{ backgroundColor: "var(--bg-surface)", boxShadow: "0 16px 48px rgba(0,0,0,0.24)" }}>
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+        <div className="flex items-center justify-between px-6 py-4 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
           <div className="flex items-center gap-2">
             <ClipboardList className="w-4 h-4" style={{ color: "#4f46e5" }} />
             <p className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>New Work Order</p>
@@ -103,7 +103,7 @@ export default function WorkOrderWizard({ preset, onClose, onCreated }: {
               <div>
                 <label className="block text-xs font-medium mb-1" style={{ color: "var(--text-secondary)" }}>Job <span style={{ color: "#ef4444" }}>*</span></label>
                 {lockedJob && job ? (
-                  <div className="rounded-lg px-3 py-2 text-sm" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border-subtle)", color: "var(--text-primary)" }}>
+                  <div className="rounded-lg px-3 py-2 text-sm" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)", color: "var(--text-primary)" }}>
                     {job.title} · <span style={{ color: "var(--text-muted)" }}>{job.customerName}</span>
                   </div>
                 ) : (
@@ -149,8 +149,8 @@ export default function WorkOrderWizard({ preset, onClose, onCreated }: {
 
               {/* Preview */}
               {template && (
-                <div className="rounded-xl overflow-hidden" style={{ border: "1px solid var(--border-subtle)" }}>
-                  <div className="px-3 py-2 flex items-center justify-between" style={{ backgroundColor: "var(--bg-surface-2)", borderBottom: "1px solid var(--border-subtle)" }}>
+                <div className="rounded-xl overflow-hidden" style={{ border: "1px solid var(--border)" }}>
+                  <div className="px-3 py-2 flex items-center justify-between" style={{ backgroundColor: "var(--bg-surface-2)", borderBottom: "1px solid var(--border)" }}>
                     <p className="text-xs font-semibold" style={{ color: "var(--text-primary)" }}>What this work order includes</p>
                     <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>{checklist.length} steps · {photos.length} required photos</span>
                   </div>
@@ -176,8 +176,8 @@ export default function WorkOrderWizard({ preset, onClose, onCreated }: {
 
               {/* Custom checklist editor (Blank path) */}
               {isBlank && (
-                <div className="rounded-xl overflow-hidden" style={{ border: "1px solid var(--border-subtle)" }}>
-                  <div className="px-3 py-2 flex items-center justify-between" style={{ backgroundColor: "var(--bg-surface-2)", borderBottom: "1px solid var(--border-subtle)" }}>
+                <div className="rounded-xl overflow-hidden" style={{ border: "1px solid var(--border)" }}>
+                  <div className="px-3 py-2 flex items-center justify-between" style={{ backgroundColor: "var(--bg-surface-2)", borderBottom: "1px solid var(--border)" }}>
                     <p className="text-xs font-semibold" style={{ color: "var(--text-primary)" }}>Custom checklist</p>
                     <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>{customItems.length} steps</span>
                   </div>
@@ -217,7 +217,7 @@ export default function WorkOrderWizard({ preset, onClose, onCreated }: {
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 flex justify-end gap-2 shrink-0" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+        <div className="px-6 py-4 flex justify-end gap-2 shrink-0" style={{ borderTop: "1px solid var(--border)" }}>
           <button onClick={onClose} className="px-3 py-2 rounded-lg text-sm" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>Cancel</button>
           <button onClick={handleCreate} disabled={!canCreate}
             className="px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-40" style={{ backgroundColor: "#4f46e5" }}>

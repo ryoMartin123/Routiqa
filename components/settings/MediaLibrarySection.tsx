@@ -127,7 +127,7 @@ export default function MediaLibrarySection() {
 
       {/* Grid */}
       {filtered.length === 0 ? (
-        <div className="rounded-xl py-14 text-center" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>
+        <div className="rounded-xl py-14 text-center" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
           <ImageIcon className="w-8 h-8 mx-auto mb-3" style={{ color: "var(--text-muted)" }} />
           <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>No assets match</p>
           <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>Upload media or adjust your filters.</p>
@@ -150,7 +150,7 @@ export default function MediaLibrarySection() {
 
 function SummaryCard({ label, value, icon: Icon, warn }: { label: string; value: number; icon: typeof ImageIcon; warn?: boolean }) {
   return (
-    <div className="rounded-xl p-3.5" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+    <div className="rounded-xl p-3.5" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
       <div className="flex items-center justify-between">
         <p className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>{label}</p>
         <Icon className="w-4 h-4" style={{ color: warn && value > 0 ? "#b45309" : "var(--text-muted)" }} />
@@ -162,7 +162,7 @@ function SummaryCard({ label, value, icon: Icon, warn }: { label: string; value:
 
 function AssetCard({ a, used, onOpen }: { a: MediaAsset; used: number; onOpen: () => void }) {
   return (
-    <button onClick={onOpen} className="rounded-xl overflow-hidden flex flex-col text-left transition-all hover:shadow-md" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+    <button onClick={onOpen} className="rounded-xl overflow-hidden flex flex-col text-left transition-all hover:shadow-md" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
       <div className="relative" style={{ backgroundColor: "var(--bg-surface-2)" }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={a.url} alt={a.altText ?? a.name} style={{ width: "100%", height: "120px", objectFit: "cover", display: "block" }} />
@@ -208,7 +208,7 @@ function AssetDrawer({ asset, usage, onClose, onChange }: { asset: MediaAsset; u
   return (
     <div className="fixed inset-0 z-[70] flex justify-end" style={{ backgroundColor: "rgba(17,24,39,0.5)" }} onClick={onClose}>
       <div className="w-full max-w-md h-full overflow-y-auto thin-scroll-y" onClick={e => e.stopPropagation()} style={{ backgroundColor: "var(--bg-surface)", boxShadow: "-12px 0 40px rgba(0,0,0,0.3)" }}>
-        <div className="flex items-center justify-between px-5 py-3.5 sticky top-0 z-10" style={{ backgroundColor: "var(--bg-surface)", borderBottom: "1px solid var(--border-subtle)" }}>
+        <div className="flex items-center justify-between px-5 py-3.5 sticky top-0 z-10" style={{ backgroundColor: "var(--bg-surface)", borderBottom: "1px solid var(--border)" }}>
           <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Asset details</p>
           <button onClick={onClose} style={{ color: "var(--text-muted)" }}><X className="w-5 h-5" /></button>
         </div>
@@ -234,7 +234,7 @@ function AssetDrawer({ asset, usage, onClose, onChange }: { asset: MediaAsset; u
           <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>Uploaded by {asset.uploadedBy} · {asset.uploadedAt}</p>
 
           {/* Where used */}
-          <div className="rounded-xl p-3.5" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border-subtle)" }}>
+          <div className="rounded-xl p-3.5" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}>
             <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-widest mb-2" style={{ color: "var(--text-muted)" }}><Link2 className="w-3.5 h-3.5" /> Where this is used</p>
             {usage.total === 0 ? (
               <p className="text-xs" style={{ color: "var(--text-muted)" }}>Not used yet. Safe to edit or archive.</p>
@@ -299,11 +299,11 @@ export function MediaPickerModal({ onPick, onClose, allowUpload = true, title = 
   return (
     <div className="fixed inset-0 z-[80] bg-black/45 flex items-center justify-center p-4" onClick={onClose}>
       <div className="w-full max-w-3xl max-h-[88vh] flex flex-col rounded-2xl overflow-hidden" onClick={e => e.stopPropagation()} style={{ backgroundColor: "var(--bg-surface)", boxShadow: "0 24px 70px rgba(0,0,0,0.4)" }}>
-        <div className="flex items-center justify-between px-5 py-3.5 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+        <div className="flex items-center justify-between px-5 py-3.5 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
           <p className="text-base font-semibold flex items-center gap-2" style={{ color: "var(--text-primary)" }}><ImageIcon className="w-4 h-4" style={{ color: "var(--accent-text)" }} /> {title}</p>
           <button onClick={onClose} style={{ color: "var(--text-muted)" }}><X className="w-5 h-5" /></button>
         </div>
-        <div className="px-5 py-3 flex items-center gap-2 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+        <div className="px-5 py-3 flex items-center gap-2 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
           <div className="relative flex-1">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "var(--text-muted)" }} />
             <input value={q} onChange={e => setQ(e.target.value)} placeholder="Search…" className="w-full rounded-lg pl-9 pr-3 py-2 text-sm outline-none" style={inpStyle} />
@@ -322,7 +322,7 @@ export function MediaPickerModal({ onPick, onClose, allowUpload = true, title = 
           ) : (
             <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))" }}>
               {filtered.map(a => (
-                <button key={a.id} onClick={() => onPick(a)} className="rounded-xl overflow-hidden text-left transition-all hover:shadow-md" style={{ border: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface)" }}>
+                <button key={a.id} onClick={() => onPick(a)} className="rounded-xl overflow-hidden text-left transition-all hover:shadow-md" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface)" }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={a.url} alt={a.altText ?? a.name} style={{ width: "100%", height: "100px", objectFit: "cover", display: "block" }} />
                   <div className="px-2 py-1.5">

@@ -73,7 +73,7 @@ export default function UrgentPanel() {
         {items.map((item, i) => (
           <Link key={i} href={item.href}
             className="flex items-start gap-3 px-4 py-3 hover:bg-[var(--bg-surface-2)] transition-colors"
-            style={{ borderBottom: i < items.length - 1 ? "1px solid var(--border-subtle)" : "none", textDecoration: "none" }}>
+            style={{ borderBottom: i < items.length - 1 ? "1px solid var(--border)" : "none", textDecoration: "none" }}>
             <div className="w-2 h-2 rounded-full mt-1.5 shrink-0"
               style={{ backgroundColor: item.kind === "job" ? "#ef4444" : item.kind === "invoice" ? "#f59e0b" : "#ef4444" }} />
             <div>

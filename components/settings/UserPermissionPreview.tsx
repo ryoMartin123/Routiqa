@@ -103,7 +103,7 @@ export default function UserPermissionPreview({ roleKeys, isOwner = false }: {
   return (
     <div className="space-y-4">
       {/* Summary — apps + scope */}
-      <div className="rounded-xl p-4 grid sm:grid-cols-2 gap-4" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border-subtle)" }}>
+      <div className="rounded-xl p-4 grid sm:grid-cols-2 gap-4" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}>
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-muted)" }}>Apps enabled</p>
           <div className="flex flex-wrap items-center gap-1">
@@ -123,7 +123,7 @@ export default function UserPermissionPreview({ roleKeys, isOwner = false }: {
 
       {/* Per-app module matrix */}
       {isOwner ? (
-        <div className="rounded-xl p-4 flex items-center gap-2.5" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>
+        <div className="rounded-xl p-4 flex items-center gap-2.5" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
           <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: "#10b981" }} />
           <p className="text-sm" style={{ color: "var(--text-secondary)" }}>Organization Owner — full access to every module across all apps.</p>
         </div>
@@ -134,8 +134,8 @@ export default function UserPermissionPreview({ roleKeys, isOwner = false }: {
           {matrixApps.map((app) => {
             const resources = resourcesForApp(app);
             return (
-              <div key={app} className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>
-                <div className="px-4 py-2.5 flex items-center gap-2" style={{ borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+              <div key={app} className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
+                <div className="px-4 py-2.5 flex items-center gap-2" style={{ borderBottom: "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)" }}>
                   <span className="w-2 h-2 rounded-full" style={{ backgroundColor: APP_META[app].accent }} />
                   <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{APP_META[app].name}</p>
                 </div>
@@ -144,7 +144,7 @@ export default function UserPermissionPreview({ roleKeys, isOwner = false }: {
                 ) : (
                   resources.map((res, i) => (
                     <div key={res} className="px-4 py-2 flex items-center justify-between gap-3"
-                      style={{ borderTop: i === 0 ? "none" : "1px solid var(--border-subtle)" }}>
+                      style={{ borderTop: i === 0 ? "none" : "1px solid var(--border)" }}>
                       <span className="text-sm" style={{ color: "var(--text-primary)" }}>{RESOURCE_LABELS[res]}</span>
                       <LevelBadge level={levelOfRow(merged.capabilities[res])} full={merged.allAccess} />
                     </div>

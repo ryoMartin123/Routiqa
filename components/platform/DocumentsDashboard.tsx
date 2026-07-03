@@ -100,7 +100,7 @@ export default function DocumentsDashboard() {
         <Panel title="Popular Folders" icon={FolderTree} href="/documents/library">
           <div className="grid grid-cols-2 gap-2">
             {popular.map(({ folder, count }) => (
-              <div key={folder.id} className="flex items-center justify-between gap-2 rounded-lg px-2.5 py-2" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border-subtle)" }}>
+              <div key={folder.id} className="flex items-center justify-between gap-2 rounded-lg px-2.5 py-2" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}>
                 <span className="flex items-center gap-1.5 min-w-0"><FolderTree className="w-3.5 h-3.5 shrink-0" style={{ color: ACCENT }} /><span className="text-xs font-medium truncate" style={{ color: "var(--text-primary)" }}>{folder.name}</span></span>
                 <span className="text-[10px] shrink-0" style={{ color: "var(--text-muted)" }}>{count}</span>
               </div>
@@ -113,7 +113,7 @@ export default function DocumentsDashboard() {
           <ul className="space-y-2.5">
             {activity.map(a => (
               <li key={a.id} className="flex items-start gap-2.5">
-                <span className="w-6 h-6 rounded-md flex items-center justify-center shrink-0 mt-0.5" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border-subtle)" }}><Activity className="w-3 h-3" style={{ color: "var(--text-secondary)" }} /></span>
+                <span className="w-6 h-6 rounded-md flex items-center justify-center shrink-0 mt-0.5" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}><Activity className="w-3 h-3" style={{ color: "var(--text-secondary)" }} /></span>
                 <div className="min-w-0"><p className="text-sm" style={{ color: "var(--text-primary)" }}>{a.text}</p><p className="text-[11px]" style={{ color: "var(--text-muted)" }}>{a.when}</p></div>
               </li>
             ))}

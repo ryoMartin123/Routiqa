@@ -184,7 +184,7 @@ export default function QuoteTypeChooser({ preset, onClose }: {
       <div className="w-full max-w-2xl max-h-[92vh] flex flex-col rounded-2xl overflow-hidden" onClick={e => e.stopPropagation()}
         style={{ backgroundColor: "var(--bg-surface)", boxShadow: "0 16px 48px rgba(0,0,0,0.28)" }}>
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+        <div className="flex items-center justify-between px-6 py-4 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
           <div className="flex items-center gap-2 min-w-0">
             {step === "details" && (
               <button onClick={() => setStep("type")} className="mr-1" style={{ color: "var(--text-muted)" }}><ArrowLeft className="w-4 h-4" /></button>
@@ -211,7 +211,7 @@ export default function QuoteTypeChooser({ preset, onClose }: {
                   <button key={card.mode}
                     onClick={() => { setMode(card.mode); setStep("details"); }}
                     className="group flex items-start gap-4 p-4 rounded-xl text-left transition-all hover:shadow-md"
-                    style={{ border: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+                    style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)" }}>
                     <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: card.accent + "1a" }}>
                       <Icon className="w-5 h-5" style={{ color: card.accent }} />
                     </div>
@@ -292,7 +292,7 @@ export default function QuoteTypeChooser({ preset, onClose }: {
 
         {/* Footer */}
         {step === "details" && (
-          <div className="px-6 py-4 flex items-center justify-between shrink-0" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+          <div className="px-6 py-4 flex items-center justify-between shrink-0" style={{ borderTop: "1px solid var(--border)" }}>
             <span className="flex items-center gap-1.5 text-[11px]" style={{ color: "var(--text-muted)" }}>
               <activeCard.icon className="w-3.5 h-3.5" />
               {mode === "quick" ? "Opens the Quick Quote editor" : mode === "template" ? "Builds the quote from your salesbook and opens it" : "Opens the Pricing Wizard"}
@@ -316,7 +316,7 @@ function TemplateSourcePicker({ installed, value, onChange, onBrowseLibrary }: {
   onBrowseLibrary: () => void;
 }) {
   return (
-    <div className="rounded-xl p-3.5 space-y-3" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border-subtle)" }}>
+    <div className="rounded-xl p-3.5 space-y-3" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}>
       <div className="flex items-center justify-between">
         <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>Choose a Salesbook</p>
         <button onClick={onBrowseLibrary} className="flex items-center gap-1 text-[11px] font-medium" style={{ color: "#4f46e5" }}>

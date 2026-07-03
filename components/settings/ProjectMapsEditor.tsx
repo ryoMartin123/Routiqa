@@ -28,7 +28,7 @@ function TemplatePreview({ t }: { t: MapTemplate }) {
     <div className="flex items-center gap-1.5 overflow-x-auto thin-scroll-x pb-0.5">
       {lanes.map((g, i) => (
         <div key={g} className="flex items-center gap-1.5 shrink-0">
-          <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border-subtle)" }}>
+          <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}>
             <span className="text-[11px] font-medium whitespace-nowrap" style={{ color: "var(--text-secondary)" }}>{g}</span>
             <span className="text-[10px] font-bold px-1.5 rounded-full tabular-nums" style={{ backgroundColor: "var(--accent-soft-bg)", color: "var(--accent-text)" }}>{count(g)}</span>
           </div>
@@ -87,7 +87,7 @@ export default function ProjectMapsEditor() {
           const mirrored = t.nodes.filter(n => !n.manual).length;
           const manual = t.nodes.length - mirrored;
           return (
-            <div key={t.id} className="group rounded-2xl overflow-hidden transition-shadow hover:shadow-md" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+            <div key={t.id} className="group rounded-2xl overflow-hidden transition-shadow hover:shadow-md" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
               {/* Header */}
               <div className="flex items-start gap-3 p-4">
                 <span className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: "var(--accent-soft-bg)" }}><GitBranch className="w-[18px] h-[18px]" style={{ color: ACCENT }} /></span>
@@ -113,7 +113,7 @@ export default function ProjectMapsEditor() {
               <div className="px-4 pb-3"><TemplatePreview t={t} /></div>
 
               {/* Stats */}
-              <div className="flex items-center gap-3 px-4 py-2.5 text-[11px] font-medium" style={{ borderTop: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+              <div className="flex items-center gap-3 px-4 py-2.5 text-[11px] font-medium" style={{ borderTop: "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)" }}>
                 <Stat icon={CheckSquare}>{t.nodes.length} steps</Stat>
                 <span style={{ color: "var(--border)" }}>·</span>
                 <Stat icon={Layers}>{t.groups.length} lanes</Stat>

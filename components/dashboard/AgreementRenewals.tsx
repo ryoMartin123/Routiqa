@@ -43,7 +43,7 @@ export default function AgreementRenewals() {
     <div className="rounded-xl overflow-hidden h-full min-h-0 flex flex-col"
       style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
       <div className="flex items-center justify-between px-5 py-4 shrink-0"
-        style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+        style={{ borderBottom: "1px solid var(--border)" }}>
         <div className="flex items-center gap-2">
           <FileText className="w-4 h-4" style={{ color: "#059669" }} />
           <h2 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Agreement Renewals</h2>
@@ -75,7 +75,7 @@ export default function AgreementRenewals() {
             return (
               <Link key={a.id} href={`/agreements/${a.id}`}
                 className="flex items-center gap-3 px-5 py-3 hover:bg-[var(--bg-surface-2)] transition-colors"
-                style={{ borderBottom: i < rows.length - 1 ? "1px solid var(--border-subtle)" : "none", textDecoration: "none" }}>
+                style={{ borderBottom: i < rows.length - 1 ? "1px solid var(--border)" : "none", textDecoration: "none" }}>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{a.customer}</p>
                   <p className="text-xs truncate" style={{ color: "var(--text-muted)" }}>

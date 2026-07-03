@@ -310,11 +310,10 @@ body {
     0 1px 2px rgba(0, 0, 0, 0.45);
 }
 
-/* ─── Detail sub-tabs — glossy amber (matches the dashboard "Urgent" panel) ──
+/* ─── Detail sub-tabs — the indigo/purple CRM accent ─────────────────────────
    The tab strip inside a single record (a specific customer, project, job,
-   quote, invoice, …). Active = a raised glassy amber chip using the same
-   --warning-* tokens the Urgent panel uses, so being "inside a record" reads
-   distinctly from the indigo top-level section nav. Toggle data-active. */
+   quote, invoice, …). Active = a flat pill using the --accent-* (indigo) tokens
+   so it matches the rest of the CRM. Toggle data-active. */
 .detail-tab {
   border: 1px solid transparent;
   color: var(--text-muted);
@@ -323,13 +322,22 @@ body {
 .detail-tab:hover { color: var(--text-secondary); }
 .detail-tab[data-active="true"],
 .detail-tab[data-active="true"]:hover {
-  /* Same flat pill as StatusTabs (main list-page tabs) — ONLY the color differs:
-     the amber (warning) accent instead of indigo, so "inside a record" reads
-     distinctly. Same shape, size, and treatment otherwise. */
-  color: var(--warning-text);
-  border-color: var(--warning-soft-border);
-  background: var(--warning-soft-bg);
+  /* Same flat pill as StatusTabs (main list-page tabs), using the indigo accent. */
+  color: var(--accent-text);
+  border-color: var(--accent-soft-border);
+  background: var(--accent-soft-bg);
 }
+
+/* Detail sub-tabs: plain text tabs; the active one shows a single small custom
+   glyph above it and takes the indigo/purple CRM accent. Color + the marker are
+   the indicators — no underline, no per-tab icons. */
+.detail-tab-marker {
+  color: var(--text-muted);
+  transition: color 0.18s ease;
+}
+.detail-tab-marker:hover { color: var(--text-secondary); }
+.detail-tab-marker[data-active="true"],
+.detail-tab-marker[data-active="true"]:hover { color: var(--accent-text); }
 
 /* Hide the browser's default number spinner (we render our own chevron stepper). */
 .no-spinner::-webkit-outer-spin-button,
@@ -1058,4 +1066,183 @@ button[aria-expanded="true"]:hover .lucide-circle-plus {
 .site-draw { animation: siteDraw 0.8s ease forwards; }
 @media (prefers-reduced-motion: reduce) {
   .site-ripple, .site-pin-drop, .site-build-in, .site-draw { animation: none; }
+}
+
+/* ── Scroll-in reveals (site) ──────────────────────────────
+   Elements start hidden and slide/fade in when they enter the viewport (the
+   Reveal component toggles .is-visible via IntersectionObserver). Direction and
+   delay come from CSS vars set inline. Without JS nothing ever hides: the base
+   class only hides when a .js ancestor (set by Reveal itself) is present. */
+.site-io {
+  opacity: 0;
+  transform: translate(var(--io-x, 0), var(--io-y, 24px)) scale(var(--io-scale, 1));
+  transition:
+    opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1) var(--io-delay, 0s),
+    transform 0.7s cubic-bezier(0.22, 1, 0.36, 1) var(--io-delay, 0s);
+  will-change: opacity, transform;
+}
+.site-io.is-visible { opacity: 1; transform: translate(0, 0) scale(1); }
+@media (prefers-reduced-motion: reduce) {
+  .site-io { opacity: 1; transform: none; transition: none; }
+}
+
+/* ── Hero showcase (real product screenshots) ──────────────
+   Crossfading reel of actual app captures with a slow Ken Burns drift on the
+   active frame, and a per-tab progress bar timed to the rotation. */
+@keyframes siteKenBurns { from { transform: scale(1) translateY(0); } to { transform: scale(1.035) translateY(-0.6%); } }
+.site-kenburns { animation: siteKenBurns 6s ease-out both; will-change: transform; }
+@keyframes siteTabProgress { from { width: 0%; } to { width: 100%; } }
+.site-tab-progress { animation: siteTabProgress linear both; }
+@media (prefers-reduced-motion: reduce) {
+  .site-kenburns, .site-tab-progress { animation: none; }
+}
+
+/* Soft glow behind the hero stage. */
+.site-stage-glow {
+  background:
+    radial-gradient(55% 60% at 50% 42%, rgba(79, 70, 229, 0.34) 0%, rgba(79, 70, 229, 0) 70%);
+  filter: blur(6px);
+}
+
+/* Screenshot frames lift slightly on hover — makes the real captures feel alive. */
+.site-lift { transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.45s ease; }
+.site-lift:hover { transform: translateY(-6px); }
+@media (prefers-reduced-motion: reduce) { .site-lift, .site-lift:hover { transition: none; transform: none; } }
+
+/* ── Ecosystem hero + app previews ─────────────────────────
+   The hero presents the ten connected apps as an orbital composition around a
+   central platform window; these drive the connector energy and the small
+   crafted UI previews inside cards. */
+
+/* A bright segment traveling along the active connector (dash "comet"). */
+@keyframes siteComet { to { stroke-dashoffset: -170; } }
+.site-comet { stroke-dasharray: 16 154; animation: siteComet 1.7s linear infinite; }
+
+/* Soft expanding ring on the active app node. */
+@keyframes siteNodePulse {
+  0% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.38); }
+  70%, 100% { box-shadow: 0 0 0 14px rgba(99, 102, 241, 0); }
+}
+.site-node-pulse { animation: siteNodePulse 2.2s ease-out infinite; }
+
+/* Preview micro-animations: growing chart bars, typing dots, drawing line. */
+@keyframes siteGrowY { from { transform: scaleY(0.2); } to { transform: scaleY(1); } }
+.site-grow-y { transform-origin: bottom; animation: siteGrowY 0.9s cubic-bezier(0.22, 1, 0.36, 1) both; }
+@keyframes siteBlink { 0%, 80%, 100% { opacity: 0.25; } 40% { opacity: 1; } }
+.site-blink { animation: siteBlink 1.1s ease-in-out infinite; }
+
+/* Problem section: disconnected tools drift out of alignment, and failure
+   callouts surface. Gentle — unease, not chaos. */
+@keyframes siteDrift {
+  0%, 100% { transform: translate(0, 0) rotate(var(--drift-rot, 0deg)); }
+  50% { transform: translate(var(--drift-x, 3px), var(--drift-y, -4px)) rotate(var(--drift-rot, 0deg)); }
+}
+.site-drift { animation: siteDrift var(--drift-dur, 6s) ease-in-out infinite; will-change: transform; }
+
+@media (prefers-reduced-motion: reduce) {
+  .site-comet, .site-node-pulse, .site-grow-y, .site-blink, .site-drift { animation: none; }
+}
+
+/* ── Native-app feel for the mobile PWA ────────────────────
+   Applied by MobileShell's root: kill the web-page tells (tap flash, text
+   selection on chrome, rubber-band overscroll behind the app) so the installed
+   PWA behaves like a native app. Inputs/textareas stay selectable. */
+.mobile-native {
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
+  -webkit-touch-callout: none;
+  touch-action: manipulation;
+}
+.mobile-native :is(input, textarea, [contenteditable]) {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/* ── Hero product film ─────────────────────────────────────
+   A timeline-driven, self-playing walkthrough: each scene is a real capture
+   with one cinematic camera move, hard-ish cuts between scenes, captions that
+   slide in, and a segmented story progress bar. Durations set inline. */
+@keyframes filmCutIn { from { opacity: 0.25; transform: scale(1.02); } to { opacity: 1; transform: scale(1); } }
+.site-film-cut { animation: filmCutIn 0.18s ease-out both; }
+
+@keyframes filmZoomIn  { from { transform: scale(1); }                     to { transform: scale(1.14); } }
+@keyframes filmZoomOut { from { transform: scale(1.16); }                  to { transform: scale(1.02); } }
+@keyframes filmPanLeft { from { transform: scale(1.1) translateX(2%); }    to { transform: scale(1.1) translateX(-3%); } }
+@keyframes filmPanRight{ from { transform: scale(1.1) translateX(-3%); }   to { transform: scale(1.1) translateX(2%); } }
+@keyframes filmPanUp   { from { transform: scale(1.12) translateY(2%); }   to { transform: scale(1.12) translateY(-3%); } }
+.site-film-move { animation-timing-function: linear; animation-fill-mode: both; will-change: transform; }
+
+@keyframes filmCaption { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+.site-film-caption { animation: filmCaption 0.45s cubic-bezier(0.22, 1, 0.36, 1) 0.12s both; }
+
+@keyframes filmProgress { from { width: 0%; } to { width: 100%; } }
+.site-film-progress { animation: filmProgress linear both; }
+
+.site-film-paused .site-film-move,
+.site-film-paused .site-film-progress,
+.site-film-paused .site-film-caption { animation-play-state: paused; }
+
+@media (prefers-reduced-motion: reduce) {
+  .site-film-cut, .site-film-move, .site-film-caption, .site-film-progress { animation: none; }
+}
+
+/* Visit/job side panel entrance: backdrop fades, panel eases in from the right. */
+@keyframes drawerIn { from { transform: translateX(48px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+.drawer-panel-in { animation: drawerIn 0.32s cubic-bezier(0.22, 1, 0.36, 1) both; }
+@keyframes drawerBackdropIn { from { opacity: 0; } to { opacity: 1; } }
+.drawer-backdrop-in { animation: drawerBackdropIn 0.25s ease-out both; }
+@media (prefers-reduced-motion: reduce) {
+  .drawer-panel-in, .drawer-backdrop-in { animation: none; }
+}
+
+/* ── Create / plus button glow ─────────────────────────────
+   The primary "+" affordance carries a faint indigo glow at rest and blooms
+   into an outline ring when pressed or while its menu is open — the same alive,
+   on-brand feedback as the 4-dot ActionsMenu active state. Works on filled
+   (indigo) and outline plus buttons alike. */
+.plus-glow {
+  box-shadow: 0 0 14px -3px rgba(79, 70, 229, 0.45);
+  transition: box-shadow 0.2s ease, transform 0.08s ease;
+}
+.plus-glow:hover { box-shadow: 0 0 18px -3px rgba(79, 70, 229, 0.6); }
+.plus-glow:active { transform: scale(0.94); }
+.plus-glow:focus-visible,
+.plus-glow[aria-expanded="true"],
+.plus-glow[data-open="true"] {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.35), 0 0 18px -3px rgba(79, 70, 229, 0.55);
+}
+@media (prefers-reduced-motion: reduce) {
+  .plus-glow { transition: none; }
+  .plus-glow:active { transform: none; }
+}
+
+/* ── Raised button (minimal, professional) ─────────────────
+   No gloss or color glow — just a hairline top edge for a subtly raised feel and
+   a tight neutral shadow to lift it off the surface. Hover darkens slightly (the
+   professional cue); it presses in a touch on :active. Pair with a solid bg. */
+.btn-raised {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.13),
+    0 1px 2px rgba(17, 24, 39, 0.18),
+    0 1px 1px rgba(17, 24, 39, 0.10);
+  transition: box-shadow 0.15s ease, transform 0.08s ease, filter 0.15s ease;
+}
+.btn-raised:hover {
+  filter: brightness(0.96);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.13),
+    0 2px 5px rgba(17, 24, 39, 0.20),
+    0 1px 2px rgba(17, 24, 39, 0.12);
+}
+.btn-raised:active {
+  transform: translateY(0.5px);
+  filter: brightness(0.92);
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.20),
+    0 1px 1px rgba(17, 24, 39, 0.12);
+}
+@media (prefers-reduced-motion: reduce) {
+  .btn-raised { transition: none; }
+  .btn-raised:active { transform: none; }
 }

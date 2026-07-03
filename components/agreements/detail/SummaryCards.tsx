@@ -17,7 +17,7 @@ function Stat({ icon: Icon, label, value, sub, accent }: {
   icon: typeof Activity; label: string; value: React.ReactNode; sub?: string; accent?: string;
 }) {
   return (
-    <div className="rounded-xl p-3.5" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+    <div className="rounded-xl p-3.5" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
       <div className="flex items-center gap-1.5 mb-1.5">
         <Icon className="w-3.5 h-3.5" style={{ color: accent ?? "var(--text-muted)" }} />
         <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>{label}</p>

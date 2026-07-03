@@ -87,7 +87,7 @@ export default function RecordCombobox({
       {open && (
         <div className="absolute left-0 right-0 z-50 mt-1.5 rounded-xl overflow-hidden"
           style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "0 12px 32px rgba(0,0,0,0.16)" }}>
-          <div className="flex items-center gap-2 px-2.5 py-2" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+          <div className="flex items-center gap-2 px-2.5 py-2" style={{ borderBottom: "1px solid var(--border)" }}>
             <Search className="w-3.5 h-3.5 shrink-0" style={{ color: "var(--text-muted)" }} />
             <input ref={inputRef} value={query} onChange={e => setQuery(e.target.value)} onKeyDown={onKeyDown}
               placeholder={placeholder}

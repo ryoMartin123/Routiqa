@@ -1,0 +1,106 @@
+[
+  {
+    "file": "/product-screenshots/crm-dashboard-desktop.png",
+    "title": "Owner Dashboard",
+    "description": "Live business dashboard with revenue, jobs, and team KPIs in one view.",
+    "route": "/dashboard",
+    "viewport": "1440x1000",
+    "usage": "homepage hero / analytics feature section"
+  },
+  {
+    "file": "/product-screenshots/crm-customers-desktop.png",
+    "title": "CRM & Customers",
+    "description": "Every customer account with jobs, agreements, and billing history connected.",
+    "route": "/customers",
+    "viewport": "1440x1000",
+    "usage": "CRM feature section"
+  },
+  {
+    "file": "/product-screenshots/dispatch-board-desktop.png",
+    "title": "Dispatch Board",
+    "description": "Drag-and-drop dispatch board with technician lanes and the unscheduled queue.",
+    "route": "/dispatching",
+    "viewport": "1440x1000",
+    "usage": "dispatch feature section"
+  },
+  {
+    "file": "/product-screenshots/dispatch-map-desktop.png",
+    "title": "Dispatch & Routing",
+    "description": "Live dispatch map with technician status, jobs, and route visibility.",
+    "route": "/dispatching",
+    "viewport": "1440x1000",
+    "usage": "homepage hero / dispatch feature section"
+  },
+  {
+    "file": "/product-screenshots/communications-desktop.png",
+    "title": "Communications Inbox",
+    "description": "Every customer conversation — calls, texts, and email — with AI reply drafts.",
+    "route": "/inbox",
+    "viewport": "1440x1000",
+    "usage": "communications feature section"
+  },
+  {
+    "file": "/product-screenshots/marketing-automation-desktop.png",
+    "title": "Marketing Automation",
+    "description": "Automated follow-ups, renewals, and review requests built on live CRM data.",
+    "route": "/marketing/automations",
+    "viewport": "1440x1000",
+    "usage": "marketing feature section"
+  },
+  {
+    "file": "/product-screenshots/analytics-dashboard-desktop.png",
+    "title": "Analytics & Reporting",
+    "description": "Operational and financial reporting over real job and revenue data.",
+    "route": "/analytics",
+    "viewport": "1440x1000",
+    "usage": "analytics feature section"
+  },
+  {
+    "file": "/product-screenshots/documents-library-desktop.png",
+    "title": "Documents & SOPs",
+    "description": "Company knowledge base: SOPs, checklists, and training documents.",
+    "route": "/documents",
+    "viewport": "1440x1000",
+    "usage": "documents feature section"
+  },
+  {
+    "file": "/product-screenshots/hr-team-desktop.png",
+    "title": "HR & Team",
+    "description": "Team roster, roles, time-off, and onboarding in the same platform.",
+    "route": "/hr",
+    "viewport": "1440x1000",
+    "usage": "HR feature section"
+  },
+  {
+    "file": "/product-screenshots/accounting-payments-desktop.png",
+    "title": "Accounting & Payments",
+    "description": "Invoices, payments, and financial health tied to every job and customer.",
+    "route": "/accounting",
+    "viewport": "1440x1000",
+    "usage": "accounting feature section"
+  },
+  {
+    "file": "/product-screenshots/mobile-technician-today.png",
+    "title": "Technician Today View",
+    "description": "The technician's day: route, next stop, and job status from the truck.",
+    "route": "/mobile/today",
+    "viewport": "390x844",
+    "usage": "mobile app feature section / hero phone"
+  },
+  {
+    "file": "/product-screenshots/mobile-route-map.png",
+    "title": "Mobile Route Map",
+    "description": "The day's stops on a live map with navigation to the next job.",
+    "route": "/mobile/map",
+    "viewport": "390x844",
+    "usage": "mobile app feature section"
+  },
+  {
+    "file": "/product-screenshots/mobile-job-detail.png",
+    "title": "Mobile Job Detail",
+    "description": "Job details, checklist, photos, and status updates from the field.",
+    "route": "/mobile/jobs/job-1782943755991-6gm",
+    "viewport": "390x844",
+    "usage": "mobile app feature section"
+  }
+]

@@ -60,7 +60,7 @@ export default function LeadSourcesSection() {
       </div>
 
       {/* Revenue leaderboard */}
-      <div className="rounded-2xl p-4" style={{ border: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface)", boxShadow: "var(--shadow-card)" }}>
+      <div className="rounded-2xl p-4" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface)", boxShadow: "var(--shadow-card)" }}>
         <p className="text-sm font-semibold mb-3" style={{ color: "var(--text-primary)" }}>Revenue by source</p>
         <div className="space-y-2.5">
           {topByRevenue.map(s => (
@@ -76,15 +76,15 @@ export default function LeadSourcesSection() {
       </div>
 
       {/* Performance table */}
-      <div className="rounded-2xl overflow-hidden" style={{ border: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface)", boxShadow: "var(--shadow-card)" }}>
-        <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+      <div className="rounded-2xl overflow-hidden" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface)", boxShadow: "var(--shadow-card)" }}>
+        <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid var(--border)" }}>
           <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>All sources</p>
           <button onClick={() => setShowInactive(v => !v)} className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>{showInactive ? "Hide inactive" : "Show inactive"}</button>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm min-w-[680px]">
             <thead>
-              <tr style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+              <tr style={{ borderBottom: "1px solid var(--border)" }}>
                 <th className="text-left font-medium text-[11px] uppercase tracking-wider px-4 py-2.5" style={{ color: "var(--text-muted)" }}>Source</th>
                 <SortTh label="Leads" k="leads" sortKey={sortKey} onSort={setSortKey} />
                 <SortTh label="Booked" k="bookedJobs" sortKey={sortKey} onSort={setSortKey} />
@@ -99,7 +99,7 @@ export default function LeadSourcesSection() {
               {rows.map(s => {
                 const cm = CATEGORY_META[s.category]; const r = roi(s); const c = cpl(s);
                 return (
-                  <tr key={s.id} className="group" style={{ borderBottom: "1px solid var(--border-subtle)", opacity: s.active ? 1 : 0.5 }}>
+                  <tr key={s.id} className="group" style={{ borderBottom: "1px solid var(--border)", opacity: s.active ? 1 : 0.5 }}>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
                         <span className="font-medium" style={{ color: "var(--text-primary)" }}>{s.name}</span>
@@ -136,7 +136,7 @@ export default function LeadSourcesSection() {
 
 function Kpi({ icon: Icon, label, value, color }: { icon: React.ElementType; label: string; value: string; color: string }) {
   return (
-    <div className="rounded-xl px-4 py-3.5" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+    <div className="rounded-xl px-4 py-3.5" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
       <div className="flex items-center gap-1.5"><Icon className="w-3.5 h-3.5" style={{ color }} /><p className="text-[11px] font-medium truncate" style={{ color: "var(--text-muted)" }}>{label}</p></div>
       <p className="text-2xl font-bold mt-1 tabular-nums" style={{ color: "var(--text-primary)" }}>{value}</p>
     </div>
@@ -162,7 +162,7 @@ function AddSourceModal({ onClose, onAdd }: { onClose: () => void; onAdd: (name:
   return (
     <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={onClose}>
       <div className="w-full max-w-sm rounded-2xl overflow-hidden" onClick={e => e.stopPropagation()} style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "0 20px 48px rgba(0,0,0,0.3)" }}>
-        <div className="flex items-center justify-between px-5 py-3.5" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+        <div className="flex items-center justify-between px-5 py-3.5" style={{ borderBottom: "1px solid var(--border)" }}>
           <p className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>Add lead source</p>
           <button onClick={onClose}><X className="w-4 h-4" style={{ color: "var(--text-muted)" }} /></button>
         </div>
@@ -186,7 +186,7 @@ function AddSourceModal({ onClose, onAdd }: { onClose: () => void; onAdd: (name:
             </div>
           </div>
         </div>
-        <div className="px-5 py-3.5 flex justify-end gap-2" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+        <div className="px-5 py-3.5 flex justify-end gap-2" style={{ borderTop: "1px solid var(--border)" }}>
           <button onClick={onClose} className="px-4 py-2 rounded-lg text-sm font-medium" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>Cancel</button>
           <button onClick={() => name.trim() && onAdd(name, cat)} disabled={!name.trim()} className="px-4 py-2 rounded-lg text-sm font-semibold text-white transition-opacity disabled:opacity-40" style={{ backgroundColor: ACCENT }}>Add source</button>
         </div>

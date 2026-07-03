@@ -116,7 +116,7 @@ export default function MapBuilder({
           <LaneCanvas lanes={lanes} nodesIn={nodesIn} nodes={draft.nodes} selKey={selKey} onSelect={setSelKey} onDeselect={() => setSelKey(null)} onAdd={addNode} onMove={moveNode} readOnly={readOnly} />
         </div>
 
-        <div className="absolute bottom-3 left-3 z-10 pointer-events-none flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px]" style={{ backgroundColor: "color-mix(in srgb, var(--bg-surface) 85%, transparent)", border: "1px solid var(--border-subtle)", color: "var(--text-muted)", backdropFilter: "blur(8px)" }}>
+        <div className="absolute bottom-3 left-3 z-10 pointer-events-none flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px]" style={{ backgroundColor: "color-mix(in srgb, var(--bg-surface) 85%, transparent)", border: "1px solid var(--border)", color: "var(--text-muted)", backdropFilter: "blur(8px)" }}>
           Hold <kbd className="px-1.5 py-0.5 rounded font-sans" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-secondary)" }}>Space</kbd> to pan · <kbd className="px-1.5 py-0.5 rounded font-sans" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-secondary)" }}>⌘</kbd>-scroll to zoom
         </div>
 
@@ -156,7 +156,7 @@ export default function MapBuilder({
                 </div>
               </RailGroup>
               </fieldset>
-              <div className="rounded-xl p-3 text-[11px] leading-relaxed" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border-subtle)", color: "var(--text-muted)" }}>
+              <div className="rounded-xl p-3 text-[11px] leading-relaxed" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)", color: "var(--text-muted)" }}>
                 <b style={{ color: "var(--text-secondary)" }}>{draft.nodes.length}</b> steps across <b style={{ color: "var(--text-secondary)" }}>{draft.groups.length}</b> lanes.
               </div>
             </aside>
@@ -393,7 +393,7 @@ function Inspector({ node, draft, onPatch, onSetSource, onToggleDep, onRemove, o
   const others = draft.nodes.filter(n => n.key !== node.key);
   return (
     <>
-      <div className="flex items-center justify-between px-4 py-3 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+      <div className="flex items-center justify-between px-4 py-3 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
         <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>{readOnly ? "Step" : "Edit step"}</p>
         <div className="flex items-center gap-1">
           {!readOnly && <button onClick={onRemove} title="Delete step" className="p-1.5 rounded-lg hover:bg-red-50" style={{ color: "#9ca3af" }}><Trash2 className="w-4 h-4" /></button>}
@@ -519,7 +519,7 @@ function RailGroup({ icon: Icon, title, children }: { icon: typeof Layers; title
 }
 function Capability({ icon: Icon, title, count, children }: { icon: typeof Layers; title: string; count: number; children: React.ReactNode }) {
   return (
-    <div className="rounded-xl p-3" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border-subtle)" }}>
+    <div className="rounded-xl p-3" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}>
       <div className="flex items-center gap-1.5 mb-2"><Icon className="w-3.5 h-3.5" style={{ color: ACCENT }} /><p className="text-xs font-semibold" style={{ color: "var(--text-primary)" }}>{title}</p>{count > 0 && <span className="text-[10px] px-1.5 rounded-full" style={{ backgroundColor: "var(--accent-soft-bg)", color: "var(--accent-text)" }}>{count}</span>}</div>
       {children}
     </div>

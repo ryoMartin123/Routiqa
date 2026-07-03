@@ -20,7 +20,7 @@ export function SettingsCard({ icon: Icon, title, subtitle, action, children }: 
   icon?: typeof Check; title: string; subtitle?: string; action?: React.ReactNode; children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-xl p-5" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+    <div className="rounded-xl p-5" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-start gap-3">
           {Icon && (
@@ -78,7 +78,7 @@ export function ToggleRow({ label, description, on, onChange }: {
   label: string; description?: string; on: boolean; onChange: (v: boolean) => void;
 }) {
   return (
-    <div className="flex items-center justify-between gap-4 py-3" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+    <div className="flex items-center justify-between gap-4 py-3" style={{ borderTop: "1px solid var(--border)" }}>
       <div className="min-w-0">
         <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{label}</p>
         {description && <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>{description}</p>}

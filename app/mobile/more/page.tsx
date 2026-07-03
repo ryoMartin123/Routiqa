@@ -40,7 +40,7 @@ export default function MorePage() {
     <Card>
       {items.map((it, i) => {
         const inner = (
-          <div className="flex items-center gap-3 px-4 py-3.5" style={{ borderTop: i ? "1px solid var(--border-subtle)" : "none" }}>
+          <div className="flex items-center gap-3 px-4 py-3.5" style={{ borderTop: i ? "1px solid var(--border)" : "none" }}>
             <it.icon className="w-5 h-5 shrink-0" style={{ color: it.danger ? "#dc2626" : "var(--text-secondary)" }} />
             <span className="text-[15px] flex-1" style={{ color: it.danger ? "#dc2626" : "var(--text-primary)" }}>{it.label}</span>
             {!it.danger && <ChevronRight className="w-4 h-4 shrink-0" style={{ color: "var(--text-muted)" }} />}

@@ -86,7 +86,7 @@ export default function CatalogPicker({
       {open && (
         <div className="absolute left-0 right-0 mt-1.5 z-50 rounded-xl overflow-hidden"
           style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "0 12px 32px rgba(0,0,0,0.16)" }}>
-          <div className="p-2" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+          <div className="p-2" style={{ borderBottom: "1px solid var(--border)" }}>
             <div className="flex items-center gap-2 rounded-lg px-2.5 py-1.5" style={{ backgroundColor: "var(--bg-surface-2)" }}>
               <Search className="w-3.5 h-3.5 shrink-0" style={{ color: "var(--text-muted)" }} />
               <input autoFocus value={q} onChange={e => setQ(e.target.value)} placeholder="Search…"

@@ -116,10 +116,10 @@ export default function WorkOrdersPage() {
         </div>
 
         {/* Table card */}
-        <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+        <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
         {/* Column headers */}
         <div className="grid px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider"
-          style={{ gridTemplateColumns: "2.5fr 2fr 1.5fr 1fr", color: "var(--text-muted)", borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+          style={{ gridTemplateColumns: "2.5fr 2fr 1.5fr 1fr", color: "var(--text-muted)", borderBottom: "1px solid var(--border)", backgroundColor: "transparent" }}>
           <span>Work Order</span>
           <span>Customer / Job</span>
           <span>Property</span>
@@ -142,7 +142,7 @@ export default function WorkOrdersPage() {
             return (
               <Link key={wo.id} href={`/work-orders/${wo.id}`}
                 className="grid px-4 py-3 items-center hover:bg-[var(--bg-surface-2)] transition-colors"
-                style={{ gridTemplateColumns: "2.5fr 2fr 1.5fr 1fr", borderBottom: i < displayed.length - 1 ? "1px solid var(--border-subtle)" : "none", textDecoration: "none" }}>
+                style={{ gridTemplateColumns: "2.5fr 2fr 1.5fr 1fr", borderBottom: i < displayed.length - 1 ? "1px solid var(--border)" : "none", textDecoration: "none" }}>
 
                 {/* Work order */}
                 <div className="min-w-0">
@@ -191,7 +191,7 @@ export default function WorkOrdersPage() {
 
         {/* Footer */}
         <div className="px-4 py-3 text-xs"
-          style={{ borderTop: "1px solid var(--border-subtle)", color: "var(--text-muted)", backgroundColor: "var(--bg-surface-2)" }}>
+          style={{ borderTop: "1px solid var(--border)", color: "var(--text-muted)", backgroundColor: "transparent" }}>
           Showing {displayed.length} of {contextFiltered.length} work orders · Click a row to open the work order
         </div>
       </div>

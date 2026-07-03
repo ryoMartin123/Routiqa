@@ -39,7 +39,7 @@ export default function EditingScopeHeader({ sectionLayers }: { sectionLayers: S
   if (sectionLayers === "any") {
     return (
       <div className="rounded-xl px-4 py-2.5 mb-5 flex items-center gap-2.5"
-        style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border-subtle)" }}>
+        style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}>
         <Layers className="w-4 h-4 shrink-0" style={{ color: "var(--text-muted)" }} />
         <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
           This is a <span className="font-semibold">global</span> setting — it applies to your whole account, the same everywhere.

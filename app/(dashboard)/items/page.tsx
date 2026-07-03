@@ -21,7 +21,7 @@ function ItemRow({ it, last, onClick }: { it: Item; last: boolean; onClick: () =
   return (
     <div onClick={onClick}
       className="grid px-4 py-3 items-center cursor-pointer hover:bg-[var(--bg-surface-2)] transition-colors"
-      style={{ gridTemplateColumns: GRID, borderBottom: last ? "none" : "1px solid var(--border-subtle)", opacity: it.active ? 1 : 0.55 }}>
+      style={{ gridTemplateColumns: GRID, borderBottom: last ? "none" : "1px solid var(--border)", opacity: it.active ? 1 : 0.55 }}>
       <div className="min-w-0 pr-2">
         <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{it.name}</p>
         <p className="text-[10px] truncate" style={{ color: "var(--text-muted)" }}>{it.sku ? `${it.sku} · ` : ""}{it.description ?? ""}</p>
@@ -170,7 +170,7 @@ export default function ItemsPage() {
         </div>
 
       {/* Table card */}
-      <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+      <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
         {/* ── Categories tab ── */}
         {tab === "categories" ? (
           grouped.length === 0 ? (
@@ -178,8 +178,8 @@ export default function ItemsPage() {
           ) : (
             <div className="p-4 space-y-4">
               {grouped.map(g => (
-                <div key={g.category} className="rounded-xl overflow-hidden" style={{ border: "1px solid var(--border-subtle)" }}>
-                  <div className="flex items-center justify-between px-4 py-2.5" style={{ backgroundColor: "var(--bg-surface-2)", borderBottom: "1px solid var(--border-subtle)" }}>
+                <div key={g.category} className="rounded-xl overflow-hidden" style={{ border: "1px solid var(--border)" }}>
+                  <div className="flex items-center justify-between px-4 py-2.5" style={{ backgroundColor: "var(--bg-surface-2)", borderBottom: "1px solid var(--border)" }}>
                     <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{g.category}</p>
                     <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>{g.items.length}</span>
                   </div>
@@ -189,7 +189,7 @@ export default function ItemsPage() {
                       <Commentable key={it.id} inset anchor={{ recordType: "item", recordId: it.id, recordLabel: it.name }}>
                       <div onClick={() => setDrawer({ open: true, item: it })}
                         className="flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-[var(--bg-surface-2)] transition-colors"
-                        style={{ borderBottom: i < g.items.length - 1 ? "1px solid var(--border-subtle)" : "none", opacity: it.active ? 1 : 0.55 }}>
+                        style={{ borderBottom: i < g.items.length - 1 ? "1px solid var(--border)" : "none", opacity: it.active ? 1 : 0.55 }}>
                         <span className="text-sm flex-1 truncate" style={{ color: "var(--text-primary)" }}>{it.name}</span>
                         <StatusBadge label={tc.label} color={tc.color} size="sm" className="shrink-0" />
                         {!it.active && <StatusBadge label="Inactive" color="#9ca3af" size="sm" className="shrink-0" />}
@@ -205,7 +205,7 @@ export default function ItemsPage() {
         ) : (
           <>
             {/* Column headers */}
-            <div className="grid px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider" style={{ gridTemplateColumns: GRID, color: "var(--text-muted)", borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+            <div className="grid px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider" style={{ gridTemplateColumns: GRID, color: "var(--text-muted)", borderBottom: "1px solid var(--border)", backgroundColor: "transparent" }}>
               <span>Item</span><span>Type</span><span>Category</span><span className="text-right">Unit Price</span><span className="text-center">Taxable</span><span className="text-center">Qty</span><span>Status</span><span />
             </div>
             {tableItems.length === 0 ? (
@@ -218,7 +218,7 @@ export default function ItemsPage() {
           </>
         )}
 
-        <div className="flex items-center justify-between px-4 py-3 text-xs" style={{ borderTop: "1px solid var(--border-subtle)", color: "var(--text-muted)", backgroundColor: "var(--bg-surface-2)" }}>
+        <div className="flex items-center justify-between px-4 py-3 text-xs" style={{ borderTop: "1px solid var(--border)", color: "var(--text-muted)", backgroundColor: "transparent" }}>
           <span>{tab === "categories" ? `${grouped.length} categories` : `Showing ${tableItems.length} of ${contextItems.length} items`}</span>
         </div>
       </div>

@@ -74,7 +74,7 @@ export default function LeadWizard({ preset, onClose, onCreated }: {
       <div className="w-full max-w-lg max-h-[92vh] flex flex-col rounded-2xl overflow-hidden" onClick={e => e.stopPropagation()}
         style={{ backgroundColor: "var(--bg-surface)", boxShadow: "0 16px 48px rgba(0,0,0,0.24)" }}>
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+        <div className="flex items-center justify-between px-6 py-4 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
           <div className="flex items-center gap-2 min-w-0">
             <TrendingUp className="w-4 h-4 shrink-0" style={{ color: "#4f46e5" }} />
             <div className="min-w-0">
@@ -105,7 +105,7 @@ export default function LeadWizard({ preset, onClose, onCreated }: {
               )}
 
               {account && (
-                <div className="rounded-xl p-3 flex items-center justify-between gap-3" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border-subtle)" }}>
+                <div className="rounded-xl p-3 flex items-center justify-between gap-3" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}>
                   <div className="min-w-0">
                     <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{account.name}</p>
                     <p className="text-[11px] truncate" style={{ color: "var(--text-muted)" }}>
@@ -121,7 +121,7 @@ export default function LeadWizard({ preset, onClose, onCreated }: {
           {step === 2 && account && (
             <>
               {/* Account summary (locked at this step) */}
-              <div className="rounded-xl p-3 flex items-center justify-between gap-3" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border-subtle)" }}>
+              <div className="rounded-xl p-3 flex items-center justify-between gap-3" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}>
                 <div className="min-w-0">
                   <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{account.name}</p>
                   <p className="text-[11px] truncate" style={{ color: "var(--text-muted)" }}>{account.status}{account.phone ? ` · ${account.phone}` : ""}</p>
@@ -171,7 +171,7 @@ export default function LeadWizard({ preset, onClose, onCreated }: {
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 flex justify-between gap-2 shrink-0" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+        <div className="px-6 py-4 flex justify-between gap-2 shrink-0" style={{ borderTop: "1px solid var(--border)" }}>
           <button onClick={() => (step === 2 && !preset?.lockAccount ? setStep(1) : onClose())}
             className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>
             {step === 2 && !preset?.lockAccount ? <><ChevronLeft className="w-3.5 h-3.5" /> Back</> : "Cancel"}

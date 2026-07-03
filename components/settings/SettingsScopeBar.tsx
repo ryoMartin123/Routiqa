@@ -31,7 +31,7 @@ export default function SettingsScopeBar() {
 
   return (
     <div className="flex items-center gap-1.5 flex-wrap px-6 py-3"
-      style={{ backgroundColor: "var(--bg-surface)", borderBottom: "1px solid var(--border-subtle)" }}>
+      style={{ backgroundColor: "var(--bg-surface)", borderBottom: "1px solid var(--border)" }}>
       <span className="text-[11px] font-semibold uppercase tracking-widest mr-1 shrink-0" style={{ color: "var(--text-muted)" }}>
         Editing
       </span>

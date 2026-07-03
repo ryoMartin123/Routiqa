@@ -12,7 +12,7 @@ import Link from "next/link";
 import {
   Phone, MessageSquare, Navigation, Camera, User, Clock, MapPin, AlertTriangle,
   FileText, ClipboardCheck, Wrench, ChevronRight, Briefcase, CheckCircle2, Circle,
-  Plus, X, StickyNote, Package, CheckSquare, Flag, Play,
+  Plus, X, StickyNote, Package, CheckSquare, Flag, Play, DollarSign, Trash2,
 } from "lucide-react";
 import MobileHeader from "@/components/mobile/MobileHeader";
 import { Section, Card, DetailRow, StatusChip, EmptyState, prettyType, ACCENT } from "@/components/mobile/ui";
@@ -22,7 +22,10 @@ import { getCustomer } from "@/lib/customers/data";
 import { getFiles } from "@/lib/files/data";
 import { getJobPhotoChecklist, checklistProgress } from "@/lib/files/checklist";
 import PhotoCapture from "@/components/mobile/PhotoCapture";
-import { primaryAction, secondaryActions, setMyJobStatus } from "@/lib/mobile/data";
+import BottomSheet from "@/components/mobile/BottomSheet";
+import { primaryAction, secondaryActions, setMyJobStatus, getMobileCaps, getCurrentTech } from "@/lib/mobile/data";
+import { getJobMaterials, addJobMaterial, removeJobMaterial } from "@/lib/mobile/materials";
+import { getAllInvoices, recordPayment, type InvoiceRecord } from "@/lib/quotes/data";
 
 const PRIMARY_ICON: Partial<Record<JobStatus, React.ElementType>> = {
   en_route: Flag, in_progress: CheckCircle2, waiting_on_parts: Play, waiting_on_customer: Play,
@@ -34,6 +37,9 @@ export default function JobDetailPage() {
   const [tick, setTick] = useState(0);
   const [capture, setCapture] = useState(false);
   const [qa, setQa] = useState(false);
+  const [matSheet, setMatSheet] = useState(false);
+  const [paySheet, setPaySheet] = useState<InvoiceRecord | null>(null);
+  const caps = useMemo(() => getMobileCaps(), []);
   // eslint-disable-next-line react-hooks/exhaustive-deps -- tick forces a re-read after a status change
   const job = useMemo(() => getJob(id), [id, tick]);
   const customer = useMemo(() => (job ? getCustomer(job.accountId) : undefined), [job]);
@@ -43,6 +49,10 @@ export default function JobDetailPage() {
   const photos = useMemo(() => (job ? getFiles({ jobId: job.id }) : []), [job, tick]);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const checklist = useMemo(() => (job ? getJobPhotoChecklist(job.id, job.type) : []), [job, tick]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const materials = useMemo(() => (job ? getJobMaterials(job.id) : []), [job, tick]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const invoices = useMemo(() => (job && caps.invoicesView ? getAllInvoices().filter(i => i.jobId === job.id) : []), [job, tick]);
 
   if (!job) {
     return (<div><MobileHeader title="Job" back /><EmptyState icon={Briefcase} title="Job not found" hint="It may have been removed or reassigned." /></div>);
@@ -63,7 +73,7 @@ export default function JobDetailPage() {
       <MobileHeader title={job.customerName} subtitle={prettyType(job.type)} back
         right={<div className="flex items-center gap-1.5">
           <StatusChip status={job.status} />
-          <button onClick={() => setQa(true)} aria-label="Quick actions" className="w-8 h-8 rounded-full flex items-center justify-center active:scale-95 transition-transform" style={{ backgroundColor: "var(--bg-surface-2)", color: "var(--text-secondary)", border: "1px solid var(--border-subtle)" }}><Plus className="w-4 h-4" /></button>
+          <button onClick={() => setQa(true)} aria-label="Quick actions" className="w-8 h-8 rounded-full flex items-center justify-center active:scale-95 transition-transform" style={{ backgroundColor: "var(--bg-surface-2)", color: "var(--text-secondary)", border: "1px solid var(--border)" }}><Plus className="w-4 h-4" /></button>
         </div>} />
 
       <div className="px-4 space-y-5" style={{ paddingBottom: hasBottom ? 132 : 24 }}>
@@ -89,12 +99,12 @@ export default function JobDetailPage() {
           </Card>
         </Section>
 
-        {/* Notes */}
-        {(job.description || customer?.notes) && (
+        {/* Notes — internal customer notes only for roles the CRM grants the mask */}
+        {(job.description || (caps.internalNotes && customer?.notes)) && (
           <Section title="Notes">
             <Card className="p-4 space-y-3">
               {job.description && <div><p className="text-[11px] uppercase tracking-wider mb-1" style={{ color: "var(--text-muted)" }}>Job</p><p className="text-sm" style={{ color: "var(--text-primary)" }}>{job.description}</p></div>}
-              {customer?.notes && <div><p className="text-[11px] uppercase tracking-wider mb-1" style={{ color: "var(--text-muted)" }}>Customer</p><p className="text-sm" style={{ color: "var(--text-secondary)" }}>{customer.notes}</p></div>}
+              {caps.internalNotes && customer?.notes && <div><p className="text-[11px] uppercase tracking-wider mb-1" style={{ color: "var(--text-muted)" }}>Internal · customer</p><p className="text-sm" style={{ color: "var(--text-secondary)" }}>{customer.notes}</p></div>}
             </Card>
           </Section>
         )}
@@ -119,7 +129,7 @@ export default function JobDetailPage() {
               <Camera className="w-6 h-6" style={{ color: ACCENT }} /><span className="text-[11px] font-medium" style={{ color: ACCENT }}>Add</span>
             </button>
             {photos.map(p => (
-              <div key={p.id} className="relative aspect-square rounded-2xl flex items-center justify-center overflow-hidden" style={{ border: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+              <div key={p.id} className="relative aspect-square rounded-2xl flex items-center justify-center overflow-hidden" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)" }}>
                 {p.previewUrl
                   // eslint-disable-next-line @next/next/no-img-element
                   ? <img src={p.previewUrl} alt="" className="w-full h-full object-cover" />
@@ -137,7 +147,7 @@ export default function JobDetailPage() {
           ) : (
             <Card>
               {tasks.map((t, i) => (
-                <div key={t.id} className="flex items-center gap-3 px-4 py-3" style={{ borderTop: i ? "1px solid var(--border-subtle)" : "none" }}>
+                <div key={t.id} className="flex items-center gap-3 px-4 py-3" style={{ borderTop: i ? "1px solid var(--border)" : "none" }}>
                   <ClipboardCheck className="w-4 h-4 shrink-0" style={{ color: t.status === "completed" ? "#16a34a" : "var(--text-muted)" }} />
                   <span className="text-sm flex-1" style={{ color: "var(--text-primary)", textDecoration: t.status === "completed" ? "line-through" : "none" }}>{t.title}</span>
                 </div>
@@ -146,22 +156,60 @@ export default function JobDetailPage() {
           )}
         </Section>
 
-        {/* Materials */}
-        <Section title="Materials & equipment">
+        {/* Materials — a real field log against this job */}
+        <Section title="Materials & equipment" action={materials.length > 0 ? <span className="text-xs" style={{ color: "var(--text-muted)" }}>{materials.length} logged</span> : undefined}>
           <Card>
-            <button className="w-full flex items-center gap-3 px-4 py-3.5 active:bg-[var(--bg-surface-2)]">
-              <Wrench className="w-4 h-4" style={{ color: "var(--text-muted)" }} /><span className="text-sm flex-1 text-left" style={{ color: "var(--text-primary)" }}>Log materials used</span><ChevronRight className="w-4 h-4" style={{ color: "var(--text-muted)" }} />
+            {materials.map((m, i) => (
+              <div key={m.id} className="flex items-center gap-3 px-4 py-3" style={{ borderTop: i ? "1px solid var(--border)" : "none" }}>
+                <Package className="w-4 h-4 shrink-0" style={{ color: "var(--text-muted)" }} />
+                <span className="text-sm flex-1 truncate" style={{ color: "var(--text-primary)" }}>{m.name}</span>
+                <span className="text-sm tabular-nums" style={{ color: "var(--text-secondary)" }}>× {m.qty}</span>
+                <button onClick={() => { removeJobMaterial(job.id, m.id); setTick(t => t + 1); }} aria-label={`Remove ${m.name}`} className="p-1.5 -mr-1.5 active:opacity-60">
+                  <Trash2 className="w-4 h-4" style={{ color: "var(--text-muted)" }} />
+                </button>
+              </div>
+            ))}
+            <button onClick={() => setMatSheet(true)} className="w-full flex items-center gap-3 px-4 py-3.5 active:bg-[var(--bg-surface-2)]" style={{ borderTop: materials.length ? "1px solid var(--border)" : "none" }}>
+              <Wrench className="w-4 h-4" style={{ color: ACCENT }} /><span className="text-sm flex-1 text-left font-medium" style={{ color: ACCENT }}>Log materials used</span><ChevronRight className="w-4 h-4" style={{ color: "var(--text-muted)" }} />
             </button>
-            <button className="w-full flex items-center gap-3 px-4 py-3.5 active:bg-[var(--bg-surface-2)]" style={{ borderTop: "1px solid var(--border-subtle)" }}>
-              <FileText className="w-4 h-4" style={{ color: "var(--text-muted)" }} /><span className="text-sm flex-1 text-left" style={{ color: "var(--text-primary)" }}>System / equipment info</span><ChevronRight className="w-4 h-4" style={{ color: "var(--text-muted)" }} />
-            </button>
+            {caps.customersView && (
+              <Link href={`/mobile/customers/${job.accountId}`} className="w-full flex items-center gap-3 px-4 py-3.5 active:bg-[var(--bg-surface-2)]" style={{ borderTop: "1px solid var(--border)" }}>
+                <FileText className="w-4 h-4" style={{ color: "var(--text-muted)" }} /><span className="text-sm flex-1 text-left" style={{ color: "var(--text-primary)" }}>Customer, property &amp; equipment</span><ChevronRight className="w-4 h-4" style={{ color: "var(--text-muted)" }} />
+              </Link>
+            )}
           </Card>
         </Section>
+
+        {/* Financials — only when the CRM reveals totals to this role */}
+        {caps.financials && (job.estimatedAmount || invoices.length > 0) && (
+          <Section title="Financials">
+            <Card>
+              {job.estimatedAmount && <DetailRow icon={DollarSign} label="Estimated" value={job.estimatedAmount} />}
+              {invoices.map(inv => (
+                <div key={inv.id} className="px-4 py-3" style={{ borderTop: "1px solid var(--border)" }}>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold truncate" style={{ color: "var(--text-primary)" }}>{inv.invoiceNumber} · ${inv.total.toLocaleString("en-US")}</p>
+                      <p className="text-xs capitalize" style={{ color: inv.balanceDue > 0 ? "#d97706" : "#16a34a" }}>
+                        {inv.balanceDue > 0 ? `$${inv.balanceDue.toLocaleString("en-US")} due` : inv.status.replace(/_/g, " ")}
+                      </p>
+                    </div>
+                    {caps.collectPayments && inv.balanceDue > 0 && (
+                      <button onClick={() => setPaySheet(inv)} className="shrink-0 px-3 py-2 rounded-xl text-[13px] font-bold text-white active:scale-95 transition-transform" style={{ backgroundColor: "#16a34a" }}>
+                        Collect payment
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </Card>
+          </Section>
+        )}
       </div>
 
       {/* One sticky, status-based primary action */}
       {hasBottom && (
-        <div className="fixed left-0 right-0 bottom-0 z-40 px-4 pt-3" style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 0.85rem)", backgroundColor: "var(--bg-page)", borderTop: "1px solid var(--border-subtle)", boxShadow: "0 -8px 24px -12px rgba(0,0,0,0.3)" }}>
+        <div className="fixed left-0 right-0 bottom-0 z-40 px-4 pt-3" style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 0.85rem)", backgroundColor: "var(--bg-page)", borderTop: "1px solid var(--border)", boxShadow: "0 -8px 24px -12px rgba(0,0,0,0.3)" }}>
           {startRoute ? (
             <Link href={`/mobile/navigate/${job.id}`} className="w-full min-h-[54px] rounded-2xl flex items-center justify-center gap-2 text-base font-bold text-white active:scale-[0.99] transition-transform" style={{ backgroundColor: ACCENT, boxShadow: `0 10px 28px -10px ${ACCENT}` }}>
               <Navigation className="w-5 h-5" /> Start Route
@@ -187,7 +235,75 @@ export default function JobDetailPage() {
 
       <PhotoCapture open={capture} onClose={() => setCapture(false)} accountId={job.accountId} accountName={job.customerName}
         jobId={job.id} defaultCategory={checklist.find(c => !c.captured)?.key} onSaved={() => setTick(t => t + 1)} />
+
+      <MaterialSheet open={matSheet} onClose={() => setMatSheet(false)} jobId={job.id} onSaved={() => setTick(t => t + 1)} />
+      {caps.collectPayments && <PaymentSheet invoice={paySheet} onClose={() => setPaySheet(null)} onSaved={() => setTick(t => t + 1)} />}
     </div>
+  );
+}
+
+// Log a material/part against the job (name + qty) — writes the field store.
+function MaterialSheet({ open, onClose, jobId, onSaved }: { open: boolean; onClose: () => void; jobId: string; onSaved: () => void }) {
+  const [name, setName] = useState("");
+  const [qty, setQty] = useState(1);
+  const save = () => {
+    if (!name.trim()) return;
+    addJobMaterial(jobId, name, qty, getCurrentTech().fullName);
+    setName(""); setQty(1); onSaved(); onClose();
+  };
+  return (
+    <BottomSheet open={open} onClose={onClose} title="Log material" subtitle="Recorded on this job for the office">
+      <div className="space-y-3 pb-2">
+        <input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. 40/5 µF dual run capacitor" autoFocus={open}
+          className="w-full rounded-xl px-3.5 py-3 text-[15px] outline-none"
+          style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-input)", color: "var(--text-primary)" }} />
+        <div className="flex items-center gap-3">
+          <span className="text-sm font-medium flex-1" style={{ color: "var(--text-secondary)" }}>Quantity</span>
+          <div className="flex items-center rounded-xl" style={{ border: "1px solid var(--border)" }}>
+            <button onClick={() => setQty(q => Math.max(1, q - 1))} className="px-4 py-2.5 text-lg active:opacity-60" style={{ color: "var(--text-secondary)" }}>−</button>
+            <span className="w-8 text-center text-[15px] font-semibold tabular-nums" style={{ color: "var(--text-primary)" }}>{qty}</span>
+            <button onClick={() => setQty(q => q + 1)} className="px-4 py-2.5 text-lg active:opacity-60" style={{ color: "var(--text-secondary)" }}>+</button>
+          </div>
+        </div>
+        <button onClick={save} disabled={!name.trim()}
+          className="w-full min-h-[50px] rounded-2xl text-base font-bold text-white active:scale-[0.99] transition-transform disabled:opacity-40"
+          style={{ backgroundColor: ACCENT }}>
+          Add to job
+        </button>
+      </div>
+    </BottomSheet>
+  );
+}
+
+// Collect a payment on an open invoice — records through the CRM store, so the
+// office sees the invoice settle immediately. Only rendered for roles the CRM
+// grants payments.create.
+function PaymentSheet({ invoice, onClose, onSaved }: { invoice: InvoiceRecord | null; onClose: () => void; onSaved: () => void }) {
+  const [amount, setAmount] = useState("");
+  const balance = invoice?.balanceDue ?? 0;
+  const parsed = Math.min(balance, Number(amount) || 0);
+  const collect = () => {
+    if (!invoice || parsed <= 0) return;
+    recordPayment(invoice.id, parsed);
+    setAmount(""); onSaved(); onClose();
+  };
+  return (
+    <BottomSheet open={!!invoice} onClose={onClose} title="Collect payment" subtitle={invoice ? `${invoice.invoiceNumber} · $${balance.toLocaleString("en-US")} due` : undefined}>
+      <div className="space-y-3 pb-2">
+        <div className="flex items-center gap-2 rounded-xl px-3.5" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-input)" }}>
+          <span className="text-lg font-semibold" style={{ color: "var(--text-muted)" }}>$</span>
+          <input value={amount} onChange={e => setAmount(e.target.value.replace(/[^0-9.]/g, ""))} placeholder={String(balance)}
+            inputMode="decimal" className="flex-1 py-3 text-lg font-semibold outline-none bg-transparent" style={{ color: "var(--text-primary)" }} />
+          <button onClick={() => setAmount(String(balance))} className="text-xs font-bold active:opacity-60" style={{ color: ACCENT }}>Full balance</button>
+        </div>
+        <button onClick={collect} disabled={parsed <= 0}
+          className="w-full min-h-[50px] rounded-2xl flex items-center justify-center gap-2 text-base font-bold text-white active:scale-[0.99] transition-transform disabled:opacity-40"
+          style={{ backgroundColor: "#16a34a" }}>
+          <DollarSign className="w-5 h-5" /> Collect {parsed > 0 ? `$${parsed.toLocaleString("en-US")}` : "payment"}
+        </button>
+        <p className="text-[11px] text-center" style={{ color: "var(--text-muted)" }}>Marks the invoice paid in the office instantly.</p>
+      </div>
+    </BottomSheet>
   );
 }
 
@@ -213,7 +329,7 @@ function QuickSheet({ open, onClose, onPhoto, onTask }: { open: boolean; onClose
     <div className={`fixed inset-0 z-[60] flex flex-col justify-end ${open ? "" : "pointer-events-none"}`} onClick={onClose}>
       <div className="absolute inset-0 transition-opacity duration-300" style={{ backgroundColor: "rgba(0,0,0,0.45)", opacity: open ? 1 : 0 }} />
       <div onClick={e => e.stopPropagation()} className="relative rounded-t-3xl p-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] transition-transform duration-300"
-        style={{ transform: open ? "translateY(0)" : "translateY(110%)", transitionTimingFunction: open ? "cubic-bezier(0.22,1,0.36,1)" : "cubic-bezier(0.55,0,1,0.45)", backgroundColor: "var(--bg-surface)", borderTop: "1px solid var(--border-subtle)", boxShadow: "0 -16px 48px rgba(0,0,0,0.35)" }}>
+        style={{ transform: open ? "translateY(0)" : "translateY(110%)", transitionTimingFunction: open ? "cubic-bezier(0.22,1,0.36,1)" : "cubic-bezier(0.55,0,1,0.45)", backgroundColor: "var(--bg-surface)", borderTop: "1px solid var(--border)", boxShadow: "0 -16px 48px rgba(0,0,0,0.35)" }}>
         <div className="w-9 h-1 rounded-full mx-auto mb-3" style={{ backgroundColor: "var(--border)" }} />
         <div className="flex items-center justify-between mb-3">
           <p className="text-base font-bold" style={{ color: "var(--text-primary)" }}>Quick actions</p>
@@ -221,7 +337,7 @@ function QuickSheet({ open, onClose, onPhoto, onTask }: { open: boolean; onClose
         </div>
         <div className="grid grid-cols-3 gap-2.5">
           {ACTIONS.map(a => (
-            <button key={a.label} onClick={a.onClick} className="flex flex-col items-center gap-2 py-3.5 rounded-2xl active:scale-[0.97] transition-transform" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border-subtle)" }}>
+            <button key={a.label} onClick={a.onClick} className="flex flex-col items-center gap-2 py-3.5 rounded-2xl active:scale-[0.97] transition-transform" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}>
               <span className="w-11 h-11 rounded-full flex items-center justify-center" style={{ backgroundColor: a.color + "1a" }}><a.icon className="w-5 h-5" style={{ color: a.color }} /></span>
               <span className="text-[11px] font-medium text-center leading-tight" style={{ color: "var(--text-primary)" }}>{a.label}</span>
             </button>

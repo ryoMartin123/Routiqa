@@ -35,7 +35,7 @@ export function JobCard({ job }: { job: Job }) {
   const area = areaOf(job.propertyAddress);
   return (
     <Link href={`/mobile/jobs/${job.id}`} className="block rounded-2xl p-3.5 active:scale-[0.99] transition-transform"
-      style={{ border: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface)", boxShadow: "var(--shadow-glow)" }}>
+      style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface)", boxShadow: "var(--shadow-card)" }}>
       <div className="flex items-center justify-between gap-2">
         <span className="text-sm font-semibold tabular-nums" style={{ color: "var(--text-secondary)" }}>{job.scheduledTime || "Unscheduled"}</span>
         <StatusChip status={job.status} />
@@ -70,7 +70,7 @@ export function Section({ title, action, children }: { title: string; action?: R
 
 export function Card({ children, className = "", style }: { children: React.ReactNode; className?: string; style?: React.CSSProperties }) {
   return (
-    <div className={`rounded-2xl ${className}`} style={{ border: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface)", boxShadow: "var(--shadow-glow)", ...style }}>
+    <div className={`rounded-2xl ${className}`} style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface)", boxShadow: "var(--shadow-card)", ...style }}>
       {children}
     </div>
   );
@@ -78,7 +78,7 @@ export function Card({ children, className = "", style }: { children: React.Reac
 
 export function DetailRow({ icon: Icon, label, value }: { icon?: React.ElementType; label: string; value: React.ReactNode }) {
   return (
-    <div className="flex items-start gap-3 px-4 py-3" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+    <div className="flex items-start gap-3 px-4 py-3" style={{ borderTop: "1px solid var(--border)" }}>
       {Icon && <Icon className="w-4 h-4 mt-0.5 shrink-0" style={{ color: "var(--text-muted)" }} />}
       <div className="min-w-0 flex-1">
         <p className="text-[11px] uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>{label}</p>
@@ -119,7 +119,7 @@ export function BigButton({ label, icon: Icon, tone = "primary", href, onClick }
 // Compact icon action (call / message / directions row).
 export function QuickAction({ icon: Icon, label, href, onClick }: { icon: React.ElementType; label: string; href?: string; onClick?: () => void }) {
   const cls = "flex-1 flex flex-col items-center gap-1.5 py-3 rounded-2xl active:scale-[0.97] transition-transform";
-  const style = { border: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface)", boxShadow: "var(--shadow-glow)" } as React.CSSProperties;
+  const style = { border: "1px solid var(--border)", backgroundColor: "var(--bg-surface)", boxShadow: "var(--shadow-card)" } as React.CSSProperties;
   const inner = <>
     <Icon className="w-5 h-5" style={{ color: ACCENT }} />
     <span className="text-[11px] font-medium" style={{ color: "var(--text-secondary)" }}>{label}</span>

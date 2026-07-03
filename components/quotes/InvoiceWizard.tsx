@@ -202,7 +202,7 @@ export default function InvoiceWizard({ preset, editInvoice, onClose, onCreated 
         style={{ backgroundColor: "var(--bg-surface)", boxShadow: "0 16px 48px rgba(0,0,0,0.24)" }}>
 
         {/* Header + stepper */}
-        <div className="px-6 pt-4 pb-3 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+        <div className="px-6 pt-4 pb-3 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
           <div className="flex items-center justify-between mb-3">
             <p className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>{editInvoice ? "Edit Invoice" : "New Invoice"}</p>
             <button onClick={onClose} style={{ color: "var(--text-muted)" }}><X className="w-4 h-4" /></button>
@@ -274,7 +274,7 @@ export default function InvoiceWizard({ preset, editInvoice, onClose, onCreated 
                     const lineTotal = (parseFloat(it.quantity) || 0) * (parseFloat(it.unitPrice) || 0);
                     const lineMargin = (((parseFloat(it.unitPrice) || 0) - (it.unitCost ?? 0)) * (parseFloat(it.quantity) || 0));
                     return (
-                      <div key={it.id} className="rounded-xl p-3 space-y-2" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border-subtle)" }}>
+                      <div key={it.id} className="rounded-xl p-3 space-y-2" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}>
                         {it.itemId && (
                           <div className="flex items-center gap-1 text-[10px] font-semibold" style={{ color: "var(--accent-text)" }}>
                             <Tag className="w-2.5 h-2.5" /> From catalog
@@ -323,7 +323,7 @@ export default function InvoiceWizard({ preset, editInvoice, onClose, onCreated 
                   <textarea value={customerNotes} onChange={ev => setCustomerNotes(ev.target.value)} rows={3}
                     className="w-full rounded-lg px-3 py-2 text-xs outline-none resize-none thin-scroll-y" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface)", color: "var(--text-primary)" }} />
                 </div>
-                <div className="rounded-xl p-3 space-y-1.5 self-end" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border-subtle)" }}>
+                <div className="rounded-xl p-3 space-y-1.5 self-end" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}>
                   <div className="flex items-center justify-between"><span className="text-xs" style={{ color: "var(--text-muted)" }}>Subtotal</span><span className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{fmt(totals.subtotal)}</span></div>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2"><span className="text-xs" style={{ color: "var(--text-muted)" }}>Tax</span>
@@ -333,7 +333,7 @@ export default function InvoiceWizard({ preset, editInvoice, onClose, onCreated 
                     </div>
                     <span className="text-sm" style={{ color: "var(--text-secondary)" }}>{fmt(totals.tax)}</span>
                   </div>
-                  <div className="flex items-center justify-between pt-1.5" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+                  <div className="flex items-center justify-between pt-1.5" style={{ borderTop: "1px solid var(--border)" }}>
                     <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Total</span>
                     <span className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>{fmt(totals.total)}</span>
                   </div>
@@ -375,7 +375,7 @@ export default function InvoiceWizard({ preset, editInvoice, onClose, onCreated 
         </div>
 
         {/* Footer nav */}
-        <div className="px-6 py-4 flex items-center justify-between shrink-0" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+        <div className="px-6 py-4 flex items-center justify-between shrink-0" style={{ borderTop: "1px solid var(--border)" }}>
           <button onClick={() => (step === 1 ? onClose() : setStep(s => s - 1))}
             className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>
             <ChevronLeft className="w-4 h-4" /> {step === 1 ? "Cancel" : "Back"}

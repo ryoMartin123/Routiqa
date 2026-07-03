@@ -279,7 +279,7 @@ export default function CommentsDrawer() {
         style={{ backgroundColor: "var(--bg-surface)", borderLeft: "1px solid var(--border)", boxShadow: "-16px 0 48px rgba(0,0,0,0.18)" }}>
 
         {/* Header */}
-        <div className="flex items-start justify-between gap-3 px-5 py-4 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+        <div className="flex items-start justify-between gap-3 px-5 py-4 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <MessageSquare className="w-4 h-4" style={{ color: "var(--warning-icon)" }} />
@@ -308,7 +308,7 @@ export default function CommentsDrawer() {
         </div>
 
         {/* Composer for the targeted anchor */}
-        <div className="px-5 py-4 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+        <div className="px-5 py-4 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
           <Composer users={users} autoFocus
             placeholder={soloPinLabel ? `Reply to pin ${soloPinLabel}…` : `Comment on ${scope.subLabel ?? scope.section ?? scope.recordLabel}…`}
             onSubmit={postRoot} />
@@ -385,7 +385,7 @@ function ThreadCard({ t, users, replyTo, setReplyTo, onReply, onResolve, onDelet
   const count = threadCommentCount(t);
   return (
     <div data-thread={t.root.id} className="rounded-xl p-3.5 space-y-3"
-      style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border-subtle)" }}>
+      style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}>
       {/* Pin badge — the letter identifies which marker this thread belongs to,
           the number is its comment count; in the all-on-page view, clicking it
           focuses just that pin. */}
@@ -408,7 +408,7 @@ function ThreadCard({ t, users, replyTo, setReplyTo, onReply, onResolve, onDelet
           <Composer users={users} autoFocus placeholder="Reply…" onSubmit={(b, m) => onReply(t.root.id, b, m)} />
         </div>
       ) : (
-        <div className="flex items-center gap-1 pt-1" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+        <div className="flex items-center gap-1 pt-1" style={{ borderTop: "1px solid var(--border)" }}>
           <ThreadAction icon={CornerDownRight} label="Reply" onClick={() => setReplyTo(t.root.id)} />
           <ThreadAction icon={ListPlus} label="Task" onClick={onTask} />
           <ThreadAction icon={Check} label={t.root.resolved ? "Reopen" : "Resolve"} onClick={() => onResolve(t.root.id, !t.root.resolved)} />

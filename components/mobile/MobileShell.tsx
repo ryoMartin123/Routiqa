@@ -50,12 +50,12 @@ export default function MobileShell({ children }: { children: React.ReactNode })
 
   // Focused screen — render children only; the page provides its own bottom action.
   if (isFocused(pathname)) {
-    return <div className="min-h-[100dvh]" style={{ backgroundColor: "var(--bg-page)" }}>{reporter}{page}</div>;
+    return <div className="mobile-native min-h-[100dvh]" style={{ backgroundColor: "var(--bg-page)" }}>{reporter}{page}</div>;
   }
 
   if (exp === "full") {
     return (
-      <div className="min-h-[100dvh] flex flex-col" style={{ backgroundColor: "var(--bg-page)" }}>
+      <div className="mobile-native min-h-[100dvh] flex flex-col" style={{ backgroundColor: "var(--bg-page)" }}>
         {reporter}
         <main className="flex-1" style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 88px)" }}>{page}</main>
         <MobileCommandBar />
@@ -65,7 +65,7 @@ export default function MobileShell({ children }: { children: React.ReactNode })
 
   // Technician field experience — floating bottom nav.
   return (
-    <div className="min-h-[100dvh] flex flex-col" style={{ backgroundColor: "var(--bg-page)" }}>
+    <div className="mobile-native min-h-[100dvh] flex flex-col" style={{ backgroundColor: "var(--bg-page)" }}>
       {reporter}
       <main className="flex-1" style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 92px)" }}>{page}</main>
       <BottomNav />

@@ -78,7 +78,7 @@ export default function TeamWorkspaceDashboard() {
         <Panel title="Channels" icon={MessagesSquare} accent="#0ea5e9" href="/team-workspace/channels">
           <div className="grid grid-cols-2 gap-2">
             {channels.map(c => (
-              <div key={c.id} className="flex items-center justify-between gap-2 rounded-lg px-2.5 py-2" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border-subtle)" }}>
+              <div key={c.id} className="flex items-center justify-between gap-2 rounded-lg px-2.5 py-2" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}>
                 <span className="flex items-center gap-1.5 min-w-0">
                   <MessagesSquare className="w-3.5 h-3.5 shrink-0" style={{ color: "var(--text-muted)" }} />
                   <span className="text-xs font-medium truncate" style={{ color: "var(--text-primary)" }}>{c.name}</span>

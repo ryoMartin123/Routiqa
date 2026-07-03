@@ -102,7 +102,7 @@ export default function CreateDocumentModal({
       <div className="w-full max-w-2xl max-h-[90vh] flex flex-col rounded-2xl overflow-hidden" onClick={e => e.stopPropagation()}
         style={{ backgroundColor: "var(--bg-surface)", boxShadow: "0 16px 48px rgba(0,0,0,0.24)" }}>
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+        <div className="flex items-center justify-between px-6 py-4 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
           <p className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>
             New {isQuote ? "Quote" : "Invoice"}
           </p>
@@ -149,7 +149,7 @@ export default function CreateDocumentModal({
               {items.map(it => {
                 const lineTotal = (parseFloat(it.quantity) || 0) * (parseFloat(it.unitPrice) || 0);
                 return (
-                  <div key={it.id} className="rounded-xl p-3 space-y-2" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border-subtle)" }}>
+                  <div key={it.id} className="rounded-xl p-3 space-y-2" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}>
                     <div className="flex items-center gap-2">
                       <input value={it.name} onChange={e => setItem(it.id, { name: e.target.value })} placeholder="Item name"
                         className="flex-1 rounded-lg px-2.5 py-1.5 text-sm outline-none" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface)", color: "var(--text-primary)" }} />
@@ -185,7 +185,7 @@ export default function CreateDocumentModal({
           </div>
 
           {/* Totals */}
-          <div className="rounded-xl p-3 space-y-1.5" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border-subtle)" }}>
+          <div className="rounded-xl p-3 space-y-1.5" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}>
             <div className="flex items-center justify-between">
               <span className="text-xs" style={{ color: "var(--text-muted)" }}>Subtotal</span>
               <span className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{fmt(totals.subtotal)}</span>
@@ -199,7 +199,7 @@ export default function CreateDocumentModal({
               </div>
               <span className="text-sm" style={{ color: "var(--text-secondary)" }}>{fmt(totals.tax)}</span>
             </div>
-            <div className="flex items-center justify-between pt-1.5" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+            <div className="flex items-center justify-between pt-1.5" style={{ borderTop: "1px solid var(--border)" }}>
               <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Total</span>
               <span className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>{fmt(totals.total)}</span>
             </div>
@@ -207,7 +207,7 @@ export default function CreateDocumentModal({
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 flex justify-end gap-2 shrink-0" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+        <div className="px-6 py-4 flex justify-end gap-2 shrink-0" style={{ borderTop: "1px solid var(--border)" }}>
           <button onClick={onClose} className="px-3 py-2 rounded-lg text-sm" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>Cancel</button>
           <button onClick={handleCreate} disabled={!canCreate}
             className="px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-40" style={{ backgroundColor: "#4f46e5" }}>

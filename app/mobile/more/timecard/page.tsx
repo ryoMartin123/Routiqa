@@ -17,7 +17,7 @@ export default function TimeCardPage() {
       <MobileHeader title="Time Card" back />
       <div className="px-4 space-y-5">
         <button onClick={() => setClock(toggleClock())} className="w-full rounded-2xl p-4 flex items-center gap-3 text-left active:scale-[0.99] transition-transform"
-          style={{ border: `1px solid ${clock.in ? "#16a34a55" : "var(--border-subtle)"}`, backgroundColor: clock.in ? "#16a34a14" : "var(--bg-surface)", boxShadow: "var(--shadow-glow)" }}>
+          style={{ border: `1px solid ${clock.in ? "#16a34a55" : "var(--border-subtle)"}`, backgroundColor: clock.in ? "#16a34a14" : "var(--bg-surface)", boxShadow: "var(--shadow-card)" }}>
           <span className="w-11 h-11 rounded-full flex items-center justify-center" style={{ backgroundColor: (clock.in ? "#16a34a" : ACCENT) + "1a" }}><Clock className="w-5 h-5" style={{ color: clock.in ? "#16a34a" : ACCENT }} /></span>
           <div className="flex-1 min-w-0">
             <p className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>{clock.in ? "Clocked in" : "Clocked out"}</p>
@@ -34,7 +34,7 @@ export default function TimeCardPage() {
         <Section title="This week">
           <Card>
             {tc.entries.map((e, i) => (
-              <div key={e.id} className="flex items-center gap-3 px-4 py-3" style={{ borderTop: i ? "1px solid var(--border-subtle)" : "none" }}>
+              <div key={e.id} className="flex items-center gap-3 px-4 py-3" style={{ borderTop: i ? "1px solid var(--border)" : "none" }}>
                 <div className="w-10 text-center shrink-0">
                   <p className="text-[10px] uppercase" style={{ color: "var(--text-muted)" }}>{e.label}</p>
                   <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>{e.date}</p>

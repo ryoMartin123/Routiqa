@@ -50,7 +50,7 @@ export default function AgreementBuilderShell({ mode, agreementId, initialTempla
   return (
     <div className="flex flex-col min-h-screen" style={{ backgroundColor: "var(--bg-app)" }}>
       {/* Header / actions */}
-      <div className="sticky top-0 z-20 px-6 py-3 flex items-center gap-4" style={{ backgroundColor: "var(--bg-surface)", borderBottom: "1px solid var(--border-subtle)" }}>
+      <div className="sticky top-0 z-20 px-6 py-3 flex items-center gap-4" style={{ backgroundColor: "var(--bg-surface)", borderBottom: "1px solid var(--border)" }}>
         <button onClick={onClose} className="flex items-center gap-1.5 text-sm shrink-0" style={{ color: "var(--text-secondary)" }}>
           <ArrowLeft className="w-4 h-4" /> Agreements
         </button>
@@ -105,7 +105,7 @@ export default function AgreementBuilderShell({ mode, agreementId, initialTempla
 
         {/* Active section */}
         <div className="flex-1 min-w-0">
-          <div className="rounded-2xl p-6" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+          <div className="rounded-2xl p-6" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
             {active === "basic"    && <BasicInfoSection d={d} />}
             {active === "visits"   && <VisitScheduleSection d={d} />}
             {active === "services" && <ServiceScopeSection d={d} />}

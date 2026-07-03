@@ -97,6 +97,7 @@ export interface Quote {
   leadId?: string;
   projectId?: string;
   jobId?: string;
+  workOrderId?: string;    // set when the quote was raised from a field work order (upsell)
   agreementId?: string;
 
   quoteNumber: string;
@@ -146,6 +147,7 @@ export interface Invoice {
   propertyId?: string;
   projectId?: string;
   jobId?: string;
+  workOrderId?: string;    // set when the invoice was built from a field work order
   agreementId?: string;
 
   // Set if converted from a quote

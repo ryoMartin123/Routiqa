@@ -51,7 +51,7 @@ export default function MobileMarketingPage() {
           {campaigns.length === 0 ? <Card className="px-4 py-6"><EmptyState icon={Megaphone} title="No campaigns" /></Card> : (
             <Card>
               {campaigns.slice(0, 8).map((c, i) => (
-                <div key={c.id} className="flex items-center gap-3 px-4 py-3" style={{ borderTop: i ? "1px solid var(--border-subtle)" : "none" }}>
+                <div key={c.id} className="flex items-center gap-3 px-4 py-3" style={{ borderTop: i ? "1px solid var(--border)" : "none" }}>
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{c.name}</p>
                     <p className="text-xs truncate" style={{ color: "var(--text-muted)" }}>{c.stats?.delivered ? `${c.stats.delivered.toLocaleString()} delivered` : c.type}</p>

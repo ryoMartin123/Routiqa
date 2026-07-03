@@ -116,7 +116,7 @@ export default function ProjectWizard({ onClose, onCreated }: {
       <div className="w-full max-w-lg max-h-[92vh] flex flex-col rounded-2xl overflow-hidden" onClick={e => e.stopPropagation()}
         style={{ backgroundColor: "var(--bg-surface)", boxShadow: "0 16px 48px rgba(0,0,0,0.24)" }}>
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+        <div className="flex items-center justify-between px-6 py-4 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
           <div className="flex items-center gap-2 min-w-0">
             <FolderKanban className="w-4 h-4 shrink-0" style={{ color: "#4f46e5" }} />
             <div className="min-w-0">
@@ -159,7 +159,7 @@ export default function ProjectWizard({ onClose, onCreated }: {
               )}
 
               {target && (
-                <div className="rounded-xl p-3 flex items-center justify-between gap-3" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border-subtle)" }}>
+                <div className="rounded-xl p-3 flex items-center justify-between gap-3" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}>
                   <div className="min-w-0">
                     <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{target.customerName}</p>
                     <p className="text-[11px] truncate" style={{ color: "var(--text-muted)" }}>{target.locationName || "—"}</p>
@@ -172,7 +172,7 @@ export default function ProjectWizard({ onClose, onCreated }: {
 
           {step === 2 && target && (
             <>
-              <div className="rounded-xl p-3 flex items-center justify-between gap-3" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border-subtle)" }}>
+              <div className="rounded-xl p-3 flex items-center justify-between gap-3" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}>
                 <div className="min-w-0">
                   <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{target.customerName}</p>
                   <p className="text-[11px] truncate" style={{ color: "var(--text-muted)" }}>{mode === "lead" ? "From lead · will convert" : "Account"}{target.locationName ? ` · ${target.locationName}` : ""}</p>
@@ -198,7 +198,7 @@ export default function ProjectWizard({ onClose, onCreated }: {
               </div>
 
               {/* The type selects the project's Map workflow. */}
-              <div className="rounded-lg px-3 py-2 flex items-start gap-2" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border-subtle)" }}>
+              <div className="rounded-lg px-3 py-2 flex items-start gap-2" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}>
                 <FolderKanban className="w-3.5 h-3.5 mt-0.5 shrink-0" style={{ color: "#4f46e5" }} />
                 <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>
                   Creates the <span style={{ color: "#4f46e5", fontWeight: 600 }}>{templateForType(type).name}</span> workflow — milestones, linked records, and a connected project map.
@@ -239,7 +239,7 @@ export default function ProjectWizard({ onClose, onCreated }: {
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 flex justify-between gap-2 shrink-0" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+        <div className="px-6 py-4 flex justify-between gap-2 shrink-0" style={{ borderTop: "1px solid var(--border)" }}>
           <button onClick={() => (step === 2 ? setStep(1) : onClose())}
             className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>
             {step === 2 ? <><ChevronLeft className="w-3.5 h-3.5" /> Back</> : "Cancel"}

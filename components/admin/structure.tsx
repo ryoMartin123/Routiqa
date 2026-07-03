@@ -38,7 +38,7 @@ function SectionHeader({ title, subtitle, action }: { title: string; subtitle: s
 function Card({ children }: { children: React.ReactNode }) {
   return (
     <div className="rounded-xl p-5"
-      style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+      style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
       {children}
     </div>
   );
@@ -114,7 +114,7 @@ function ToggleRow({
 }) {
   return (
     <div className="flex items-center justify-between gap-4 py-3"
-      style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+      style={{ borderBottom: "1px solid var(--border)" }}>
       <div className="min-w-0">
         <div className="flex items-center gap-2">
           <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{label}</p>

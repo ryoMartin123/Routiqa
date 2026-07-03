@@ -156,7 +156,7 @@ const HUB_SECTIONS = new Set<SectionKey>(["agreements", "calendar_dispatch", "sa
 function Card({ children }: { children: React.ReactNode }) {
   return (
     <div className="rounded-xl p-5"
-      style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+      style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
       {children}
     </div>
   );
@@ -184,7 +184,7 @@ function SettingCard({ item, onClick }: { item: SettingItem; onClick: () => void
   return (
     <button onClick={onClick}
       className="flex items-start gap-3 p-4 rounded-xl text-left w-full transition-all group hover:shadow-md"
-      style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+      style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
       <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-colors"
         style={{ backgroundColor: "var(--bg-surface-2)" }}>
         <Icon className="w-4 h-4" style={{ color: "#4f46e5" }} />
@@ -247,7 +247,7 @@ function CategoryHome({ category, onSelect, onBack }: {
       </button>
       <div className="flex items-start gap-3">
         <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-          style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border-subtle)" }}>
+          style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}>
           <CatIcon className="w-5 h-5" style={{ color: "#4f46e5" }} />
         </div>
         <div>
@@ -392,7 +392,7 @@ export default function SettingsPage() {
       {/* ── Condensed category sidebar ── */}
       <div
         className="w-44 shrink-0 overflow-y-auto py-5 px-2 flex flex-col gap-0.5"
-        style={{ backgroundColor: "var(--bg-surface)", borderRight: "1px solid var(--border-subtle)" }}
+        style={{ backgroundColor: "var(--bg-surface)", borderRight: "1px solid var(--border)" }}
       >
         {/* Home / Settings label */}
         <button

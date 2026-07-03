@@ -40,7 +40,7 @@ export default function VisitsToSchedule() {
   return (
     <div className="rounded-xl overflow-hidden h-full min-h-0 flex flex-col"
       style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
-      <div className="flex items-center justify-between px-4 py-3 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+      <div className="flex items-center justify-between px-4 py-3 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
         <div className="flex items-center gap-2">
           <CalendarClock className="w-4 h-4" style={{ color: "#059669" }} />
           <h2 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Visits to Schedule</h2>
@@ -49,7 +49,7 @@ export default function VisitsToSchedule() {
       </div>
       <div className="flex-1 min-h-0 overflow-y-auto dashboard-widget-content">
         {items.map(({ agreement, visit }) => (
-          <div key={visit.id} className="flex items-center gap-3 px-4 py-3" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+          <div key={visit.id} className="flex items-center gap-3 px-4 py-3" style={{ borderBottom: "1px solid var(--border)" }}>
             <div className="min-w-0 flex-1">
               <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{agreement.customer}</p>
               <p className="text-xs mt-0.5 truncate" style={{ color: "var(--text-muted)" }}>{visit.label} · {visit.scheduled}</p>

@@ -212,7 +212,7 @@ export default function CompanySalesbookEditor({ sbId, onBack }: { sbId: string;
       </div>
 
       {/* ── Tab strip (shared list-page tab style) ─────── */}
-      <div className="pb-2" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+      <div className="pb-2" style={{ borderBottom: "1px solid var(--border)" }}>
         <StatusTabs active={tab} onChange={k => setTab(k as TabKey)}
           tabs={TABS.map(t => ({ key: t.key, label: t.label, icon: t.icon }))} />
       </div>
@@ -336,14 +336,14 @@ function SummaryPanel({ sb, original, accent, check }: {
   ];
   return (
     <aside className="hidden lg:block shrink-0 sticky self-start" style={{ width: "270px", top: "8px" }}>
-      <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
-        <div className="px-4 py-3" style={{ borderBottom: "1px solid var(--border-subtle)", background: `linear-gradient(135deg, ${accent}10, transparent)` }}>
+      <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
+        <div className="px-4 py-3" style={{ borderBottom: "1px solid var(--border)", background: `linear-gradient(135deg, ${accent}10, transparent)` }}>
           <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>Salesbook Summary</p>
           <p className="text-sm font-semibold mt-1 truncate" style={{ color: "var(--text-primary)" }}>{sb.name || "Untitled salesbook"}</p>
         </div>
         <div className="px-4 py-2">
           {rows.map(r => (
-            <div key={r.label} className="flex items-center justify-between gap-2 py-1.5 text-xs" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+            <div key={r.label} className="flex items-center justify-between gap-2 py-1.5 text-xs" style={{ borderBottom: "1px solid var(--border)" }}>
               <span style={{ color: "var(--text-muted)" }}>{r.label}</span>
               <span className="font-medium text-right" style={{ color: "var(--text-primary)" }}>{r.value}</span>
             </div>
@@ -411,7 +411,7 @@ function QuoteDesignTab({ sb, patch, onPreview }: { sb: DraftState; patch: (p: P
   return (
     <Card title="Quote Design" icon={Palette}
       subtitle="The complete customer-facing proposal — its layout, visual style, sections, and pricing presentation. Pick one design; you don't choose a layout family and style separately.">
-      <div className="rounded-xl overflow-hidden" style={{ border: "1px solid var(--border-subtle)" }}>
+      <div className="rounded-xl overflow-hidden" style={{ border: "1px solid var(--border)" }}>
         <div className="grid gap-4 p-4" style={{ gridTemplateColumns: "minmax(0, 240px) 1fr" }}>
           <QuoteDesignThumbnail design={design} height={150} />
           <div className="min-w-0 flex flex-col">
@@ -501,7 +501,7 @@ function SectionRow({ s, index, total, accent, onUpdate, onMove, onDuplicate, on
 }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="rounded-xl" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border-subtle)", opacity: s.visible ? 1 : 0.6 }}>
+    <div className="rounded-xl" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)", opacity: s.visible ? 1 : 0.6 }}>
       <div className="flex items-center gap-2 px-3 py-2">
         <span className="text-[10px] font-mono w-4 text-center shrink-0" style={{ color: "var(--text-muted)" }}>{index + 1}</span>
         <input value={s.label} onChange={e => onUpdate({ label: e.target.value })}
@@ -594,7 +594,7 @@ function OptionCardEditor({ o, index, total, accent, monthlyEnabled, media, onCh
 }) {
   const numOr = (s: string) => (s === "" ? 0 : parseFloat(s) || 0);
   return (
-    <div className="rounded-xl p-3 space-y-2" style={{ backgroundColor: "var(--bg-surface-2)", border: o.featured ? `1.5px solid ${accent}` : "1px solid var(--border-subtle)" }}>
+    <div className="rounded-xl p-3 space-y-2" style={{ backgroundColor: "var(--bg-surface-2)", border: o.featured ? `1.5px solid ${accent}` : "1px solid var(--border)" }}>
       {/* top bar: tier + reorder + actions */}
       <div className="flex items-center gap-1.5">
         <UiSelect size="sm" value={o.tier ?? ""} onChange={v => onChange({ tier: (v || undefined) as SalesbookOption["tier"] })}
@@ -618,7 +618,7 @@ function OptionCardEditor({ o, index, total, accent, monthlyEnabled, media, onCh
           {media.slice(0, 8).map(m => (
             // eslint-disable-next-line @next/next/no-img-element
             <img key={m.id} src={m.url} alt={m.caption ?? ""} onClick={() => onChange({ image: m.url })} title="Use this image"
-              className="w-7 h-7 rounded object-cover cursor-pointer" style={{ border: o.image === m.url ? `2px solid ${accent}` : "1px solid var(--border-subtle)" }} />
+              className="w-7 h-7 rounded object-cover cursor-pointer" style={{ border: o.image === m.url ? `2px solid ${accent}` : "1px solid var(--border)" }} />
           ))}
         </div>
       )}
@@ -692,7 +692,7 @@ function MediaTab({ sb, patch, accent }: { sb: DraftState; patch: (p: Partial<Dr
           {media.map(m => {
             const isCover = sb.coverImageId === m.id;
             return (
-              <div key={m.id} className="rounded-xl overflow-hidden flex flex-col" style={{ backgroundColor: "var(--bg-surface)", border: isCover ? `1.5px solid ${accent}` : "1px solid var(--border-subtle)" }}>
+              <div key={m.id} className="rounded-xl overflow-hidden flex flex-col" style={{ backgroundColor: "var(--bg-surface)", border: isCover ? `1.5px solid ${accent}` : "1px solid var(--border)" }}>
                 <div className="relative">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={m.url} alt={m.caption ?? ""} style={{ width: "100%", height: "110px", objectFit: "cover", display: "block" }} />
@@ -788,7 +788,7 @@ function PublishTab({ sb, patch, accent, check, onPreview, onSave }: {
         </div>
 
         {/* Publish checklist */}
-        <div className="rounded-xl p-4" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border-subtle)" }}>
+        <div className="rounded-xl p-4" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}>
           <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: "var(--text-muted)" }}>Publishing requirements</p>
           {check.ok ? (
             <div className="flex items-center gap-2 text-sm font-medium" style={{ color: "#059669" }}>
@@ -838,7 +838,7 @@ function PreviewModal({ sb, onClose }: { sb: DraftState; onClose: () => void }) 
   return (
     <div className="fixed inset-0 z-[70] flex flex-col" style={{ backgroundColor: "rgba(17,24,39,0.7)" }}>
       {/* Toolbar */}
-      <div className="flex items-center justify-between gap-3 px-5 py-3 shrink-0" style={{ backgroundColor: "var(--bg-surface)", borderBottom: "1px solid var(--border-subtle)" }}>
+      <div className="flex items-center justify-between gap-3 px-5 py-3 shrink-0" style={{ backgroundColor: "var(--bg-surface)", borderBottom: "1px solid var(--border)" }}>
         <div className="flex items-center gap-2 min-w-0">
           <Eye className="w-4 h-4 shrink-0" style={{ color: "var(--accent-text)" }} />
           <p className="text-sm font-semibold truncate" style={{ color: "var(--text-primary)" }}>{sb.name || "Proposal"} — Preview</p>
@@ -864,7 +864,7 @@ const inputStyle: React.CSSProperties = { border: "1px solid var(--border)", bac
 
 function Card({ title, icon: Icon, subtitle, action, children }: { title: string; icon: typeof FileText; subtitle?: string; action?: React.ReactNode; children: React.ReactNode }) {
   return (
-    <div className="rounded-xl p-5" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+    <div className="rounded-xl p-5" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
       <div className="flex items-start justify-between gap-3 mb-4">
         <div className="min-w-0">
           <p className="flex items-center gap-2 text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
@@ -885,7 +885,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 function Toggle({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) {
   return (
-    <label className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg cursor-pointer" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border-subtle)" }}>
+    <label className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg cursor-pointer" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}>
       <span className="text-sm" style={{ color: "var(--text-secondary)" }}>{label}</span>
       <input type="checkbox" checked={checked} onChange={e => onChange(e.target.checked)} className="accent-indigo-600 w-4 h-4" />
     </label>

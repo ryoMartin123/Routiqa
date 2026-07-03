@@ -35,7 +35,7 @@ export default function QuoteDesignsManager() {
 
   return (
     <div className="space-y-4">
-      <div className="rounded-xl p-3.5 flex items-start gap-2.5" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border-subtle)" }}>
+      <div className="rounded-xl p-3.5 flex items-start gap-2.5" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}>
         <Palette className="w-4 h-4 shrink-0 mt-0.5" style={{ color: "var(--accent-text)" }} />
         <p className="text-xs leading-relaxed" style={{ color: "var(--text-secondary)" }}>
           Choose what your customer-facing quote looks like. Each Quote Design is a complete proposal — its layout, visual style, sections, and pricing presentation. Your brand color &amp; logo (from <span style={{ fontWeight: 600 }}>Proposal Branding</span>) carry through every design. One design is active by default; salesbooks and quotes can pick their own.
@@ -86,7 +86,7 @@ function DesignCard({ d, active, onUse, onPreview }: { d: QuoteDesign; active: b
       </div>
 
       {/* Actions */}
-      <div className="px-4 py-3 flex items-center gap-2" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+      <div className="px-4 py-3 flex items-center gap-2" style={{ borderTop: "1px solid var(--border)" }}>
         <button onClick={onPreview} className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium"
           style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>
           <Eye className="w-3.5 h-3.5" /> Preview
@@ -125,7 +125,7 @@ function ScaledDoc({ children, height, docWidth = 816 }: { children: React.React
     return () => ro.disconnect();
   }, [docWidth]);
   return (
-    <div ref={ref} style={{ width: "100%", height: `${height}px`, overflow: "hidden", borderRadius: "8px", border: "1px solid var(--border-subtle)", backgroundColor: "#e5e7eb" }}>
+    <div ref={ref} style={{ width: "100%", height: `${height}px`, overflow: "hidden", borderRadius: "8px", border: "1px solid var(--border)", backgroundColor: "#e5e7eb" }}>
       <div style={{ transform: `scale(${scale})`, transformOrigin: "top left", width: `${docWidth}px`, pointerEvents: "none" }}>
         {children}
       </div>
@@ -146,7 +146,7 @@ export function QuoteDesignPreviewModal({ design, active, onClose, onUse }: {
   return (
     <div className="fixed inset-0 z-[80] flex flex-col" style={{ backgroundColor: "rgba(17,24,39,0.7)" }}>
       {/* Toolbar */}
-      <div className="flex items-center justify-between gap-3 px-5 py-3 shrink-0" style={{ backgroundColor: "var(--bg-surface)", borderBottom: "1px solid var(--border-subtle)" }}>
+      <div className="flex items-center justify-between gap-3 px-5 py-3 shrink-0" style={{ backgroundColor: "var(--bg-surface)", borderBottom: "1px solid var(--border)" }}>
         <div className="flex items-center gap-2 min-w-0">
           <Eye className="w-4 h-4 shrink-0" style={{ color: "var(--accent-text)" }} />
           <p className="text-sm font-semibold truncate" style={{ color: "var(--text-primary)" }}>{design.name}</p>
@@ -162,7 +162,7 @@ export function QuoteDesignPreviewModal({ design, active, onClose, onUse }: {
         </div>
       </div>
       {/* Preview As — mode switcher */}
-      <div className="flex items-center gap-2 px-5 py-2.5 shrink-0 flex-wrap" style={{ backgroundColor: "var(--bg-surface)", borderBottom: "1px solid var(--border-subtle)" }}>
+      <div className="flex items-center gap-2 px-5 py-2.5 shrink-0 flex-wrap" style={{ backgroundColor: "var(--bg-surface)", borderBottom: "1px solid var(--border)" }}>
         <span className="text-[11px] font-semibold uppercase tracking-widest shrink-0" style={{ color: "var(--text-muted)" }}>Preview as</span>
         {QUOTE_DESIGN_MODES_ORDER.map(m => {
           const supported = designSupportsMode(design, m);
@@ -210,7 +210,7 @@ export function QuoteDesignPicker({ activeId, mode, onPick, onClose }: {
     <div className="fixed inset-0 z-[70] bg-black/45 flex items-center justify-center p-4" onClick={onClose}>
       <div className="w-full max-w-5xl max-h-[92vh] flex flex-col rounded-2xl overflow-hidden" onClick={e => e.stopPropagation()}
         style={{ backgroundColor: "var(--bg-surface)", boxShadow: "0 24px 70px rgba(0,0,0,0.4)" }}>
-        <div className="flex items-center justify-between px-5 py-3.5 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+        <div className="flex items-center justify-between px-5 py-3.5 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
           <div className="flex items-center gap-2 min-w-0">
             <Palette className="w-4 h-4 shrink-0" style={{ color: "var(--accent-text)" }} />
             <div className="min-w-0">
@@ -248,7 +248,7 @@ export function QuoteDesignPicker({ activeId, mode, onPick, onClose }: {
                     <p className="text-[10px] mt-1.5" style={{ color: "var(--text-muted)" }}>{PRICING_PRESENTATION_SHORT[d.pricingPresentation]}</p>
                     <ModeBadges modes={d.supportedModes} />
                   </div>
-                  <div className="px-3.5 py-2.5 flex items-center gap-2" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+                  <div className="px-3.5 py-2.5 flex items-center gap-2" style={{ borderTop: "1px solid var(--border)" }}>
                     <button onClick={() => setPreviewId(d.id)} className="flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg text-xs font-medium" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>
                       <Eye className="w-3.5 h-3.5" /> Preview
                     </button>
@@ -278,7 +278,7 @@ function ModeBadges({ modes }: { modes: QuoteDesignMode[] }) {
     <div className="flex items-center gap-1 mt-2 flex-wrap">
       {modes.map(m => (
         <span key={m} className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full"
-          style={{ backgroundColor: "var(--bg-input)", color: "var(--text-secondary)", border: "1px solid var(--border-subtle)" }}>
+          style={{ backgroundColor: "var(--bg-input)", color: "var(--text-secondary)", border: "1px solid var(--border)" }}>
           {QUOTE_DESIGN_MODE_LABELS[m]}
         </span>
       ))}

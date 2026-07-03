@@ -7,7 +7,7 @@ export default function Loading() {
   return (
     <Delayed>
     <div className="flex h-full" style={{ backgroundColor: "var(--bg-page)" }}>
-      <div className="w-44 shrink-0 py-5 px-2 space-y-1.5" style={{ backgroundColor: "var(--bg-surface)", borderRight: "1px solid var(--border-subtle)" }}>
+      <div className="w-44 shrink-0 py-5 px-2 space-y-1.5" style={{ backgroundColor: "var(--bg-surface)", borderRight: "1px solid var(--border)" }}>
         {Array.from({ length: 6 }).map((_, i) => (
           <Skeleton key={i} className="h-8 rounded-lg" />
         ))}

@@ -57,7 +57,7 @@ export default function MyPortalContent({ onNavigate }: { onNavigate?: () => voi
       <Section title="Self-service">
         <Card>
           {LINKS.map((l, i) => (
-            <Link key={l.href} href={l.href} onClick={onNavigate} className="flex items-center gap-3 px-4 py-3.5 active:bg-[var(--bg-surface-2)]" style={{ borderTop: i ? "1px solid var(--border-subtle)" : "none" }}>
+            <Link key={l.href} href={l.href} onClick={onNavigate} className="flex items-center gap-3 px-4 py-3.5 active:bg-[var(--bg-surface-2)]" style={{ borderTop: i ? "1px solid var(--border)" : "none" }}>
               <span className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: l.color + "1a" }}><l.icon className="w-4 h-4" style={{ color: l.color }} /></span>
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{l.label}</p>

@@ -11,7 +11,7 @@ import { loadLayout } from "@/lib/dashboard/layouts";
 // could otherwise produce). Each tile gets realistic internals for its size so
 // it reads as widgets loading — not empty boxes. <Delayed> renders only on the
 // client, so reading the persisted layout here is hydration-safe.
-const surface = { backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" } as const;
+const surface = { backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" } as const;
 const inset = { backgroundColor: "var(--bg-surface-2)" } as const;
 
 function WidgetTile({ w, h }: { w: number; h: number }) {

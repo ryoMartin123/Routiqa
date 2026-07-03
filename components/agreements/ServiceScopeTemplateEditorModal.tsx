@@ -18,7 +18,7 @@ import { getServiceItems, serviceItemToService, type ServiceScopeTemplate } from
 
 const INDUSTRIES = ["HVAC", "Roofing", "Plumbing", "Property Maintenance", "Consulting", "General"] as const;
 const inputStyle: React.CSSProperties = { border: "1px solid var(--border)", backgroundColor: "var(--bg-surface)", color: "var(--text-primary)" };
-const cardStyle: React.CSSProperties = { backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border-subtle)" };
+const cardStyle: React.CSSProperties = { backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" };
 
 const SCOPE_OPTIONS = (Object.keys(SERVICE_SCOPE_LABELS) as ServiceScopeType[]).map(k => ({ value: k, label: SERVICE_SCOPE_LABELS[k] }));
 const APPLIES_OPTIONS = (Object.keys(SERVICE_APPLIES_LABELS) as ServiceApplies[]).map(k => ({ value: k, label: SERVICE_APPLIES_LABELS[k] }));
@@ -59,7 +59,7 @@ export default function ServiceScopeTemplateEditorModal({ template, isNew, onCan
         style={{ backgroundColor: "var(--bg-surface)", boxShadow: "0 16px 48px rgba(0,0,0,0.24)" }}>
 
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+        <div className="flex items-center justify-between px-6 py-4 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
           <div className="flex items-center gap-2">
             <Wrench className="w-4 h-4" style={{ color: "#4f46e5" }} />
             <p className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>{isNew ? "New Service Scope" : "Edit Service Scope"}</p>
@@ -132,7 +132,7 @@ export default function ServiceScopeTemplateEditorModal({ template, isNew, onCan
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 flex items-center justify-between gap-3 shrink-0" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+        <div className="px-6 py-4 flex items-center justify-between gap-3 shrink-0" style={{ borderTop: "1px solid var(--border)" }}>
           <p className="text-[11px]" style={{ color: canSave ? "var(--text-muted)" : "#dc2626" }}>
             {!hasName ? "Name your scope to save." : !hasService ? "Add at least one named service to save." : "Ready to save."}
           </p>

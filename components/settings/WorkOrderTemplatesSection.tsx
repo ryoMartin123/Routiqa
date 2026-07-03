@@ -153,21 +153,21 @@ function TemplatesTab({ register }: { register: Saver }) {
   return (
     <div className="space-y-4">
       {showAdd && Form()}
-      <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
-        <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+      <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
+        <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)" }}>
           <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Work Order Templates
             <span className="ml-2 text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>{items.length}</span></p>
           {!showAdd && <button onClick={startAdd} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-white" style={{ backgroundColor: "#4f46e5" }}><Plus className="w-3.5 h-3.5" /> Add Template</button>}
         </div>
         <div className="grid px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider"
-          style={{ gridTemplateColumns: "2fr 1.5fr 1fr 0.8fr 0.7fr auto", gap: "0.75rem", color: "var(--text-muted)", borderBottom: "1px solid var(--border-subtle)" }}>
+          style={{ gridTemplateColumns: "2fr 1.5fr 1fr 0.8fr 0.7fr auto", gap: "0.75rem", color: "var(--text-muted)", borderBottom: "1px solid var(--border)" }}>
           <span>Template</span><span>Linked Job Type</span><span>Priority</span><span>Duration</span><span className="text-center">Active</span><span />
         </div>
         {items.map((t, i) => editingId === t.id ? (
-          <div key={t.id} className="p-4" style={{ borderBottom: i < items.length - 1 ? "1px solid var(--border-subtle)" : "none" }}>{Form()}</div>
+          <div key={t.id} className="p-4" style={{ borderBottom: i < items.length - 1 ? "1px solid var(--border)" : "none" }}>{Form()}</div>
         ) : (
           <div key={t.id} className="grid px-4 py-3 items-center hover:bg-[var(--bg-surface-2)] transition-colors"
-            style={{ gridTemplateColumns: "2fr 1.5fr 1fr 0.8fr 0.7fr auto", gap: "0.75rem", borderBottom: i < items.length - 1 ? "1px solid var(--border-subtle)" : "none", opacity: t.active ? 1 : 0.5 }}>
+            style={{ gridTemplateColumns: "2fr 1.5fr 1fr 0.8fr 0.7fr auto", gap: "0.75rem", borderBottom: i < items.length - 1 ? "1px solid var(--border)" : "none", opacity: t.active ? 1 : 0.5 }}>
             <div className="min-w-0"><p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{t.name}</p>{t.description && <p className="text-[11px] truncate" style={{ color: "var(--text-muted)" }}>{t.description}</p>}</div>
             <span className="text-xs" style={{ color: "var(--text-secondary)" }}>{jobTypeName(t.jobTypeKey)}</span>
             <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full inline-block w-fit" style={PRIORITY_BADGE[t.priority]}>{WO_PRIORITY_LABELS[t.priority]}</span>
@@ -251,21 +251,21 @@ function ChecklistsTab({ templates, register }: { templates: WorkOrderTemplate[]
         </div>
       )}
 
-      <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
-        <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+      <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
+        <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)" }}>
           <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Checklist Items
             <span className="ml-2 text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>{items.length}</span></p>
           {!showAdd && <button onClick={() => setShowAdd(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-white" style={{ backgroundColor: "#4f46e5" }}><Plus className="w-3.5 h-3.5" /> Add Item</button>}
         </div>
         <div className="grid px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider"
-          style={{ gridTemplateColumns: "auto 2fr 1.2fr 0.8fr 0.8fr auto", gap: "0.75rem", color: "var(--text-muted)", borderBottom: "1px solid var(--border-subtle)" }}>
+          style={{ gridTemplateColumns: "auto 2fr 1.2fr 0.8fr 0.8fr auto", gap: "0.75rem", color: "var(--text-muted)", borderBottom: "1px solid var(--border)" }}>
           <span>Order</span><span>Item</span><span>Type</span><span className="text-center">Required</span><span className="text-center">Active</span><span />
         </div>
         {sorted.length === 0 ? (
           <div className="py-10 text-center"><p className="text-sm" style={{ color: "var(--text-muted)" }}>No checklist items for this template yet.</p></div>
         ) : sorted.map((c, i) => (
           <div key={c.id} className="grid px-4 py-3 items-center hover:bg-[var(--bg-surface-2)] transition-colors"
-            style={{ gridTemplateColumns: "auto 2fr 1.2fr 0.8fr 0.8fr auto", gap: "0.75rem", borderBottom: i < sorted.length - 1 ? "1px solid var(--border-subtle)" : "none", opacity: c.active ? 1 : 0.5 }}>
+            style={{ gridTemplateColumns: "auto 2fr 1.2fr 0.8fr 0.8fr auto", gap: "0.75rem", borderBottom: i < sorted.length - 1 ? "1px solid var(--border)" : "none", opacity: c.active ? 1 : 0.5 }}>
             <div className="flex flex-col">
               <button onClick={() => move(c.id, -1)} disabled={i === 0} className="disabled:opacity-20" style={{ color: "var(--text-muted)" }}><ChevronUp className="w-3.5 h-3.5" /></button>
               <button onClick={() => move(c.id, 1)} disabled={i === sorted.length - 1} className="disabled:opacity-20" style={{ color: "var(--text-muted)" }}><ChevronDown className="w-3.5 h-3.5" /></button>
@@ -345,21 +345,21 @@ function RequiredPhotosTab({ templates, register }: { templates: WorkOrderTempla
         </div>
       )}
 
-      <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
-        <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+      <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
+        <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)" }}>
           <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Required Photos
             <span className="ml-2 text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>{items.length}</span></p>
           {!showAdd && <button onClick={() => setShowAdd(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-white" style={{ backgroundColor: "#4f46e5" }}><Plus className="w-3.5 h-3.5" /> Add Rule</button>}
         </div>
         <div className="grid px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider"
-          style={{ gridTemplateColumns: "1.3fr 0.8fr 0.8fr 2fr auto", gap: "0.75rem", color: "var(--text-muted)", borderBottom: "1px solid var(--border-subtle)" }}>
+          style={{ gridTemplateColumns: "1.3fr 0.8fr 0.8fr 2fr auto", gap: "0.75rem", color: "var(--text-muted)", borderBottom: "1px solid var(--border)" }}>
           <span>Category</span><span className="text-center">Required</span><span>Min #</span><span>Notes</span><span />
         </div>
         {items.length === 0 ? (
           <div className="py-10 text-center"><p className="text-sm" style={{ color: "var(--text-muted)" }}>No required photo rules for this template yet.</p></div>
         ) : items.map((p, i) => (
           <div key={p.id} className="grid px-4 py-3 items-center hover:bg-[var(--bg-surface-2)] transition-colors"
-            style={{ gridTemplateColumns: "1.3fr 0.8fr 0.8fr 2fr auto", gap: "0.75rem", borderBottom: i < items.length - 1 ? "1px solid var(--border-subtle)" : "none" }}>
+            style={{ gridTemplateColumns: "1.3fr 0.8fr 0.8fr 2fr auto", gap: "0.75rem", borderBottom: i < items.length - 1 ? "1px solid var(--border)" : "none" }}>
             <div className="flex items-center gap-2"><Camera className="w-3.5 h-3.5 shrink-0" style={{ color: "#2563eb" }} /><span className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{p.category}</span></div>
             <div className="flex justify-center"><Toggle on={p.required} onChange={() => toggleReq(p.id)} /></div>
             <input type="number" min={0} value={p.minCount} onChange={e => setMin(p.id, parseInt(e.target.value) || 0)}
@@ -406,7 +406,7 @@ function InstructionsTab({ templates, register }: { templates: WorkOrderTemplate
       <TemplatePicker templates={templates} value={templateId} onChange={setTemplateId} />
       <div className="grid grid-cols-2 gap-4">
         {INSTRUCTION_FIELDS.map(f => (
-          <div key={f.key} className="rounded-xl p-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+          <div key={f.key} className="rounded-xl p-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
             <label className="block text-xs font-semibold mb-2" style={{ color: "var(--text-primary)" }}>{f.label}</label>
             <textarea value={rec[f.key]} onChange={e => set(f.key, e.target.value)} placeholder={f.placeholder} rows={3}
               className="w-full rounded-lg px-3 py-2 text-sm outline-none resize-none" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)", color: "var(--text-primary)" }} />

@@ -20,7 +20,7 @@ export function Slideover({ title, subtitle, onClose, children, footer, width = 
     <div className="fixed inset-0 z-50 flex justify-end">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
       <div className="relative h-full flex flex-col" style={{ width: "100%", maxWidth: width, backgroundColor: "var(--bg-surface)", borderLeft: "1px solid var(--border)", boxShadow: "-16px 0 48px -12px rgba(0,0,0,0.3)" }}>
-        <div className="px-5 py-4 flex items-start justify-between gap-3 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+        <div className="px-5 py-4 flex items-start justify-between gap-3 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
           <div className="min-w-0">
             <p className="text-base font-semibold truncate" style={{ color: "var(--text-primary)" }}>{title}</p>
             {subtitle && <p className="text-xs mt-0.5 truncate" style={{ color: "var(--text-muted)" }}>{subtitle}</p>}
@@ -28,7 +28,7 @@ export function Slideover({ title, subtitle, onClose, children, footer, width = 
           <button onClick={onClose} className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-colors hover:bg-[var(--bg-surface-2)]" style={{ color: "var(--text-secondary)" }}><X className="w-4 h-4" /></button>
         </div>
         <div className="flex-1 overflow-y-auto">{children}</div>
-        {footer && <div className="px-5 py-3 flex items-center justify-end gap-2 shrink-0" style={{ borderTop: "1px solid var(--border-subtle)" }}>{footer}</div>}
+        {footer && <div className="px-5 py-3 flex items-center justify-end gap-2 shrink-0" style={{ borderTop: "1px solid var(--border)" }}>{footer}</div>}
       </div>
     </div>
   );
@@ -37,7 +37,7 @@ export function Slideover({ title, subtitle, onClose, children, footer, width = 
 // Horizontal tab strip for the slide-over body.
 export function DrawerTabs<T extends string>({ tabs, active, onChange }: { tabs: { key: T; label: string }[]; active: T; onChange: (k: T) => void }) {
   return (
-    <div className="flex items-center gap-1 px-3 overflow-x-auto thin-scroll-x" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+    <div className="flex items-center gap-1 px-3 overflow-x-auto thin-scroll-x" style={{ borderBottom: "1px solid var(--border)" }}>
       {tabs.map(t => {
         const on = active === t.key;
         return (
@@ -56,7 +56,7 @@ export function DrawerTabs<T extends string>({ tabs, active, onChange }: { tabs:
 // A label/value row for overview panels.
 export function InfoRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="flex items-start justify-between gap-4 py-2" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+    <div className="flex items-start justify-between gap-4 py-2" style={{ borderBottom: "1px solid var(--border)" }}>
       <span className="text-xs shrink-0" style={{ color: "var(--text-muted)" }}>{label}</span>
       <div className="text-sm text-right min-w-0" style={{ color: "var(--text-primary)" }}>{children}</div>
     </div>

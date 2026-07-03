@@ -129,10 +129,10 @@ export default function InventoryItems() {
       </div>
 
       {/* Table — grid layout (matches the CRM + Admin tables) */}
-      <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+      <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
         <div className="overflow-x-auto thin-scroll-x">
           <div style={{ minWidth: 1040 }}>
-            <div className="grid px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider items-center" style={{ gridTemplateColumns: INV_COLS, gap: "0.75rem", color: "var(--text-muted)", borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+            <div className="grid px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider items-center" style={{ gridTemplateColumns: INV_COLS, gap: "0.75rem", color: "var(--text-muted)", borderBottom: "1px solid var(--border)", backgroundColor: "transparent" }}>
               <span>Item</span><span>Category</span><span>Vendor</span><span>Location</span><span>On Hand</span><span>Reorder</span><span>Cost</span><span>Status</span><span className="text-right">Actions</span>
             </div>
             {filtered.length === 0 ? (
@@ -141,7 +141,7 @@ export default function InventoryItems() {
               const st = STOCK_STATUS_STYLE[itemStock(it)];
               return (
                 <div key={it.id} className="grid px-4 py-3 items-center transition-colors hover:bg-[var(--bg-surface-2)]"
-                  style={{ gridTemplateColumns: INV_COLS, gap: "0.75rem", borderBottom: i < filtered.length - 1 ? "1px solid var(--border-subtle)" : "none" }}>
+                  style={{ gridTemplateColumns: INV_COLS, gap: "0.75rem", borderBottom: i < filtered.length - 1 ? "1px solid var(--border)" : "none" }}>
                   {/* Item */}
                   <div className="min-w-0">
                     <button onClick={() => setEditing(it)} className="text-sm font-medium text-left hover:underline truncate block" style={{ color: "var(--text-primary)" }}>{it.name}</button>
@@ -223,7 +223,7 @@ function ItemModal({ item, onClose, onSaved }: { item: InventoryItem | "new"; on
   return (
     <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={onClose}>
       <div className="w-full max-w-xl max-h-[92vh] rounded-2xl overflow-hidden flex flex-col" onClick={e => e.stopPropagation()} style={{ backgroundColor: "var(--bg-surface)", boxShadow: "0 16px 48px rgba(0,0,0,0.24)" }}>
-        <div className="flex items-center justify-between px-5 py-4 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+        <div className="flex items-center justify-between px-5 py-4 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
           <p className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>{isNew ? "Add Item" : "Edit Item"}</p>
           <button onClick={onClose} style={{ color: "var(--text-muted)" }}><X className="w-4 h-4" /></button>
         </div>
@@ -243,7 +243,7 @@ function ItemModal({ item, onClose, onSaved }: { item: InventoryItem | "new"; on
           <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>Linking to jobs, projects, and purchase orders arrives in a later phase.</p>
         </div>
         {error && <div className="mx-5 mb-3 px-3 py-2 rounded-lg text-xs shrink-0" style={{ backgroundColor: "#fee2e2", color: "#991b1b" }}>{error}</div>}
-        <div className="px-5 py-3 flex items-center justify-end gap-2 shrink-0" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+        <div className="px-5 py-3 flex items-center justify-end gap-2 shrink-0" style={{ borderTop: "1px solid var(--border)" }}>
           <button onClick={onClose} className="text-sm font-medium px-3 py-2 rounded-lg" style={{ color: "var(--text-secondary)" }}>Cancel</button>
           <button onClick={save} className="text-sm font-medium px-4 py-2 rounded-lg text-white" style={{ backgroundColor: ACCENT }}>{isNew ? "Add Item" : "Save Changes"}</button>
         </div>

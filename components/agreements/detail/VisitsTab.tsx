@@ -65,19 +65,19 @@ export default function VisitsTab({ agreement, onRefresh }: { agreement: Custome
 
       {/* Schedule rules */}
       <Card className="overflow-hidden">
-        <div className="px-4 py-3" style={{ borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+        <div className="px-4 py-3" style={{ borderBottom: "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)" }}>
           <SectionLabel>Visit Schedule Rules — when we go</SectionLabel>
         </div>
         {rules.length === 0 ? (
           <div className="px-4 py-6 text-center"><p className="text-sm" style={{ color: "var(--text-muted)" }}>No schedule rules on this agreement.</p></div>
         ) : (
           <div className="grid px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider"
-            style={{ gridTemplateColumns: "2fr 1fr 1.2fr 0.8fr 1fr 1.4fr", gap: "0.75rem", color: "var(--text-muted)", borderBottom: "1px solid var(--border-subtle)" }}>
+            style={{ gridTemplateColumns: "2fr 1fr 1.2fr 0.8fr 1fr 1.4fr", gap: "0.75rem", color: "var(--text-muted)", borderBottom: "1px solid var(--border)" }}>
             <span>Visit</span><span>Frequency</span><span>Window</span><span>Duration</span><span>Job Type</span><span>Work Order</span>
           </div>
         )}
         {rules.map((v, i) => (
-          <div key={v.id} className="grid px-4 py-3 items-center" style={{ gridTemplateColumns: "2fr 1fr 1.2fr 0.8fr 1fr 1.4fr", gap: "0.75rem", borderBottom: i < rules.length - 1 ? "1px solid var(--border-subtle)" : "none" }}>
+          <div key={v.id} className="grid px-4 py-3 items-center" style={{ gridTemplateColumns: "2fr 1fr 1.2fr 0.8fr 1fr 1.4fr", gap: "0.75rem", borderBottom: i < rules.length - 1 ? "1px solid var(--border)" : "none" }}>
             <div className="min-w-0">
               <span className="text-sm font-medium truncate block" style={{ color: "var(--text-primary)" }}>{v.name}</span>
               {(() => { const n = genCountFor(v.name); return n > 0 ? (
@@ -95,11 +95,11 @@ export default function VisitsTab({ agreement, onRefresh }: { agreement: Custome
 
       {/* Generated visits */}
       <Card className="overflow-hidden">
-        <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+        <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)" }}>
           <SectionLabel>Generated Visits ({agreement.visits.length})</SectionLabel>
         </div>
         <div className="grid px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider"
-          style={{ gridTemplateColumns: "1fr 2fr 1.2fr 1fr 1.6fr", gap: "0.75rem", color: "var(--text-muted)", borderBottom: "1px solid var(--border-subtle)" }}>
+          style={{ gridTemplateColumns: "1fr 2fr 1.2fr 1fr 1.6fr", gap: "0.75rem", color: "var(--text-muted)", borderBottom: "1px solid var(--border)" }}>
           <span>Status</span><span>Visit</span><span>Scheduled</span><span>Tech</span><span>Action</span>
         </div>
         {agreement.visits.length === 0 ? (
@@ -111,7 +111,7 @@ export default function VisitsTab({ agreement, onRefresh }: { agreement: Custome
             const Icon = meta.icon;
             const isSkipped = skipped.has(v.id);
             return (
-              <div key={v.id} className="grid px-4 py-3 items-center" style={{ gridTemplateColumns: "1fr 2fr 1.2fr 1fr 1.6fr", gap: "0.75rem", borderBottom: i < agreement.visits.length - 1 ? "1px solid var(--border-subtle)" : "none", opacity: isSkipped ? 0.6 : 1 }}>
+              <div key={v.id} className="grid px-4 py-3 items-center" style={{ gridTemplateColumns: "1fr 2fr 1.2fr 1fr 1.6fr", gap: "0.75rem", borderBottom: i < agreement.visits.length - 1 ? "1px solid var(--border)" : "none", opacity: isSkipped ? 0.6 : 1 }}>
                 <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full w-fit" style={{ backgroundColor: meta.color + "20", color: meta.color }}>
                   <Icon className="w-3 h-3" /> {disp}
                 </span>

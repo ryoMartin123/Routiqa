@@ -24,7 +24,7 @@ export default function DocumentsPage() {
           {docs.map((d, i) => {
             const c = CAT_COLOR[d.category] ?? "#6b7280";
             return (
-              <button key={d.id} className="w-full flex items-center gap-3 px-4 py-3 text-left active:bg-[var(--bg-surface-2)]" style={{ borderTop: i ? "1px solid var(--border-subtle)" : "none" }}>
+              <button key={d.id} className="w-full flex items-center gap-3 px-4 py-3 text-left active:bg-[var(--bg-surface-2)]" style={{ borderTop: i ? "1px solid var(--border)" : "none" }}>
                 <span className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: c + "1a" }}><FileText className="w-4 h-4" style={{ color: c }} /></span>
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{d.title}</p>

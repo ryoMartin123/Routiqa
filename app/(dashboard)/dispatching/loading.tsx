@@ -33,12 +33,12 @@ export default function Loading() {
         </div>
 
         {/* Time-grid calendar — fills the remaining height */}
-        <div className="rounded-xl overflow-hidden flex-1 min-h-0 flex flex-col" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+        <div className="rounded-xl overflow-hidden flex-1 min-h-0 flex flex-col" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
           {/* Column header (time gutter + resource/day columns) */}
-          <div className="flex shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+          <div className="flex shrink-0" style={{ borderBottom: "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)" }}>
             <div className="w-16 shrink-0 px-3 py-2.5" />
             {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="flex-1 px-3 py-2.5 flex items-center gap-2" style={{ borderLeft: "1px solid var(--border-subtle)" }}>
+              <div key={i} className="flex-1 px-3 py-2.5 flex items-center gap-2" style={{ borderLeft: "1px solid var(--border)" }}>
                 <Skeleton className="w-6 h-6 rounded-full shrink-0" />
                 <Skeleton className="h-3 w-20 rounded" />
               </div>
@@ -47,12 +47,12 @@ export default function Loading() {
           {/* Hourly rows grow to fill, with a scattering of scheduled blocks */}
           <div className="flex-1 min-h-0 flex flex-col">
             {Array.from({ length: 9 }).map((_, r) => (
-              <div key={r} className="flex flex-1 min-h-[44px]" style={{ borderTop: r === 0 ? "none" : "1px solid var(--border-subtle)" }}>
+              <div key={r} className="flex flex-1 min-h-[44px]" style={{ borderTop: r === 0 ? "none" : "1px solid var(--border)" }}>
                 <div className="w-16 shrink-0 px-3 py-2">
                   <Skeleton className="h-2.5 w-10 rounded" />
                 </div>
                 {Array.from({ length: 5 }).map((_, c) => (
-                  <div key={c} className="flex-1 p-1.5" style={{ borderLeft: "1px solid var(--border-subtle)" }}>
+                  <div key={c} className="flex-1 p-1.5" style={{ borderLeft: "1px solid var(--border)" }}>
                     {(r + c) % 3 === 0 && <Skeleton className="h-full rounded-lg" />}
                   </div>
                 ))}

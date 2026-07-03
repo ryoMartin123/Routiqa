@@ -86,7 +86,7 @@ export default function RoleBuilder({ initial, isNew, onSaved }: {
     <div className="space-y-5 pb-4">
       {/* Sticky header — auto-save (no Save/Cancel) */}
       <div className="sticky top-0 z-20 -mx-6 px-6 py-3 flex items-center justify-between gap-3"
-        style={{ backgroundColor: "var(--bg-page)", borderBottom: "1px solid var(--border-subtle)" }}>
+        style={{ backgroundColor: "var(--bg-page)", borderBottom: "1px solid var(--border)" }}>
         <button onClick={done} className="flex items-center gap-1.5 text-sm font-medium transition-colors hover:opacity-80" style={{ color: "var(--text-secondary)" }}>
           <ArrowLeft className="w-4 h-4" /> Done
         </button>
@@ -194,7 +194,7 @@ function PermViewToggle({ view, onChange }: { view: "simple" | "matrix"; onChang
     { key: "matrix", label: "Matrix", icon: Grid3x3 },
   ];
   return (
-    <div className="flex items-center gap-0.5 p-0.5 rounded-lg shrink-0" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border-subtle)" }}>
+    <div className="flex items-center gap-0.5 p-0.5 rounded-lg shrink-0" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}>
       {opts.map((o) => {
         const on = view === o.key;
         const Icon = o.icon;
@@ -270,7 +270,7 @@ function BasicsTab({ draft, setDraft, isNew, startId, applyStart }: {
           <SectionHead title="Start From" sub="Pick a starting point and review exactly what it can access. You can fine-tune everything afterward." />
           <div className="grid lg:grid-cols-[260px_1fr] gap-3 mt-3">
             {/* Left — selectable list of starting points */}
-            <div className="rounded-xl overflow-hidden" style={{ border: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface)" }}>
+            <div className="rounded-xl overflow-hidden" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface)" }}>
               {starts.map(({ option }, i) => {
                 const isPreview = option.id === previewId;
                 const isChosen = option.id === startId;
@@ -279,7 +279,7 @@ function BasicsTab({ draft, setDraft, isNew, startId, applyStart }: {
                   <button key={option.id} onClick={() => setPreviewId(option.id)}
                     className="w-full text-left px-3 py-2.5 flex items-center gap-2.5 transition-colors"
                     style={{
-                      borderTop: i === 0 ? "none" : "1px solid var(--border-subtle)",
+                      borderTop: i === 0 ? "none" : "1px solid var(--border)",
                       backgroundColor: isPreview ? "var(--accent-soft-bg)" : "transparent",
                     }}>
                     <span className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
@@ -303,7 +303,7 @@ function BasicsTab({ draft, setDraft, isNew, startId, applyStart }: {
         </div>
       )}
 
-      <div className="rounded-xl p-4 grid sm:grid-cols-2 gap-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>
+      <div className="rounded-xl p-4 grid sm:grid-cols-2 gap-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
         <LField label="Role name">
           <input value={draft.label} onChange={(e) => setDraft({ ...draft, label: e.target.value })} placeholder="e.g. Service Manager"
             className="w-full rounded-lg px-3 py-2 text-sm outline-none" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)", color: "var(--text-primary)" }} />
@@ -339,9 +339,9 @@ function StartDetail({ option, role, chosen, onUse }: {
   const Icon = option.icon;
 
   return (
-    <div className="rounded-xl overflow-hidden flex flex-col" style={{ border: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface)" }}>
+    <div className="rounded-xl overflow-hidden flex flex-col" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface)" }}>
       {/* Header */}
-      <div className="px-4 py-3.5 flex items-start justify-between gap-3" style={{ borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+      <div className="px-4 py-3.5 flex items-start justify-between gap-3" style={{ borderBottom: "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)" }}>
         <div className="flex items-start gap-2.5 min-w-0">
           <span className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: "#e0e7ff" }}>
             <Icon className="w-4 h-4" style={{ color: "#4f46e5" }} />
@@ -433,8 +433,8 @@ function LField({ label, children }: { label: string; children: React.ReactNode 
 function ReviewTab({ draft }: { draft: RoleDefinition }) {
   const apps = roleApps(draft).filter((a) => a !== "portal" && APP_META[a]);
   return (
-    <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>
-      <div className="px-4 py-3" style={{ borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+    <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
+      <div className="px-4 py-3" style={{ borderBottom: "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)" }}>
         <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{draft.label || "Untitled role"}</p>
         <p className="text-xs" style={{ color: "var(--text-muted)" }}>{draft.description || "No description"}</p>
       </div>
@@ -458,7 +458,7 @@ function ReviewTab({ draft }: { draft: RoleDefinition }) {
 
 function ReviewRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="flex items-start justify-between gap-4 px-4 py-3" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+    <div className="flex items-start justify-between gap-4 px-4 py-3" style={{ borderTop: "1px solid var(--border)" }}>
       <span className="text-sm" style={{ color: "var(--text-muted)" }}>{label}</span>
       <div className="text-right">{children}</div>
     </div>

@@ -29,7 +29,7 @@ export default function MobileInventoryPage() {
         <Section title="Low stock">
           <Card>
             {LOW_STOCK.map((it, i) => (
-              <div key={it.id} className="flex items-center gap-3 px-4 py-3" style={{ borderTop: i ? "1px solid var(--border-subtle)" : "none" }}>
+              <div key={it.id} className="flex items-center gap-3 px-4 py-3" style={{ borderTop: i ? "1px solid var(--border)" : "none" }}>
                 <AlertTriangle className="w-4 h-4 shrink-0" style={{ color: "#dc2626" }} />
                 <p className="text-sm flex-1 truncate" style={{ color: "var(--text-primary)" }}>{it.name}</p>
                 <span className="text-xs tabular-nums shrink-0" style={{ color: "var(--text-muted)" }}><b style={{ color: "#dc2626" }}>{it.on}</b> / {it.min} {it.unit}</span>

@@ -92,7 +92,7 @@ function Card({ card: c }: { card: SummaryCard }) {
       className="rounded-xl p-4 flex items-start gap-3"
       style={{
         backgroundColor: "var(--bg-surface)",
-        border: "1px solid var(--border-subtle)",
+        border: "1px solid var(--border)",
         boxShadow: "var(--shadow-card)",
       }}
     >

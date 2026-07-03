@@ -1,4 +1,5 @@
 import { Section, PrimaryCta, GhostCta } from "@/components/site/ui";
+import Reveal from "@/components/site/Reveal";
 import { Handshake, MessageSquareText, Rocket } from "lucide-react";
 
 const PERKS = [
@@ -10,6 +11,7 @@ const PERKS = [
 export default function DesignPartnerSection() {
   return (
     <Section id="design-partners" grid className="border-b">
+      <Reveal direction="scale">
       <div className="rounded-3xl p-8 lg:p-12" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-glow)" }}>
         <div className="max-w-2xl">
           <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-widest" style={{ color: "var(--accent-text)" }}>Design Partner Program</span>
@@ -32,6 +34,7 @@ export default function DesignPartnerSection() {
           <GhostCta href="/contact">Talk to us</GhostCta>
         </div>
       </div>
+      </Reveal>
     </Section>
   );
 }

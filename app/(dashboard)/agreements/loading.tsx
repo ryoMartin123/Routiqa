@@ -5,7 +5,7 @@ import { useSectionCount } from "@/lib/ui/skeleton-count";
 
 // Agreements defaults to the Cards view — match the card grid so the swap is
 // seamless. Data-aware: render as many cards as there are agreements (0 → shell only).
-const surface = { backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" } as const;
+const surface = { backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" } as const;
 
 export default function Loading() {
   const count = useSectionCount("agreements");
@@ -47,7 +47,7 @@ export default function Loading() {
               </div>
               <Skeleton className="h-4 w-2/3 rounded mb-1.5" />
               <Skeleton className="h-3 w-1/2 rounded" />
-              <div className="flex items-center justify-between mt-3 pt-2" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+              <div className="flex items-center justify-between mt-3 pt-2" style={{ borderTop: "1px solid var(--border)" }}>
                 <Skeleton className="h-3 w-24 rounded" />
                 <Skeleton className="h-3 w-16 rounded" />
               </div>

@@ -193,7 +193,7 @@ export function PermissionAccordions({ draft, onChange, readOnly }: { draft: Rol
 
   if (draft.allAccess) {
     return (
-      <div className="rounded-xl p-4 flex items-center gap-2.5" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>
+      <div className="rounded-xl p-4 flex items-center gap-2.5" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
         <ShieldCheck className="w-4 h-4" style={{ color: "#4f46e5" }} />
         <p className="text-sm" style={{ color: "var(--text-secondary)" }}>Full access — every module across enabled apps (except Billing) within scope.</p>
       </div>
@@ -228,7 +228,7 @@ export function PermissionAccordions({ draft, onChange, readOnly }: { draft: Rol
         const expanded = open.has(app);
         const granted = resources.filter((r) => levelOfRow(draft.capabilities[r]) !== "none").length;
         return (
-          <div key={app} className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>
+          <div key={app} className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
             <button onClick={() => toggle(app)} className="w-full flex items-center justify-between gap-2 px-4 py-3 transition-colors hover:bg-[var(--bg-surface-2)]">
               <span className="flex items-center gap-2">
                 {expanded ? <ChevronDown className="w-4 h-4" style={{ color: "var(--text-muted)" }} /> : <ChevronRight className="w-4 h-4" style={{ color: "var(--text-muted)" }} />}
@@ -240,7 +240,7 @@ export function PermissionAccordions({ draft, onChange, readOnly }: { draft: Rol
               </span>
             </button>
             {expanded && (
-              <div style={{ borderTop: "1px solid var(--border-subtle)" }}>
+              <div style={{ borderTop: "1px solid var(--border)" }}>
                 {resources.length === 0 ? (
                   <p className="text-xs px-4 py-3" style={{ color: "var(--text-muted)" }}>No granular modules yet — controlled by app access.</p>
                 ) : resources.map((res) => (
@@ -286,7 +286,7 @@ function ModuleRow({ res, level, row, onCycle, readOnly }: {
   const [adv, setAdv] = useState(level === "custom");
   const showMatrix = adv || level === "custom";
   return (
-    <div className="px-4 py-2.5" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+    <div className="px-4 py-2.5" style={{ borderTop: "1px solid var(--border)" }}>
       <div className="flex items-center justify-between gap-3">
         <span className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{RESOURCE_LABELS[res]}</span>
         <div className="flex items-center gap-2.5 shrink-0">
@@ -328,7 +328,7 @@ export function PermissionMatrix({ draft, onChange, readOnly }: { draft: RoleDef
 
   if (draft.allAccess) {
     return (
-      <div className="rounded-xl p-4 flex items-center gap-2.5" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>
+      <div className="rounded-xl p-4 flex items-center gap-2.5" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
         <ShieldCheck className="w-4 h-4" style={{ color: "#4f46e5" }} />
         <p className="text-sm" style={{ color: "var(--text-secondary)" }}>Full access — every module across enabled apps (except Billing) within scope.</p>
       </div>
@@ -358,8 +358,8 @@ export function PermissionMatrix({ draft, onChange, readOnly }: { draft: RoleDef
       {apps.map((app) => {
         const resources = resourcesForApp(app);
         return (
-          <div key={app} className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>
-            <div className="px-4 py-2.5 flex items-center gap-2" style={{ borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+          <div key={app} className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
+            <div className="px-4 py-2.5 flex items-center gap-2" style={{ borderBottom: "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)" }}>
               <span className="w-2 h-2 rounded-full" style={{ backgroundColor: APP_META[app].accent }} />
               <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{APP_META[app].name}</span>
             </div>
@@ -369,12 +369,12 @@ export function PermissionMatrix({ draft, onChange, readOnly }: { draft: RoleDef
               <div className="overflow-x-auto thin-scroll-x">
                 <div style={{ minWidth: 560 }}>
                   {/* Action header */}
-                  <div className="grid items-center px-3 py-2 text-[10px] font-semibold uppercase tracking-wide" style={{ gridTemplateColumns: MATRIX_COLS, color: "var(--text-muted)", borderBottom: "1px solid var(--border-subtle)" }}>
+                  <div className="grid items-center px-3 py-2 text-[10px] font-semibold uppercase tracking-wide" style={{ gridTemplateColumns: MATRIX_COLS, color: "var(--text-muted)", borderBottom: "1px solid var(--border)" }}>
                     <span>Module</span>
                     {ACTION_ORDER.map((a) => <span key={a} className="text-center truncate">{ACTION_LABELS[a]}</span>)}
                   </div>
                   {resources.map((res, i) => (
-                    <div key={res} className="grid items-center px-3 py-1.5" style={{ gridTemplateColumns: MATRIX_COLS, borderTop: i === 0 ? "none" : "1px solid var(--border-subtle)" }}>
+                    <div key={res} className="grid items-center px-3 py-1.5" style={{ gridTemplateColumns: MATRIX_COLS, borderTop: i === 0 ? "none" : "1px solid var(--border)" }}>
                       <span className="text-sm truncate pr-2" style={{ color: "var(--text-primary)" }}>{RESOURCE_LABELS[res]}</span>
                       {ACTION_ORDER.map((a) => {
                         const s = ACT_STYLE[draft.capabilities[res]?.[a] ?? "none"];
@@ -438,7 +438,7 @@ function GroupLabel({ children }: { children: React.ReactNode }) {
 
 function SensRow({ on, onChange, label, desc, prefix }: { on: boolean; onChange: () => void; label: string; desc: string; prefix?: string }) {
   return (
-    <div className="flex items-start justify-between gap-3 px-4 py-2" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+    <div className="flex items-start justify-between gap-3 px-4 py-2" style={{ borderTop: "1px solid var(--border)" }}>
       <div className="min-w-0">
         <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{prefix ? `${prefix} ${label.toLowerCase()}` : label}</p>
         <p className="text-[11px] leading-snug" style={{ color: "var(--text-muted)" }}>{desc}</p>

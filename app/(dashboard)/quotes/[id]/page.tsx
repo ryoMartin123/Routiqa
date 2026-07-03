@@ -1,10 +1,10 @@
 "use client";
 
-import React, { use, useState, useEffect, useRef } from "react";
+import React, { use, useState, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  ArrowLeft, Pencil, Eye, Copy, ChevronRight, MoreVertical, FileCheck,
+  ArrowLeft, Pencil, Eye, Copy, ChevronRight, FileCheck,
   Briefcase, FolderKanban, TrendingUp, Send, X, Download, Printer, Archive, ArchiveRestore,
   Trash2, RotateCcw, Link2, RefreshCw, XCircle, Clock, Receipt,
   FileText, Tag, DollarSign, CheckCircle, Calendar, MapPin, User, MessageSquare, Palette,
@@ -29,6 +29,7 @@ import ProposalFamilyDocument from "@/components/quotes/family/ProposalFamilyDoc
 import CustomProposalDocument, { type CustomDocData } from "@/components/quotes/custom/CustomProposalDocument";
 import Commentable from "@/components/comments/Commentable";
 import DetailTabs from "@/components/shared/DetailTabs";
+import ActionsMenu from "@/components/shared/ActionsMenu";
 
 // One adaptive detail page for every quote — the tabs are always present for
 // consistency; each tab's CONTENT adapts to the quote mode + available data.
@@ -115,15 +116,7 @@ interface ActionHandlers {
 }
 
 function QuoteActionBar(h: ActionHandlers) {
-  const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!open) return;
-    const onDown = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
-    document.addEventListener("mousedown", onDown);
-    return () => document.removeEventListener("mousedown", onDown);
-  }, [open]);
 
   function copyLink() {
     try { navigator.clipboard?.writeText(window.location.href); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch { /* ignore */ }
@@ -198,28 +191,10 @@ function QuoteActionBar(h: ActionHandlers) {
           <p.icon className="w-3.5 h-3.5" /> {!p.iconOnly && p.label}
         </button>
       ))}
-      <div className="relative" ref={ref}>
-        <button onClick={() => setOpen(o => !o)} title="More actions" aria-label="More actions"
-          className="flex items-center justify-center p-1.5 rounded-lg transition-colors hover:bg-[var(--bg-surface-2)]"
-          style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>
-          <MoreVertical className="w-4 h-4" />
-        </button>
-        {open && (
-          <div className="absolute right-0 top-full mt-1 w-56 rounded-xl overflow-hidden z-20 py-1"
-            style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "0 8px 24px rgba(0,0,0,0.16)" }}>
-            {menu.map((m, i) => m === "divider" ? (
-              <div key={`d${i}`} className="my-1 h-px" style={{ backgroundColor: "var(--border-subtle)" }} />
-            ) : (
-              <button key={m.label}
-                onClick={() => { m.onClick(); if (m.label !== "Copy Quote Link") setOpen(false); }}
-                className="flex items-center gap-2 w-full px-3 py-2 text-sm text-left transition-colors hover:bg-[var(--bg-surface-2)]"
-                style={{ color: m.danger ? "#dc2626" : "var(--text-primary)" }}>
-                <m.icon className="w-3.5 h-3.5" style={{ color: m.danger ? "#dc2626" : "var(--text-muted)" }} /> {m.label}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
+      <ActionsMenu actions={menu.map((m, i) => m === "divider" ? null : ({
+        label: m.label, icon: m.icon, onClick: m.onClick, danger: m.danger,
+        separated: menu[i - 1] === "divider",
+      }))} />
     </div>
   );
 }
@@ -230,7 +205,7 @@ function LineItemsTable({ quoteId }: { quoteId: string }) {
 
   if (quote.lineItems.length === 0) {
     return (
-      <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>
+      <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
         <div className="px-5 py-4 text-center">
           <p className="text-sm" style={{ color: "var(--text-muted)" }}>No line items yet — add items to complete this quote.</p>
           {quote.internalNotes && (
@@ -242,10 +217,10 @@ function LineItemsTable({ quoteId }: { quoteId: string }) {
   }
 
   return (
-    <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+    <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
       {/* Header */}
       <div className="grid px-5 py-3 text-[10px] font-semibold uppercase tracking-wider"
-        style={{ gridTemplateColumns: "3fr 0.6fr 1fr 1fr", color: "var(--text-muted)", borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+        style={{ gridTemplateColumns: "3fr 0.6fr 1fr 1fr", color: "var(--text-muted)", borderBottom: "1px solid var(--border)", backgroundColor: "transparent" }}>
         <span>Description</span><span className="text-right">Qty</span>
         <span className="text-right">Unit Price</span><span className="text-right">Total</span>
       </div>
@@ -253,7 +228,7 @@ function LineItemsTable({ quoteId }: { quoteId: string }) {
       {quote.lineItems.map((item, i) => (
         <div key={item.id}
           className="grid px-5 py-3 items-start"
-          style={{ gridTemplateColumns: "3fr 0.6fr 1fr 1fr", borderBottom: i < quote.lineItems.length - 1 ? "1px solid var(--border-subtle)" : "none" }}>
+          style={{ gridTemplateColumns: "3fr 0.6fr 1fr 1fr", borderBottom: i < quote.lineItems.length - 1 ? "1px solid var(--border)" : "none" }}>
           <div>
             <p className="text-sm" style={{ color: "var(--text-primary)" }}>{item.description}</p>
             {item.notes && <p className="text-xs mt-0.5 italic" style={{ color: "var(--text-muted)" }}>{item.notes}</p>}
@@ -274,7 +249,7 @@ function LineItemsTable({ quoteId }: { quoteId: string }) {
           <span className="text-sm" style={{ color: "var(--text-muted)" }}>Tax</span>
           <span className="text-sm" style={{ color: "var(--text-secondary)" }}>{fmt(quote.tax)}</span>
         </div>
-        <div className="flex justify-between pt-2" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+        <div className="flex justify-between pt-2" style={{ borderTop: "1px solid var(--border)" }}>
           <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Total</span>
           <span className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>{fmt(quote.total)}</span>
         </div>
@@ -296,7 +271,7 @@ function expiryInfo(expiresAt?: string): { text: string; overdue: boolean } | nu
 
 function OvCard({ title, children, className = "" }: { title: string; children: React.ReactNode; className?: string }) {
   return (
-    <div className={`rounded-xl p-4 ${className}`} style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+    <div className={`rounded-xl p-4 ${className}`} style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
       <p className="text-[10px] font-semibold uppercase tracking-widest mb-3" style={{ color: "var(--text-muted)" }}>{title}</p>
       {children}
     </div>
@@ -319,8 +294,8 @@ function SectionCard({ title, count, action, children, className = "" }: {
   title: string; count: number; action?: { label: string; onClick: () => void }; children: React.ReactNode; className?: string;
 }) {
   return (
-    <div className={`rounded-xl overflow-hidden flex flex-col ${className}`} style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
-      <div className="flex items-center justify-between px-4 py-3 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+    <div className={`rounded-xl overflow-hidden flex flex-col ${className}`} style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
+      <div className="flex items-center justify-between px-4 py-3 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
         <div className="flex items-center gap-2">
           <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{title}</p>
           {count > 0 && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>{count}</span>}
@@ -367,7 +342,7 @@ function OverviewTab({ id, onTab }: { id: string; onTab: (tab: string) => void }
       {/* ── Summary cards ───────────────────────────── */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2.5 shrink-0">
         {summary.map(c => (
-          <div key={c.label} className="rounded-xl px-3 py-2.5" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+          <div key={c.label} className="rounded-xl px-3 py-2.5" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
             <div className="flex items-center gap-1.5 mb-1">
               <c.icon className="w-3 h-3" style={{ color: c.accent ?? "var(--text-muted)" }} />
               <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>{c.label}</p>
@@ -450,7 +425,7 @@ function OverviewTab({ id, onTab }: { id: string; onTab: (tab: string) => void }
               const Icon = meta.icon;
               const last = i === Math.min(3, activity.length - 1);
               return (
-                <div key={a.id} className="flex items-center px-4 py-3 hover:bg-[var(--bg-surface-2)] transition-colors" style={!last ? { borderBottom: "1px solid var(--border-subtle)" } : undefined}>
+                <div key={a.id} className="flex items-center px-4 py-3 hover:bg-[var(--bg-surface-2)] transition-colors" style={!last ? { borderBottom: "1px solid var(--border)" } : undefined}>
                   <div className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 mr-2.5" style={{ backgroundColor: meta.color + "1a" }}>
                     <Icon className="w-3 h-3" style={{ color: meta.color }} />
                   </div>
@@ -466,8 +441,8 @@ function OverviewTab({ id, onTab }: { id: string; onTab: (tab: string) => void }
       </div>
 
       {/* ── Line items — full-width card that fills the remaining vertical space ── */}
-      <div className="flex-1 min-h-0 rounded-xl flex flex-col overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
-        <div className="flex items-center justify-between px-4 py-3 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+      <div className="flex-1 min-h-0 rounded-xl flex flex-col overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
+        <div className="flex items-center justify-between px-4 py-3 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
           <div className="flex items-center gap-2">
             <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Line Items</p>
             {quote.lineItems.length > 0 && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>{quote.lineItems.length}</span>}
@@ -483,7 +458,7 @@ function OverviewTab({ id, onTab }: { id: string; onTab: (tab: string) => void }
           ) : (
             <>
               {quote.lineItems.map((item, i) => (
-                <div key={item.id} className="grid px-4 py-2.5 items-start" style={{ gridTemplateColumns: "3fr 0.6fr 1fr 1fr", borderBottom: "1px solid var(--border-subtle)" }}>
+                <div key={item.id} className="grid px-4 py-2.5 items-start" style={{ gridTemplateColumns: "3fr 0.6fr 1fr 1fr", borderBottom: "1px solid var(--border)" }}>
                   <div className="min-w-0">
                     <p className="text-sm truncate" style={{ color: "var(--text-primary)" }}>{item.name || item.description}</p>
                     {item.name && item.description && item.name !== item.description && <p className="text-[11px] truncate" style={{ color: "var(--text-muted)" }}>{item.description}</p>}
@@ -584,7 +559,7 @@ export default function QuoteDetailPage({ params }: { params: Promise<{ id: stri
   return (
     <div className="flex flex-col h-full">
       {/* Sticky header */}
-      <div style={{ backgroundColor: "var(--bg-surface)", borderBottom: "1px solid var(--border-subtle)" }}>
+      <div style={{ backgroundColor: "var(--bg-surface)", borderBottom: "1px solid var(--border)" }}>
         <div className="flex items-center justify-between px-6 py-4">
           <div className="flex items-center gap-4 min-w-0">
             <Link href="/quotes" className="flex items-center gap-1.5 text-sm shrink-0" style={{ color: "var(--text-secondary)" }}>
@@ -645,7 +620,7 @@ export default function QuoteDetailPage({ params }: { params: Promise<{ id: stri
       {showPreview && (
         <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={() => setShowPreview(false)}>
           <div className="w-full max-w-3xl max-h-[92vh] rounded-2xl overflow-hidden flex flex-col" onClick={e => e.stopPropagation()} style={{ backgroundColor: "var(--bg-surface)" }}>
-            <div className="flex items-center justify-between px-4 py-2 shrink-0" style={{ backgroundColor: "var(--bg-surface)", borderBottom: "1px solid var(--border-subtle)" }}>
+            <div className="flex items-center justify-between px-4 py-2 shrink-0" style={{ backgroundColor: "var(--bg-surface)", borderBottom: "1px solid var(--border)" }}>
               <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Proposal Preview</p>
               <div className="flex items-center gap-2">
                 {!isCustom && (
@@ -695,8 +670,8 @@ function PricingTab({ quote, onEdit }: { quote: QuoteRecord; onEdit: () => void 
 
       {/* Internal pricing summary — custom quotes that ran the pricing wizard. Team-only. */}
       {pricing && (
-        <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
-          <div className="flex items-center gap-2 px-5 py-3" style={{ borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+        <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
+          <div className="flex items-center gap-2 px-5 py-3" style={{ borderBottom: "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)" }}>
             <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Internal Pricing Summary</p>
             <span className="text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded" style={{ backgroundColor: "#fef3c7", color: "#92400e" }}>Internal only</span>
           </div>
@@ -723,7 +698,7 @@ function OptionsTab({ quote, onEdit }: { quote: QuoteRecord; onEdit: () => void 
 
   if (empty) {
     return (
-      <div className="rounded-xl py-16 text-center" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>
+      <div className="rounded-xl py-16 text-center" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
         <Layers className="w-8 h-8 mx-auto mb-3" style={{ color: "var(--text-muted)" }} />
         <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>No alternate options added</p>
         <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>Add Good / Better / Best options or optional add-ons to give the customer choices.</p>
@@ -756,9 +731,9 @@ function OptionsTab({ quote, onEdit }: { quote: QuoteRecord; onEdit: () => void 
       {addOns.length > 0 && (
         <div>
           <h2 className="text-base font-semibold mb-3" style={{ color: "var(--text-primary)" }}>Optional Add-ons <span className="text-xs font-normal" style={{ color: "var(--text-muted)" }}>· {addOns.length}</span></h2>
-          <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+          <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
             {addOns.map((li, i) => (
-              <div key={li.id} className="flex items-center justify-between px-4 py-3" style={{ borderBottom: i < addOns.length - 1 ? "1px solid var(--border-subtle)" : "none" }}>
+              <div key={li.id} className="flex items-center justify-between px-4 py-3" style={{ borderBottom: i < addOns.length - 1 ? "1px solid var(--border)" : "none" }}>
                 <div className="min-w-0">
                   <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{li.name || li.description}</p>
                   {li.name && li.description && li.name !== li.description && <p className="text-[11px] truncate" style={{ color: "var(--text-muted)" }}>{li.description}</p>}
@@ -789,7 +764,7 @@ function OptionCardLg({ o }: { o: QuoteOption }) {
         <p className="text-sm font-semibold mt-1.5" style={{ color: "var(--text-primary)" }}>{o.name}</p>
         {(o.brand || o.model) && <p className="text-[11px] mt-0.5" style={{ color: "var(--text-muted)" }}>{[o.brand, o.model].filter(Boolean).join(" · ")}</p>}
         {o.description && <p className="text-xs mt-1.5 leading-snug" style={{ color: "var(--text-secondary)" }}>{o.description}</p>}
-        <div className="mt-3 pt-2.5 flex items-end justify-between" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+        <div className="mt-3 pt-2.5 flex items-end justify-between" style={{ borderTop: "1px solid var(--border)" }}>
           <div>
             <p className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>{fmt(o.price)}</p>
             {o.monthlyPrice ? <p className="text-[11px] font-semibold" style={{ color: accent }}>{fmt(o.monthlyPrice)}/mo</p> : null}
@@ -833,15 +808,15 @@ function FilesTab({ quote, onDownloadPdf }: { quote: QuoteRecord; onDownloadPdf:
       </div>
 
       {files.length === 0 ? (
-        <div className="rounded-xl py-16 text-center" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>
+        <div className="rounded-xl py-16 text-center" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
           <FileBox className="w-8 h-8 mx-auto mb-3" style={{ color: "var(--text-muted)" }} />
           <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>No files yet</p>
           <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>Upload photos & documents or generate the proposal PDF. (Local preview — not saved to a server.)</p>
         </div>
       ) : (
-        <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+        <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
           {files.map((f, i) => (
-            <div key={f.id} className="flex items-center gap-3 px-4 py-3" style={{ borderBottom: i < files.length - 1 ? "1px solid var(--border-subtle)" : "none" }}>
+            <div key={f.id} className="flex items-center gap-3 px-4 py-3" style={{ borderBottom: i < files.length - 1 ? "1px solid var(--border)" : "none" }}>
               <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: "var(--bg-surface-2)" }}>
                 {f.kind.startsWith("image/") ? <ImageIcon className="w-4 h-4" style={{ color: "#4f46e5" }} /> : <FileText className="w-4 h-4" style={{ color: "#4f46e5" }} />}
               </div>
@@ -874,7 +849,7 @@ function ActivityTab({ quote }: { quote: QuoteRecord }) {
 
   if (activity.length === 0) {
     return (
-      <div className="py-12 text-center rounded-xl" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>
+      <div className="py-12 text-center rounded-xl" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
         <p className="text-sm" style={{ color: "var(--text-muted)" }}>No activity yet</p>
       </div>
     );
@@ -900,7 +875,7 @@ function ActivityTab({ quote }: { quote: QuoteRecord }) {
 
             {/* Content container — uniform regardless of content */}
             <div className="flex-1 min-w-0 rounded-xl px-4 py-3 mb-3 flex flex-col"
-              style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)", minHeight: 80 }}>
+              style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)", minHeight: 80 }}>
               <div className="flex items-start justify-between gap-3">
                 <span className="inline-block text-[10px] font-semibold px-2 py-0.5 rounded-md shrink-0"
                   style={{ backgroundColor: meta.color + "1a", color: meta.color }}>{meta.label}</span>

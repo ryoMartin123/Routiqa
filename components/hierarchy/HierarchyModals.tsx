@@ -41,7 +41,7 @@ function ModalShell({ icon: Icon, title, subtitle, onClose, children }: {
     <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
       <div className="w-full max-w-md rounded-2xl overflow-hidden"
         style={{ backgroundColor: "var(--bg-surface)", boxShadow: "0 16px 48px rgba(0,0,0,0.24)" }}>
-        <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+        <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: "1px solid var(--border)" }}>
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: "#e0e7ff" }}>
               <Icon className="w-4 h-4" style={{ color: "#4f46e5" }} />
@@ -108,7 +108,7 @@ function FooterButtons({ onCancel, onSave, disabled, label }: {
   onCancel: () => void; onSave: () => void; disabled?: boolean; label: string;
 }) {
   return (
-    <div className="px-6 py-4 flex justify-end gap-2" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+    <div className="px-6 py-4 flex justify-end gap-2" style={{ borderTop: "1px solid var(--border)" }}>
       <button onClick={onCancel} className="px-3 py-2 rounded-lg text-sm" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>Cancel</button>
       <button onClick={onSave} disabled={disabled}
         className="px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-40" style={{ backgroundColor: "#4f46e5" }}>
@@ -194,7 +194,7 @@ export function AddLocationModal({ open, onClose, defaultCompanyId }: {
               <Labeled label="State"><TextInput value={state} onChange={setState} placeholder="e.g. SC" /></Labeled>
             </div>
           </div>
-          <div className="px-6 py-4 flex justify-end gap-2" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+          <div className="px-6 py-4 flex justify-end gap-2" style={{ borderTop: "1px solid var(--border)" }}>
             <button onClick={reset} className="px-3 py-2 rounded-lg text-sm" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>Cancel</button>
             <button onClick={handleSave} disabled={!canSave}
               className="px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-40" style={{ backgroundColor: "#4f46e5" }}>
@@ -247,7 +247,7 @@ export function AddCompanyModal({ open, onClose }: { open: boolean; onClose: () 
               <UiSelect value={industry} onChange={setIndustry} options={INDUSTRIES} />
             </Labeled>
           </div>
-          <div className="px-6 py-4 flex justify-end gap-2" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+          <div className="px-6 py-4 flex justify-end gap-2" style={{ borderTop: "1px solid var(--border)" }}>
             <button onClick={reset} className="px-3 py-2 rounded-lg text-sm" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>Cancel</button>
             <button onClick={handleSave} disabled={!canSave}
               className="px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-40" style={{ backgroundColor: "#4f46e5" }}>
@@ -309,7 +309,7 @@ export function EditCompanyModal({ company, open, onClose }: { company: Company;
         )}
       </div>
       {/* Footer with a danger action on the left */}
-      <div className="px-6 py-4 flex items-center justify-between gap-2" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+      <div className="px-6 py-4 flex items-center justify-between gap-2" style={{ borderTop: "1px solid var(--border)" }}>
         <button onClick={() => setConfirmDelete(true)}
           className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
           style={{ border: "1px solid #fecaca", color: "#dc2626" }}>
@@ -357,10 +357,10 @@ function DeleteCompanyConfirm({ company, onCancel, onConfirm, onClose }: {
         {rows.length > 0 ? (
           <div>
             <p className="text-xs font-medium mb-2" style={{ color: "var(--text-secondary)" }}>The following will also be deleted:</p>
-            <div className="rounded-lg overflow-hidden" style={{ border: "1px solid var(--border-subtle)" }}>
+            <div className="rounded-lg overflow-hidden" style={{ border: "1px solid var(--border)" }}>
               {rows.map((r, i) => (
                 <div key={r.label} className="flex items-center justify-between px-3 py-2 text-sm"
-                  style={{ borderTop: i === 0 ? "none" : "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface)" }}>
+                  style={{ borderTop: i === 0 ? "none" : "1px solid var(--border)", backgroundColor: "var(--bg-surface)" }}>
                   <span style={{ color: "var(--text-secondary)" }}>{r.label}</span>
                   <span className="font-semibold" style={{ color: "var(--text-primary)" }}>{r.n}</span>
                 </div>
@@ -371,7 +371,7 @@ function DeleteCompanyConfirm({ company, onCancel, onConfirm, onClose }: {
           <p className="text-sm" style={{ color: "var(--text-muted)" }}>No other records are tied to this company.</p>
         )}
       </div>
-      <div className="px-6 py-4 flex justify-end gap-2" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+      <div className="px-6 py-4 flex justify-end gap-2" style={{ borderTop: "1px solid var(--border)" }}>
         <button onClick={onCancel} className="px-3 py-2 rounded-lg text-sm" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>Cancel</button>
         <button onClick={onConfirm} className="px-4 py-2 rounded-lg text-sm font-medium text-white" style={{ backgroundColor: "#dc2626" }}>
           Delete Company{impact.total > 0 ? ` + ${impact.total} record${impact.total === 1 ? "" : "s"}` : ""}
@@ -475,7 +475,7 @@ export function AddServiceAreaModal({ open, onClose, defaultLocationId }: {
               </div>
             </div>
           </div>
-          <div className="px-6 py-4 flex justify-end" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+          <div className="px-6 py-4 flex justify-end" style={{ borderTop: "1px solid var(--border)" }}>
             <button onClick={onClose} className="px-4 py-2 rounded-lg text-sm font-medium text-white" style={{ backgroundColor: "#4f46e5" }}>Got it</button>
           </div>
         </>

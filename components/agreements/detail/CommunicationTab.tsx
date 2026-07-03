@@ -59,7 +59,7 @@ export default function CommunicationTab({ agreement }: { agreement: CustomerAgr
       </Card>
 
       <Card className="overflow-hidden">
-        <div className="px-4 py-3" style={{ borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+        <div className="px-4 py-3" style={{ borderBottom: "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)" }}>
           <SectionLabel>History ({items.length})</SectionLabel>
         </div>
         {items.map((c, i) => {
@@ -67,7 +67,7 @@ export default function CommunicationTab({ agreement }: { agreement: CustomerAgr
           const Icon = m.icon;
           const Dir = c.direction === "in" ? ArrowDownLeft : ArrowUpRight;
           return (
-            <div key={c.id} className="flex items-start gap-3 px-4 py-3" style={{ borderBottom: i < items.length - 1 ? "1px solid var(--border-subtle)" : "none" }}>
+            <div key={c.id} className="flex items-start gap-3 px-4 py-3" style={{ borderBottom: i < items.length - 1 ? "1px solid var(--border)" : "none" }}>
               <span className="w-7 h-7 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: m.color + "20" }}>
                 <Icon className="w-3.5 h-3.5" style={{ color: m.color }} />
               </span>

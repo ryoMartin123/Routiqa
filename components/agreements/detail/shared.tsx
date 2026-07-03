@@ -55,7 +55,7 @@ export const RENEWAL_LABEL = (t?: RenewalType): string => (t ? RENEWAL_TYPE_LABE
 export function Card({ children, className = "", style }: { children: React.ReactNode; className?: string; style?: React.CSSProperties }) {
   return (
     <div className={`rounded-xl ${className}`}
-      style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)", ...style }}>
+      style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)", ...style }}>
       {children}
     </div>
   );

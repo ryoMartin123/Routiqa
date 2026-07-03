@@ -102,7 +102,7 @@ export default function CommunicationsPage() {
   return (
     <div className="flex flex-col h-full overflow-hidden" style={{ backgroundColor: "var(--bg-page)" }}>
       {/* Page header */}
-      <header className="shrink-0 px-5 py-3 flex items-center gap-4" style={{ borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-page)" }}>
+      <header className="shrink-0 px-5 py-3 flex items-center gap-4" style={{ borderBottom: "1px solid var(--border)", backgroundColor: "var(--bg-page)" }}>
         <div className="flex-1 min-w-0">
           <h1 className="text-lg font-semibold truncate" style={{ color: "var(--text-primary)" }}>Communications</h1>
           <p className="text-xs hidden md:block truncate" style={{ color: "var(--text-muted)" }}>Messages, calls, and follow-ups in one place.</p>
@@ -132,7 +132,7 @@ export default function CommunicationsPage() {
               <Filter className="w-4 h-4" />
             </button>
             {filterOpen && (
-              <div className="absolute right-0 top-full mt-1 z-20 w-52 rounded-lg overflow-hidden py-1" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-glow)" }} onMouseLeave={() => setFilterOpen(false)}>
+              <div className="absolute right-0 top-full mt-1 z-20 w-52 rounded-lg overflow-hidden py-1" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }} onMouseLeave={() => setFilterOpen(false)}>
                 {VIEWS.map(v => {
                   const n = convos.filter(c => matchesChannel(c, channelTab) && matchesView(c, v.key)).length;
                   return (
@@ -155,8 +155,8 @@ export default function CommunicationsPage() {
 
       <div className="flex flex-1 overflow-hidden">
         {/* ── Left: Communication Queue ── */}
-        <aside className="flex flex-col shrink-0 w-72" style={{ backgroundColor: "var(--bg-page)", borderRight: "1px solid var(--border-subtle)" }}>
-          <div className="px-2.5 pt-2.5 pb-2 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+        <aside className="flex flex-col shrink-0 w-72" style={{ backgroundColor: "var(--bg-page)", borderRight: "1px solid var(--border)" }}>
+          <div className="px-2.5 pt-2.5 pb-2 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
             <div className="flex items-center gap-1.5">
               <div className="relative flex-1 min-w-0">
                 <div className="flex items-center gap-2 rounded-lg px-2.5 py-1.5" style={{ backgroundColor: "var(--bg-input)" }}>
@@ -188,7 +188,7 @@ export default function CommunicationsPage() {
                             )}
                             {messageHits.length > 0 && (
                               <>
-                                <p className="text-[10px] font-semibold uppercase tracking-wider px-3 pt-2 pb-1" style={{ color: "var(--text-muted)", borderTop: convoHits.length ? "1px solid var(--border-subtle)" : "none" }}>Messages</p>
+                                <p className="text-[10px] font-semibold uppercase tracking-wider px-3 pt-2 pb-1" style={{ color: "var(--text-muted)", borderTop: convoHits.length ? "1px solid var(--border)" : "none" }}>Messages</p>
                                 {messageHits.map((h, i) => (
                                   <button key={i} onClick={() => { open(h.c.id); setSearch(""); setSearchOpen(false); }} className="w-full flex items-start gap-2.5 px-3 py-1.5 text-left transition-colors hover:bg-[var(--bg-surface-2)]">
                                     <span className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-[9px] font-bold text-white mt-0.5" style={{ backgroundColor: "#6b7280" }}>{initials(h.c.name)}</span>
@@ -229,7 +229,7 @@ export default function CommunicationsPage() {
 
         {/* ── Right: Customer + Work Context (collapsible, eased) ── */}
         <aside className="hidden xl:block shrink-0 overflow-hidden" style={{ width: contextOpen ? 320 : 0, transition: "width 0.32s cubic-bezier(0.4, 0, 0.2, 1)" }}>
-          <div className="w-[320px] h-full overflow-y-auto" style={{ borderLeft: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-page)" }}>
+          <div className="w-[320px] h-full overflow-y-auto" style={{ borderLeft: "1px solid var(--border)", backgroundColor: "var(--bg-page)" }}>
             {selected && <ContextPanel c={selected} />}
           </div>
         </aside>
@@ -246,7 +246,7 @@ function QueueRow({ c, selected, onClick }: { c: Conversation; selected: boolean
   const missed = c.timeline.some(t => t.kind === "call" && t.direction === "missed");
   return (
     <button onClick={onClick} className="w-full text-left px-2.5 py-2 flex items-start gap-2.5 transition-colors hover:bg-[var(--bg-surface-2)] relative"
-      style={{ backgroundColor: selected ? ACCENT_SOFT : "transparent", borderBottom: "1px solid var(--border-subtle)" }}>
+      style={{ backgroundColor: selected ? ACCENT_SOFT : "transparent", borderBottom: "1px solid var(--border)" }}>
       {selected && <span className="absolute left-0 top-0 bottom-0 w-0.5" style={{ backgroundColor: ACCENT }} />}
       <div className="relative shrink-0 mt-0.5">
         <div className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold" style={{ backgroundColor: selected ? "var(--accent-soft-2-bg)" : "#6b7280", color: selected ? "var(--accent-text-strong)" : "#fff" }}>{initials(c.name)}</div>
@@ -342,7 +342,7 @@ function Workspace({ c, mode, needsCount }: { c: Conversation; mode: ChannelTab;
   return (
     <>
       {/* Header */}
-      <header className="flex items-center justify-between gap-3 px-5 py-2.5 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+      <header className="flex items-center justify-between gap-3 px-5 py-2.5 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
         <div className="flex items-center gap-3 min-w-0">
           <div className="min-w-0">
             <div className="flex items-center gap-2">
@@ -368,7 +368,7 @@ function Workspace({ c, mode, needsCount }: { c: Conversation; mode: ChannelTab;
               <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: st.color }} />{st.label}<ChevronDown className="w-3 h-3" />
             </button>
             {statusOpen && (
-              <div className="absolute right-0 top-full mt-1 z-20 w-44 rounded-lg overflow-hidden py-1" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-glow)" }}>
+              <div className="absolute right-0 top-full mt-1 z-20 w-44 rounded-lg overflow-hidden py-1" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
                 {(Object.keys(STATUS_META) as ConvStatus[]).map(s => (
                   <button key={s} onClick={() => { setStatus(c.id, s); setStatusOpen(false); }} className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-left hover:bg-[var(--bg-surface-2)]" style={{ color: "var(--text-primary)" }}>
                     <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: STATUS_META[s].color }} />{STATUS_META[s].label}
@@ -390,7 +390,7 @@ function Workspace({ c, mode, needsCount }: { c: Conversation; mode: ChannelTab;
       </div>
 
       {/* Composer */}
-      <div className="shrink-0 px-5 py-3" style={{ borderTop: "1px solid var(--border-subtle)", backgroundColor: "transparent" }}>
+      <div className="shrink-0 px-5 py-3" style={{ borderTop: "1px solid var(--border)", backgroundColor: "transparent" }}>
         {/* AI assistant — draft a reply; approve before it reaches the customer */}
         {!isNote && (
           <div className="mb-2.5">
@@ -468,7 +468,7 @@ function TimelineRow({ t, name }: { t: TimelineItem; name: string }) {
   }
   if (t.kind === "call") {
     return (
-      <div className="rounded-xl px-3.5 py-2.5 w-full" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border-subtle)" }}>
+      <div className="rounded-xl px-3.5 py-2.5 w-full" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}>
         <div className="flex items-center gap-1.5 mb-0.5">
           {t.direction === "missed" ? <PhoneMissed className="w-3.5 h-3.5" style={{ color: "#dc2626" }} /> : <Phone className="w-3.5 h-3.5" style={{ color: "#059669" }} />}
           <span className="text-xs font-semibold" style={{ color: "var(--text-primary)" }}>{t.direction === "missed" ? "Missed call" : "Call"}{t.durationSec ? ` · ${Math.floor(t.durationSec / 60)}:${String(t.durationSec % 60).padStart(2, "0")}` : ""}</span>
@@ -534,7 +534,7 @@ function ContextPanel({ c }: { c: Conversation }) {
             <ChevronDown className="w-3.5 h-3.5" style={{ color: "var(--text-muted)" }} />
           </button>
           {ownerOpen && (
-            <div className="absolute left-0 right-0 top-full mt-1 z-20 rounded-lg overflow-hidden py-1 max-h-56 overflow-y-auto" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-glow)" }}>
+            <div className="absolute left-0 right-0 top-full mt-1 z-20 rounded-lg overflow-hidden py-1 max-h-56 overflow-y-auto" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
               {owners.map(o => <button key={o} onClick={() => { assignOwner(c.id, o); setOwnerOpen(false); }} className="w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-surface-2)]" style={{ color: "var(--text-primary)" }}>{o}</button>)}
             </div>
           )}
@@ -659,7 +659,7 @@ function AttachMenu() {
     <div className="relative">
       <IconBtn title="Attach" onClick={() => setOpen(o => !o)}><Paperclip className="w-4 h-4" /></IconBtn>
       {open && (
-        <div className="absolute left-0 bottom-full mb-1 z-20 w-40 rounded-lg overflow-hidden py-1" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-glow)" }} onMouseLeave={() => setOpen(false)}>
+        <div className="absolute left-0 bottom-full mb-1 z-20 w-40 rounded-lg overflow-hidden py-1" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }} onMouseLeave={() => setOpen(false)}>
           {items.map(i => <button key={i} className="w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-surface-2)]" style={{ color: "var(--text-primary)" }}>{i}</button>)}
         </div>
       )}

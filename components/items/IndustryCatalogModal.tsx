@@ -32,7 +32,7 @@ export default function IndustryCatalogModal({ onClose, onApplied }: {
       <div className="w-full max-w-4xl h-[86vh] flex flex-col rounded-2xl overflow-hidden" onClick={e => e.stopPropagation()}
         style={{ backgroundColor: "var(--bg-surface)", boxShadow: "0 16px 48px rgba(0,0,0,0.24)" }}>
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+        <div className="flex items-center justify-between px-6 py-4 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
           <div className="flex items-center gap-2.5">
             <Layers className="w-5 h-5" style={{ color: "#4f46e5" }} />
             <div>
@@ -45,7 +45,7 @@ export default function IndustryCatalogModal({ onClose, onApplied }: {
 
         <div className="flex-1 flex min-h-0">
           {/* Industry list */}
-          <div className="w-56 shrink-0 overflow-y-auto thin-scroll-y py-2 px-2" style={{ borderRight: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+          <div className="w-56 shrink-0 overflow-y-auto thin-scroll-y py-2 px-2" style={{ borderRight: "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)" }}>
             {INDUSTRY_CATALOGS.map(c => {
               const active = selected === c.id;
               return (
@@ -67,7 +67,7 @@ export default function IndustryCatalogModal({ onClose, onApplied }: {
             <p className="text-[10px] font-semibold uppercase tracking-widest mb-1.5" style={{ color: "var(--text-muted)" }}>Categories</p>
             <div className="flex flex-wrap gap-1.5 mb-4">
               {cat.categories.map(c => (
-                <span key={c} className="text-[11px] font-medium px-2 py-0.5 rounded-full" style={{ backgroundColor: "var(--bg-surface-2)", color: "var(--text-secondary)", border: "1px solid var(--border-subtle)" }}>{c}</span>
+                <span key={c} className="text-[11px] font-medium px-2 py-0.5 rounded-full" style={{ backgroundColor: "var(--bg-surface-2)", color: "var(--text-secondary)", border: "1px solid var(--border)" }}>{c}</span>
               ))}
             </div>
 
@@ -76,11 +76,11 @@ export default function IndustryCatalogModal({ onClose, onApplied }: {
               {[...byCat.entries()].map(([category, list]) => (
                 <div key={category}>
                   <p className="text-xs font-semibold mb-1" style={{ color: "var(--text-secondary)" }}>{category}</p>
-                  <div className="rounded-lg overflow-hidden" style={{ border: "1px solid var(--border-subtle)" }}>
+                  <div className="rounded-lg overflow-hidden" style={{ border: "1px solid var(--border)" }}>
                     {list.map((si, i) => {
                       const tc = ITEM_TYPE_CONFIG[si.type];
                       return (
-                        <div key={si.name} className="flex items-center gap-3 px-3 py-1.5" style={{ borderBottom: i < list.length - 1 ? "1px solid var(--border-subtle)" : "none" }}>
+                        <div key={si.name} className="flex items-center gap-3 px-3 py-1.5" style={{ borderBottom: i < list.length - 1 ? "1px solid var(--border)" : "none" }}>
                           <span className="text-sm flex-1 truncate" style={{ color: "var(--text-primary)" }}>{si.name}</span>
                           <StatusBadge label={tc.label} color={tc.color} size="sm" className="shrink-0" />
                           <span className="text-xs font-medium w-16 text-right shrink-0" style={{ color: si.unitPrice < 0 ? "#dc2626" : "var(--text-secondary)" }}>{fmt(si.unitPrice)}</span>
@@ -95,7 +95,7 @@ export default function IndustryCatalogModal({ onClose, onApplied }: {
         </div>
 
         {/* Footer actions */}
-        <div className="px-6 py-4 shrink-0" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+        <div className="px-6 py-4 shrink-0" style={{ borderTop: "1px solid var(--border)" }}>
           {confirmReplace ? (
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-2 text-xs" style={{ color: "#b45309" }}>

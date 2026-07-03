@@ -83,7 +83,7 @@ function PipelineCard({ lead }: { lead: Lead }) {
       draggable
       onDragStart={e => { e.dataTransfer.setData("text/plain", lead.id); e.dataTransfer.effectAllowed = "move"; }}
       className="block rounded-xl p-3 mb-2 transition-all hover:shadow-md cursor-grab active:cursor-grabbing"
-      style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)", textDecoration: "none" }}>
+      style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)", textDecoration: "none" }}>
 
       {/* Customer + status */}
       <div className="flex items-start justify-between gap-2 mb-1.5">
@@ -116,7 +116,7 @@ function PipelineCard({ lead }: { lead: Lead }) {
       </div>
 
       {/* Assigned + date */}
-      <div className="flex items-center justify-between pt-2" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+      <div className="flex items-center justify-between pt-2" style={{ borderTop: "1px solid var(--border)" }}>
         <div className="flex items-center gap-1.5 min-w-0">
           <div className="w-5 h-5 rounded-full bg-indigo-600 flex items-center justify-center text-[8px] font-bold text-white shrink-0" title={lead.assignedTo}>
             {lead.assignedToInitials}
@@ -147,7 +147,7 @@ function PipelineView({ leads, openStages, resolve, tab, onMoveStage }: {
     return (
       <div className="pb-4">
         {subset.length === 0 ? (
-          <div className="rounded-xl py-16 text-center" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>
+          <div className="rounded-xl py-16 text-center" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
             <p className="text-sm" style={{ color: "var(--text-muted)" }}>No {tab} leads in this view.</p>
           </div>
         ) : (
@@ -193,7 +193,7 @@ function PipelineView({ leads, openStages, resolve, tab, onMoveStage }: {
               onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setDropStage(null); }}
               onDrop={e => { e.preventDefault(); setDropStage(null); const id = e.dataTransfer.getData("text/plain"); if (id) onMoveStage(id, stage.key); }}>
               {/* Flat stage header: colored dot · name · count · value */}
-              <div className="flex items-center gap-2 mb-3 pb-2 px-1 pt-1 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+              <div className="flex items-center gap-2 mb-3 pb-2 px-1 pt-1 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
                 <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: stage.color }} />
                 <p className="text-sm font-semibold truncate" style={{ color: "var(--text-primary)" }}>{stage.name}</p>
                 <span className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>{cards.length}</span>
@@ -468,9 +468,11 @@ export default function LeadsPage() {
                     border: `1px solid ${active ? "var(--accent-soft-border)" : "transparent"}`,
                   }}>
                   {t.label}
-                  <span className="text-xs tabular-nums" style={{ color: active ? "var(--accent-text)" : "var(--text-muted)", opacity: 0.7 }}>
-                    {count}
-                  </span>
+                  {count > 0 && (
+                    <span className="text-xs tabular-nums" style={{ color: active ? "var(--accent-text)" : "var(--text-muted)", opacity: 0.7 }}>
+                      {count}
+                    </span>
+                  )}
                 </button>
               );
             })}
@@ -558,10 +560,10 @@ export default function LeadsPage() {
         <PipelineView leads={filtered} openStages={openStages.filter(s => !hiddenStages.has(s.key))} resolve={resolve} tab={tab} onMoveStage={moveStage} />
       ) : (
         /* Table view */
-        <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+        <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
           {/* Column headers */}
           <div className="grid px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider select-none"
-            style={{ gridTemplateColumns: "2.5fr 1.2fr 1fr 1fr 1fr 1fr 0.6fr", color: "var(--text-muted)", borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
+            style={{ gridTemplateColumns: "2.5fr 1.2fr 1fr 1fr 1fr 1fr 0.6fr", color: "var(--text-muted)", borderBottom: "1px solid var(--border)", backgroundColor: "transparent" }}>
             {([
               { label: "Lead / Customer",  field: "customerName" },
               { label: "Stage",            field: "stage"        },
@@ -590,7 +592,7 @@ export default function LeadsPage() {
               return (
                 <Link key={lead.id} href={`/leads/${lead.id}`}
                   className="grid px-4 py-3 items-center hover:bg-[var(--bg-surface-2)] transition-colors"
-                  style={{ gridTemplateColumns: "2.5fr 1.2fr 1fr 1fr 1fr 1fr 0.6fr", borderBottom: i < displayed.length - 1 ? "1px solid var(--border-subtle)" : "none", textDecoration: "none" }}>
+                  style={{ gridTemplateColumns: "2.5fr 1.2fr 1fr 1fr 1fr 1fr 0.6fr", borderBottom: i < displayed.length - 1 ? "1px solid var(--border)" : "none", textDecoration: "none" }}>
 
                   {/* Lead / Customer */}
                   <div className="flex items-center gap-2.5 min-w-0">
@@ -639,7 +641,7 @@ export default function LeadsPage() {
 
           {/* Footer */}
           <div className="flex items-center justify-between px-4 py-3 text-xs"
-            style={{ borderTop: "1px solid var(--border-subtle)", color: "var(--text-muted)", backgroundColor: "var(--bg-surface-2)" }}>
+            style={{ borderTop: "1px solid var(--border)", color: "var(--text-muted)", backgroundColor: "transparent" }}>
             <span>Showing {displayed.length} of {filtered.filter(tabFn).length} leads</span>
             <div className="flex gap-1">
               <button className="px-2 py-1 rounded" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>← Prev</button>
@@ -662,7 +664,7 @@ export default function LeadsPage() {
 // ─── Overview view: analytics for the visible leads ──────────
 function OverviewCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-xl p-5" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+    <div className="rounded-xl p-5" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
       <p className="text-sm font-semibold mb-4" style={{ color: "var(--text-primary)" }}>{title}</p>
       {children}
     </div>
@@ -797,11 +799,11 @@ function LeadsCalendar({ leads, resolve, focus }: { leads: Lead[]; resolve: (key
   return (
     <div>
 
-      <div className="rounded-xl overflow-hidden" style={{ border: "1px solid var(--border-subtle)" }}>
+      <div className="rounded-xl overflow-hidden" style={{ border: "1px solid var(--border)" }}>
         <div className="grid grid-cols-7">
           {weekdays.map(w => (
             <div key={w} className="px-2 py-2 text-[11px] font-semibold text-center"
-              style={{ color: "var(--text-muted)", backgroundColor: "var(--bg-surface-2)", borderBottom: "1px solid var(--border-subtle)" }}>{w}</div>
+              style={{ color: "var(--text-muted)", backgroundColor: "var(--bg-surface-2)", borderBottom: "1px solid var(--border)" }}>{w}</div>
           ))}
         </div>
         <div className="grid grid-cols-7">
@@ -813,8 +815,8 @@ function LeadsCalendar({ leads, resolve, focus }: { leads: Lead[]; resolve: (key
               <div key={i} className="min-h-[104px] p-1.5 flex flex-col"
                 style={{
                   backgroundColor: inMonth ? "var(--bg-surface)" : "var(--bg-page)",
-                  borderRight: (i % 7 !== 6) ? "1px solid var(--border-subtle)" : undefined,
-                  borderBottom: i < 35 ? "1px solid var(--border-subtle)" : undefined,
+                  borderRight: (i % 7 !== 6) ? "1px solid var(--border)" : undefined,
+                  borderBottom: i < 35 ? "1px solid var(--border)" : undefined,
                 }}>
                 <span className="text-[11px] mb-1 inline-flex items-center justify-center w-5 h-5 rounded-full self-start"
                   style={isToday

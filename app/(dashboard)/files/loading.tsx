@@ -7,7 +7,7 @@ import { useSectionCount } from "@/lib/ui/skeleton-count";
 // own toolbar (view tabs · search · filters) + a grid of 4:3 thumbnail tiles
 // (same minmax(190px) grid as PhotoGallery). Data-aware: as many thumbnails as
 // there are files (0 → shell only).
-const surface = { backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" } as const;
+const surface = { backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" } as const;
 
 export default function Loading() {
   const count = useSectionCount("files");

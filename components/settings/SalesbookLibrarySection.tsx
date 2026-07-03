@@ -97,7 +97,7 @@ export default function SalesbookLibrarySection({ activeModule, onOpen, onBack }
             return (
               <button key={m.key} onClick={() => onOpen(m.key, m.label)}
                 className="flex items-start gap-3 p-4 rounded-xl text-left w-full transition-all group hover:shadow-md cursor-pointer"
-                style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+                style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: "var(--bg-surface-2)" }}>
                   <Icon className="w-4 h-4" style={{ color: "#4f46e5" }} />
                 </div>
@@ -155,7 +155,7 @@ export default function SalesbookLibrarySection({ activeModule, onOpen, onBack }
           <ProposalDefaultsSection />
           {/* Proposal Branding now lives inside Defaults (its standalone card was removed). */}
           <div>
-            <h3 className="text-sm font-semibold mb-4 pt-5 flex items-center gap-2" style={{ color: "var(--text-primary)", borderTop: "1px solid var(--border-subtle)" }}>
+            <h3 className="text-sm font-semibold mb-4 pt-5 flex items-center gap-2" style={{ color: "var(--text-primary)", borderTop: "1px solid var(--border)" }}>
               <Palette className="w-4 h-4" style={{ color: "#4f46e5" }} /> Proposal Branding
             </h3>
             <ProposalBrandingSection />
@@ -195,7 +195,7 @@ function ImportCenter() {
         {KINDS.map(k => {
           const Icon = k.icon;
           return (
-            <div key={k.label} className="rounded-xl p-3.5 flex items-start gap-3" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+            <div key={k.label} className="rounded-xl p-3.5 flex items-start gap-3" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
               <span className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: "var(--bg-surface-2)" }}><Icon className="w-4 h-4" style={{ color: "var(--accent-text)" }} /></span>
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5">
@@ -215,7 +215,7 @@ function ImportCenter() {
 // ─── Shared library bits ──────────────────────────────────
 function LibraryToolbar({ icon: Icon, text }: { icon: typeof Package; text: string }) {
   return (
-    <div className="rounded-xl p-3.5 flex items-start gap-2.5" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border-subtle)" }}>
+    <div className="rounded-xl p-3.5 flex items-start gap-2.5" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}>
       <Icon className="w-4 h-4 shrink-0 mt-0.5" style={{ color: "var(--accent-text)" }} />
       <p className="text-xs leading-relaxed" style={{ color: "var(--text-secondary)" }}>{text}</p>
     </div>
@@ -227,7 +227,7 @@ function SalesbookCard({ t, installed, onPreview, onUse }: { t: SalesbookTemplat
   const accent = INDUSTRY_ACCENT[t.industry];
   return (
     <div className="rounded-2xl overflow-hidden flex flex-col transition-all hover:shadow-md"
-      style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+      style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
       {/* Visual header */}
       <div className="px-4 pt-4 pb-3 relative" style={{ background: `linear-gradient(135deg, ${accent}14, transparent)` }}>
         <div className="flex items-start justify-between gap-2">
@@ -260,7 +260,7 @@ function SalesbookCard({ t, installed, onPreview, onUse }: { t: SalesbookTemplat
       </div>
 
       {/* Actions */}
-      <div className="px-4 py-3 flex items-center gap-2" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+      <div className="px-4 py-3 flex items-center gap-2" style={{ borderTop: "1px solid var(--border)" }}>
         <button onClick={onPreview} className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium"
           style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>
           <Eye className="w-3.5 h-3.5" /> Preview
@@ -346,7 +346,7 @@ function PreviewDrawer({ t, installed, onClose, onUse }: { t: SalesbookTemplate;
         </div>
 
         {/* Footer */}
-        <div className="shrink-0 px-6 py-4 flex items-center justify-between" style={{ backgroundColor: "var(--bg-surface)", borderTop: "1px solid var(--border-subtle)" }}>
+        <div className="shrink-0 px-6 py-4 flex items-center justify-between" style={{ backgroundColor: "var(--bg-surface)", borderTop: "1px solid var(--border)" }}>
           <button onClick={onClose} className="text-sm px-3 py-2 rounded-lg" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>Close</button>
           <button onClick={onUse} className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-white" style={{ backgroundColor: accent }}>
             <Download className="w-4 h-4" /> {installed ? "Install again" : "Use This Template"}
@@ -371,7 +371,7 @@ function PreviewBlock({ icon: Icon, title, children }: { icon: typeof Layers; ti
 function OptionCard({ o, accent }: { o: SalesbookOption; accent: string }) {
   const tierLabel = o.tier ? o.tier[0].toUpperCase() + o.tier.slice(1) : null;
   return (
-    <div className="rounded-xl p-3.5" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+    <div className="rounded-xl p-3.5" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
       {o.image && (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={o.image} alt={o.name} className="w-full rounded-lg mb-3" style={{ height: "120px", objectFit: "cover" }} />
@@ -439,7 +439,7 @@ function InstallModal({ t, companies, locations, defaultCompanyId, onClose, onIn
     <div className="fixed inset-0 z-[60] bg-black/40 flex items-center justify-center p-4" onClick={onClose}>
       <div className="w-full max-w-md rounded-2xl overflow-hidden" onClick={e => e.stopPropagation()}
         style={{ backgroundColor: "var(--bg-surface)", boxShadow: "0 16px 48px rgba(0,0,0,0.28)" }}>
-        <div className="px-6 py-4" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+        <div className="px-6 py-4" style={{ borderBottom: "1px solid var(--border)" }}>
           <p className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>Use This Template</p>
           <p className="text-[11px] mt-0.5" style={{ color: "var(--text-muted)" }}>Copy “{t.name}” into your company workspace.</p>
         </div>
@@ -467,7 +467,7 @@ function InstallModal({ t, companies, locations, defaultCompanyId, onClose, onIn
             <CheckRow label="Include default terms" checked={includeTerms} onChange={setIncludeTerms} />
           </div>
         </div>
-        <div className="px-6 py-4 flex justify-end gap-2" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+        <div className="px-6 py-4 flex justify-end gap-2" style={{ borderTop: "1px solid var(--border)" }}>
           <button onClick={onClose} className="px-3 py-2 rounded-lg text-sm" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>Cancel</button>
           <button onClick={doInstall} disabled={!companyId} className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-40" style={{ backgroundColor: accent }}>
             <Download className="w-4 h-4" /> Create Proposal Template
@@ -480,7 +480,7 @@ function InstallModal({ t, companies, locations, defaultCompanyId, onClose, onIn
 
 function CheckRow({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) {
   return (
-    <label className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg cursor-pointer" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border-subtle)" }}>
+    <label className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg cursor-pointer" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}>
       <span className="text-sm" style={{ color: "var(--text-secondary)" }}>{label}</span>
       <input type="checkbox" checked={checked} onChange={e => onChange(e.target.checked)} className="accent-indigo-600 w-4 h-4" />
     </label>
@@ -491,7 +491,7 @@ function CheckRow({ label, checked, onChange }: { label: string; checked: boolea
 function InstalledList({ installed, onRefresh, onEdit }: { installed: ReturnType<typeof getCompanySalesbooks>; onRefresh: () => void; onEdit: (id: string) => void }) {
   if (installed.length === 0) {
     return (
-      <div className="rounded-xl py-16 text-center" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>
+      <div className="rounded-xl py-16 text-center" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
         <BookOpen className="w-8 h-8 mx-auto mb-3" style={{ color: "var(--text-muted)" }} />
         <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>No proposal templates yet</p>
         <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>Browse Starter Templates and choose “Use This Template” to copy one in.</p>
@@ -503,7 +503,7 @@ function InstalledList({ installed, onRefresh, onEdit }: { installed: ReturnType
       {installed.map(sb => {
         const accent = INDUSTRY_ACCENT[sb.industry];
         return (
-          <div key={sb.id} className="rounded-xl p-4 flex items-center gap-3" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+          <div key={sb.id} className="rounded-xl p-4 flex items-center gap-3" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
             <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: accent + "1a" }}>
               <BookOpen className="w-4 h-4" style={{ color: accent }} />
             </div>
