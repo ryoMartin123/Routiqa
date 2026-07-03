@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { X, Briefcase, Plus } from "lucide-react";
+import { X, Briefcase, Plus, Sparkles, Navigation, Check } from "lucide-react";
 import UiSelect from "@/components/ui/Select";
 import AccountCombobox from "@/components/customers/AccountCombobox";
 import DatePicker from "@/components/ui/DatePicker";
@@ -10,6 +10,7 @@ import NumberStepper from "@/components/ui/NumberStepper";
 import { getAllCustomers, getProperties, updateCustomer } from "@/lib/customers/data";
 import { createJob, type JobType, type JobPriority } from "@/lib/jobs/data";
 import { jobTypeLabel } from "@/lib/job-config/data";
+import { suggestTechsForJob } from "@/lib/dispatch/suggest";
 import { getBoardCandidates, getDispatchBoardMembers } from "@/lib/users/data";
 import { AddressAutocomplete, EMPTY_ADDRESS, type ParsedAddress } from "@/components/address/AddressAutocomplete";
 import { isPastDateTime, isOutsideHours, formatHour, minTimeFor, minBookableYMD } from "@/lib/utils/schedule";
@@ -75,6 +76,17 @@ export default function JobWizard({ preset, onClose, onCreated }: {
       .map(u => ({ name: u.fullName, initials: u.initials }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [customer?.companyId, customer?.locationId]);
+  // Suggest the best techs for this job (proximity + on-duty + soft skill match).
+  // No overlap check here (creation flow) → all treated as available; the board's
+  // ScheduleConfirmModal adds live availability when scheduling from the queue.
+  const suggestions = useMemo(() => {
+    if (!customer || roster.length === 0) return [];
+    return suggestTechsForJob({
+      seed: customer.id, serviceAreaId: customer.serviceAreaId, companyId: customer.companyId, locationId: customer.locationId,
+      keywords: `${jobTypeLabel(type)} ${title}`, techNames: roster.map(r => r.name),
+    }).slice(0, 3);
+  }, [customer, roster, type, title]);
+
   const properties = useMemo(() => (customerId ? getProperties(customerId) : []), [customerId]);
   // One property → just use it. Multiple → let the user pick which (default to
   // the account's primary property).
@@ -259,6 +271,26 @@ export default function JobWizard({ preset, onClose, onCreated }: {
             )}
             <div>
               <label className="block text-[10px] font-medium mb-1" style={{ color: "var(--text-secondary)" }}>Assigned Technician</label>
+              {suggestions.length > 0 && (
+                <div className="mb-1.5">
+                  <div className="flex items-center gap-1 mb-1"><Sparkles className="w-3 h-3" style={{ color: "#4f46e5" }} /><span className="text-[10px] font-medium" style={{ color: "var(--text-secondary)" }}>Suggested</span></div>
+                  <div className="flex flex-col gap-1">
+                    {suggestions.map(s => {
+                      const on = tech === s.name;
+                      return (
+                        <button key={s.name} onClick={() => setTech(s.name)} type="button"
+                          className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-left transition-colors"
+                          style={{ border: `1px solid ${on ? "#a5b4fc" : "var(--border)"}`, backgroundColor: on ? "var(--accent-soft-bg)" : "var(--bg-surface-2)" }}>
+                          <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: s.onDuty ? "#16a34a" : "#9ca3af" }} />
+                          <span className="text-xs font-medium flex-1 truncate" style={{ color: "var(--text-primary)" }}>{s.name}</span>
+                          <span className="inline-flex items-center gap-1 text-[10px] shrink-0" style={{ color: on ? "var(--accent-text)" : "var(--text-muted)" }}>{s.onDuty && <Navigation className="w-2.5 h-2.5" />}{s.reason}</span>
+                          {on && <Check className="w-3 h-3 shrink-0" style={{ color: "#4f46e5" }} />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
               <UiSelect size="sm" value={tech} onChange={setTech}
                 options={[{ value: "", label: "Unassigned" }, ...roster.map(r => ({ value: r.name, label: r.name }))]} />
             </div>

@@ -12,16 +12,15 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft, CheckCircle2, Circle, Play, RotateCcw, Repeat, ClipboardList,
-  Briefcase, User, MapPin, Phone, Mail, Calendar, Clock, Users,
+  Briefcase, User, MapPin, Calendar, Clock, Users,
   Receipt, FilePen, Activity, Tag, Building2, DollarSign, Package,
   Image as ImageIcon, Plus,
 } from "lucide-react";
 import {
-  getWorkOrderById, updateWorkOrderById, getJob, JOB_STATUS_CONFIG, resolveJobTypeColor,
+  getWorkOrderById, updateWorkOrderById, getJob, JOB_STATUS_CONFIG,
   type WorkOrderStatus,
 } from "@/lib/jobs/data";
 import { getAppointmentsForWorkOrder, VISIT_TYPE_CONFIG, type AppointmentStatus } from "@/lib/appointments/data";
-import { getCustomer } from "@/lib/customers/data";
 import { getFiles } from "@/lib/files/data";
 import { getQuotesForWorkOrder, getInvoicesForWorkOrder, createQuoteFromWorkOrder, createInvoiceFromWorkOrder, fmt as fmtCurrency } from "@/lib/quotes/data";
 import { QUOTE_STATUS_STYLE, INVOICE_STATUS_STYLE } from "@/lib/quotes/types";
@@ -63,7 +62,6 @@ export default function WorkOrderDetailPage(props: { params: Promise<{ id: strin
   const wo   = useMemo(() => getWorkOrderById(id), [id, rev]);
   const job  = useMemo(() => (wo?.jobId ? getJob(wo.jobId) : undefined), [wo?.jobId, rev]);
   const visits = useMemo(() => getAppointmentsForWorkOrder(id), [id, rev]);
-  const customer = useMemo(() => (job ? getCustomer(job.accountId) : undefined), [job?.accountId, rev]);
   const images = useMemo(() => getFiles({ workOrderId: id }).filter(f => f.fileType === "image"), [id, rev]);
   const quotes   = useMemo(() => getQuotesForWorkOrder(id), [id, rev]);
   const invoices = useMemo(() => getInvoicesForWorkOrder(id), [id, rev]);
@@ -198,40 +196,18 @@ export default function WorkOrderDetailPage(props: { params: Promise<{ id: strin
                 </div>
                 <div className="mt-4 pt-3" style={{ borderTop: "1px solid var(--border)" }}>
                   <DLabel>Scope &amp; Instructions</DLabel>
-                  <p className="text-sm mt-2 whitespace-pre-wrap leading-relaxed" style={{ color: "var(--text-secondary)" }}>{wo.instructions?.trim() || "No instructions on this work order yet."}</p>
+                  <p className="text-sm mt-2 whitespace-pre-wrap leading-relaxed line-clamp-3" style={{ color: "var(--text-secondary)" }}>{wo.instructions?.trim() || "No instructions on this work order yet."}</p>
                 </div>
                 {(wo.findings || wo.recommendations) && (
                   <div className="mt-4 pt-3" style={{ borderTop: "1px solid var(--border)" }}>
                     <DLabel>Field Notes</DLabel>
-                    {wo.findings && <div className="mt-2"><p className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Findings</p><p className="text-sm" style={{ color: "var(--text-secondary)" }}>{wo.findings}</p></div>}
-                    {wo.recommendations && <div className="mt-2"><p className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Recommendations</p><p className="text-sm" style={{ color: "var(--text-secondary)" }}>{wo.recommendations}</p></div>}
+                    {wo.findings && <div className="mt-2"><p className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Findings</p><p className="text-sm line-clamp-2" style={{ color: "var(--text-secondary)" }}>{wo.findings}</p></div>}
+                    {wo.recommendations && <div className="mt-2"><p className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Recommendations</p><p className="text-sm line-clamp-2" style={{ color: "var(--text-secondary)" }}>{wo.recommendations}</p></div>}
                   </div>
                 )}
               </DCard>
 
               <div className="flex flex-col gap-4">
-                {job && (
-                  <DCard className="p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <DLabel>Linked Job</DLabel>
-                      <span className="w-2 h-2 rounded-full" style={{ backgroundColor: resolveJobTypeColor(job.type) }} />
-                    </div>
-                    <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{job.title}</p>
-                    <div className="flex items-center gap-2 mt-1.5">
-                      <StatusBadge label={JOB_STATUS_CONFIG[job.status]?.label ?? job.status} color={JOB_STATUS_CONFIG[job.status]?.color ?? "#9ca3af"} size="sm" />
-                      <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>· {cap(job.type)}</span>
-                    </div>
-                    <div className="flex items-center gap-2 mt-3">
-                      <Link href={`/jobs/${job.id}`} className="flex-1 inline-flex items-center justify-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-lg" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>
-                        <Briefcase className="w-3.5 h-3.5" /> Open Job
-                      </Link>
-                      <Link href={`/customers/${job.accountId}`} className="flex-1 inline-flex items-center justify-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-lg" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>
-                        <User className="w-3.5 h-3.5" /> Customer
-                      </Link>
-                    </div>
-                  </DCard>
-                )}
-
                 {showPricing && (
                   <DCard className="p-4">
                     <div className="flex items-center justify-between mb-2">
@@ -241,17 +217,6 @@ export default function WorkOrderDetailPage(props: { params: Promise<{ id: strin
                     <div className="grid grid-cols-2 gap-2">
                       <MiniKpi icon={FilePen} label="Quotes" value={quotes.length} />
                       <MiniKpi icon={Receipt} label="Invoices" value={invoices.length} />
-                    </div>
-                  </DCard>
-                )}
-
-                {customer && (
-                  <DCard className="p-4">
-                    <DLabel>Customer</DLabel>
-                    <p className="text-sm font-medium mt-2" style={{ color: "var(--text-primary)" }}>{customer.name}</p>
-                    <div className="flex flex-col gap-1 mt-1.5 text-xs" style={{ color: "var(--text-muted)" }}>
-                      {customer.phone && <span className="inline-flex items-center gap-1.5"><Phone className="w-3 h-3" /> {customer.phone}</span>}
-                      {customer.email && <span className="inline-flex items-center gap-1.5"><Mail className="w-3 h-3" /> {customer.email}</span>}
                     </div>
                   </DCard>
                 )}

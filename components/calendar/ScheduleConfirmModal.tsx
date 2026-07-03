@@ -1,13 +1,14 @@
 "use client";
 
-import { useState } from "react";
-import { X, CalendarClock } from "lucide-react";
+import { useState, useMemo } from "react";
+import { X, CalendarClock, Sparkles, Navigation, Check } from "lucide-react";
 import Select from "@/components/ui/Select";
 import DatePicker from "@/components/ui/DatePicker";
 import TimePicker from "@/components/ui/TimePicker";
 import NumberStepper from "@/components/ui/NumberStepper";
 import type { UnscheduledItem } from "@/lib/calendar/types";
 import { isPastDateTime, isOutsideHours, formatHour, minTimeFor, minBookableYMD } from "@/lib/utils/schedule";
+import { suggestTechsForJob } from "@/lib/dispatch/suggest";
 
 export interface ScheduleDraft {
   tech: string;
@@ -36,6 +37,18 @@ export default function ScheduleConfirmModal({
   // Only meaningful once a tech is assigned and the time is valid.
   const conflict = !isPast && !outsideHours && !!d.tech && !!checkOverlap?.(d);
 
+  // Suggest the best techs for THIS job at the drafted slot (proximity + free + skill).
+  const timeValid = !!d.date && !!d.time && !isPast && !outsideHours;
+  const suggestions = useMemo(
+    () => suggestTechsForJob({
+      seed: item.sourceId, serviceAreaId: item.serviceAreaId, companyId: item.companyId, locationId: item.locationId,
+      keywords: item.title, techNames: technicians,
+      isAvailable: name => timeValid ? !checkOverlap?.({ ...d, tech: name }) : true,
+    }).slice(0, 3),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [item.sourceId, technicians, d.date, d.time, d.durationMinutes, timeValid],
+  );
+
   return (
     <div className="fixed inset-0 z-[60] bg-black/40 flex items-center justify-center p-4" onClick={onClose}>
       <div className="w-full max-w-md rounded-2xl overflow-hidden" onClick={e => e.stopPropagation()}
@@ -54,6 +67,33 @@ export default function ScheduleConfirmModal({
             <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{item.title}</p>
             {item.customerName && <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>{item.customerName}{item.city ? ` · ${item.city}` : ""}</p>}
           </div>
+
+          {/* Suggested techs — ranked by drive-time, availability, and skill. */}
+          {suggestions.length > 0 && (
+            <div>
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <Sparkles className="w-3.5 h-3.5" style={{ color: "#4f46e5" }} />
+                <label className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>Suggested</label>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                {suggestions.map(s => {
+                  const on = d.tech === s.name;
+                  return (
+                    <button key={s.name} onClick={() => set("tech", s.name)}
+                      className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-left transition-colors"
+                      style={{ border: `1px solid ${on ? "#a5b4fc" : "var(--border)"}`, backgroundColor: on ? "var(--accent-soft-bg)" : "var(--bg-surface-2)" }}>
+                      <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: s.available && s.onDuty ? "#16a34a" : "#9ca3af" }} />
+                      <span className="text-sm font-medium flex-1 truncate" style={{ color: "var(--text-primary)" }}>{s.name}</span>
+                      <span className="inline-flex items-center gap-1 text-[11px] shrink-0" style={{ color: on ? "var(--accent-text)" : "var(--text-muted)" }}>
+                        {s.onDuty && s.available && <Navigation className="w-3 h-3" />}{s.reason}
+                      </span>
+                      {on && <Check className="w-3.5 h-3.5 shrink-0" style={{ color: "#4f46e5" }} />}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           <Field label="Technician">
             <Select size="sm" value={d.tech} onChange={v => set("tech", v)}

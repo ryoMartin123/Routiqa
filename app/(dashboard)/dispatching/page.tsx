@@ -5,9 +5,10 @@ import { usePathname } from "next/navigation";
 import {
   Search, SlidersHorizontal, Eye, EyeOff,
   ChevronLeft, ChevronRight, ChevronUp, ChevronDown, LayoutGrid, LayoutList, CalendarDays, CalendarRange, CalendarClock,
-  Plus, Briefcase, X, Users, MapPin, Building2, Check, Globe, Map as MapIcon, RotateCcw, Link2,
+  Plus, Briefcase, X, Users, MapPin, Building2, Check, Globe, Map as MapIcon, RotateCcw, Link2, Navigation,
 } from "lucide-react";
 import DispatchMap from "@/components/dispatch-map/DispatchMap";
+import { geocode, driveMinutes, getMapTechnicians } from "@/lib/dispatch-map/data";
 import DatePicker from "@/components/ui/DatePicker";
 import TimePicker from "@/components/ui/TimePicker";
 import { todayYMD } from "@/lib/utils/schedule";
@@ -906,6 +907,13 @@ function DispatchBoard({ focus, mode, items, roster, availability, dayStart, day
 }) {
   const dayItems = items.filter(i => isSameDay(i.start, focus) && !i.allDay);
 
+  // Tech live/base positions → drive-time between a lane's stops (ETA on the board).
+  const techPos = useMemo(() => {
+    const m = new Map<string, { lat: number; lng: number }>();
+    for (const t of getMapTechnicians()) m.set(t.name, t.current ?? t.base);
+    return m;
+  }, []);
+
   // Board rows = the roster, plus a single "Unassigned" lane that catches any job
   // with no tech OR a job assigned to someone who isn't on the roster (e.g. a
   // removed tech). We no longer spawn a phantom row per off-roster name — those
@@ -1128,6 +1136,19 @@ function DispatchBoard({ focus, mode, items, roster, availability, dayStart, day
         const sc = TECH_STATUS_CONFIG[dayStatus];
         const bookedMin = techItems.reduce((s, i) => s + i.durationMinutes, 0);
         const openHrs = Math.max(0, Math.round((totalMin - bookedMin) / 60));
+        // Drive-time along this lane's route: from the tech's live position to the
+        // first stop, then between consecutive stops. legMin[id] = minutes to reach it.
+        const legMin: Record<string, number> = {};
+        let routeMin = 0;
+        if (!isUnassigned) {
+          const ordered = [...techItems].sort((a, b) => startMinOf(a) - startMinOf(b));
+          let origin = techPos.get(tech.name) ?? null;
+          for (const it of ordered) {
+            const loc = geocode(it.sourceId || it.id, it.serviceAreaId);
+            if (origin) { const mn = driveMinutes(origin, loc); legMin[it.id] = mn; routeMin += mn; }
+            origin = loc;
+          }
+        }
         const isDropTarget = dragTech === tech.name || (preview != null && preview.tech === tech.name);
         return (
           <div key={tech.name || "__unassigned"} className="flex" style={{ borderBottom: ri < rows.length - 1 ? "1px solid var(--border)" : "none", backgroundColor: isUnassigned ? "var(--warning-soft-bg)" : undefined }}>
@@ -1146,7 +1167,7 @@ function DispatchBoard({ focus, mode, items, roster, availability, dayStart, day
                     <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>{sc.label}</span>
                   </div>
                 )}
-                <p className="text-[9px] mt-0.5" style={{ color: "var(--text-muted)" }}>{techItems.length} job{techItems.length===1?"":"s"}{isUnassigned ? "" : ` · ~${openHrs}h open`}</p>
+                <p className="text-[9px] mt-0.5" style={{ color: "var(--text-muted)" }}>{techItems.length} job{techItems.length===1?"":"s"}{isUnassigned ? "" : ` · ~${openHrs}h open`}{!isUnassigned && routeMin > 0 ? ` · ~${routeMin}m drive` : ""}</p>
               </div>
             </div>
 
@@ -1295,8 +1316,13 @@ function DispatchBoard({ focus, mode, items, roster, availability, dayStart, day
                         {!movingAway && prio && <span className="text-[8px] font-bold px-1 rounded shrink-0" style={{ backgroundColor: prio.bg, color: prio.color }}>{prio.label}</span>}
                       </div>
                       {/* Lead the subline with the work-order scope when present, else job type. */}
-                      <p className="text-[9px] truncate leading-tight" style={{ color: "var(--text-muted)" }}>
-                        {tracking ? `${minToTime(sm)} · ${dur}m` : `${fmtTime(i.start)} · ${i.workOrderTitle ?? (i.jobType ? jobTypeLabel(i.jobType) : "")}${i.city ? ` · ${i.city}` : ""}`}
+                      <p className="text-[9px] truncate leading-tight flex items-center gap-1" style={{ color: "var(--text-muted)" }}>
+                        {!tracking && legMin[i.id] != null && (
+                          <span className="inline-flex items-center gap-0.5 shrink-0" title={`~${legMin[i.id]} min drive from the previous stop`} style={{ color: "var(--accent-text)" }}>
+                            <Navigation className="w-2 h-2" />{legMin[i.id]}m
+                          </span>
+                        )}
+                        <span className="truncate">{tracking ? `${minToTime(sm)} · ${dur}m` : `${fmtTime(i.start)} · ${i.workOrderTitle ?? (i.jobType ? jobTypeLabel(i.jobType) : "")}${i.city ? ` · ${i.city}` : ""}`}</span>
                       </p>
                     </div>
                     {/* Resize handle (right edge) */}
