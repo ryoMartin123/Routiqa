@@ -267,7 +267,7 @@ export default function TasksPage() {
 
                 {/* Assigned */}
                 <div className="flex items-center gap-1.5 min-w-0">
-                  <div className="w-5 h-5 rounded-full bg-indigo-600 flex items-center justify-center text-[8px] font-bold text-white shrink-0">
+                  <div className="w-5 h-5 rounded-full bg-[#e5e0db] flex items-center justify-center text-[8px] font-bold text-[#5c5545] shrink-0">
                     {task.assignedToInitials}
                   </div>
                   <span className="text-sm truncate" style={{ color: "var(--text-secondary)" }}>
@@ -583,7 +583,7 @@ function CommentsTab() {
             style={{ gridTemplateColumns: COMMENT_COLS, gap: "0.75rem", borderBottom: last ? "none" : "1px solid var(--border)", opacity: t.root.resolved ? 0.65 : 1 }}>
             {/* Comment */}
             <div className="flex items-center gap-2.5 min-w-0">
-              <span className="w-6 h-6 rounded-full bg-indigo-600 flex items-center justify-center text-[8px] font-bold text-white shrink-0">{t.root.authorInitials}</span>
+              <span className="w-6 h-6 rounded-full bg-[#e5e0db] flex items-center justify-center text-[8px] font-bold text-[#5c5545] shrink-0">{t.root.authorInitials}</span>
               <div className="min-w-0">
                 <p className="text-sm truncate" style={{ color: "var(--text-primary)" }}>{t.root.body}</p>
                 <p className="text-[10px] truncate" style={{ color: "var(--text-muted)" }}>{t.root.authorName}</p>

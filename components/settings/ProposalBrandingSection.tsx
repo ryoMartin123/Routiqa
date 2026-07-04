@@ -7,8 +7,9 @@
 // so live quotes, previews, and PDFs all read one source of truth.
 
 import { useEffect, useState } from "react";
-import { Palette, Check } from "lucide-react";
+import { Palette } from "lucide-react";
 import { getProposalBranding, saveProposalBranding, type ProposalBranding } from "@/lib/proposals/data";
+import { pingSaved } from "@/components/shared/SavedPill";
 
 const inputStyle: React.CSSProperties = { border: "1px solid var(--border)", backgroundColor: "var(--bg-surface)", color: "var(--text-primary)" };
 
@@ -26,11 +27,14 @@ function Labeled({ label, hint, children, full }: { label: string; hint?: string
 export default function ProposalBrandingSection() {
   const [b, setB] = useState<ProposalBranding>(() => getProposalBranding());
   const [dirty, setDirty] = useState(false);
-  const [saved, setSaved] = useState(false);
 
   useEffect(() => { setB(getProposalBranding()); }, []);
-  function set<K extends keyof ProposalBranding>(k: K, v: ProposalBranding[K]) { setB(p => ({ ...p, [k]: v })); setDirty(true); setSaved(false); }
-  function save() { saveProposalBranding(b); setDirty(false); setSaved(true); setTimeout(() => setSaved(false), 2000); }
+  function set<K extends keyof ProposalBranding>(k: K, v: ProposalBranding[K]) { setB(p => ({ ...p, [k]: v })); setDirty(true); }
+  useEffect(() => {
+    if (!dirty) return;
+    const t = setTimeout(() => { saveProposalBranding(b); setDirty(false); pingSaved(); }, 500);
+    return () => clearTimeout(t);
+  }, [dirty, b]);
 
   return (
     <div className="space-y-4">
@@ -55,13 +59,6 @@ export default function ProposalBrandingSection() {
           <Labeled label="Company Info"><input value={b.companyInfo} onChange={e => set("companyInfo", e.target.value)} className="w-full rounded-lg px-3 py-2 text-sm outline-none" style={inputStyle} /></Labeled>
           <Labeled label="Contact Info"><input value={b.contactInfo} onChange={e => set("contactInfo", e.target.value)} className="w-full rounded-lg px-3 py-2 text-sm outline-none" style={inputStyle} /></Labeled>
           <Labeled label="Footer" full><input value={b.footer} onChange={e => set("footer", e.target.value)} className="w-full rounded-lg px-3 py-2 text-sm outline-none" style={inputStyle} /></Labeled>
-        </div>
-        <div className="flex justify-end mt-5">
-          <button onClick={save} disabled={!dirty && !saved}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-white transition-colors disabled:opacity-50"
-            style={{ backgroundColor: saved ? "#10b981" : "var(--accent-text)" }}>
-            <Check className="w-3.5 h-3.5" /> {saved ? "Saved" : "Save Branding"}
-          </button>
         </div>
       </div>
     </div>

@@ -1,58 +1,41 @@
 "use client";
 
-// ─── Settings action slot ─────────────────────────────────
-// Lets a settings section publish its Save action up to a shared slot rendered
-// above the Editing Scope header (top-right), so every section's save lives in
-// the same place — clean and consistent — instead of inside each section.
+// ─── Settings auto-save ───────────────────────────────────
+// Settings sections no longer render a manual Save button. Instead a section
+// registers its persist handler + a `dirty` flag here; this auto-fires the
+// handler (debounced) whenever the section becomes dirty and pings the global
+// SavedPill. Kept as a thin hook so existing sections need minimal changes.
 
-import { createContext, useContext, useEffect, useRef, useState } from "react";
-import { Check } from "lucide-react";
+import { useEffect, useRef } from "react";
+import { pingSaved } from "@/components/shared/SavedPill";
 
 export interface SaveAction {
   dirty: boolean;
-  saved: boolean;
   onSave: () => void;
-  label?: string;
+  saved?: boolean;   // legacy — ignored (SavedPill owns the "saved" feedback)
+  label?: string;    // legacy — ignored
 }
 
-interface Ctx { action: SaveAction | null; setAction: (a: SaveAction | null) => void; }
-const SettingsActionsCtx = createContext<Ctx | null>(null);
-
+// Provider is now a passthrough (no shared button state to hold). Retained so
+// call sites don't have to change.
 export function SettingsActionsProvider({ children }: { children: React.ReactNode }) {
-  const [action, setAction] = useState<SaveAction | null>(null);
-  return <SettingsActionsCtx.Provider value={{ action, setAction }}>{children}</SettingsActionsCtx.Provider>;
+  return <>{children}</>;
 }
 
-function useCtx(): Ctx {
-  const ctx = useContext(SettingsActionsCtx);
-  if (!ctx) throw new Error("useSettingsActions must be used within SettingsActionsProvider");
-  return ctx;
-}
-
-// A section calls this to register its Save action. onSave is kept fresh via a
-// ref so the slot always runs the latest handler; re-registers only when the
-// dirty/saved state changes (no render loop).
-export function useRegisterSaveAction({ dirty, saved, onSave, label }: SaveAction) {
-  const { setAction } = useCtx();
+// A section calls this to register its persist handler. When `dirty` flips true
+// we debounce briefly, then persist and flash the SavedPill. onSave is kept
+// fresh via a ref so we always run the latest closure.
+export function useRegisterSaveAction({ dirty, onSave }: SaveAction) {
   const onSaveRef = useRef(onSave);
   onSaveRef.current = onSave;
   useEffect(() => {
-    setAction({ dirty, saved, label, onSave: () => onSaveRef.current() });
-    return () => setAction(null);
-  }, [dirty, saved, label, setAction]);
+    if (!dirty) return;
+    const t = window.setTimeout(() => { onSaveRef.current(); pingSaved(); }, 500);
+    return () => window.clearTimeout(t);
+  }, [dirty]);
 }
 
-// The slot itself — rendered above the Editing Scope header.
+// Legacy slot — the button is gone; the global SavedPill replaces it.
 export function SettingsSaveSlot() {
-  const { action } = useCtx();
-  if (!action) return null;
-  const { dirty, saved, onSave, label } = action;
-  return (
-    <button onClick={onSave} disabled={!dirty && !saved}
-      data-active={dirty || saved ? "true" : "false"}
-      className="glossy-pill inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 disabled:opacity-50 shrink-0"
-      style={{ cursor: dirty ? "pointer" : "default" }}>
-      <Check className="w-3.5 h-3.5" /> {saved ? "Saved" : (label ?? "Save changes")}
-    </button>
-  );
+  return null;
 }

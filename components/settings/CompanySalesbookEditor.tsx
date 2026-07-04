@@ -12,7 +12,8 @@
 // header. The preview renders the real customer-facing proposal using sample
 // customer data and the salesbook's chosen template style.
 
-import { useMemo, useState, useRef } from "react";
+import { useMemo, useState, useRef, useEffect } from "react";
+import { pingSaved } from "@/components/shared/SavedPill";
 import {
   ArrowLeft, BookOpen, Eye, MoreHorizontal, Plus, Trash2, Copy,
   ChevronUp, ChevronDown, Star, X, AlertTriangle, CheckCircle2,
@@ -111,11 +112,24 @@ export default function CompanySalesbookEditor({ sbId, onBack }: { sbId: string;
   const [tab, setTab] = useState<TabKey>("overview");
   const [previewOpen, setPreviewOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const lastSnap = useRef<string | null>(null);
 
   const patch = (p: Partial<DraftState>) => setSb(s => s ? { ...s, ...p } : s);
 
   const check = useMemo(() => sb ? validateSalesbookForPublish(sb) : { ok: false, issues: [] }, [sb]);
+
+  // Auto-save on real changes only. Snapshot-guarded so the initial mount (and
+  // StrictMode's dev double-invoke) never fires a spurious "Saved". `save` hoisted.
+  useEffect(() => {
+    if (!sb) return;
+    const snap = JSON.stringify(sb);
+    if (lastSnap.current === null) { lastSnap.current = snap; return; }
+    if (lastSnap.current === snap) return;
+    lastSnap.current = snap;
+    const t = setTimeout(() => save(), 500);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sb]);
 
   if (!original || !sb) {
     return (
@@ -155,7 +169,7 @@ export default function CompanySalesbookEditor({ sbId, onBack }: { sbId: string;
       exclusions: draft.exclusions,
       updatedAt: nowStamp(),
     });
-    setSaved(true); setTimeout(() => setSaved(false), 1800);
+    pingSaved();
   }
 
   function discard() {
@@ -185,9 +199,6 @@ export default function CompanySalesbookEditor({ sbId, onBack }: { sbId: string;
             className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
             style={{ border: `1px solid ${accent}`, color: accent, backgroundColor: accent + "0f" }}>
             <Eye className="w-4 h-4" /> Preview
-          </button>
-          <button onClick={() => save()} className="px-4 py-2 rounded-lg text-sm font-medium text-white transition-colors" style={{ backgroundColor: saved ? "#10b981" : accent }}>
-            {saved ? "Saved ✓" : "Save Changes"}
           </button>
           <div className="relative">
             <button onClick={() => setMenuOpen(o => !o)} aria-label="More options"

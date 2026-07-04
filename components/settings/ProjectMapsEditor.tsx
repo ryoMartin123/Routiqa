@@ -9,6 +9,7 @@
 import { useEffect, useState } from "react";
 import { Plus, Pencil, Eye, Trash2, Copy, ChevronRight, GitBranch, Layers, Link2, CheckSquare } from "lucide-react";
 import { useScopedSetting } from "@/lib/settings-scope/useScopedSetting";
+import { pingSaved } from "@/components/shared/SavedPill";
 import MapBuilder from "@/components/settings/MapBuilder";
 import { DEFAULT_MAP_TEMPLATES, MAP_TEMPLATES_KEY, newMapTemplateId, type MapTemplate } from "@/lib/projects/map-templates";
 import { DEFAULT_PROJECT_TYPES } from "@/lib/projects/settings";
@@ -53,7 +54,7 @@ export default function ProjectMapsEditor() {
 
   const typeOpts = DEFAULT_PROJECT_TYPES.filter(t => t.active);
   // List/builder edits persist immediately — no page-level Save.
-  const persist = (next: MapTemplate[]) => { setTemplates(next); scoped.save(next); };
+  const persist = (next: MapTemplate[]) => { setTemplates(next); scoped.save(next); pingSaved(); };
 
   function startNew() {
     setEditing({

@@ -273,8 +273,8 @@ export default function JobsPage() {
         <ModuleViewToggle view={moduleView} onChange={setModuleView} withCards overviewFirst />
         <div className="flex-1 flex justify-end">
           {canCreateJob && (
-            <button onClick={() => setShowCreate(true)} className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-3 py-2 rounded-lg transition-colors">
-              <Plus className="w-4 h-4" /> New Job
+            <button onClick={() => setShowCreate(true)} data-open={showCreate} className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-3 py-2 rounded-lg transition-colors">
+              <Plus className="plus-icon w-4 h-4" /> New Job
             </button>
           )}
         </div>
@@ -427,7 +427,7 @@ export default function JobsPage() {
                     </div>
                     {/* Tech */}
                     <div className="flex items-center gap-1.5">
-                      <div className="w-5 h-5 rounded-full bg-indigo-600 flex items-center justify-center text-[8px] font-bold text-white shrink-0">{job.assignedToInitials}</div>
+                      <div className="w-5 h-5 rounded-full bg-[#e5e0db] flex items-center justify-center text-[8px] font-bold text-[#5c5545] shrink-0">{job.assignedToInitials}</div>
                       <span className="text-sm truncate" style={{ color: "var(--text-secondary)" }}>{job.assignedTo}</span>
                     </div>
                     {/* Amount — hidden for roles without financial-totals access */}
@@ -492,7 +492,7 @@ function JobCard({ job, statusConfig, showAmount }: {
           {job.scheduledDate ? `${job.scheduledDate}${job.scheduledTime ? ` · ${job.scheduledTime}` : ""}` : "Unscheduled"}
         </span>
         <div className="flex items-center gap-1.5 shrink-0 min-w-0">
-          <div className="w-5 h-5 rounded-full bg-indigo-600 flex items-center justify-center text-[8px] font-bold text-white shrink-0">{job.assignedToInitials || "—"}</div>
+          <div className="w-5 h-5 rounded-full bg-[#e5e0db] flex items-center justify-center text-[8px] font-bold text-[#5c5545] shrink-0">{job.assignedToInitials || "—"}</div>
           <span className="text-[10px] truncate" style={{ color: "var(--text-secondary)" }}>{job.assignedTo || "Unassigned"}</span>
           <ArrowRight className="w-3.5 h-3.5 shrink-0 transition-transform group-hover:-rotate-45" style={{ color: "#4f46e5" }} />
         </div>

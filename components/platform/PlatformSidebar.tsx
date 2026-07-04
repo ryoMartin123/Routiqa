@@ -97,7 +97,7 @@ export default function PlatformSidebar({ appId }: { appId: PlatformAppId }) {
       {/* User */}
       <div className={cn("py-3", collapsed ? "px-2 flex justify-center" : "px-3")} style={{ borderTop: "1px solid var(--sidebar-border)" }}>
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-white text-xs font-semibold shrink-0" title={collapsed ? actingUser.fullName : undefined}>
+          <div className="w-8 h-8 rounded-full bg-[#e5e0db] flex items-center justify-center text-[#5c5545] text-xs font-semibold shrink-0" title={collapsed ? actingUser.fullName : undefined}>
             {actingUser.initials}
           </div>
           {!collapsed && (

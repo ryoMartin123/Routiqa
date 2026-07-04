@@ -1,6 +1,8 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { Check, RotateCcw } from "lucide-react";
+import { pingSaved } from "@/components/shared/SavedPill";
 
 // Shared primitives for the Sales & Catalog settings sections. Module-level so
 // inputs never remount mid-edit (avoids the focus-loss bug).
@@ -56,19 +58,23 @@ export function FieldLabel({ children }: { children: React.ReactNode }) {
   return <label className="block text-xs font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>{children}</label>;
 }
 
-export function SaveButtons({ onSave, onReset, dirty, saved }: {
-  onSave: () => void; onReset: () => void; dirty: boolean; saved: boolean;
+// Auto-save: when the section is dirty we debounce, run its persist handler, and
+// flash the global SavedPill — no manual Save button. Only Reset remains.
+export function SaveButtons({ onSave, onReset, dirty }: {
+  onSave: () => void; onReset: () => void; dirty: boolean; saved?: boolean;
 }) {
+  const onSaveRef = useRef(onSave);
+  onSaveRef.current = onSave;
+  useEffect(() => {
+    if (!dirty) return;
+    const t = setTimeout(() => { onSaveRef.current(); pingSaved(); }, 500);
+    return () => clearTimeout(t);
+  }, [dirty]);
   return (
     <div className="flex items-center gap-2">
       <button onClick={onReset} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm transition-colors"
         style={{ border: "1px solid var(--border)", color: "var(--text-secondary)", backgroundColor: "var(--bg-surface)" }}>
         <RotateCcw className="w-3.5 h-3.5" /> Reset Defaults
-      </button>
-      <button onClick={onSave} disabled={!dirty && !saved}
-        className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-white transition-colors disabled:opacity-50"
-        style={{ backgroundColor: saved ? "#10b981" : "#4f46e5" }}>
-        <Check className="w-3.5 h-3.5" /> {saved ? "Saved" : "Save Changes"}
       </button>
     </div>
   );

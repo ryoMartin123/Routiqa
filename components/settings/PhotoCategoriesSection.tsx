@@ -1,12 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Pencil, ChevronUp, ChevronDown, Trash2, Check, RotateCcw, X } from "lucide-react";
+import { Plus, Pencil, ChevronUp, ChevronDown, Trash2, RotateCcw } from "lucide-react";
 import {
   getPhotoCategories, savePhotoCategories, resetPhotoCategories, pcId, pcSlug,
   APPLIES_TO_OPTIONS, PHOTO_CAT_COLORS,
   type PhotoCategory, type AppliesTo,
 } from "@/lib/photo-categories/data";
+import { pingSaved } from "@/components/shared/SavedPill";
 
 function Toggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void }) {
   return (
@@ -28,10 +29,15 @@ export default function PhotoCategoriesSection() {
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState<FormState>({ ...EMPTY });
   const [dirty, setDirty] = useState(false);
-  const [saved, setSaved] = useState(false);
 
   useEffect(() => { setCats(getPhotoCategories()); }, []);
-  function mark() { setDirty(true); setSaved(false); }
+  function mark() { setDirty(true); }
+  // Auto-save: whenever the section is dirty, debounce then persist + flash the pill.
+  useEffect(() => {
+    if (!dirty) return;
+    const t = setTimeout(() => { savePhotoCategories(cats); setDirty(false); pingSaved(); }, 500);
+    return () => clearTimeout(t);
+  }, [dirty, cats]);
 
   function move(id: string, dir: -1 | 1) {
     const sorted = [...cats].sort((a, b) => a.order - b.order);
@@ -62,8 +68,7 @@ export default function PhotoCategoriesSection() {
   function toggleActive(id: string) { setCats(prev => prev.map(c => c.id === id ? { ...c, active: !c.active } : c)); mark(); }
   function toggleReq(id: string) { setCats(prev => prev.map(c => c.id === id ? { ...c, requiredByDefault: !c.requiredByDefault } : c)); mark(); }
   function remove(id: string) { setCats(prev => prev.filter(c => c.id !== id)); mark(); }
-  function save() { savePhotoCategories(cats); setCats(getPhotoCategories()); setDirty(false); setSaved(true); setTimeout(() => setSaved(false), 2000); }
-  function reset() { setCats(resetPhotoCategories()); setDirty(false); }
+  function reset() { setCats(resetPhotoCategories()); setDirty(false); pingSaved(); }
 
   const sorted = [...cats].sort((a, b) => a.order - b.order);
 
@@ -140,14 +145,8 @@ export default function PhotoCategoriesSection() {
             style={{ border: "1px solid var(--border)", color: "var(--text-secondary)", backgroundColor: "var(--bg-surface)" }}>
             <RotateCcw className="w-3.5 h-3.5" /> Reset Defaults
           </button>
-          <button onClick={save} disabled={!dirty && !saved}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-white transition-colors disabled:opacity-50" style={{ backgroundColor: saved ? "#10b981" : "#4f46e5" }}>
-            <Check className="w-3.5 h-3.5" /> {saved ? "Saved" : "Save Changes"}
-          </button>
         </div>
       </div>
-
-      {dirty && <div className="rounded-lg px-3 py-2 text-xs" style={{ backgroundColor: "#fef3c7", color: "#92400e" }}>You have unsaved changes.</div>}
 
       {showAdd && <Form />}
 

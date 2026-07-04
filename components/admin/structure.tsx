@@ -192,7 +192,7 @@ export function BusinessStructureSection() {
                     {mode.label}
                   </span>
                   {active && (
-                    <span className="w-4 h-4 rounded-full bg-indigo-600 flex items-center justify-center">
+                    <span className="w-4 h-4 rounded-full bg-[#e5e0db] flex items-center justify-center">
                       <Check className="w-2.5 h-2.5 text-white" />
                     </span>
                   )}

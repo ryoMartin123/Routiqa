@@ -9,6 +9,7 @@
 
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, Check, Shield, Sparkles, FileStack, AlertCircle, AlertTriangle, Rows3, Grid3x3 } from "lucide-react";
+import { pingSaved } from "@/components/shared/SavedPill";
 import {
   AppAccessCards, DataScopeField, PermissionAccordions, PermissionMatrix, SensitiveAccess, AppBadges, ScopeBadge,
 } from "@/components/settings/rolesUi";
@@ -51,7 +52,7 @@ export default function RoleBuilder({ initial, isNew, onSaved }: {
   // No Save/Cancel buttons — changes persist live. The key is fixed on first
   // commit (so a later rename updates the same record instead of forking one).
   const committedKey = useRef<string>(isNew ? "" : (initial?.key ?? ""));
-  const [saved, setSaved] = useState(false);
+  const lastSnap = useRef<string | null>(null);
 
   function applyStart(base: RoleDefinition, id: string) {
     setStartId(id);
@@ -62,15 +63,20 @@ export default function RoleBuilder({ initial, isNew, onSaved }: {
   // Persist on every valid change. Until a role name is entered there's nothing
   // meaningful to save, so we hold off (and surface a hint in the header).
   useEffect(() => {
-    if (!draft.label.trim()) { setErrors([]); setSaved(false); return; }
+    if (!draft.label.trim()) { setErrors([]); return; }
     const key = committedKey.current || roleKeyFromLabel(draft.label);
     const toSave: RoleDefinition = { ...draft, key };
     const errs = roleErrors(toSave, others);
-    if (errs.length) { setErrors(errs); setSaved(false); return; }
+    if (errs.length) { setErrors(errs); return; }
     setErrors([]);
     upsertRole(toSave);
     committedKey.current = key;
-    setSaved(true);
+    // Skip the initial no-op persist (mount / StrictMode) — only ping on real edits.
+    const snap = JSON.stringify(toSave);
+    if (lastSnap.current === null) { lastSnap.current = snap; return; }
+    if (lastSnap.current === snap) return;
+    lastSnap.current = snap;
+    pingSaved();
   }, [draft, others]);
 
   // Leaving the builder — refresh the list to reflect everything auto-saved.
@@ -90,7 +96,7 @@ export default function RoleBuilder({ initial, isNew, onSaved }: {
         <button onClick={done} className="flex items-center gap-1.5 text-sm font-medium transition-colors hover:opacity-80" style={{ color: "var(--text-secondary)" }}>
           <ArrowLeft className="w-4 h-4" /> Done
         </button>
-        <AutoSaveStatus hasLabel={Boolean(draft.label.trim())} errorCount={errors.length} saved={saved} />
+        <AutoSaveStatus hasLabel={Boolean(draft.label.trim())} errorCount={errors.length} />
       </div>
 
       <div>
@@ -211,7 +217,8 @@ function PermViewToggle({ view, onChange }: { view: "simple" | "matrix"; onChang
 }
 
 // ─── Auto-save status pill ────────────────────────────────
-function AutoSaveStatus({ hasLabel, errorCount, saved }: { hasLabel: boolean; errorCount: number; saved: boolean }) {
+// Contextual validation hint only — save feedback lives in the global SavedPill.
+function AutoSaveStatus({ hasLabel, errorCount }: { hasLabel: boolean; errorCount: number }) {
   if (!hasLabel) {
     return (
       <span className="flex items-center gap-1.5 text-sm" style={{ color: "var(--text-muted)" }}>
@@ -226,11 +233,7 @@ function AutoSaveStatus({ hasLabel, errorCount, saved }: { hasLabel: boolean; er
       </span>
     );
   }
-  return (
-    <span className="flex items-center gap-1.5 text-sm font-medium" style={{ color: "#10b981" }}>
-      <Check className="w-4 h-4" /> {saved ? "All changes saved" : "Saved"}
-    </span>
-  );
+  return null;
 }
 
 function SectionHead({ title, sub }: { title: string; sub: string }) {

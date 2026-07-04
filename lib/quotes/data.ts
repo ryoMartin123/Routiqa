@@ -10,6 +10,7 @@ import type { Quote, Invoice, QuoteStatus, QuoteMode, QuoteRenderMode, QuotePric
 import type { QuoteBlock } from "./blocks";
 import { QUOTE_STATUS_STYLE } from "./types";
 import { createJob, getJob, getWorkOrderById, type Job, type WorkOrderLineItem } from "@/lib/jobs/data";
+import { isBilled, markLinesBilled, markLedgerLinesBilled, releaseInvoiceLines, markInvoicePaid, getJobLedger } from "@/lib/billing/ledger";
 import { createProject, type Project } from "@/lib/projects/data";
 import { currentUser } from "@/lib/hierarchy/data";   // signed-in user (org admin) — drives createdBy / assignedTo / activity actor
 
@@ -127,6 +128,9 @@ export interface InvoiceRecord extends Invoice {
   linkedId?: string;
   quoteNumber?: string;
   deleted?: boolean;
+  // ─── Deposits ───
+  isDeposit?: boolean;          // a job-level deposit / down-payment (not tied to captured lines)
+  depositAppliedTo?: string;    // the final invoice id that credited this deposit (once consumed)
 }
 
 // ─── Currency helper ──────────────────────────────────────
@@ -226,6 +230,8 @@ export function updateInvoiceStatus(id: string, status: InvoiceStatus): InvoiceR
   if (status === "paid") { patch.balanceDue = 0; patch.paidAt = nowStamp(); }
   if (status === "void" || status === "canceled") patch.balanceDue = 0;
   persistInvoiceEdit(id, patch);
+  if (status === "paid") markInvoicePaid(id);            // flip its ledger lines to paid
+  if (status === "void" || status === "canceled") releaseInvoiceLines(id);  // return lines to unbilled
   return getInvoice(id);
 }
 
@@ -242,6 +248,7 @@ export function recordPayment(id: string, amount: number): InvoiceRecord | undef
   if (balance <= 0) { patch.status = "paid"; patch.paidAt = nowStamp(); }
   else patch.status = "partially_paid";
   persistInvoiceEdit(id, patch);
+  if (balance <= 0) markInvoicePaid(id);   // settled in full → mark its ledger lines paid
   return getInvoice(id);
 }
 
@@ -258,6 +265,8 @@ export function deleteInvoice(id: string): void {
   } else {
     saveInvoiceOverride(id, { deleted: true });
   }
+  // Return this invoice's captured lines to the unbilled pool on the job ledger.
+  releaseInvoiceLines(id);
 }
 export function duplicateInvoice(id: string): InvoiceRecord | undefined {
   const src = getInvoice(id);
@@ -446,12 +455,12 @@ export function createInvoiceFromQuote(id: string): InvoiceRecord | undefined {
   return inv;
 }
 
-// Map a work order's captured parts/labor/fees → billing LineItems. Shared by the
-// invoice and quote bridges so both carry the same tax flag, catalog ref, and cost.
-function workOrderToLineItems(wo: { lineItems?: WorkOrderLineItem[] }): LineItem[] {
+// Map captured work-order lines → billing LineItems. Shared by the invoice and
+// quote bridges so both carry the same tax flag, catalog ref, and cost.
+function linesToLineItems(lines: WorkOrderLineItem[]): LineItem[] {
   const catFor = (k: "part" | "labor" | "fee"): LineItemCategory =>
     k === "part" ? "Materials" : k === "labor" ? "Labor" : "Other";
-  return (wo.lineItems ?? []).map((li, i) => ({
+  return lines.map((li, i) => ({
     id: `li-wo-${Date.now()}-${i}`,
     name: li.description,
     description: li.description,
@@ -467,36 +476,53 @@ function workOrderToLineItems(wo: { lineItems?: WorkOrderLineItem[] }): LineItem
   }));
 }
 
+// Which captured lines a billing action should use: the explicitly-selected ids
+// when provided, otherwise every line still unbilled (the "bill what's left" path).
+function billableLines(wo: { lineItems?: WorkOrderLineItem[] }, lineItemIds?: string[]): WorkOrderLineItem[] {
+  const all = wo.lineItems ?? [];
+  if (lineItemIds) return all.filter(li => lineItemIds.includes(li.id));
+  return all.filter(li => !isBilled(li.id));
+}
+
 // Build an invoice from a Work Order's captured parts/labor/fees — the field→billing
-// bridge. The invoice links back to the work order's Job for context.
-export function createInvoiceFromWorkOrder(workOrderId: string): InvoiceRecord | undefined {
+// bridge. Bills the selected lines (or every unbilled line when none are given),
+// then marks them billed on the job ledger so they can't be billed again. The
+// invoice links back to the work order's Job for context.
+export function createInvoiceFromWorkOrder(workOrderId: string, lineItemIds?: string[]): InvoiceRecord | undefined {
   const wo = getWorkOrderById(workOrderId);
   if (!wo) return;
   const job = getJob(wo.jobId);
   if (!job) return;
+  const lines = billableLines(wo, lineItemIds);
+  if (lines.length === 0) return;
   const due = new Date(); due.setDate(due.getDate() + 30);
   const dueDate = due.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-  return createInvoice({
+  const inv = createInvoice({
     customerId: job.accountId, customerName: job.customerName, customerInitials: job.customerInitials, locationName: job.locationName,
     companyId: job.companyId, locationId: job.locationId, serviceAreaId: job.serviceAreaId,
-    title: wo.title || job.title, dueDate, lineItems: workOrderToLineItems(wo),
+    title: wo.title || job.title, dueDate, lineItems: linesToLineItems(lines),
     jobId: job.id, workOrderId: wo.id, projectId: job.projectId,
     linkedLabel: `Work Order: ${wo.title}`, linkedType: "job", linkedId: job.id,
   });
+  markLinesBilled(lines.map(l => l.id), { invoiceId: inv.id, jobId: job.id, workOrderId: wo.id });
+  return inv;
 }
 
 // Build a quote from a Work Order — the field-upsell path ("your blower's also
-// failing, here's the price"). Seeds from the captured parts/labor and links back
-// to the work order + its Job. Starts as a draft custom quote.
-export function createQuoteFromWorkOrder(workOrderId: string): QuoteRecord | undefined {
+// failing, here's the price"). A quote is a PROPOSAL, so it does NOT consume the
+// ledger (nothing is marked billed). Seeds from the selected/unbilled captured
+// lines and links back to the work order + its Job. Starts as a draft custom quote.
+export function createQuoteFromWorkOrder(workOrderId: string, lineItemIds?: string[]): QuoteRecord | undefined {
   const wo = getWorkOrderById(workOrderId);
   if (!wo) return;
   const job = getJob(wo.jobId);
   if (!job) return;
+  const lines = billableLines(wo, lineItemIds);
+  if (lines.length === 0) return;
   return createQuote({
     customerId: job.accountId, customerName: job.customerName, customerInitials: job.customerInitials, locationName: job.locationName,
     companyId: job.companyId, locationId: job.locationId, serviceAreaId: job.serviceAreaId,
-    title: wo.title || job.title, lineItems: workOrderToLineItems(wo),
+    title: wo.title || job.title, lineItems: linesToLineItems(lines),
     jobId: job.id, workOrderId: wo.id, projectId: job.projectId,
     linkedLabel: `Work Order: ${wo.title}`, linkedType: "job", linkedId: job.id,
   });
@@ -638,6 +664,7 @@ export interface NewInvoiceInput {
   propertyLabel?: string; customerNotes?: string; internalNotes?: string;
   quoteId?: string; quoteNumber?: string; jobId?: string; workOrderId?: string; projectId?: string; agreementId?: string; propertyId?: string;
   linkedLabel?: string; linkedType?: InvoiceRecord["linkedType"]; linkedId?: string;
+  isDeposit?: boolean;
 }
 
 // Create a draft invoice from a (typically completed) job. Uses the job's
@@ -655,6 +682,62 @@ export function createInvoiceFromJob(jobId: string): InvoiceRecord | undefined {
     jobId: job.id, projectId: job.projectId,
     linkedLabel: `Job: ${job.title}`, linkedType: "job", linkedId: job.id,
   });
+}
+
+// Paid deposits on a job that haven't yet been credited to a final invoice.
+export function getUnappliedDeposits(jobId: string): InvoiceRecord[] {
+  return getInvoicesForJob(jobId).filter(i => i.isDeposit && i.status === "paid" && !i.depositAppliedTo);
+}
+
+// Create a job-level deposit / down-payment invoice — a single "Deposit" line for
+// a fixed amount, NOT tied to any captured work. Once paid, the final ledger
+// invoice credits it automatically (see createInvoiceFromJobLedger).
+export function createDepositInvoice(jobId: string, amount: number, label = "Deposit"): InvoiceRecord | undefined {
+  const job = getJob(jobId);
+  if (!job || amount <= 0) return;
+  const due = new Date(); due.setDate(due.getDate() + 7);
+  const dueDate = due.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  return createInvoice({
+    customerId: job.accountId, customerName: job.customerName, customerInitials: job.customerInitials, locationName: job.locationName,
+    companyId: job.companyId, locationId: job.locationId, serviceAreaId: job.serviceAreaId,
+    title: `${label} — ${job.title}`, dueDate,
+    lineItems: [{ id: `li-dep-${Date.now()}`, name: label, description: label, quantity: 1, unitPrice: amount, total: amount, taxable: false, category: "Other" }],
+    jobId: job.id, projectId: job.projectId, isDeposit: true,
+    linkedLabel: `Job: ${job.title}`, linkedType: "job", linkedId: job.id,
+  });
+}
+
+// Bill a Job from its billable-items ledger — the cross-work-order path. Draws
+// the selected captured lines (or every unbilled line across all the job's work
+// orders when none are given), credits any paid-but-unapplied deposits, makes one
+// invoice, and marks the lines billed. This is how a multi-visit job settles its
+// running tab in one document.
+export function createInvoiceFromJobLedger(jobId: string, lineItemIds?: string[]): InvoiceRecord | undefined {
+  const job = getJob(jobId);
+  if (!job) return;
+  const ledger = getJobLedger(jobId);
+  const lines = lineItemIds
+    ? ledger.filter(l => lineItemIds.includes(l.id) && !l.billed)
+    : ledger.filter(l => !l.billed);
+  if (lines.length === 0) return;
+  const due = new Date(); due.setDate(due.getDate() + 30);
+  const dueDate = due.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  // Credit paid deposits as negative lines so the final invoice nets them out.
+  const deposits = getUnappliedDeposits(jobId);
+  const depositLines: LineItem[] = deposits.map((d, i) => ({
+    id: `li-depcr-${Date.now()}-${i}`, name: "Deposit applied", description: `Deposit applied (${d.invoiceNumber})`,
+    quantity: 1, unitPrice: -d.total, total: -d.total, taxable: false, category: "Other",
+  }));
+  const inv = createInvoice({
+    customerId: job.accountId, customerName: job.customerName, customerInitials: job.customerInitials, locationName: job.locationName,
+    companyId: job.companyId, locationId: job.locationId, serviceAreaId: job.serviceAreaId,
+    title: job.title, dueDate, lineItems: [...linesToLineItems(lines), ...depositLines],
+    jobId: job.id, projectId: job.projectId,
+    linkedLabel: `Job: ${job.title}`, linkedType: "job", linkedId: job.id,
+  });
+  markLedgerLinesBilled(lines.map(l => ({ id: l.id, workOrderId: l.workOrderId })), { invoiceId: inv.id, jobId: job.id });
+  deposits.forEach(d => persistInvoiceEdit(d.id, { depositAppliedTo: inv.id }));
+  return inv;
 }
 
 export function createInvoice(input: NewInvoiceInput): InvoiceRecord {
@@ -676,6 +759,7 @@ export function createInvoice(input: NewInvoiceInput): InvoiceRecord {
     customerNotes: input.customerNotes, internalNotes: input.internalNotes,
     linkedLabel: input.linkedLabel, linkedType: input.linkedType, linkedId: input.linkedId,
     quoteNumber: input.quoteNumber,
+    isDeposit: input.isDeposit,
   };
   _extraInvoices = [inv, ...extraInvoices()];
   try { localStorage.setItem(I_KEY, JSON.stringify(_extraInvoices)); } catch { /* ignore */ }

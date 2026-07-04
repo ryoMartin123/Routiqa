@@ -484,7 +484,7 @@ function ProjectCard({ project }: { project: Project }) {
       {/* Assigned + target date */}
       <div className="flex items-center justify-between pt-2" style={{ borderTop: "1px solid var(--border)" }}>
         <div className="flex items-center gap-1.5 min-w-0">
-          <div className="w-5 h-5 rounded-full bg-indigo-600 flex items-center justify-center text-[8px] font-bold text-white shrink-0" title={project.assignedTo}>
+          <div className="w-5 h-5 rounded-full bg-[#e5e0db] flex items-center justify-center text-[8px] font-bold text-[#5c5545] shrink-0" title={project.assignedTo}>
             {project.assignedToInitials || "—"}
           </div>
           <span className="text-[10px] truncate" style={{ color: "var(--text-secondary)" }}>{project.assignedTo || "Unassigned"}</span>

@@ -3,12 +3,13 @@
 import { useMemo, useState, useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import {
-  Search, SlidersHorizontal, Eye, EyeOff,
+  Search, Eye, EyeOff,
   ChevronLeft, ChevronRight, ChevronUp, ChevronDown, LayoutGrid, LayoutList, CalendarDays, CalendarRange, CalendarClock,
   Plus, Briefcase, X, Users, MapPin, Building2, Check, Globe, Map as MapIcon, RotateCcw, Link2, Navigation,
 } from "lucide-react";
 import DispatchMap from "@/components/dispatch-map/DispatchMap";
 import { geocode, driveMinutes, getMapTechnicians } from "@/lib/dispatch-map/data";
+import SlidersGlyph from "@/components/shared/SlidersGlyph";
 import DatePicker from "@/components/ui/DatePicker";
 import TimePicker from "@/components/ui/TimePicker";
 import { todayYMD } from "@/lib/utils/schedule";
@@ -724,7 +725,8 @@ export default function CalendarPage() {
             <button onClick={() => !noTechs && setCreateMenuOpen(o => !o)} disabled={noTechs}
               title={noTechs ? "Add technicians in Settings → Users & Roles first" : "Add to board"}
               className="plus-glow flex items-center justify-center w-8 h-8 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none"
-              aria-haspopup="menu" aria-expanded={createMenuOpen}>
+              aria-haspopup="menu" aria-expanded={createMenuOpen}
+              data-open={createMenuOpen || showJobWizard || showReturnVisit || showVisitScheduler || timeOffOpen}>
               <Plus className="w-4 h-4" />
             </button>
             {createMenuOpen && (
@@ -757,8 +759,8 @@ export default function CalendarPage() {
             <button onClick={() => setFiltersOpen(o => !o)}
               className="group flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-all duration-200 active:scale-95 hover:brightness-[0.98]"
               style={{ border: `1px solid ${activeFilters || filtersOpen ? "var(--accent-soft-border)" : "var(--border)"}`, backgroundColor: activeFilters || filtersOpen ? "var(--accent-soft-bg)" : "var(--bg-surface)", color: activeFilters || filtersOpen ? "var(--accent-text)" : "var(--text-secondary)" }}>
-              {/* Sliders "tune" into place — rotates on hover, locks vertical while open. */}
-              <SlidersHorizontal className={`w-3.5 h-3.5 transition-transform duration-300 ease-out ${filtersOpen ? "rotate-90" : "group-hover:rotate-90 group-hover:scale-110"}`} /> Filter
+              {/* Sliders whose knobs slide into place — on hover, and while open. */}
+              <SlidersGlyph active={filtersOpen} /> Filter
               {activeFilters > 0 && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full animate-[pulse_1.6s_ease-in-out_2]" style={{ backgroundColor: "var(--accent-soft-2-bg)", color: "var(--accent-text)" }}>{activeFilters}</span>}
             </button>
             {filtersOpen && (
@@ -1310,19 +1312,19 @@ function DispatchBoard({ focus, mode, items, roster, availability, dayStart, day
                         </span>
                       )}
                       <div className="flex items-center gap-1">
-                        <p className="text-[10px] font-semibold truncate leading-tight" style={{ color: "var(--text-primary)" }}>{i.customerName ?? i.title}</p>
+                        <p className="text-[10px] font-semibold truncate leading-tight flex-1 min-w-0" style={{ color: "var(--text-primary)" }}>{i.customerName ?? i.title}</p>
                         {i.techIds && i.techIds.length > 1 && <span className="text-[8px] font-bold px-1 rounded shrink-0" style={{ backgroundColor: "var(--bg-surface-2)", color: "var(--text-secondary)" }}>+{i.techIds.length - 1}</span>}
                         {movingAway && <span className="text-[8px] font-bold px-1 rounded shrink-0" style={{ backgroundColor: "var(--accent-soft-2-bg)", color: "var(--accent-text)" }}>→ {p!.tech}</span>}
                         {!movingAway && prio && <span className="text-[8px] font-bold px-1 rounded shrink-0" style={{ backgroundColor: prio.bg, color: prio.color }}>{prio.label}</span>}
-                      </div>
-                      {/* Lead the subline with the work-order scope when present, else job type. */}
-                      <p className="text-[9px] truncate leading-tight flex items-center gap-1" style={{ color: "var(--text-muted)" }}>
                         {!tracking && legMin[i.id] != null && (
-                          <span className="inline-flex items-center gap-0.5 shrink-0" title={`~${legMin[i.id]} min drive from the previous stop`} style={{ color: "var(--accent-text)" }}>
+                          <span className="inline-flex items-center gap-0.5 text-[8px] font-semibold shrink-0" title={`~${legMin[i.id]} min drive from the previous stop`} style={{ color: "var(--accent-text)" }}>
                             <Navigation className="w-2 h-2" />{legMin[i.id]}m
                           </span>
                         )}
-                        <span className="truncate">{tracking ? `${minToTime(sm)} · ${dur}m` : `${fmtTime(i.start)} · ${i.workOrderTitle ?? (i.jobType ? jobTypeLabel(i.jobType) : "")}${i.city ? ` · ${i.city}` : ""}`}</span>
+                      </div>
+                      {/* Lead the subline with the work-order scope when present, else job type. */}
+                      <p className="text-[9px] truncate leading-tight" style={{ color: "var(--text-muted)" }}>
+                        {tracking ? `${minToTime(sm)} · ${dur}m` : `${fmtTime(i.start)} · ${i.workOrderTitle ?? (i.jobType ? jobTypeLabel(i.jobType) : "")}${i.city ? ` · ${i.city}` : ""}`}
                       </p>
                     </div>
                     {/* Resize handle (right edge) */}

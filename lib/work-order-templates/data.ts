@@ -35,6 +35,7 @@ export interface ChecklistItem {
   order:      number;
   active:     boolean;
   options?:   string[];    // for dropdown
+  photoIds?:  string[];    // RequiredPhoto ids this step requires (drawn as links on the canvas)
 }
 
 export const CHECKLIST_TYPE_LABELS: Record<ChecklistItemType, string> = {
@@ -107,6 +108,23 @@ const T_KEY = "crm-wo-templates";
 const C_KEY = "crm-wo-checklists";
 const P_KEY = "crm-wo-photos";
 const I_KEY = "crm-wo-instructions";
+const L_KEY = "crm-wo-layouts";
+
+// ─── Canvas layout (lane positions) per template ──────────
+export interface TemplateLayout { workflow: { x: number; y: number }; photos: { x: number; y: number } }
+let _layouts: Record<string, TemplateLayout> | null = null;
+function loadLayouts(): Record<string, TemplateLayout> {
+  if (_layouts) return _layouts;
+  if (typeof window === "undefined") return (_layouts = {});
+  try { const raw = localStorage.getItem(L_KEY); _layouts = raw ? JSON.parse(raw) : {}; }
+  catch { _layouts = {}; }
+  return _layouts!;
+}
+export function getLayout(templateId: string): TemplateLayout | undefined { return loadLayouts()[templateId]; }
+export function saveLayout(templateId: string, layout: TemplateLayout): void {
+  const all = loadLayouts(); all[templateId] = layout;
+  try { localStorage.setItem(L_KEY, JSON.stringify(all)); } catch { /* ignore */ }
+}
 
 function read<T>(key: string, fallback: T[]): T[] {
   if (typeof window === "undefined") return fallback;

@@ -261,9 +261,9 @@ function QuickAddContent({ onClose, onCreated, forceStatus }: {
               <button key={t.key} onClick={() => set("accountType", t.key)}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
                 style={{
-                  border: `1.5px solid ${data.accountType === t.key ? "#4f46e5" : "var(--border)"}`,
-                  backgroundColor: data.accountType === t.key ? "#e0e7ff" : "var(--bg-surface-2)",
-                  color: data.accountType === t.key ? "#4f46e5" : "var(--text-secondary)",
+                  border: `1.5px solid ${data.accountType === t.key ? "#c9c0b2" : "var(--border)"}`,
+                  backgroundColor: data.accountType === t.key ? "#E5E0DB" : "var(--bg-surface-2)",
+                  color: data.accountType === t.key ? "#5c5545" : "var(--text-secondary)",
                 }}>
                 <t.icon className="w-3.5 h-3.5" />{t.label}
               </button>
@@ -309,13 +309,13 @@ function Step1({ data, set }: { data: WizardData; set: <K extends keyof WizardDa
           return (
             <button key={t.key} onClick={() => set("accountType", t.key)}
               className="flex items-start gap-3 p-4 rounded-xl text-left transition-all"
-              style={{ border: `2px solid ${active ? "#4f46e5" : "var(--border)"}`, backgroundColor: active ? "#f5f3ff" : "var(--bg-surface-2)" }}>
+              style={{ border: `2px solid ${active ? "#c9c0b2" : "var(--border)"}`, backgroundColor: active ? "#E5E0DB" : "var(--bg-surface-2)" }}>
               <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5"
-                style={{ backgroundColor: active ? "#4f46e5" : "var(--bg-input)" }}>
+                style={{ backgroundColor: active ? "#7a6f5c" : "var(--bg-input)" }}>
                 <t.icon className="w-4 h-4" style={{ color: active ? "#ffffff" : "var(--text-muted)" }} />
               </div>
               <div>
-                <p className="text-sm font-semibold" style={{ color: active ? "#4f46e5" : "var(--text-primary)" }}>{t.label}</p>
+                <p className="text-sm font-semibold" style={{ color: active ? "#5c5545" : "var(--text-primary)" }}>{t.label}</p>
                 <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>{t.desc}</p>
               </div>
             </button>

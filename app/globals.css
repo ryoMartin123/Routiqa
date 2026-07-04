@@ -1206,15 +1206,29 @@ button[aria-expanded="true"]:hover .lucide-circle-plus {
 }
 .plus-glow:hover { box-shadow: 0 0 18px -3px rgba(79, 70, 229, 0.6); }
 .plus-glow:active { transform: scale(0.94); }
-.plus-glow:focus-visible,
 .plus-glow[aria-expanded="true"],
 .plus-glow[data-open="true"] {
   outline: none;
   box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.35), 0 0 18px -3px rgba(79, 70, 229, 0.55);
 }
+/* The "+" glyph rotates into an ✕ while the menu/modal is open — STATE-driven
+   (aria-expanded / data-open), so it holds until the surface fully closes rather
+   than flicking back on pointer-leave. Targets the icon inside any plus-glow
+   button, including text+icon create buttons. */
+.plus-glow svg,
+.plus-icon {
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.plus-glow[aria-expanded="true"] svg,
+.plus-glow[data-open="true"] svg,
+[data-open="true"] > .plus-icon,
+.plus-icon[data-open="true"] {
+  transform: rotate(45deg);
+}
 @media (prefers-reduced-motion: reduce) {
   .plus-glow { transition: none; }
   .plus-glow:active { transform: none; }
+  .plus-glow svg, .plus-icon { transition: none; }
 }
 
 /* ── Raised button (minimal, professional) ─────────────────

@@ -148,13 +148,8 @@ export default function WorkOrderDetailPage(props: { params: Promise<{ id: strin
                 <Play className="w-4 h-4" /> Start work
               </button>
             )}
-            {wo.status === "in_progress" && (
-              <button onClick={() => setStatus("completed")} disabled={!checklistMet} title={checklistMet ? "" : "Complete required checklist items first"}
-                className="inline-flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-lg text-white disabled:opacity-40" style={{ backgroundColor: "#16a34a" }}>
-                <CheckCircle2 className="w-4 h-4" /> Mark complete
-              </button>
-            )}
             <ActionsMenu actions={[
+              wo.status === "in_progress" && { label: "Mark complete", icon: CheckCircle2, onClick: () => setStatus("completed"), disabled: !checklistMet, title: checklistMet ? undefined : "Complete required checklist items first" },
               job && { label: "Open job", icon: Briefcase, onClick: () => router.push(`/jobs/${job.id}`) },
               job && { label: "Open customer", icon: User, onClick: () => router.push(`/customers/${job.accountId}`) },
               job && { label: "Schedule return visit", icon: Repeat, onClick: () => setReturnOpen(true) },
@@ -207,7 +202,7 @@ export default function WorkOrderDetailPage(props: { params: Promise<{ id: strin
                 )}
               </DCard>
 
-              <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-4 h-full">
                 {showPricing && (
                   <DCard className="p-4">
                     <div className="flex items-center justify-between mb-2">
@@ -221,9 +216,9 @@ export default function WorkOrderDetailPage(props: { params: Promise<{ id: strin
                   </DCard>
                 )}
 
-                <DCard className="p-4">
+                <DCard className="p-4 flex-1 flex flex-col">
                   <DLabel>Completion Requirements</DLabel>
-                  <div className="space-y-1.5 mt-3">
+                  <div className="flex flex-col justify-evenly flex-1 mt-3">
                     <ReqRow met={checklistMet} label={reqItems.length ? `Required checklist (${reqDone}/${reqItems.length})` : "No required checklist items"} />
                     <ReqRow met={photosMet} label={photosMet ? `${images.length} photo${images.length === 1 ? "" : "s"} attached` : "Required photos"} />
                   </div>

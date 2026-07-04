@@ -31,6 +31,7 @@ import { useCustomers } from "@/components/providers/CustomerProvider";
 import EditCustomerModal from "@/components/customers/EditCustomerModal";
 import LeadWizard from "@/components/leads/LeadWizard";
 import QuoteTypeChooser from "@/components/quotes/create/QuoteTypeChooser";
+import DetailActionButton from "@/components/shared/DetailActionButton";
 import { AddressAutocomplete, EMPTY_ADDRESS, type ParsedAddress } from "@/components/address/AddressAutocomplete";
 import UiSelect from "@/components/ui/Select";
 import PhotoGallery from "@/components/files/PhotoGallery";
@@ -1211,24 +1212,34 @@ function BillingSection({
   );
 }
 
+function CustomerBillingKpi({ label, value, tone }: { label: string; value: string; tone?: "green" | "red" }) {
+  const color = tone === "green" ? "#16a34a" : tone === "red" ? "#dc2626" : "var(--text-primary)";
+  return (
+    <div className="rounded-xl px-4 py-3" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
+      <p className="text-[10px] font-semibold uppercase tracking-wider truncate" style={{ color: "var(--text-muted)" }}>{label}</p>
+      <p className="text-lg font-bold tabular-nums mt-0.5" style={{ color }}>{value}</p>
+    </div>
+  );
+}
+
 function BillingTab({ id }: { id: string }) {
   const router = useRouter();
   const [wizard, setWizard] = useState(false);
-  const [, forceRefresh] = useState(0);
   const quotes   = getQuotesForCustomer(id);
   const invoices = getInvoicesForCustomer(id);
-  const outstanding = invoices.filter(i => i.balanceDue > 0).reduce((s, i) => s + i.balanceDue, 0);
+  // Void/canceled invoices don't count toward the figures.
+  const live = invoices.filter(i => i.status !== "void" && i.status !== "canceled");
+  const invoiced    = live.reduce((s, i) => s + i.total, 0);
+  const collected   = live.reduce((s, i) => s + (i.total - i.balanceDue), 0);
+  const outstanding = live.filter(i => i.balanceDue > 0).reduce((s, i) => s + i.balanceDue, 0);
+  const openInvoices = live.filter(i => i.balanceDue > 0).length;
 
   function Section({ title, onNew, children }: { title: string; onNew?: () => void; children: React.ReactNode }) {
     return (
       <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
         <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid var(--border)" }}>
           <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{title}</p>
-          <button onClick={onNew} disabled={!onNew}
-            className="flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-lg disabled:opacity-40"
-            style={{ backgroundColor: "#4f46e5", color: "#fff" }}>
-            <Plus className="w-3.5 h-3.5" /> New
-          </button>
+          <DetailActionButton onClick={onNew} disabled={!onNew}>New</DetailActionButton>
         </div>
         {children}
       </div>
@@ -1236,20 +1247,18 @@ function BillingTab({ id }: { id: string }) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {wizard && (
         <QuoteTypeChooser preset={{ customerId: id, lockCustomer: true }}
           onClose={() => setWizard(false)} />
       )}
-      {outstanding > 0 && (
-        <div className="rounded-xl px-4 py-3 flex items-center gap-3"
-          style={{ backgroundColor: "#fef3c7", border: "1px solid #fde68a" }}>
-          <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: "#92400e" }} />
-          <p className="text-xs font-medium" style={{ color: "#92400e" }}>
-            {fmtCurrency(outstanding)} outstanding across {invoices.filter(i => i.balanceDue > 0).length} unpaid invoice(s)
-          </p>
-        </div>
-      )}
+
+      {/* Summary strip — adapts 3-up on desktop */}
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+        <CustomerBillingKpi label="Invoiced" value={fmtCurrency(invoiced)} />
+        <CustomerBillingKpi label="Collected" value={fmtCurrency(collected)} tone="green" />
+        <CustomerBillingKpi label={openInvoices > 0 ? `Outstanding · ${openInvoices} unpaid` : "Outstanding"} value={fmtCurrency(outstanding)} tone={outstanding > 0 ? "red" : undefined} />
+      </div>
 
       {/* Quotes */}
       <Section title={`Quotes (${quotes.length})`} onNew={() => setWizard(true)}>
@@ -1639,32 +1648,21 @@ function CustomerDetailContent({ params }: { params: Promise<{ id: string }> }) 
             </Link>
             <div className="w-px h-5 shrink-0" style={{ backgroundColor: "var(--border)" }} />
             <Commentable anchor={{ recordType: "customer", recordId: id, recordLabel: customer.name }}>
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="w-9 h-9 rounded-full bg-indigo-600 flex items-center justify-center text-white text-sm font-bold shrink-0">
-                {customer.initials}
-              </div>
-              <div className="min-w-0">
-                <h1 className="text-base font-semibold truncate" style={{ color: "var(--text-primary)" }}>{customer.name}</h1>
-                <p className="text-xs mt-0.5 truncate flex items-center gap-1.5" style={{ color: "var(--text-muted)" }}>
-                  <MapPin className="w-3 h-3 shrink-0" />
-                  {customer.address}, {customer.city}, {customer.state}
-                </p>
-              </div>
+            <div className="min-w-0">
+              <h1 className="text-base font-semibold truncate" style={{ color: "var(--text-primary)" }}>{customer.name}</h1>
+              <p className="text-xs mt-0.5 truncate flex items-center gap-1.5" style={{ color: "var(--text-muted)" }}>
+                <MapPin className="w-3 h-3 shrink-0" />
+                {customer.address}, {customer.city}, {customer.state}
+              </p>
             </div>
             </Commentable>
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
-            {/* Primary action */}
-            <button onClick={() => setCreateModal("job")}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-medium text-white transition hover:brightness-110"
-              style={{ backgroundColor: "#4f46e5" }}>
-              <Briefcase className="w-3.5 h-3.5" /> Create Job
-            </button>
-
-            {/* More menu — secondary create actions + account management. Shared
+            {/* More menu — all create actions + account management. Shared
                 ActionsMenu (4-dot glyph) so every detail header matches. */}
             <ActionsMenu actions={[
+              { icon: Briefcase,     label: "Create Job",     onClick: () => setCreateModal("job") },
               { icon: FilePen,       label: "Create Quote",   onClick: () => setCreateModal("quote") },
               { icon: TrendingUp,    label: "Create Lead",    onClick: () => setCreateModal("lead") },
               { icon: MessageSquare, label: "Add Note",       onClick: () => setTab("Notes") },

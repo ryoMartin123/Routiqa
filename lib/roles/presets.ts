@@ -24,7 +24,7 @@ export const ROLE_PRESETS: Record<RoleKey, RoleDefinition> = {
     description: "The account owner. Full control of everything, including billing and ownership.",
     allAccess: true, locked: true, dataScope: "all", apps: ["portal", "crm", "hr", "accounting", "documents", "admin"],
     capabilities: { billing: { ...FULL } },
-    masks: ["finance_internal_pricing", "finance_cost_margin", "finance_totals", "finance_field_pricing", "finance_payroll", "comms_internal_notes", "sales_other_commissions", "documents_confidential", "accounting_reports"],
+    masks: ["finance_internal_pricing", "finance_cost_margin", "finance_totals", "finance_field_pricing", "finance_field_billing","finance_payroll", "comms_internal_notes", "sales_other_commissions", "documents_confidential", "accounting_reports"],
     flags: ["hierarchy_manage", "users_manage", "roles_manage", "billing_manage", "security_manage", "reports_cross_scope", "records_deactivate", "automation_manage", "jobs_status_override"],
   },
 
@@ -34,7 +34,7 @@ export const ROLE_PRESETS: Record<RoleKey, RoleDefinition> = {
     description: "Manage every company, location, user, and setting across the organization. No billing.",
     allAccess: true, dataScope: "organization", apps: ["portal", "crm", "hr", "accounting", "documents", "admin"],
     capabilities: {},
-    masks: ["finance_internal_pricing", "finance_cost_margin", "finance_totals", "finance_field_pricing", "finance_payroll", "comms_internal_notes", "sales_other_commissions", "documents_confidential", "accounting_reports"],
+    masks: ["finance_internal_pricing", "finance_cost_margin", "finance_totals", "finance_field_pricing", "finance_field_billing","finance_payroll", "comms_internal_notes", "sales_other_commissions", "documents_confidential", "accounting_reports"],
     flags: ["hierarchy_manage", "users_manage", "roles_manage", "security_manage", "reports_cross_scope", "records_deactivate", "automation_manage", "jobs_status_override"],
   },
 
@@ -44,7 +44,7 @@ export const ROLE_PRESETS: Record<RoleKey, RoleDefinition> = {
     description: "Run a company/brand and all of its locations: team, operations, and local reporting.",
     allAccess: true,
     capabilities: {},
-    masks: ["finance_cost_margin", "finance_totals", "finance_field_pricing", "comms_internal_notes", "sales_other_commissions"],
+    masks: ["finance_cost_margin", "finance_totals", "finance_field_pricing", "finance_field_billing","comms_internal_notes", "sales_other_commissions"],
     flags: ["users_manage", "reports_cross_scope", "records_deactivate", "automation_manage", "jobs_status_override"],
   },
 
@@ -61,7 +61,7 @@ export const ROLE_PRESETS: Record<RoleKey, RoleDefinition> = {
       invoices: { view: A, create: A, edit: A, export: A }, payments: { view: A, create: A },
       reports: { view: A, export: A }, items: VIEW, settings: VIEW, users: VIEW,
     },
-    masks: ["finance_cost_margin", "finance_totals", "finance_field_pricing", "comms_internal_notes", "sales_other_commissions"],
+    masks: ["finance_cost_margin", "finance_totals", "finance_field_pricing", "finance_field_billing","comms_internal_notes", "sales_other_commissions"],
     flags: ["records_deactivate", "jobs_status_override"],
   },
 
@@ -119,7 +119,7 @@ export const ROLE_PRESETS: Record<RoleKey, RoleDefinition> = {
       calendar: { view: O, create: O }, files: { view: A, create: A },
       communications: { view: A, create: A }, reports: { view: O },
     },
-    masks: ["finance_cost_margin", "finance_totals", "finance_field_pricing", "comms_internal_notes"],
+    masks: ["finance_cost_margin", "finance_totals", "finance_field_pricing", "finance_field_billing","comms_internal_notes"],
     flags: [],
   },
 
@@ -144,7 +144,7 @@ export const ROLE_PRESETS: Record<RoleKey, RoleDefinition> = {
       dashboard: VIEW,
       users: { ...FULL }, files: { view: A, create: A },
     },
-    masks: ["finance_cost_margin", "finance_totals", "finance_field_pricing"],
+    masks: ["finance_cost_margin", "finance_totals", "finance_field_pricing", "finance_field_billing"],
     flags: ["users_manage"],
   },
 };

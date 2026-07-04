@@ -178,7 +178,7 @@ export default function WorkOrdersPage() {
                 {/* Assigned */}
                 {job && (
                   <div className="flex items-center gap-1.5">
-                    <div className="w-5 h-5 rounded-full bg-indigo-600 flex items-center justify-center text-[8px] font-bold text-white shrink-0">
+                    <div className="w-5 h-5 rounded-full bg-[#e5e0db] flex items-center justify-center text-[8px] font-bold text-[#5c5545] shrink-0">
                       {job.assignedToInitials}
                     </div>
                     <span className="text-sm truncate" style={{ color: "var(--text-secondary)" }}>{job.assignedTo}</span>

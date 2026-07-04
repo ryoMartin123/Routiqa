@@ -158,7 +158,7 @@ function DetailsTab({ id }: { id: string }) {
           <p className="text-[10px] font-semibold uppercase tracking-widest mb-3" style={{ color: "var(--text-muted)" }}>Customer</p>
           {customer ? (
             <Link href={`/customers/${customer.id}`} className="flex items-start gap-3 hover:opacity-80 transition-opacity">
-              <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-white text-[10px] font-bold shrink-0">{customer.initials}</div>
+              <div className="w-8 h-8 rounded-full bg-[#e5e0db] flex items-center justify-center text-[#5c5545] text-[10px] font-bold shrink-0">{customer.initials}</div>
               <div>
                 <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{customer.name}</p>
                 {customer.phone && <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>{customer.phone}</p>}

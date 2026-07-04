@@ -52,7 +52,7 @@ function ContextBadge({ level }: { level: ContextLevel }) {
   return (
     <span className="relative inline-flex group/ctx">
       <Info className="w-4 h-4 cursor-help" style={{ color: c.color }} />
-      <span className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-full mt-1.5 z-30 whitespace-nowrap text-[10px] font-bold px-2 py-0.5 rounded-full opacity-0 group-hover/ctx:opacity-100 transition-opacity"
+      <span className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-full mt-1.5 z-30 whitespace-nowrap text-[10px] font-bold px-2 py-0.5 rounded-full opacity-0 group-hover/ctx:opacity-100 transition-opacity duration-200 group-hover/ctx:delay-700"
         style={{ backgroundColor: c.bg, color: c.color, boxShadow: "0 2px 8px rgba(0,0,0,0.14)" }}>
         {CONTEXT_LABELS[level]}
       </span>
@@ -148,7 +148,6 @@ function EditDock({
             style={{ backgroundColor: "var(--accent-icon)" }} />
         </span>
         <span className="hidden md:inline text-sm font-semibold" style={{ color: "var(--accent-text-strong)" }}>Customizing</span>
-        <ContextBadge level={contextLevel} />
       </div>
 
       <div className="w-px h-7" style={{ backgroundColor: "var(--border)" }} />
@@ -421,9 +420,11 @@ export default function DashboardPage() {
         <div className="flex-1 flex justify-end">
           {!customizing ? (
             <button onClick={startCustomize}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm transition-colors hover:bg-[var(--bg-surface-2)]"
-              style={{ border: "1px solid var(--border)", color: "var(--text-secondary)", backgroundColor: "var(--bg-surface)" }}>
-              <Settings2 className="w-3.5 h-3.5" /> Customize
+              className="group flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm transition-all hover:-translate-y-px hover:shadow-sm"
+              style={{ border: "1px solid var(--border)", color: "var(--text-secondary)", backgroundColor: "var(--bg-surface)" }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--accent-soft-border)"; e.currentTarget.style.color = "var(--accent-text)"; e.currentTarget.style.backgroundColor = "var(--accent-soft-bg)"; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.color = "var(--text-secondary)"; e.currentTarget.style.backgroundColor = "var(--bg-surface)"; }}>
+              <Settings2 className="w-3.5 h-3.5 transition-transform duration-500 group-hover:rotate-90" /> Customize
             </button>
           ) : (
             /* Docks inline here by default; pops to free-floating when dragged. */

@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Plus, Pencil, ChevronUp, ChevronDown, Trash2, Check, RotateCcw, Briefcase, Tags, Lock } from "lucide-react";
+import { Plus, Pencil, ChevronUp, ChevronDown, Trash2, RotateCcw, Briefcase, Tags, Lock } from "lucide-react";
+import { pingSaved } from "@/components/shared/SavedPill";
 import {
   getJobTypes, saveJobTypes, resetJobTypes,
   getJobStatuses, saveJobStatuses, resetJobStatuses,
@@ -39,7 +40,7 @@ function CoreBadge() {
 }
 
 // Each tab reports its save/reset handlers + dirty/saved up to the section header.
-type Saver = (save: () => void, reset: () => void, dirty: boolean, saved: boolean) => void;
+type Saver = (reset: () => void) => void;
 
 // ─── Job Types tab ────────────────────────────────────────
 type TypeForm = { name: string; key: string; description: string; duration: number; category: JobTypeCategory; color: string; active: boolean; workOrderPolicy: WorkOrderPolicy; defaultWorkOrderTemplateId: string };
@@ -51,11 +52,10 @@ function JobTypesTab({ register }: { register: Saver }) {
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState<TypeForm>({ ...EMPTY_TYPE });
   const [dirty, setDirty] = useState(false);
-  const [saved, setSaved] = useState(false);
 
   useEffect(() => { setItems(getJobTypes()); }, []);
   const woTemplates = getTemplates().filter(t => t.active);
-  function mark() { setDirty(true); setSaved(false); }
+  function mark() { setDirty(true); }
 
   function move(id: string, dir: -1 | 1) {
     const sorted = [...items].sort((a, b) => a.order - b.order);
@@ -82,10 +82,14 @@ function JobTypesTab({ register }: { register: Saver }) {
   }
   function toggle(id: string) { setItems(prev => prev.map(t => t.id === id ? { ...t, active: !t.active } : t)); mark(); }
   function remove(id: string) { setItems(prev => prev.filter(t => t.id !== id)); mark(); }
-  function save() { saveJobTypes(items); setItems(getJobTypes()); setDirty(false); setSaved(true); setTimeout(() => setSaved(false), 2000); }
-  function reset() { setItems(resetJobTypes()); setDirty(false); }
+  function reset() { setItems(resetJobTypes()); setDirty(false); pingSaved(); }
 
-  useEffect(() => { register(save, reset, dirty, saved); });
+  useEffect(() => {
+    if (!dirty) return;
+    const t = setTimeout(() => { saveJobTypes(items); setDirty(false); pingSaved(); }, 500);
+    return () => clearTimeout(t);
+  }, [dirty, items]);
+  useEffect(() => { register(reset); });
 
   const sorted = [...items].sort((a, b) => a.order - b.order);
   const editingType = items.find(t => t.id === editingId);
@@ -265,10 +269,9 @@ function JobStatusesTab({ register }: { register: Saver }) {
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState<StatusForm>({ ...EMPTY_STATUS });
   const [dirty, setDirty] = useState(false);
-  const [saved, setSaved] = useState(false);
 
   useEffect(() => { setItems(getJobStatuses()); }, []);
-  function mark() { setDirty(true); setSaved(false); }
+  function mark() { setDirty(true); }
 
   function move(id: string, dir: -1 | 1) {
     const sorted = [...items].sort((a, b) => a.order - b.order);
@@ -295,10 +298,14 @@ function JobStatusesTab({ register }: { register: Saver }) {
   }
   function toggle(id: string) { setItems(prev => prev.map(s => s.id === id ? { ...s, active: !s.active } : s)); mark(); }
   function remove(id: string) { setItems(prev => prev.filter(s => s.id !== id)); mark(); }
-  function save() { saveJobStatuses(items); setItems(getJobStatuses()); setDirty(false); setSaved(true); setTimeout(() => setSaved(false), 2000); }
-  function reset() { setItems(resetJobStatuses()); setDirty(false); }
+  function reset() { setItems(resetJobStatuses()); setDirty(false); pingSaved(); }
 
-  useEffect(() => { register(save, reset, dirty, saved); });
+  useEffect(() => {
+    if (!dirty) return;
+    const t = setTimeout(() => { saveJobStatuses(items); setDirty(false); pingSaved(); }, 500);
+    return () => clearTimeout(t);
+  }, [dirty, items]);
+  useEffect(() => { register(reset); });
 
   const sorted = [...items].sort((a, b) => a.order - b.order);
   const editingStatus = items.find(s => s.id === editingId);
@@ -430,16 +437,11 @@ function JobStatusesTab({ register }: { register: Saver }) {
 export default function JobConfigSection() {
   const [tab, setTab] = useState<"types" | "statuses">("types");
 
-  // Active tab registers its handlers so the header shows Save/Reset inline.
-  const saverRef = useRef<() => void>(() => {});
+  // Active tab registers its reset handler so the header can offer Reset.
+  // Saving is automatic (SavedPill) — no manual Save button.
   const resetRef = useRef<() => void>(() => {});
-  const [hdr, setHdr] = useState<{ dirty: boolean; saved: boolean }>({ dirty: false, saved: false });
-  const register = useCallback<Saver>((save, reset, dirty, saved) => {
-    saverRef.current = save;
-    resetRef.current = reset;
-    setHdr(prev => (prev.dirty === dirty && prev.saved === saved) ? prev : { dirty, saved });
-  }, []);
-  function switchTab(next: "types" | "statuses") { setTab(next); setHdr({ dirty: false, saved: false }); }
+  const register = useCallback<Saver>((reset) => { resetRef.current = reset; }, []);
+  function switchTab(next: "types" | "statuses") { setTab(next); }
 
   return (
     <div className="space-y-5">
@@ -456,11 +458,6 @@ export default function JobConfigSection() {
             className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm transition-colors"
             style={{ border: "1px solid var(--border)", color: "var(--text-secondary)", backgroundColor: "var(--bg-surface)" }}>
             <RotateCcw className="w-3.5 h-3.5" /> Reset Defaults
-          </button>
-          <button onClick={() => saverRef.current()} disabled={!hdr.dirty && !hdr.saved}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-white transition-colors disabled:opacity-50"
-            style={{ backgroundColor: hdr.saved ? "#10b981" : "#4f46e5" }}>
-            <Check className="w-3.5 h-3.5" /> {hdr.saved ? "Saved" : "Save Changes"}
           </button>
         </div>
       </div>

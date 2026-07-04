@@ -9,11 +9,12 @@ import { cn } from "@/lib/utils";
 // diamond on hover and locking into an indigo diamond while the menu is open —
 // so the affordance feels alive. One distinctive trigger shared across every
 // record detail header.
-export function MoreActionsGlyph({ open }: { open: boolean }) {
+export function MoreActionsGlyph({ open, className = "w-[18px] h-[18px]" }: { open: boolean; className?: string }) {
   return (
     <svg viewBox="0 0 16 16" aria-hidden="true" fill="currentColor"
       className={cn(
-        "w-[18px] h-[18px] transition-transform duration-300 ease-out",
+        className,
+        "transition-transform duration-300 ease-out",
         open ? "rotate-45 scale-110" : "rotate-0 group-hover:rotate-45 group-hover:scale-105",
       )}>
       <rect x="2.6" y="2.6" width="4.2" height="4.2" rx="1.4" />
@@ -32,14 +33,19 @@ export interface ActionItem {
   danger?: boolean;
   // Renders a divider ABOVE this item (e.g. to separate destructive actions).
   separated?: boolean;
+  // Greys the item out and blocks the click (keeps a gated action visible).
+  disabled?: boolean;
+  // Native tooltip — handy to explain why a disabled item is unavailable.
+  title?: string;
 }
 
 // A "⋮" trigger that opens a dropdown of every action available for the current
 // record. One consistent affordance across job / project / lead / customer
 // detail headers. Falsy entries are ignored so callers can inline-conditional.
-export default function ActionsMenu({ actions, label = "Actions" }: {
+export default function ActionsMenu({ actions, label = "Actions", size = "md" }: {
   actions: (ActionItem | false | null | undefined)[];
   label?: string;
+  size?: "sm" | "md";
 }) {
   const items = actions.filter(Boolean) as ActionItem[];
   const [open, setOpen] = useState(false);
@@ -62,12 +68,13 @@ export default function ActionsMenu({ actions, label = "Actions" }: {
         onClick={() => setOpen(o => !o)}
         aria-label={label} aria-haspopup="menu" aria-expanded={open}
         className={cn(
-          "group flex items-center justify-center w-9 h-9 rounded-lg transition-all duration-200 active:scale-90",
+          "group flex items-center justify-center rounded-lg transition-all duration-200 active:scale-90",
+          size === "sm" ? "w-7 h-7" : "w-9 h-9",
           open ? "text-[#4f46e5]" : "text-[var(--text-secondary)] hover:text-[#4f46e5] hover:bg-[var(--bg-surface-2)]",
         )}
         style={{ border: `1px solid ${open ? "#4f46e5" : "var(--border)"}` }}
       >
-        <MoreActionsGlyph open={open} />
+        <MoreActionsGlyph open={open} className={size === "sm" ? "w-[15px] h-[15px]" : "w-[18px] h-[18px]"} />
       </button>
 
       {open && (
@@ -87,12 +94,16 @@ export default function ActionsMenu({ actions, label = "Actions" }: {
             return (
               <div key={it.label}>
                 {(it.separated && i > 0) && <div className="my-1 h-px" style={{ backgroundColor: "var(--border-subtle)" }} />}
-                {it.href ? (
-                  <Link href={it.href} onClick={() => setOpen(false)} className={`${cls} ${hover}`} style={{ color }} role="menuitem">
+                {it.disabled ? (
+                  <div className={`${cls} opacity-40 cursor-not-allowed`} style={{ color }} title={it.title} aria-disabled>
+                    {body}
+                  </div>
+                ) : it.href ? (
+                  <Link href={it.href} onClick={() => setOpen(false)} className={`${cls} ${hover}`} style={{ color }} title={it.title} role="menuitem">
                     {body}
                   </Link>
                 ) : (
-                  <button onClick={() => { setOpen(false); it.onClick?.(); }} className={`${cls} ${hover}`} style={{ color }} role="menuitem">
+                  <button onClick={() => { setOpen(false); it.onClick?.(); }} className={`${cls} ${hover}`} style={{ color }} title={it.title} role="menuitem">
                     {body}
                   </button>
                 )}

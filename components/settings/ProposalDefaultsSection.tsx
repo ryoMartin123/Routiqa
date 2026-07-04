@@ -7,7 +7,8 @@
 // Backed by getProposalDefaults/saveProposalDefaults (one source of truth).
 
 import { useEffect, useMemo, useState } from "react";
-import { Sliders, Check } from "lucide-react";
+import { Sliders } from "lucide-react";
+import { pingSaved } from "@/components/shared/SavedPill";
 import UiSelect from "@/components/ui/Select";
 import {
   getProposalDefaults, saveProposalDefaults, getProposalTerms,
@@ -50,11 +51,14 @@ export default function ProposalDefaultsSection() {
   const [d, setD] = useState<ProposalDefaults>(() => getProposalDefaults());
   const [terms, setTerms] = useState<ProposalTermsBlock[]>([]);
   const [dirty, setDirty] = useState(false);
-  const [saved, setSaved] = useState(false);
 
   useEffect(() => { setD(getProposalDefaults()); setTerms(getProposalTerms().filter(t => t.active)); }, []);
-  function set<K extends keyof ProposalDefaults>(k: K, v: ProposalDefaults[K]) { setD(p => ({ ...p, [k]: v })); setDirty(true); setSaved(false); }
-  function save() { saveProposalDefaults(d); setDirty(false); setSaved(true); setTimeout(() => setSaved(false), 2000); }
+  function set<K extends keyof ProposalDefaults>(k: K, v: ProposalDefaults[K]) { setD(p => ({ ...p, [k]: v })); setDirty(true); }
+  useEffect(() => {
+    if (!dirty) return;
+    const t = setTimeout(() => { saveProposalDefaults(d); setDirty(false); pingSaved(); }, 500);
+    return () => clearTimeout(t);
+  }, [dirty, d]);
 
   // Each per-type default only offers designs that support that quote situation.
   const quickDesigns     = useMemo(() => getDesignsForMode("quick_quote"), []);
@@ -108,14 +112,6 @@ export default function ProposalDefaultsSection() {
         <ToggleRow label="Show Monthly Payment" desc="Show estimated monthly financed payment where available." on={d.showMonthlyPayment} onChange={v => set("showMonthlyPayment", v)} />
         <ToggleRow label="Show Pricing Breakdown" desc="Show itemized pricing instead of a single total." on={d.showPricingBreakdown} onChange={v => set("showPricingBreakdown", v)} />
         <ToggleRow label="Show Optional Add-ons" desc="Display optional upgrade lines on proposals." on={d.showOptionalAddons} onChange={v => set("showOptionalAddons", v)} />
-      </div>
-
-      <div className="flex justify-end">
-        <button onClick={save} disabled={!dirty && !saved}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-white transition-colors disabled:opacity-50"
-          style={{ backgroundColor: saved ? "#10b981" : "var(--accent-text)" }}>
-          <Check className="w-3.5 h-3.5" /> {saved ? "Saved" : "Save Defaults"}
-        </button>
       </div>
     </div>
   );

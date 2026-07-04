@@ -10,6 +10,7 @@
 //   • OfferGroupPreview    — customer-facing preview of an offer group's options
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { pingSaved } from "@/components/shared/SavedPill";
 import {
   Package, Plus, Upload, Eye, Pencil, Copy, Archive, X, ArrowLeft, Check, Star,
   Trash2, ChevronUp, ChevronDown, Image as ImageIcon, Search, Layers, CreditCard, Settings2, Wrench, ListChecks,
@@ -390,15 +391,26 @@ function OfferGroupEditor({ groupId, onBack }: { groupId: string; onBack: () => 
   const [g, setG] = useState<OfferGroup | null>(original ?? null);
   const [tab, setTab] = useState<EditorTab>("overview");
   const [activeOptId, setActiveOptId] = useState<string>(original?.options[0]?.id ?? "");
-  const [saved, setSaved] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const lastSnap = useRef<string | null>(null);
+
+  // Auto-save on real changes only. Snapshot-guarded so the initial mount (and
+  // StrictMode's dev double-invoke) never fires a spurious "Saved".
+  useEffect(() => {
+    if (!g) return;
+    const snap = JSON.stringify(g);
+    if (lastSnap.current === null) { lastSnap.current = snap; return; }
+    if (lastSnap.current === snap) return;
+    lastSnap.current = snap;
+    const t = setTimeout(() => { updateOfferGroup(g.id, g); pingSaved(); }, 500);
+    return () => clearTimeout(t);
+  }, [g]);
 
   if (!g) return <div className="space-y-4"><button onClick={onBack} className="flex items-center gap-1.5 text-sm" style={{ color: "var(--text-secondary)" }}><ArrowLeft className="w-4 h-4" /> Offer Library</button><p className="text-sm" style={{ color: "var(--text-muted)" }}>Offer group not found.</p></div>;
 
   const patch = (p: Partial<OfferGroup>) => setG(s => s ? { ...s, ...p } : s);
   const setOptions = (options: OfferOption[]) => patch({ options });
   const updateOption = (id: string, p: Partial<OfferOption>) => setOptions(g.options.map(o => o.id === id ? { ...o, ...p } : o));
-  function save() { updateOfferGroup(g!.id, g!); setSaved(true); setTimeout(() => setSaved(false), 1600); }
 
   const activeOpt = g.options.find(o => o.id === activeOptId) ?? g.options[0] ?? null;
   const optionSelector = (
@@ -417,7 +429,6 @@ function OfferGroupEditor({ groupId, onBack }: { groupId: string; onBack: () => 
         </div>
         <div className="flex items-center gap-2">
           <button onClick={() => setPreviewOpen(true)} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}><Eye className="w-4 h-4" /> Preview</button>
-          <button onClick={save} className="px-4 py-2 rounded-lg text-sm font-medium text-white" style={{ backgroundColor: saved ? "#10b981" : "var(--accent-text)" }}>{saved ? "Saved ✓" : "Save Changes"}</button>
         </div>
       </div>
 

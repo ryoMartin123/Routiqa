@@ -1,15 +1,20 @@
 "use client";
 
 // ─── Work Order billing ───────────────────────────────────
-// Capture the parts, labor, and fees on a work order — the field→billing bridge —
-// then turn them into an invoice in one click. This is what makes "find the bad
-// capacitor → fix → invoice → done" a real flow.
+// Capture the parts, labor, and fees on a work order — the field→billing bridge.
+// Captured lines post to the JOB's billable-items ledger; each line is either
+// unbilled (selectable to invoice now) or already billed (locked, links to its
+// invoice). So a job can span visits and bill in pieces — deposit / progress /
+// final — without ever double-billing. "Bill selected" powers "just the service
+// call now, the rest later."
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, PlusCircle, Trash2, Receipt, Wrench, Package, BadgeDollarSign, FileText } from "lucide-react";
+import Link from "next/link";
+import { Plus, PlusCircle, Trash2, Receipt, Wrench, Package, BadgeDollarSign, FileText, Check } from "lucide-react";
 import { getWorkOrderById, updateWorkOrderById, getJob, type WorkOrderLineItem } from "@/lib/jobs/data";
 import { createInvoiceFromWorkOrder, createQuoteFromWorkOrder } from "@/lib/quotes/data";
+import { getWorkOrderLedger, sumUnbilled } from "@/lib/billing/ledger";
 import { getAllItems, type Item } from "@/lib/items/data";
 import CatalogPicker from "@/components/quotes/CatalogPicker";
 import { useDataVersion } from "@/lib/sync/useDataVersion";
@@ -31,6 +36,7 @@ export default function WorkOrderBilling({ workOrderId }: { workOrderId: string 
   // only (no $, no invoicing) — the office prices it. When on, it's a priced work
   // order the user can invoice from. Toggled per role in Settings → Roles.
   const showPricing = fieldVisible("finance_field_pricing");
+  const canBill = fieldVisible("finance_field_billing");  // may capture + see prices but not invoice
   const showCost = fieldVisible("finance_cost_margin");   // margin visible in the catalog picker
   const wo = useMemo(() => getWorkOrderById(workOrderId), [workOrderId, rev]);
   const job = useMemo(() => (wo?.jobId ? getJob(wo.jobId) : undefined), [wo?.jobId]);
@@ -42,9 +48,25 @@ export default function WorkOrderBilling({ workOrderId }: { workOrderId: string 
   const [desc, setDesc] = useState("");
   const [qty, setQty] = useState("1");
   const [price, setPrice] = useState("");
+  // Lines the user has explicitly EXCLUDED from the next invoice. Anything else
+  // that's unbilled is billed by default (so newly-added lines auto-include).
+  const [deselected, setDeselected] = useState<Set<string>>(new Set());
 
   const items = wo?.lineItems ?? [];
-  const subtotal = items.reduce((s, li) => s + li.qty * li.unitPrice, 0);
+  const ledger = useMemo(() => getWorkOrderLedger(workOrderId), [workOrderId, rev]);
+  const unbilled = ledger.filter(l => !l.billed);
+  const billed = ledger.filter(l => l.billed);
+
+  const isSelected = (id: string) => !deselected.has(id);
+  const selectedLines = unbilled.filter(l => isSelected(l.id));
+  const selectedIds = selectedLines.map(l => l.id);
+  const selectedTotal = selectedLines.reduce((s, l) => s + l.qty * l.unitPrice, 0);
+  const unbilledTotal = sumUnbilled(ledger);
+  const billedTotal = billed.reduce((s, l) => s + l.qty * l.unitPrice, 0);
+
+  const toggleSelect = (id: string) => setDeselected(d => {
+    const n = new Set(d); n.has(id) ? n.delete(id) : n.add(id); return n;
+  });
 
   // Item type → work-order line kind (part / labor / fee).
   const kindForItem = (t: Item["type"]): Kind =>
@@ -69,48 +91,69 @@ export default function WorkOrderBilling({ workOrderId }: { workOrderId: string 
     updateWorkOrderById(workOrderId, { lineItems: [...items, li] });
     setDesc(""); setQty("1"); setPrice("");
   };
+  // Only unbilled lines can be removed — billed ones are locked to their invoice.
   const remove = (id: string) => updateWorkOrderById(workOrderId, { lineItems: items.filter(l => l.id !== id) });
   const createInvoice = () => {
-    const inv = createInvoiceFromWorkOrder(workOrderId);
+    const inv = createInvoiceFromWorkOrder(workOrderId, selectedIds);
     if (inv) router.push(`/invoices/${inv.id}`);
   };
   const createQuote = () => {
-    const q = createQuoteFromWorkOrder(workOrderId);
+    const q = createQuoteFromWorkOrder(workOrderId, selectedIds);
     if (q) router.push(`/quotes/${q.id}`);
   };
 
   const inputCls = "rounded-lg px-2.5 py-1.5 text-sm outline-none";
   const inputStyle = { backgroundColor: "var(--bg-input)", border: "1px solid var(--border)", color: "var(--text-primary)" } as React.CSSProperties;
 
+  // A single captured line. Unbilled → selectable + removable; billed → locked,
+  // muted, links to the invoice it landed on.
+  const LineRow = (l: typeof ledger[number], i: number) => {
+    const m = KIND_META[l.kind];
+    const sel = isSelected(l.id);
+    return (
+      <div key={l.id} className="flex items-center gap-2.5 px-3 py-2" style={{ borderTop: i ? "1px solid var(--border)" : "none", opacity: l.billed ? 0.6 : 1 }}>
+        {showPricing && (l.billed
+          ? <span className="w-5 h-5 shrink-0" />
+          : <button onClick={() => toggleSelect(l.id)} aria-label={sel ? "Exclude from invoice" : "Include in invoice"} title={sel ? "Included — click to exclude" : "Excluded — click to include"}
+              className="w-5 h-5 rounded flex items-center justify-center shrink-0 transition-colors"
+              style={{ border: `1.5px solid ${sel ? "#c9c0b2" : "var(--border)"}`, backgroundColor: sel ? "#E5E0DB" : "transparent" }}>
+              {sel && <Check className="w-3 h-3" style={{ color: "#5c5545" }} />}
+            </button>)}
+        <m.icon className="w-3.5 h-3.5 shrink-0" style={{ color: m.color }} />
+        <span className="text-sm truncate flex-1 min-w-0" style={{ color: "var(--text-primary)" }}>{l.description}</span>
+        {showPricing && l.billed && l.invoiceId && (
+          <Link href={`/invoices/${l.invoiceId}`} className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0 hover:brightness-95"
+            style={l.paid
+              ? { backgroundColor: "#dcfce7", color: "#16a34a", border: "1px solid #bbf7d0" }
+              : { backgroundColor: "var(--bg-surface-2)", color: "var(--text-muted)", border: "1px solid var(--border)" }}>{l.paid ? "Paid" : "Billed"}</Link>
+        )}
+        {showPricing
+          ? <>
+              <span className="text-xs tabular-nums shrink-0" style={{ color: "var(--text-muted)" }}>{l.qty} × {money(l.unitPrice)}</span>
+              <span className="text-sm font-semibold tabular-nums shrink-0 w-20 text-right" style={{ color: "var(--text-primary)" }}>{money(l.qty * l.unitPrice)}</span>
+            </>
+          : <span className="text-xs tabular-nums shrink-0" style={{ color: "var(--text-muted)" }}>× {l.qty}</span>}
+        {l.billed
+          ? <span className="w-6 shrink-0" />
+          : <button onClick={() => remove(l.id)} aria-label="Remove" className="p-1 rounded hover:bg-[var(--bg-surface-2)] shrink-0"><Trash2 className="w-3.5 h-3.5" style={{ color: "var(--text-muted)" }} /></button>}
+      </div>
+    );
+  };
+
   return (
     <div className="rounded-xl p-5" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
       <div className="flex items-center justify-between mb-3">
         <div>
           <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Parts & Labor</p>
-          <p className="text-xs" style={{ color: "var(--text-muted)" }}>{showPricing ? "Captured on the work order — the source for the invoice." : "Log parts & labor used — the office adds pricing on the invoice."}</p>
+          <p className="text-xs" style={{ color: "var(--text-muted)" }}>{showPricing ? "Captured on the work order — select lines to bill. Billed lines are locked to their invoice." : "Log parts & labor used — the office adds pricing on the invoice."}</p>
         </div>
         <Receipt className="w-4 h-4" style={{ color: "var(--text-muted)" }} />
       </div>
 
-      {/* Line items */}
-      {items.length > 0 && (
+      {/* Line items — unbilled first, then already-billed. */}
+      {ledger.length > 0 && (
         <div className="rounded-lg overflow-hidden mb-3" style={{ border: "1px solid var(--border)" }}>
-          {items.map((li, i) => {
-            const m = KIND_META[li.kind];
-            return (
-              <div key={li.id} className={`grid ${showPricing ? "grid-cols-[auto_1fr_auto_auto_auto]" : "grid-cols-[auto_1fr_auto_auto]"} items-center gap-2.5 px-3 py-2`} style={{ borderTop: i ? "1px solid var(--border)" : "none" }}>
-                <m.icon className="w-3.5 h-3.5 shrink-0" style={{ color: m.color }} />
-                <span className="text-sm truncate" style={{ color: "var(--text-primary)" }}>{li.description}</span>
-                {showPricing
-                  ? <>
-                      <span className="text-xs tabular-nums" style={{ color: "var(--text-muted)" }}>{li.qty} × {money(li.unitPrice)}</span>
-                      <span className="text-sm font-semibold tabular-nums" style={{ color: "var(--text-primary)" }}>{money(li.qty * li.unitPrice)}</span>
-                    </>
-                  : <span className="text-xs tabular-nums" style={{ color: "var(--text-muted)" }}>× {li.qty}</span>}
-                <button onClick={() => remove(li.id)} aria-label="Remove" className="p-1 rounded hover:bg-[var(--bg-surface-2)]"><Trash2 className="w-3.5 h-3.5" style={{ color: "var(--text-muted)" }} /></button>
-              </div>
-            );
-          })}
+          {[...unbilled, ...billed].map((l, i) => LineRow(l, i))}
         </div>
       )}
 
@@ -133,28 +176,34 @@ export default function WorkOrderBilling({ workOrderId }: { workOrderId: string 
         {showPricing && <input value={price} onChange={e => setPrice(e.target.value)} type="number" min="0" step="0.01" placeholder="0.00" className={`${inputCls} w-24`} style={inputStyle} />}
         <button onClick={add} className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium" style={{ border: "1px solid var(--border)", color: "var(--text-primary)" }}><Plus className="w-3.5 h-3.5" /> Add</button>
       </div>
-      {showPricing && <p className="text-[11px] mb-3" style={{ color: "var(--text-muted)" }}>Common services &amp; parts live in the catalog — use a custom line only for one-offs.</p>}
 
-      {/* Total + create invoice — only when this role can see field pricing */}
+      {/* Totals + bill actions — only when this role can see field pricing */}
       {showPricing && (
-        <div className="flex items-center justify-between pt-3" style={{ borderTop: "1px solid var(--border)" }}>
-          <div>
-            <span className="text-xs" style={{ color: "var(--text-muted)" }}>Subtotal</span>
-            <span className="text-base font-bold ml-2 tabular-nums" style={{ color: "var(--text-primary)" }}>{money(subtotal)}</span>
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-3" style={{ borderTop: "1px solid var(--border)" }}>
+          <div className="flex flex-col">
+            <span className="text-base font-bold tabular-nums cursor-default" title="Selected to bill" style={{ color: "var(--text-primary)" }}>{money(selectedTotal)}</span>
+            <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>
+              {selectedIds.length} of {unbilled.length} unbilled selected
+              {billed.length > 0 && ` · ${money(billedTotal)} already billed`}
+            </span>
           </div>
-          <div className="flex items-center gap-2">
-            {/* Field-upsell path: turn the captured line items into a quote for the customer. */}
-            <button onClick={createQuote} disabled={items.length === 0}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold transition-colors disabled:opacity-50"
-              style={{ border: "1px solid var(--border)", color: "var(--text-primary)" }}>
-              <FileText className="w-4 h-4" /> Create quote
-            </button>
-            <button onClick={createInvoice} disabled={items.length === 0}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-semibold text-white transition-colors disabled:opacity-50"
-              style={{ backgroundColor: "#4f46e5" }}>
-              <Receipt className="w-4 h-4" /> Create invoice
-            </button>
-          </div>
+          {canBill ? (
+            <div className="flex items-center gap-2">
+              {/* Field-upsell path: turn the selected lines into a quote (a proposal — nothing is billed). */}
+              <button onClick={createQuote} disabled={selectedIds.length === 0}
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-semibold transition-colors disabled:opacity-50"
+                style={{ border: "1px solid var(--border)", color: "var(--text-primary)" }}>
+                <FileText className="w-4 h-4" /> Create quote
+              </button>
+              <button onClick={createInvoice} disabled={selectedIds.length === 0}
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-semibold transition-colors disabled:opacity-50"
+                style={{ border: "1px solid var(--border)", color: "var(--text-primary)" }}>
+                <Receipt className="w-4 h-4" /> {unbilled.length && selectedIds.length < unbilled.length ? "Bill selected" : "Create invoice"}
+              </button>
+            </div>
+          ) : (
+            <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>Billing handled by the office</span>
+          )}
         </div>
       )}
 

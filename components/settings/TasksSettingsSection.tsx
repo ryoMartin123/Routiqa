@@ -6,7 +6,8 @@
 // reads/writes lib/tasks/settings.
 
 import { useState, useEffect } from "react";
-import { Plus, Pencil, ChevronUp, ChevronDown, Trash2, Check, RotateCcw, ListChecks, MessageSquare } from "lucide-react";
+import { Plus, Pencil, ChevronUp, ChevronDown, Trash2, RotateCcw, ListChecks, MessageSquare } from "lucide-react";
+import { pingSaved } from "@/components/shared/SavedPill";
 import {
   getTaskSettings, saveTaskSettings, resetTaskSettings,
   TASK_TYPE_COLORS, ttId, ttSlug,
@@ -47,10 +48,15 @@ function TasksTab() {
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState<FormState>({ ...EMPTY });
   const [dirty, setDirty] = useState(false);
-  const [saved, setSaved] = useState(false);
 
   useEffect(() => { setS(getTaskSettings()); }, []);
-  function mark() { setDirty(true); setSaved(false); }
+  function mark() { setDirty(true); }
+  // Auto-save whenever dirty.
+  useEffect(() => {
+    if (!dirty || !s) return;
+    const t = setTimeout(() => { saveTaskSettings(s); setDirty(false); pingSaved(); }, 500);
+    return () => clearTimeout(t);
+  }, [dirty, s]);
 
   if (!s) return <div className="p-6 text-sm" style={{ color: "var(--text-muted)" }}>Loading…</div>;
 
@@ -93,11 +99,7 @@ function TasksTab() {
     });
     mark();
   }
-  function save() {
-    saveTaskSettings(s!);
-    setDirty(false); setSaved(true); setTimeout(() => setSaved(false), 2000);
-  }
-  function reset() { setS(resetTaskSettings()); setEditingId(null); setShowAdd(false); setDirty(false); }
+  function reset() { setS(resetTaskSettings()); setEditingId(null); setShowAdd(false); setDirty(false); pingSaved(); }
 
   function Form() {
     return (
@@ -156,14 +158,8 @@ function TasksTab() {
             style={{ border: "1px solid var(--border)", color: "var(--text-secondary)", backgroundColor: "var(--bg-surface)" }}>
             <RotateCcw className="w-3.5 h-3.5" /> Reset Defaults
           </button>
-          <button onClick={save} disabled={!dirty && !saved}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-white transition-colors disabled:opacity-50" style={{ backgroundColor: saved ? "#10b981" : "#4f46e5" }}>
-            <Check className="w-3.5 h-3.5" /> {saved ? "Saved" : "Save Changes"}
-          </button>
         </div>
       </div>
-
-      {dirty && <div className="rounded-lg px-3 py-2 text-xs" style={{ backgroundColor: "#fef3c7", color: "#92400e" }}>You have unsaved changes.</div>}
 
       {showAdd && <Form />}
 
@@ -281,17 +277,20 @@ function CommentsToggleRow({ title, description, on, onChange }: {
 function CommentsTab() {
   const [c, setC] = useState<CommentSettings | null>(null);
   const [dirty, setDirty] = useState(false);
-  const [saved, setSaved] = useState(false);
 
   useEffect(() => { setC(getCommentSettings()); }, []);
+  useEffect(() => {
+    if (!dirty || !c) return;
+    const t = setTimeout(() => { saveCommentSettings(c); setDirty(false); pingSaved(); }, 500);
+    return () => clearTimeout(t);
+  }, [dirty, c]);
 
   if (!c) return <div className="p-6 text-sm" style={{ color: "var(--text-muted)" }}>Loading…</div>;
 
   function setField<K extends keyof CommentSettings>(k: K, v: CommentSettings[K]) {
-    setC(prev => prev && { ...prev, [k]: v }); setDirty(true); setSaved(false);
+    setC(prev => prev && { ...prev, [k]: v }); setDirty(true);
   }
-  function save() { saveCommentSettings(c!); setDirty(false); setSaved(true); setTimeout(() => setSaved(false), 2000); }
-  function reset() { setC(resetCommentSettings()); setDirty(false); }
+  function reset() { setC(resetCommentSettings()); setDirty(false); pingSaved(); }
 
   return (
     <div className="space-y-5">
@@ -307,14 +306,8 @@ function CommentsTab() {
             style={{ border: "1px solid var(--border)", color: "var(--text-secondary)", backgroundColor: "var(--bg-surface)" }}>
             <RotateCcw className="w-3.5 h-3.5" /> Reset Defaults
           </button>
-          <button onClick={save} disabled={!dirty && !saved}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-white transition-colors disabled:opacity-50" style={{ backgroundColor: saved ? "#10b981" : "#4f46e5" }}>
-            <Check className="w-3.5 h-3.5" /> {saved ? "Saved" : "Save Changes"}
-          </button>
         </div>
       </div>
-
-      {dirty && <div className="rounded-lg px-3 py-2 text-xs" style={{ backgroundColor: "#fef3c7", color: "#92400e" }}>You have unsaved changes.</div>}
 
       <Card>
         <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: "var(--text-muted)" }}>Comment Mode</p>

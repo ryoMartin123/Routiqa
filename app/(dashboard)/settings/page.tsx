@@ -41,7 +41,8 @@ const AgreementsSettingsSection = dynamic(() => import("@/components/settings/Ag
 import { SettingsScopeProvider } from "@/components/providers/SettingsScopeProvider";
 import SectionGate from "@/components/settings/SectionGate";
 import EditingScopeHeader from "@/components/settings/EditingScopeHeader";
-import { SettingsActionsProvider, SettingsSaveSlot } from "@/components/settings/SettingsActions";
+import { SettingsActionsProvider } from "@/components/settings/SettingsActions";
+import SavedPill from "@/components/shared/SavedPill";
 import type { SectionLayers } from "@/lib/settings-scope/types";
 import Commentable from "@/components/comments/Commentable";
 
@@ -369,7 +370,6 @@ export default function SettingsPage() {
               <span className="truncate" style={{ color: "var(--text-primary)" }}>{item?.label}</span>
             )}
           </div>
-          <SettingsSaveSlot />
         </div>
         {!onPicker && !isViewer && <EditingScopeHeader sectionLayers={SECTION_LAYERS[view.section] ?? "any"} />}
         <Commentable anchor={{ recordType: "settings", recordId: view.section, recordLabel: item?.label ?? "Settings" }}>
@@ -449,6 +449,7 @@ export default function SettingsPage() {
           {renderContent()}
         </div>
       </div>
+      <SavedPill />
     </div>
     </SettingsActionsProvider>
     </SettingsScopeProvider>

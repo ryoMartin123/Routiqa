@@ -3,25 +3,23 @@
 import React, { use, useState, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowLeft, CheckCircle, Circle, ChevronRight, Phone, MapPin, User, Clock, Calendar, DollarSign, Briefcase, AlertTriangle, Camera, ListChecks, Plus, Trash2, Ban, RotateCcw, Info, Repeat, Users } from "lucide-react";
+import { ArrowLeft, CheckCircle, Circle, ChevronRight, Phone, MapPin, User, Clock, Calendar, DollarSign, Briefcase, AlertTriangle, ListChecks, Plus, Trash2, Ban, RotateCcw, Info, Repeat, Users, Check, Receipt } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { getJob, updateJob, deleteJob, getWorkOrder, getWorkOrderById, getWorkOrdersForJob, updateWorkOrder, getJobNotes, resolveJobStatus, type JobNoteType } from "@/lib/jobs/data";
+import { getJob, updateJob, deleteJob, getWorkOrder, getWorkOrderById, getWorkOrdersForJob, getJobNotes, resolveJobStatus, type JobNoteType, type WorkOrderStatus } from "@/lib/jobs/data";
 import { getAppointmentsForJob, VISIT_TYPE_CONFIG, type AppointmentStatus } from "@/lib/appointments/data";
 import { useDataVersion } from "@/lib/sync/useDataVersion";
 import ReturnVisitModal from "@/components/jobs/ReturnVisitModal";
 import { canAddVisit } from "@/lib/jobs/serviceCall";
 import WorkOrderWizard from "@/components/jobs/WorkOrderWizard";
-import WorkOrderBilling from "@/components/jobs/WorkOrderBilling";
 import { getJobStatuses, jobTypeLabel } from "@/lib/job-config/data";
 import StatusBadge from "@/components/shared/StatusBadge";
 import ActionsMenu from "@/components/shared/ActionsMenu";
-import {
-  suggestTemplateForJobType, getChecklist, getPhotos, getInstructions,
-  CHECKLIST_TYPE_LABELS,
-} from "@/lib/work-order-templates/data";
+import DetailActionButton from "@/components/shared/DetailActionButton";
 import { getProject } from "@/lib/projects/data";
 import { getCustomer } from "@/lib/customers/data";
-import { getQuotesForJob, getInvoicesForJob, createInvoiceFromJob, fmt } from "@/lib/quotes/data";
+import { getQuotesForJob, getInvoicesForJob, createInvoiceFromJob, createInvoiceFromJobLedger, createDepositInvoice, getUnappliedDeposits, fmt } from "@/lib/quotes/data";
+import { getJobLedger, sumUnbilled } from "@/lib/billing/ledger";
+import { usePermissions } from "@/components/providers/PermissionProvider";
 import { QUOTE_STATUS_STYLE, INVOICE_STATUS_STYLE } from "@/lib/quotes/types";
 import PhotoGallery from "@/components/files/PhotoGallery";
 import QuoteTypeChooser from "@/components/quotes/create/QuoteTypeChooser";
@@ -29,7 +27,13 @@ import DetailTabs from "@/components/shared/DetailTabs";
 import RecordTasks from "@/components/tasks/RecordTasks";
 import { JobHistoryList } from "@/components/jobs/JobStatusControl";
 
-const TABS = ["Overview", "Work Order", "Visits", "Checklist", "Tasks", "Photos & Files", "Notes", "Customer", "Invoice / Estimate", "History"];
+const TABS = ["Overview", "Billing", "Work Order", "Visits", "Tasks", "Photos & Files", "Notes", "Customer", "History"];
+
+const WO_STATUS_META: Record<WorkOrderStatus, { label: string; color: string }> = {
+  pending:     { label: "Pending",     color: "#9ca3af" },
+  in_progress: { label: "In Progress", color: "#f59e0b" },
+  completed:   { label: "Completed",   color: "#16a34a" },
+};
 
 const HOLD_STATUSES = new Set(["waiting_on_parts", "waiting_on_customer", "waiting_on_approval"]);
 
@@ -53,15 +57,16 @@ function VisitsTab({ jobId, onSchedule }: { jobId: string; onSchedule: () => voi
   // eslint-disable-next-line react-hooks/exhaustive-deps -- rev re-reads after changes
   const canVisit = React.useMemo(() => { const j = getJob(jobId); return j ? canAddVisit(j).allowed : false; }, [jobId, rev]);
   return (
-    <div className="max-w-3xl space-y-3">
+    <div className="space-y-3">
       <div className="flex items-center justify-between gap-3">
         <div>
           <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Visits</p>
           <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>Each visit is its own appointment + work order — schedule the next when a job needs another trip.</p>
         </div>
         {canVisit && (
-          <button onClick={onSchedule} className="inline-flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-lg text-white shrink-0" style={{ backgroundColor: "#4f46e5" }}>
-            <Repeat className="w-4 h-4" /> Schedule return visit
+          <button onClick={onSchedule} className="group inline-flex items-center gap-1.5 text-xs font-medium shrink-0 transition-colors" style={{ color: "#4f46e5" }}>
+            <span className="w-4 h-4 rounded-full flex items-center justify-center transition-all group-hover:brightness-95" style={{ backgroundColor: "#4f46e51a" }}><Repeat className="w-3 h-3" /></span>
+            Schedule return visit
           </button>
         )}
       </div>
@@ -80,7 +85,7 @@ function VisitsTab({ jobId, onSchedule }: { jobId: string; onSchedule: () => voi
               <div className="flex items-center gap-2 flex-wrap">
                 <Link href={`/work-orders/${v.workOrderId}`} className="text-sm font-semibold truncate hover:underline" style={{ color: "var(--text-primary)" }}>{wo?.title || `Visit ${i + 1}`}</Link>
                 {vt && <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: vt.color + "22", color: vt.color }}>{vt.short}</span>}
-                <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: m.color + "22", color: m.color }}><span className="w-1 h-1 rounded-full" style={{ backgroundColor: m.color }} />{m.label}</span>
+                <StatusBadge label={m.label} color={m.color} size="sm" />
               </div>
               <div className="flex items-center gap-3 mt-1 text-xs" style={{ color: "var(--text-muted)" }}>
                 <span className="inline-flex items-center gap-1"><Calendar className="w-3 h-3" /> {v.scheduledDate || "Unscheduled"}{v.scheduledTime ? ` · ${v.scheduledTime}` : ""}</span>
@@ -129,14 +134,6 @@ function OverviewTab({ jobId }: { jobId: string }) {
   const activity = [...(job.statusHistory ?? [])].reverse().slice(0, 6);
   const fmtWhen = (iso: string) => { const d = new Date(iso); return isNaN(d.getTime()) ? iso : d.toLocaleDateString("en-US", { month: "short", day: "numeric" }); };
 
-  const summary: { icon: typeof Briefcase; label: string; value: string; sub?: string; accent?: string }[] = [
-    { icon: CheckCircle, label: "Status",     value: s.label, sub: jobTypeLabel(job.type), accent: s.color },
-    { icon: Calendar,    label: "Scheduled",  value: job.scheduledDate || "Unscheduled", sub: job.scheduledTime || `${job.durationMinutes} min` },
-    { icon: User,        label: "Technician", value: job.assignedTo || "Unassigned", sub: "Assigned tech" },
-    { icon: ListChecks,  label: "Checklist",  value: totalItems > 0 ? `${doneItems}/${totalItems}` : "—", sub: totalItems > 0 ? `${pct}% complete` : "No work order" },
-    { icon: DollarSign,  label: "Amount",     value: job.actualAmount || job.estimatedAmount || "—", sub: job.actualAmount ? "Actual" : job.estimatedAmount ? "Estimated" : "—", accent: job.actualAmount ? "#10b981" : undefined },
-  ];
-
   // Reusable list-card header (title + count) for the fill cards.
   const listHead = (title: string, count: number) => (
     <div className="flex items-center justify-between px-4 py-3 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
@@ -147,19 +144,9 @@ function OverviewTab({ jobId }: { jobId: string }) {
 
   return (
     <div className="min-h-full flex flex-col gap-4">
-      {/* Summary cards */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2.5 shrink-0">
-        {summary.map(c => (
-          <Card key={c.label} className="px-3 py-2.5">
-            <div className="flex items-center gap-1.5 mb-1">
-              <c.icon className="w-3 h-3" style={{ color: c.accent ?? "var(--text-muted)" }} />
-              <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>{c.label}</p>
-            </div>
-            <p className="text-sm font-bold leading-tight truncate" style={{ color: c.accent ?? "var(--text-primary)" }}>{c.value}</p>
-            {c.sub && <p className="text-[11px] mt-0.5 truncate" style={{ color: "var(--text-muted)" }}>{c.sub}</p>}
-          </Card>
-        ))}
-      </div>
+      {/* Status + billing summary — replaces the old operational cards (which
+          repeated the Job Details card below) with a financial snapshot. */}
+      <div className="shrink-0"><JobBillingKpis jobId={jobId} status={{ label: s.label, color: s.color }} /></div>
 
       {/* Main grid — fills the page; the two columns stay equal height and the
           list cards (Work Orders / Visits) grow to fill, scrolling if long. */}
@@ -327,259 +314,56 @@ function OverviewTab({ jobId }: { jobId: string }) {
 }
 
 // ─── Work Order tab ───────────────────────────────────────
-// Badge color per checklist item type
-const CHECK_TYPE_BADGE: Record<string, { bg: string; color: string }> = {
-  checkbox:   { bg: "var(--bg-input)", color: "var(--text-secondary)" },
-  short_text: { bg: "#e0e7ff", color: "#3730a3" },
-  long_text:  { bg: "#e0e7ff", color: "#3730a3" },
-  number:     { bg: "#dbeafe", color: "#1e40af" },
-  dropdown:   { bg: "#ede9fe", color: "#5b21b6" },
-  photo:      { bg: "#eff6ff", color: "#2563eb" },
-  signature:  { bg: "#fce7f3", color: "#9d174d" },
-  datetime:   { bg: "#fef3c7", color: "#92400e" },
-};
-
+// The job's work orders — a lean directory. Each work order owns its scope,
+// checklist, materials, photos, and completion on its OWN detail page; the job
+// just points at them.
 function WorkOrderTab({ jobId }: { jobId: string }) {
-  const job = getJob(jobId)!;
-  const template = suggestTemplateForJobType(job.type);
   const [wizard, setWizard] = useState(false);
   const [woVersion, setWoVersion] = useState(0);
-  const wo = React.useMemo(() => getWorkOrder(jobId), [jobId, woVersion]);
   const allWos = React.useMemo(() => getWorkOrdersForJob(jobId), [jobId, woVersion]);
 
-  if (!template) return <StubContent label="No work order template configured. Add one in Settings → Work Orders." />;
-
-  const checklist    = getChecklist(template.id).filter(c => c.active);
-  const photos       = getPhotos(template.id);
-  const instructions = getInstructions(template.id);
-  const requiredCount = checklist.filter(c => c.required).length;
-
   return (
-    <div className="max-w-2xl space-y-4">
+    <div className="space-y-3">
       {wizard && <WorkOrderWizard preset={{ jobId }} onClose={() => setWizard(false)} onCreated={() => { setWizard(false); setWoVersion(v => v + 1); }} />}
 
-      {/* All work orders on this job — each opens its own detail page. Multiple
-          appear when the job needed return visits / extra field packets. */}
-      {allWos.length > 1 && (
-        <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
-          <p className="px-4 pt-3 pb-1.5 text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Work orders on this job ({allWos.length})</p>
-          {allWos.map((w, i) => (
-            <Link key={w.id} href={`/work-orders/${w.id}`} className="flex items-center justify-between px-4 py-2.5 hover:bg-[var(--bg-surface-2)] transition-colors"
-              style={{ borderTop: i > 0 ? "1px solid var(--border)" : "none" }}>
-              <div className="min-w-0 flex items-center gap-2">
-                <ListChecks className="w-3.5 h-3.5 shrink-0" style={{ color: "var(--text-muted)" }} />
-                <span className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{w.title}</span>
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Work Orders</p>
+          <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>The field-execution packets for this job — scope, checklist, materials &amp; photos live inside each one.</p>
+        </div>
+        <button onClick={() => setWizard(true)} className="group inline-flex items-center gap-1.5 text-xs font-medium shrink-0 transition-colors" style={{ color: "#4f46e5" }}>
+          <span className="w-4 h-4 rounded-full flex items-center justify-center transition-all group-hover:brightness-95" style={{ backgroundColor: "#4f46e51a" }}><Plus className="w-3 h-3" /></span>
+          New work order
+        </button>
+      </div>
+
+      {allWos.length === 0 ? (
+        <div className="rounded-xl p-8 text-center" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
+          <p className="text-sm" style={{ color: "var(--text-muted)" }}>No work order yet — create one to give the tech their scope &amp; checklist.</p>
+        </div>
+      ) : allWos.map(w => {
+        const st = WO_STATUS_META[w.status];
+        const done = w.checklist.filter(c => c.isComplete).length;
+        const lines = w.lineItems?.length ?? 0;
+        return (
+          <Link key={w.id} href={`/work-orders/${w.id}`} className="rounded-xl p-3.5 flex items-center gap-3 hover:bg-[var(--bg-surface-2)] transition-colors" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
+            <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: "var(--accent-soft-bg)" }}>
+              <ListChecks className="w-4 h-4" style={{ color: "var(--accent-text)" }} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <p className="text-sm font-semibold truncate" style={{ color: "var(--text-primary)" }}>{w.title}</p>
+                <StatusBadge label={st.label} color={st.color} size="sm" />
               </div>
-              <span className="text-xs shrink-0" style={{ color: "var(--text-muted)" }}>{w.checklist.filter(c => c.isComplete).length}/{w.checklist.length} · {w.status.replace(/_/g, " ")}</span>
-            </Link>
-          ))}
-        </div>
-      )}
-
-      {/* Work order status / create CTA */}
-      <div className="rounded-xl p-4 flex items-center justify-between" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
-        {wo ? (
-          <>
-            <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: "#d1fae5" }}>
-                <ListChecks className="w-4.5 h-4.5" style={{ color: "#065f46" }} />
-              </div>
-              <div>
-                <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Work order created</p>
-                <p className="text-xs" style={{ color: "var(--text-muted)" }}>{wo.title} · {wo.checklist.length} steps · {wo.status.replace(/_/g, " ")}</p>
+              <div className="flex items-center gap-3 mt-1 text-xs" style={{ color: "var(--text-muted)" }}>
+                <span className="inline-flex items-center gap-1"><ListChecks className="w-3 h-3" /> {w.checklist.length ? `${done}/${w.checklist.length} checklist` : "No checklist"}</span>
+                {lines > 0 && <span className="inline-flex items-center gap-1"><DollarSign className="w-3 h-3" /> {lines} line item{lines === 1 ? "" : "s"}</span>}
               </div>
             </div>
-            <button onClick={() => setWizard(true)} className="px-3 py-1.5 rounded-lg text-xs" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>
-              Re-generate
-            </button>
-          </>
-        ) : (
-          <>
-            <div>
-              <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>No work order yet</p>
-              <p className="text-xs" style={{ color: "var(--text-muted)" }}>Create one from a template — or build a custom checklist — to give the tech their work order.</p>
-            </div>
-            <button onClick={() => setWizard(true)} className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-3 py-1.5 rounded-lg transition-colors">
-              <Plus className="w-3.5 h-3.5" /> Create Work Order
-            </button>
-          </>
-        )}
-      </div>
-      {/* Parts & labor → invoice (the field→billing bridge) */}
-      {wo && <WorkOrderBilling workOrderId={wo.id} />}
-
-      {/* Template header */}
-      <div className="rounded-xl p-6" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
-        <div className="flex items-start justify-between mb-1">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: "var(--text-muted)" }}>Work Order Template</p>
-            <h2 className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>{template.name}</h2>
-          </div>
-          <span className="text-[10px] font-semibold px-2 py-1 rounded-full flex items-center gap-1"
-            style={{ backgroundColor: "#e0e7ff", color: "#4f46e5" }}>
-            <ListChecks className="w-3 h-3" /> Suggested by job type
-          </span>
-        </div>
-        {template.description && (
-          <p className="text-sm mt-2" style={{ color: "var(--text-secondary)" }}>{template.description}</p>
-        )}
-        <div className="flex flex-wrap gap-2 mt-3">
-          <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>
-            {checklist.length} checklist items
-          </span>
-          <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>
-            {requiredCount} required
-          </span>
-          <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>
-            {photos.length} photo rules
-          </span>
-        </div>
-      </div>
-
-      {/* Instructions */}
-      {(instructions.internal || instructions.safety) && (
-        <div className="rounded-xl p-5 space-y-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
-          {instructions.internal && (
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-widest mb-1.5" style={{ color: "var(--text-muted)" }}>Field Instructions</p>
-              <p className="text-sm leading-relaxed whitespace-pre-line" style={{ color: "var(--text-secondary)" }}>{instructions.internal}</p>
-            </div>
-          )}
-          {instructions.safety && (
-            <div className="rounded-lg px-3 py-2" style={{ backgroundColor: "#fffbeb", border: "1px solid #fde68a" }}>
-              <p className="text-[10px] font-semibold uppercase tracking-widest mb-1 text-amber-700">Safety Notes</p>
-              <p className="text-xs leading-relaxed text-amber-800 whitespace-pre-line">{instructions.safety}</p>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Checklist preview */}
-      <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
-        <div className="px-4 py-3" style={{ borderBottom: "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)" }}>
-          <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Checklist</p>
-        </div>
-        {checklist.length === 0 ? (
-          <div className="px-4 py-6 text-center"><p className="text-sm" style={{ color: "var(--text-muted)" }}>No checklist items on this template.</p></div>
-        ) : checklist.map((c, i) => {
-          const badge = CHECK_TYPE_BADGE[c.type] ?? CHECK_TYPE_BADGE.checkbox;
-          return (
-            <div key={c.id} className="flex items-center gap-3 px-4 py-2.5"
-              style={{ borderBottom: i < checklist.length - 1 ? "1px solid var(--border)" : "none" }}>
-              <Circle className="w-4 h-4 shrink-0" style={{ color: "var(--border)" }} />
-              <span className="text-sm flex-1" style={{ color: "var(--text-primary)" }}>{c.label}</span>
-              {c.required && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded" style={{ backgroundColor: "#fee2e2", color: "#991b1b" }}>Required</span>}
-              <span className="text-[9px] font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: badge.bg, color: badge.color }}>{CHECKLIST_TYPE_LABELS[c.type]}</span>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Required photos */}
-      <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
-        <div className="flex items-center gap-2 px-4 py-3" style={{ borderBottom: "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)" }}>
-          <Camera className="w-4 h-4" style={{ color: "#2563eb" }} />
-          <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Required Photos</p>
-        </div>
-        {photos.length === 0 ? (
-          <div className="px-4 py-6 text-center"><p className="text-sm" style={{ color: "var(--text-muted)" }}>No required photo rules on this template.</p></div>
-        ) : photos.map((p, i) => (
-          <div key={p.id} className="flex items-center gap-3 px-4 py-2.5"
-            style={{ borderBottom: i < photos.length - 1 ? "1px solid var(--border)" : "none" }}>
-            <Camera className="w-3.5 h-3.5 shrink-0" style={{ color: "var(--text-muted)" }} />
-            <span className="text-sm flex-1" style={{ color: "var(--text-primary)" }}>{p.category}</span>
-            {p.notes && <span className="text-[11px] truncate max-w-48" style={{ color: "var(--text-muted)" }}>{p.notes}</span>}
-            <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>min {p.minCount}</span>
-            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded"
-              style={{ backgroundColor: p.required ? "#fee2e2" : "var(--bg-input)", color: p.required ? "#991b1b" : "var(--text-muted)" }}>
-              {p.required ? "Required" : "Optional"}
-            </span>
-          </div>
-        ))}
-      </div>
-
-      {/* Materials & completion */}
-      {(instructions.materials || instructions.completion || instructions.customerFacing) && (
-        <div className="grid grid-cols-2 gap-4">
-          {instructions.materials && (
-            <div className="rounded-xl p-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
-              <p className="text-[10px] font-semibold uppercase tracking-widest mb-1.5" style={{ color: "var(--text-muted)" }}>Materials / Notes</p>
-              <p className="text-xs leading-relaxed whitespace-pre-line" style={{ color: "var(--text-secondary)" }}>{instructions.materials}</p>
-            </div>
-          )}
-          {instructions.completion && (
-            <div className="rounded-xl p-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
-              <p className="text-[10px] font-semibold uppercase tracking-widest mb-1.5" style={{ color: "var(--text-muted)" }}>Completion Requirements</p>
-              <p className="text-xs leading-relaxed whitespace-pre-line" style={{ color: "var(--text-secondary)" }}>{instructions.completion}</p>
-            </div>
-          )}
-          {instructions.customerFacing && (
-            <div className="rounded-xl p-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
-              <p className="text-[10px] font-semibold uppercase tracking-widest mb-1.5" style={{ color: "var(--text-muted)" }}>Customer-Facing Notes</p>
-              <p className="text-xs leading-relaxed whitespace-pre-line" style={{ color: "var(--text-secondary)" }}>{instructions.customerFacing}</p>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ─── Checklist tab — execute the job's actual work order ──
-// Operates on the WO INSTANCE (not the template): toggling an item persists its
-// completion, which is what the lifecycle completion gate reads. No WO → prompt
-// to create one in the Work Order tab.
-function ChecklistTab({ jobId }: { jobId: string }) {
-  const [version, setVersion] = useState(0);
-  const wo = React.useMemo(() => getWorkOrder(jobId), [jobId, version]);
-
-  if (!wo || wo.checklist.length === 0) {
-    return <StubContent label="No work order checklist yet. Create a work order in the Work Order tab (from a template or blank) to give this job a checklist." />;
-  }
-
-  const items = [...wo.checklist].sort((a, b) => a.sortOrder - b.sortOrder);
-  function toggle(id: string) {
-    updateWorkOrder(jobId, { checklist: items.map(c => c.id === id ? { ...c, isComplete: !c.isComplete } : c) });
-    setVersion(v => v + 1);
-  }
-
-  const doneCount = items.filter(c => c.isComplete).length;
-  const requiredOpen = items.filter(c => c.required && !c.isComplete).length;
-  const pct = items.length > 0 ? Math.round((doneCount / items.length) * 100) : 0;
-
-  return (
-    <div className="max-w-xl space-y-4">
-      {/* Progress */}
-      <div className="rounded-xl p-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
-        <div className="flex items-center justify-between mb-1">
-          <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{doneCount} of {items.length} complete</span>
-          <span className="text-sm font-bold" style={{ color: pct === 100 ? "#10b981" : "#4f46e5" }}>{pct}%</span>
-        </div>
-        <p className="text-[10px] mb-2" style={{ color: "var(--text-muted)" }}>
-          {wo.title}{requiredOpen > 0 ? ` · ${requiredOpen} required item${requiredOpen === 1 ? "" : "s"} left` : " · all required items done"}
-        </p>
-        <div className="h-2 rounded-full" style={{ backgroundColor: "var(--bg-input)" }}>
-          <div className="h-2 rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: pct === 100 ? "#10b981" : "#4f46e5" }} />
-        </div>
-      </div>
-
-      {/* Items — completion drives the job's completion gate */}
-      <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
-        {items.map((item, i) => {
-          const border = i < items.length - 1 ? { borderBottom: "1px solid var(--border)" } : undefined;
-          return (
-            <button key={item.id} onClick={() => toggle(item.id)}
-              className="w-full flex items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-[var(--bg-surface-2)]" style={border}>
-              {item.isComplete
-                ? <CheckCircle className="w-5 h-5 shrink-0 text-emerald-500" />
-                : <Circle className="w-5 h-5 shrink-0" style={{ color: "var(--border)" }} />}
-              <span className={cn("text-sm flex-1", item.isComplete ? "line-through" : "")}
-                style={{ color: item.isComplete ? "var(--text-muted)" : "var(--text-primary)" }}>{item.label}</span>
-              {item.required && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded" style={{ backgroundColor: "#fee2e2", color: "#991b1b" }}>Required</span>}
-            </button>
-          );
-        })}
-      </div>
+            <ChevronRight className="w-4 h-4 shrink-0" style={{ color: "var(--text-muted)" }} />
+          </Link>
+        );
+      })}
     </div>
   );
 }
@@ -637,7 +421,7 @@ function CustomerTab({ jobId }: { jobId: string }) {
     <div className="max-w-sm">
       <div className="rounded-xl p-5" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
         <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center text-white text-sm font-bold">{customer.initials}</div>
+          <div className="w-10 h-10 rounded-full bg-[#e5e0db] flex items-center justify-center text-[#5c5545] text-sm font-bold">{customer.initials}</div>
           <div>
             <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{customer.name}</p>
             <p className="text-xs" style={{ color: "var(--text-muted)" }}>{customer.locationName}</p>
@@ -668,13 +452,198 @@ function StubContent({ label }: { label: string }) {
 }
 
 // ─── Job financials tab ───────────────────────────────────
+// ─── Deposit control ──────────────────────────────────────
+// Collect a down payment up front — a job-level deposit invoice not tied to any
+// captured work. Once paid, the final ledger invoice credits it automatically.
+function JobDepositControl({ jobId }: { jobId: string }) {
+  const router = useRouter();
+  const rev = useDataVersion();
+  const { fieldVisible } = usePermissions();
+  const [amt, setAmt] = useState("");
+  const deposits = React.useMemo(() => getUnappliedDeposits(jobId), [jobId, rev]);
+
+  if (!fieldVisible("finance_field_pricing") || !fieldVisible("finance_field_billing")) return null;
+
+  const onFile = deposits.reduce((s, d) => s + d.total, 0);
+  function request() {
+    const n = parseFloat(amt);
+    if (!n || n <= 0) return;
+    const inv = createDepositInvoice(jobId, n);
+    if (inv) router.push(`/invoices/${inv.id}`);
+  }
+
+  return (
+    <div className="rounded-xl px-4 py-3 flex flex-wrap items-center gap-3" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Deposit</p>
+        <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>
+          {onFile > 0 ? `${fmt(onFile)} paid deposit on file — credited on the final invoice.` : "Collect a down payment before work begins."}
+        </p>
+      </div>
+      <div className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-input)" }}>
+        <span className="text-sm" style={{ color: "var(--text-muted)" }}>$</span>
+        <input value={amt} onChange={e => setAmt(e.target.value)} onKeyDown={e => e.key === "Enter" && request()} type="number" min="0" step="0.01" placeholder="0.00"
+          className="w-24 text-sm outline-none bg-transparent" style={{ color: "var(--text-primary)" }} />
+      </div>
+      <DetailActionButton icon={Receipt} onClick={request} disabled={!parseFloat(amt)}>Request deposit</DetailActionButton>
+    </div>
+  );
+}
+
+// ─── Job billable-items ledger ────────────────────────────
+// The job "tab": every captured parts/labor line across all the job's work
+// orders, shown as billed vs unbilled. Select which unbilled lines to bill and
+// raise one invoice — the cross-work-order billing path for multi-visit jobs.
+function JobLedgerCard({ jobId }: { jobId: string }) {
+  const router = useRouter();
+  const rev = useDataVersion();
+  const { fieldVisible } = usePermissions();
+  const showPricing = fieldVisible("finance_field_pricing");
+  const canBill = fieldVisible("finance_field_billing");
+  const ledger = React.useMemo(() => getJobLedger(jobId), [jobId, rev]);
+  const [deselected, setDeselected] = useState<Set<string>>(new Set());
+
+  if (!showPricing) return null;
+  if (ledger.length === 0) {
+    return (
+      <div className="rounded-xl px-4 py-6 text-center" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
+        <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Billable work</p>
+        <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>No parts or labor captured yet — add them on the work order and they'll show here to bill.</p>
+      </div>
+    );
+  }
+
+  const unbilled = ledger.filter(l => !l.billed);
+  const billed = ledger.filter(l => l.billed);
+  const isSel = (id: string) => !deselected.has(id);
+  const selected = unbilled.filter(l => isSel(l.id));
+  const selectedTotal = selected.reduce((s, l) => s + l.qty * l.unitPrice, 0);
+  const billedTotal = billed.reduce((s, l) => s + l.qty * l.unitPrice, 0);
+  const toggle = (id: string) => setDeselected(d => { const n = new Set(d); n.has(id) ? n.delete(id) : n.add(id); return n; });
+
+  // Group unbilled lines by work order for provenance (only labeled when >1 WO).
+  const woIds = Array.from(new Set(unbilled.map(l => l.workOrderId)));
+  const multiWo = woIds.length > 1;
+
+  function bill() {
+    const inv = createInvoiceFromJobLedger(jobId, selected.map(l => l.id));
+    if (inv) router.push(`/invoices/${inv.id}`);
+  }
+
+  return (
+    <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
+      <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid var(--border)" }}>
+        <div>
+          <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Billable work</p>
+          <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>
+            {unbilled.length ? `${fmt(sumUnbilled(ledger))} unbilled across ${woIds.length} work order${woIds.length === 1 ? "" : "s"}` : "All captured work billed"}
+            {billed.length > 0 && ` · ${fmt(billedTotal)} billed`}
+          </p>
+        </div>
+        {unbilled.length > 0 && canBill && (
+          <DetailActionButton icon={Receipt} onClick={bill} disabled={selected.length === 0}>
+            {selected.length < unbilled.length ? "Bill selected" : "Bill unbilled"}
+          </DetailActionButton>
+        )}
+      </div>
+
+      {woIds.map(woId => {
+        const rows = unbilled.filter(l => l.workOrderId === woId);
+        return (
+          <div key={woId}>
+            {multiWo && <p className="px-4 pt-2.5 pb-1 text-[10px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>{rows[0]?.workOrderTitle || "Work order"}</p>}
+            {rows.map((l, i) => {
+              const sel = isSel(l.id);
+              return (
+                <div key={l.id} className="flex items-center gap-2.5 px-4 py-2" style={{ borderTop: (i || multiWo) ? "1px solid var(--border-subtle)" : "1px solid var(--border)" }}>
+                  <button onClick={() => toggle(l.id)} aria-label={sel ? "Exclude" : "Include"}
+                    className="w-5 h-5 rounded flex items-center justify-center shrink-0 transition-colors"
+                    style={{ border: `1.5px solid ${sel ? "#c9c0b2" : "var(--border)"}`, backgroundColor: sel ? "#E5E0DB" : "transparent" }}>
+                    {sel && <Check className="w-3 h-3" style={{ color: "#5c5545" }} />}
+                  </button>
+                  <span className="text-sm truncate flex-1 min-w-0" style={{ color: "var(--text-primary)" }}>{l.description}</span>
+                  <span className="text-xs tabular-nums shrink-0" style={{ color: "var(--text-muted)" }}>{l.qty} × {fmt(l.unitPrice)}</span>
+                  <span className="text-sm font-semibold tabular-nums shrink-0 w-20 text-right" style={{ color: "var(--text-primary)" }}>{fmt(l.qty * l.unitPrice)}</span>
+                </div>
+              );
+            })}
+          </div>
+        );
+      })}
+
+      {/* Already-billed lines — locked, muted, linked to their invoice. */}
+      {billed.map((l, i) => (
+        <div key={l.id} className="flex items-center gap-2.5 px-4 py-2" style={{ borderTop: "1px solid var(--border-subtle)", opacity: 0.6, ...(i === 0 && unbilled.length ? { borderTop: "1px solid var(--border)" } : {}) }}>
+          <span className="w-5 h-5 shrink-0" />
+          <span className="text-sm truncate flex-1 min-w-0" style={{ color: "var(--text-primary)" }}>{l.description}</span>
+          {l.invoiceId && <Link href={`/invoices/${l.invoiceId}`} className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0 hover:brightness-95"
+            style={l.paid ? { backgroundColor: "#dcfce7", color: "#16a34a", border: "1px solid #bbf7d0" } : { backgroundColor: "var(--bg-surface-2)", color: "var(--text-muted)", border: "1px solid var(--border)" }}>{l.paid ? "Paid" : "Billed"}</Link>}
+          <span className="text-sm font-semibold tabular-nums shrink-0 w-20 text-right" style={{ color: "var(--text-primary)" }}>{fmt(l.qty * l.unitPrice)}</span>
+        </div>
+      ))}
+
+      {unbilled.length > 0 && (
+        <div className="flex items-center justify-between px-4 py-2.5" style={{ borderTop: "1px solid var(--border)" }}>
+          <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>{selected.length} of {unbilled.length} selected</span>
+          <span className="text-sm font-bold tabular-nums" style={{ color: "var(--text-primary)" }}>{fmt(selectedTotal)}</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Small labeled figure for the Billing summary strip.
+function BillingKpi({ label, value, tone, color }: { label: string; value: string; tone?: "accent" | "green"; color?: string }) {
+  const c = color ?? (tone === "accent" ? "var(--accent-text)" : tone === "green" ? "#16a34a" : "var(--text-primary)");
+  return (
+    <div className="rounded-xl px-4 py-3" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
+      <p className="text-[10px] font-semibold uppercase tracking-wider truncate" style={{ color: "var(--text-muted)" }}>{label}</p>
+      <p className="text-lg font-bold tabular-nums mt-0.5 truncate" style={{ color: c }}>{value}</p>
+    </div>
+  );
+}
+
+type Kpi = { label: string; value: string; tone?: "accent" | "green"; color?: string };
+const KPI_COLS: Record<number, string> = { 2: "md:grid-cols-2", 3: "md:grid-cols-3", 4: "md:grid-cols-4", 5: "md:grid-cols-5" };
+
+// Shared billing summary strip — used on both the Overview and Billing tabs.
+// Unbilled / Deposit figures are field-pricing gated; void/canceled invoices
+// don't count toward invoiced/collected. Overview passes `status` to lead with a
+// Status card (5-up); the Billing tab omits it (4-up).
+function JobBillingKpis({ jobId, status }: { jobId: string; status?: { label: string; color: string } }) {
+  const rev = useDataVersion();
+  const { fieldVisible } = usePermissions();
+  const showPricing = fieldVisible("finance_field_pricing");
+  const invoices = React.useMemo(() => getInvoicesForJob(jobId), [jobId, rev]);
+  const ledger   = React.useMemo(() => getJobLedger(jobId), [jobId, rev]);
+  const live = invoices.filter(i => i.status !== "void" && i.status !== "canceled");
+  const unbilled  = sumUnbilled(ledger);
+  const invoiced  = live.reduce((s, i) => s + i.total, 0);
+  const collected = live.reduce((s, i) => s + (i.total - i.balanceDue), 0);
+  const depositOnFile = getUnappliedDeposits(jobId).reduce((s, d) => s + d.total, 0);
+
+  const kpis = [
+    status && { label: "Status", value: status.label, color: status.color },
+    showPricing && { label: "Unbilled", value: fmt(unbilled), tone: unbilled > 0 ? "accent" as const : undefined },
+    { label: "Invoiced", value: fmt(invoiced) },
+    { label: "Collected", value: fmt(collected), tone: "green" as const },
+    showPricing && { label: "Deposit on file", value: fmt(depositOnFile) },
+  ].filter(Boolean) as Kpi[];
+
+  return (
+    <div className={`grid grid-cols-2 ${KPI_COLS[kpis.length] ?? "md:grid-cols-4"} gap-3`}>
+      {kpis.map(k => <BillingKpi key={k.label} label={k.label} value={k.value} tone={k.tone} color={k.color} />)}
+    </div>
+  );
+}
+
 function JobFinancialsTab({ jobId }: { jobId: string }) {
   const router = useRouter();
+  const rev = useDataVersion();
   const [wizard, setWizard] = useState(false);
-  const [, forceRefresh] = useState(0);
   const job      = getJob(jobId);
   const quotes   = getQuotesForJob(jobId);
-  const invoices = getInvoicesForJob(jobId);
+  const invoices = React.useMemo(() => getInvoicesForJob(jobId), [jobId, rev]);
 
   function makeInvoice() {
     const inv = createInvoiceFromJob(jobId);
@@ -683,15 +652,10 @@ function JobFinancialsTab({ jobId }: { jobId: string }) {
 
   function Section({ title, onNew, newLabel = "New Quote", children }: { title: string; onNew?: () => void; newLabel?: string; children: React.ReactNode }) {
     return (
-      <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
+      <div className="rounded-xl overflow-hidden self-start w-full" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
         <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid var(--border)" }}>
           <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{title}</p>
-          {onNew && (
-            <button onClick={onNew} className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg"
-              style={{ backgroundColor: "#4f46e5", color: "#fff" }}>
-              <Plus className="w-3.5 h-3.5" /> {newLabel}
-            </button>
-          )}
+          {onNew && <DetailActionButton onClick={onNew}>{newLabel}</DetailActionButton>}
         </div>
         {children}
       </div>
@@ -699,11 +663,19 @@ function JobFinancialsTab({ jobId }: { jobId: string }) {
   }
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="space-y-4">
       {wizard && job && (
         <QuoteTypeChooser preset={{ customerId: job.accountId, jobId, lockCustomer: true }}
           onClose={() => setWizard(false)} />
       )}
+
+      <JobBillingKpis jobId={jobId} />
+
+      <JobLedgerCard jobId={jobId} />
+      <JobDepositControl jobId={jobId} />
+
+      {/* Quotes + Invoices — side by side once there's room, stacked on narrow */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 items-start">
       <Section title={`Quotes (${quotes.length})`} onNew={() => setWizard(true)}>
         {quotes.length === 0 ? (
           <div className="px-4 py-8 text-center"><p className="text-sm" style={{ color: "var(--text-muted)" }}>No quotes for this job</p></div>
@@ -735,7 +707,10 @@ function JobFinancialsTab({ jobId }: { jobId: string }) {
               className="flex items-center gap-4 px-4 py-3 hover:bg-[var(--bg-surface-2)] transition-colors"
               style={{ borderBottom: i < invoices.length - 1 ? "1px solid var(--border)" : "none", textDecoration: "none" }}>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-mono font-medium" style={{ color: "var(--text-primary)" }}>{inv.invoiceNumber}</p>
+                <p className="text-sm font-mono font-medium flex items-center gap-1.5" style={{ color: "var(--text-primary)" }}>
+                  {inv.invoiceNumber}
+                  {inv.isDeposit && <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: "var(--accent-soft-bg)", color: "var(--accent-text)" }}>Deposit</span>}
+                </p>
                 <p className="text-xs mt-0.5 truncate" style={{ color: "var(--text-muted)" }}>{inv.title}</p>
               </div>
               <StatusBadge label={s.label} color={s.color} className="shrink-0" />
@@ -748,6 +723,7 @@ function JobFinancialsTab({ jobId }: { jobId: string }) {
           );
         })}
       </Section>
+      </div>
     </div>
   );
 }
@@ -842,10 +818,7 @@ function JobDetailContent({ params }: { params: Promise<{ id: string }> }) {
             )}
             <div className="w-px h-5 shrink-0" style={{ backgroundColor: "var(--border)" }} />
             <div className="min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <h1 className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>{job.title}</h1>
-                <StatusBadge label={s.label} color={s.color} dot={false} />
-              </div>
+              <h1 className="text-base font-semibold truncate" style={{ color: "var(--text-primary)" }}>{job.title}</h1>
               <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>{job.customerName} · {job.scheduledDate} at {job.scheduledTime}</p>
             </div>
           </div>
@@ -883,12 +856,11 @@ function JobDetailContent({ params }: { params: Promise<{ id: string }> }) {
         {tab === "Overview"          && <OverviewTab  jobId={id} />}
         {tab === "Work Order"        && <WorkOrderTab jobId={id} />}
         {tab === "Visits"            && <VisitsTab    jobId={id} onSchedule={() => setReturnOpen(true)} />}
-        {tab === "Checklist"         && <ChecklistTab jobId={id} />}
         {tab === "Tasks"             && <RecordTasks type="job" id={id} />}
         {tab === "Notes"             && <NotesTab     jobId={id} />}
         {tab === "Customer"          && <CustomerTab  jobId={id} />}
         {tab === "Photos & Files"    && <PhotoGallery recordLevel="job" scope={{ accountId: job.accountId, jobId: id, projectId: job.projectId }} accountName={job.customerName} />}
-        {tab === "Invoice / Estimate"&& <JobFinancialsTab jobId={id} />}
+        {tab === "Billing"           && <JobFinancialsTab jobId={id} />}
         {tab === "History"           && <JobHistoryList job={job} />}
       </div>
 

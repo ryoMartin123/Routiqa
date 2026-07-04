@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Pencil, EyeOff, Eye, X, Check, Trash2, GripVertical } from "lucide-react";
+import { Plus, Pencil, EyeOff, Eye, X, Trash2, GripVertical } from "lucide-react";
+import { pingSaved } from "@/components/shared/SavedPill";
 import {
   getFields, saveFields, generateId, labelToKey,
 } from "@/lib/custom-fields/data";
@@ -49,7 +50,6 @@ export default function CustomFieldsSection() {
   const [editingId,   setEditingId]   = useState<string | null>(null);
   const [form,        setForm]        = useState<Omit<CustomField, "id" | "createdAt">>({ ...EMPTY_FORM });
   const [optionInput, setOptionInput] = useState("");
-  const [saved,       setSaved]       = useState(false);
 
   // Reload from store when component mounts
   useEffect(() => { setFields(getFields()); }, []);
@@ -132,7 +132,7 @@ export default function CustomFieldsSection() {
       updated = [...fields, newField];
     }
     setFields(updated);
-    saveFields(updated);
+    saveFields(updated); pingSaved();
     closeForm();
   }
 
@@ -141,7 +141,7 @@ export default function CustomFieldsSection() {
       f.id === id ? { ...f, visible: !f.visible } : f
     );
     setFields(updated);
-    saveFields(updated);
+    saveFields(updated); pingSaved();
   }
 
   function toggleRequired(id: string) {
@@ -149,7 +149,7 @@ export default function CustomFieldsSection() {
       f.id === id ? { ...f, required: !f.required } : f
     );
     setFields(updated);
-    saveFields(updated);
+    saveFields(updated); pingSaved();
   }
 
   function disableField(id: string) {
@@ -157,19 +157,13 @@ export default function CustomFieldsSection() {
       f.id === id ? { ...f, visible: false } : f
     );
     setFields(updated);
-    saveFields(updated);
+    saveFields(updated); pingSaved();
   }
 
   function deleteField(id: string) {
     const updated = fields.filter(f => f.id !== id);
     setFields(updated);
-    saveFields(updated);
-  }
-
-  function handleSaveAll() {
-    saveFields(fields);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+    saveFields(updated); pingSaved();
   }
 
   // ─── Render ────────────────────────────────────────────
@@ -183,12 +177,6 @@ export default function CustomFieldsSection() {
             Add organization-specific fields to any record type. Fields will appear on detail pages and forms.
           </p>
         </div>
-        <button onClick={handleSaveAll}
-          className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
-          style={{ backgroundColor: saved ? "#10b981" : "#4f46e5", color: "#fff" }}>
-          <Check className="w-3.5 h-3.5" />
-          {saved ? "Saved" : "Save Changes"}
-        </button>
       </div>
 
       {/* Record type tabs */}

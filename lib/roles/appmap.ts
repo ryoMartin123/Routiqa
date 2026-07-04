@@ -194,7 +194,7 @@ export function appLevelOf(role: RoleDefinition, app: PlatformAppId): AppLevel {
 // Sensitive = view-into-restricted-data (field masks). Administrative = high-trust
 // management flags. Kept separate per the spec.
 export const SENSITIVE_MASK_ORDER: FieldMask[] = [
-  "finance_internal_pricing", "finance_cost_margin", "finance_totals", "finance_field_pricing", "finance_payroll",
+  "finance_internal_pricing", "finance_cost_margin", "finance_totals", "finance_field_pricing", "finance_field_billing", "finance_payroll",
   "comms_internal_notes", "sales_other_commissions", "documents_confidential", "accounting_reports",
 ];
 

@@ -7,7 +7,8 @@
 // unchanged — this is presentation only. Global ("any") settings get a one-liner.
 
 import { useState } from "react";
-import { Layers, SlidersHorizontal } from "lucide-react";
+import { Layers } from "lucide-react";
+import SlidersGlyph from "@/components/shared/SlidersGlyph";
 import { useSettingsScope } from "@/components/providers/SettingsScopeProvider";
 import { effectiveLayers, LAYER_META, LAYER_ORDER, type Layer, type SectionLayers } from "@/lib/settings-scope/types";
 import ScopeSwitcherModal from "@/components/settings/ScopeSwitcherModal";
@@ -77,26 +78,30 @@ export default function EditingScopeHeader({ sectionLayers }: { sectionLayers: S
     <>
       <div className="rounded-xl mb-5 flex items-center gap-3 px-4 py-2.5"
         style={{ border: `1px solid ${meta.color}40`, backgroundColor: meta.color + "0a" }}>
-        {/* Badge + scope name + path */}
-        <span className="text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-full shrink-0"
-          style={{ backgroundColor: meta.color + "1f", color: meta.color }}>{SCOPE_BADGE[activeLayer]}</span>
-        <div className="min-w-0 flex-1">
-          <p className="text-sm truncate" style={{ color: "var(--text-primary)" }}>
-            Editing defaults for <span className="font-semibold">{scopeName}</span>
-          </p>
-          {pathSummary && <p className="text-[11px] truncate mt-0.5" style={{ color: "var(--text-muted)" }}>{pathSummary}</p>}
+        {/* Scope container — hover reveals "Editing defaults for X" + the path */}
+        <div className="relative group shrink-0">
+          <span className="inline-block text-[10px] font-bold uppercase tracking-widest px-2.5 py-1.5 rounded-lg cursor-default"
+            style={{ backgroundColor: meta.color + "14", color: meta.color, border: `1px solid ${meta.color}33` }}>{SCOPE_BADGE[activeLayer]}</span>
+          <div className="pointer-events-none absolute top-full left-0 mt-2 w-64 px-3 py-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 group-hover:delay-700 z-30"
+            style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "0 12px 32px -8px rgba(0,0,0,0.4)" }}>
+            <p className="text-xs" style={{ color: "var(--text-primary)" }}>Editing defaults for <span className="font-semibold">{scopeName}</span></p>
+            {pathSummary && <p className="text-[11px] mt-0.5" style={{ color: "var(--text-muted)" }}>{pathSummary}</p>}
+          </div>
         </div>
 
-        {/* Short explanation (secondary) */}
-        <p className="hidden lg:block text-[11px] leading-snug text-right shrink-0" style={{ color: "var(--text-secondary)", maxWidth: "260px" }}>{explain}</p>
+        <div className="flex-1" />
 
-        {/* Change scope */}
+        {/* Change scope — sliders knobs animate on hover; explanation tooltips above */}
         {canSwitch && (
-          <button onClick={() => setSwitcherOpen(true)}
-            className="flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1.5 rounded-lg transition-colors shrink-0"
-            style={{ border: `1px solid ${meta.color}66`, color: meta.color }}>
-            <SlidersHorizontal className="w-3 h-3" /> Change scope
-          </button>
+          <div className="relative group shrink-0">
+            <button onClick={() => setSwitcherOpen(true)}
+              className="flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1.5 rounded-lg transition-all active:scale-95"
+              style={{ border: `1px solid ${meta.color}66`, color: meta.color, backgroundColor: switcherOpen ? meta.color + "12" : "transparent" }}>
+              <SlidersGlyph active={switcherOpen} className="w-3 h-3" /> Change scope
+            </button>
+            <span className="pointer-events-none absolute bottom-full right-0 mb-2 w-60 px-3 py-2 rounded-lg text-[11px] leading-snug text-left opacity-0 group-hover:opacity-100 transition-opacity duration-200 group-hover:delay-700 z-30"
+              style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", color: "var(--text-secondary)", boxShadow: "0 12px 32px -8px rgba(0,0,0,0.4)" }}>{explain}</span>
+          </div>
         )}
       </div>
 

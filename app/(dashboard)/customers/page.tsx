@@ -164,9 +164,10 @@ export default function CustomersPage() {
         <div className="flex-1 flex justify-end gap-2">
           <button
             onClick={() => setModalOpen(true)}
+            data-open={modalOpen}
             className="btn-raised flex items-center gap-1.5 bg-indigo-600 text-white text-sm font-medium px-3.5 py-2 rounded-lg"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="plus-icon w-4 h-4" />
             New Customer
           </button>
         </div>
@@ -305,7 +306,7 @@ export default function CustomersPage() {
                 }}
               >
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="w-7 h-7 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 shrink-0">
+                  <div className="w-7 h-7 rounded-full bg-[#e5e0db] flex items-center justify-center text-[#7a6f5c] shrink-0">
                     <Users className="w-3.5 h-3.5" />
                   </div>
                   <div className="min-w-0">
