@@ -14,8 +14,9 @@ import Link from "next/link";
 import {
   X, Clock, MapPin, CheckCircle, Circle, Briefcase, User, Tag,
   AlertTriangle, FileText, Link2, Phone, MessageSquare, Mail, Navigation,
-  Camera, Package, Truck, Send, Ban,
+  Camera, Package, Truck, Send, Ban, CalendarClock,
 } from "lucide-react";
+import RescheduleVisitModal from "@/components/calendar/RescheduleVisitModal";
 import StatusBadge from "@/components/shared/StatusBadge";
 import ActionsMenu, { type ActionItem } from "@/components/shared/ActionsMenu";
 import {
@@ -75,7 +76,7 @@ function dispatchPrimary(status: JobStatus): { label: string; to?: JobStatus; ic
 }
 
 export default function CalendarItemDrawer({
-  scheduled, unscheduled, onClose, onSchedule,
+  scheduled, unscheduled, onClose, onSchedule, onChanged, increment,
 }: {
   scheduled?: CalendarItem;
   unscheduled?: UnscheduledItem;
@@ -85,8 +86,13 @@ export default function CalendarItemDrawer({
   onClose: () => void;
   onReassign?: (tech: string) => void;
   onSchedule?: () => void;
+  /** Notify the host (board/calendar) that the visit changed, so it re-reads. */
+  onChanged?: () => void;
+  /** Board slot size — reschedule durations step in this unit. */
+  increment?: number;
 }) {
   const [tick, setTick] = useState(0);
+  const [showReschedule, setShowReschedule] = useState(false);
   const item = scheduled ?? unscheduled!;
   const isScheduled = !!scheduled;
 
@@ -165,7 +171,8 @@ export default function CalendarItemDrawer({
   // Every secondary/nav + destructive action lives in the top-right 4-dot menu,
   // so the cards stay pure information and the bottom is a single clear CTA.
   const menuActions: (ActionItem | false)[] = [
-    !!job && { label: "Open Job", icon: Briefcase, href: `/jobs/${job.id}` },
+    !!job && { label: "Reschedule", icon: CalendarClock, onClick: () => setShowReschedule(true) },
+    !!job && { label: "Open Job", icon: Briefcase, href: `/jobs/${job.id}`, separated: true },
     !!wo && { label: "Open Work Order", icon: FileText, href: `/work-orders/${wo.id}` },
     !!customer && { label: "Open Customer", icon: User, href: `/customers/${customer.id}` },
     !!customer?.phone && { label: "Message Customer", icon: MessageSquare, href: `sms:${customer.phone}` },
@@ -401,6 +408,17 @@ export default function CalendarItemDrawer({
           </div>
         )}
       </div>
+
+      {/* Reschedule this visit — multi-visit jobs keep their sequence honest. */}
+      {showReschedule && job && (
+        <RescheduleVisitModal
+          jobId={job.id}
+          appointmentId={appointment?.id}
+          increment={increment}
+          onClose={() => setShowReschedule(false)}
+          onSaved={() => { setShowReschedule(false); setTick(t => t + 1); onChanged?.(); }}
+        />
+      )}
     </>
   );
 }

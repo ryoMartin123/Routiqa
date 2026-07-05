@@ -1,216 +1,242 @@
 "use client";
 
-import React, { use, useState, useEffect, useRef } from "react";
+import React, { use, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Pencil, Download, Printer, Eye, ChevronRight, ChevronDown, Receipt, DollarSign, Briefcase, FolderKanban, FilePen, Copy, Ban, X } from "lucide-react";
-import { getInvoice, getQuote, fmt, updateInvoiceStatus, recordPayment, duplicateInvoice, voidInvoice, updateInvoice, type InvoiceRecord } from "@/lib/quotes/data";
+import {
+  ArrowLeft, ArrowUpRight, Pencil, Download, Printer, Eye, Receipt, DollarSign,
+  CircleDollarSign, Wallet, Activity, Calendar, Clock, FileText,
+  Copy, Ban, Trash2, X, Phone,
+} from "lucide-react";
+import { getInvoice, getQuote, fmt, updateInvoiceStatus, recordPayment, duplicateInvoice, voidInvoice, deleteInvoice, updateInvoice, type InvoiceRecord } from "@/lib/quotes/data";
 import { INVOICE_STATUS_STYLE, type InvoiceStatus } from "@/lib/quotes/types";
 import { getCustomer } from "@/lib/customers/data";
+import { getJob, getWorkOrderById } from "@/lib/jobs/data";
 import InvoicePreview from "@/components/quotes/InvoicePreview";
 import Commentable from "@/components/comments/Commentable";
 import InvoiceWizard from "@/components/quotes/InvoiceWizard";
 import { downloadInvoicePdf } from "@/lib/quotes/pdf";
 import DetailTabs from "@/components/shared/DetailTabs";
+import ActionsMenu, { type ActionItem } from "@/components/shared/ActionsMenu";
 
-const TABS = ["Details", "Notes", "History"];
+const TABS = ["Overview", "Notes", "Activity"];
 
-// ─── Status action buttons ────────────────────────────────
-function StatusActions({
-  status, onAction,
-}: {
-  status: InvoiceStatus;
-  onAction: (next: InvoiceStatus | "payment") => void;
-}) {
-  if (status === "draft") return (
-    <button onClick={() => onAction("sent")}
-      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium"
-      style={{ backgroundColor: "#4f46e5", color: "#fff" }}>
-      <Receipt className="w-3.5 h-3.5" /> Send Invoice
-    </button>
-  );
-  if (status === "sent" || status === "partially_paid" || status === "past_due") return (
-    <button onClick={() => onAction("payment")}
-      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium"
-      style={{ backgroundColor: "#10b981", color: "#fff" }}>
-      <DollarSign className="w-3.5 h-3.5" /> Record Payment
-    </button>
-  );
-  return null;
-}
+type IconType = React.ComponentType<{ className?: string; style?: React.CSSProperties }>;
 
-// ─── Line items table ─────────────────────────────────────
-function LineItemsTable({ invoiceId }: { invoiceId: string }) {
-  const invoice = getInvoice(invoiceId)!;
-
+// ─── Shared detail primitives (same language as Job / Work Order overviews) ──
+function Stat({ icon: Icon, label, value, sub, accent }: { icon: IconType; label: string; value: React.ReactNode; sub?: string; accent?: string }) {
   return (
-    <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
-      {/* Header */}
-      <div className="grid px-5 py-3 text-[10px] font-semibold uppercase tracking-wider"
-        style={{ gridTemplateColumns: "3fr 0.6fr 1fr 1fr", color: "var(--text-muted)", borderBottom: "1px solid var(--border)", backgroundColor: "transparent" }}>
-        <span>Description</span><span className="text-right">Qty</span>
-        <span className="text-right">Unit Price</span><span className="text-right">Total</span>
+    <div className="rounded-xl p-3.5" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
+      <div className="flex items-center gap-1.5 mb-1.5">
+        <Icon className="w-3.5 h-3.5" style={{ color: accent ?? "var(--text-muted)" }} />
+        <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>{label}</p>
       </div>
-
-      {invoice.lineItems.map((item, i) => (
-        <div key={item.id} className="grid px-5 py-3 items-start"
-          style={{ gridTemplateColumns: "3fr 0.6fr 1fr 1fr", borderBottom: i < invoice.lineItems.length - 1 ? "1px solid var(--border)" : "none" }}>
-          <div>
-            <p className="text-sm" style={{ color: "var(--text-primary)" }}>{item.description}</p>
-            {item.notes && <p className="text-xs mt-0.5 italic" style={{ color: "var(--text-muted)" }}>{item.notes}</p>}
-          </div>
-          <p className="text-sm text-right" style={{ color: "var(--text-secondary)" }}>{item.quantity}</p>
-          <p className="text-sm text-right" style={{ color: "var(--text-secondary)" }}>{fmt(item.unitPrice)}</p>
-          <p className="text-sm text-right font-medium" style={{ color: "var(--text-primary)" }}>{fmt(item.total)}</p>
-        </div>
-      ))}
-
-      {/* Payment summary */}
-      <div className="px-5 py-4 space-y-2" style={{ borderTop: "2px solid var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
-        <div className="flex justify-between">
-          <span className="text-sm" style={{ color: "var(--text-muted)" }}>Subtotal</span>
-          <span className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{fmt(invoice.subtotal)}</span>
-        </div>
-        {invoice.tax > 0 && (
-          <div className="flex justify-between">
-            <span className="text-sm" style={{ color: "var(--text-muted)" }}>Tax</span>
-            <span className="text-sm" style={{ color: "var(--text-secondary)" }}>{fmt(invoice.tax)}</span>
-          </div>
-        )}
-        <div className="flex justify-between pt-2" style={{ borderTop: "1px solid var(--border)" }}>
-          <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Total</span>
-          <span className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>{fmt(invoice.total)}</span>
-        </div>
-        {invoice.paidAt && (
-          <div className="flex justify-between">
-            <span className="text-sm" style={{ color: "var(--text-muted)" }}>Paid {invoice.paidAt}</span>
-            <span className="text-sm font-semibold text-emerald-600">–{fmt(invoice.total)}</span>
-          </div>
-        )}
-        <div className="flex justify-between pt-2" style={{ borderTop: "1px solid var(--border)" }}>
-          <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Balance Due</span>
-          <span className="text-lg font-bold"
-            style={{ color: invoice.balanceDue > 0 ? (invoice.status === "past_due" ? "#dc2626" : "var(--text-primary)") : "#10b981" }}>
-            {invoice.balanceDue > 0 ? fmt(invoice.balanceDue) : "Paid in Full"}
-          </span>
-        </div>
+      <p className="text-base font-bold leading-tight truncate" style={{ color: accent ?? "var(--text-primary)" }}>{value}</p>
+      {sub && <p className="text-[11px] mt-0.5 truncate" style={{ color: "var(--text-muted)" }}>{sub}</p>}
+    </div>
+  );
+}
+function DCard({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+  return <div className={`rounded-xl ${className}`} style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>{children}</div>;
+}
+function DLabel({ children }: { children: React.ReactNode }) {
+  return <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>{children}</p>;
+}
+function InfoRow({ icon: Icon, label, value }: { icon?: IconType; label: string; value: React.ReactNode }) {
+  return (
+    <div className="flex items-start gap-2.5">
+      {Icon && <Icon className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: "var(--text-muted)" }} />}
+      <div className="min-w-0 flex-1">
+        <p className="text-[10px]" style={{ color: "var(--text-muted)" }}>{label}</p>
+        <div className="text-sm font-medium break-words" style={{ color: "var(--text-primary)" }}>{value || "—"}</div>
       </div>
     </div>
   );
 }
 
-// ─── Details tab ──────────────────────────────────────────
-function DetailsTab({ id }: { id: string }) {
+// ─── Line items card — fills the column height, totals pinned at the bottom.
+// Reads as a quiet list, not a spreadsheet: each line is description + total,
+// with "qty × unit" as a muted subline when there's more than one unit.
+function InvoiceLineItems({ invoice }: { invoice: InvoiceRecord }) {
+  const n = invoice.lineItems.length;
+  return (
+    <DCard className="flex flex-col h-full min-h-0 overflow-hidden">
+      <div className="flex items-baseline justify-between px-5 pt-4 shrink-0">
+        <DLabel>Line Items</DLabel>
+        <span className="text-[11px] tabular-nums" style={{ color: "var(--text-muted)" }}>{n} {n === 1 ? "item" : "items"}</span>
+      </div>
+      <div className="flex-1 overflow-y-auto min-h-0 px-5 pt-1 pb-2">
+        {invoice.lineItems.map((item, i) => (
+          <div key={item.id} className="flex items-start justify-between gap-6 py-3"
+            style={{ borderBottom: i < n - 1 ? "1px solid var(--border-subtle)" : "none" }}>
+            <div className="min-w-0">
+              <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{item.description}</p>
+              {item.quantity !== 1 && (
+                <p className="text-xs mt-0.5 tabular-nums" style={{ color: "var(--text-muted)" }}>{item.quantity} × {fmt(item.unitPrice)}</p>
+              )}
+              {item.notes && <p className="text-xs mt-0.5 italic" style={{ color: "var(--text-muted)" }}>{item.notes}</p>}
+            </div>
+            <p className="text-sm font-medium tabular-nums shrink-0" style={{ color: "var(--text-primary)" }}>{fmt(item.total)}</p>
+          </div>
+        ))}
+      </div>
+      {/* Totals — a quiet right-aligned stack */}
+      <div className="px-5 py-4 shrink-0" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+        <div className="ml-auto w-full max-w-[260px] space-y-1.5">
+          <div className="flex justify-between text-xs" style={{ color: "var(--text-muted)" }}>
+            <span>Subtotal</span><span className="tabular-nums">{fmt(invoice.subtotal)}</span>
+          </div>
+          {invoice.tax > 0 && (
+            <div className="flex justify-between text-xs" style={{ color: "var(--text-muted)" }}>
+              <span>Tax</span><span className="tabular-nums">{fmt(invoice.tax)}</span>
+            </div>
+          )}
+          <div className="flex items-baseline justify-between pt-2 mt-1" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+            <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Total</span>
+            <span className="text-base font-bold tabular-nums" style={{ color: "var(--text-primary)" }}>{fmt(invoice.total)}</span>
+          </div>
+          <div className="flex items-baseline justify-between">
+            <span className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>Balance due</span>
+            <span className="text-sm font-bold tabular-nums" style={{ color: invoice.balanceDue > 0 ? (invoice.status === "past_due" ? "#dc2626" : "var(--text-primary)") : "#16a34a" }}>
+              {invoice.balanceDue > 0 ? fmt(invoice.balanceDue) : "Paid in full"}
+            </span>
+          </div>
+        </div>
+      </div>
+    </DCard>
+  );
+}
+
+// A linked record shown the same way tasks show "Linked To": a color-coded
+// inline link with an arrow that nudges on hover. Color encodes the record type
+// (same palette as the Invoices list). The relation phrase says how the invoice
+// relates to the record ("Billed from", "Part of", "Created from").
+const LINK_COLOR: Record<string, string> = { job: "#3730a3", work_order: "#0891b2", project: "#5b21b6", quote: "#6d28d9", agreement: "#059669", customer: "#3730a3" };
+function LinkedRow({ href, label, type, relation }: { href: string; label: string; type: string; relation: string }) {
+  const color = LINK_COLOR[type] ?? "var(--text-secondary)";
+  return (
+    <div className="min-w-0">
+      <p className="text-[10px] font-semibold uppercase tracking-wider">
+        <span style={{ color: "var(--text-muted)" }}>{relation}</span>
+        <span style={{ color: "var(--text-muted)" }}> · </span>
+        <span className="capitalize" style={{ color }}>{type.replace(/_/g, " ")}</span>
+      </p>
+      <Link href={href} className="group inline-flex items-center gap-1 text-[13px] font-medium max-w-full hover:underline mt-0.5"
+        style={{ color, textDecoration: "none" }}>
+        <span className="truncate">{label}</span>
+        <ArrowUpRight className="w-3.5 h-3.5 shrink-0 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+      </Link>
+    </div>
+  );
+}
+
+// ─── Overview tab — full height, Stat cards + details + line items ──────────
+function OverviewTab({ id }: { id: string }) {
   const invoice  = getInvoice(id)!;
   const customer = getCustomer(invoice.customerId);
   const sourceQuote = invoice.quoteId ? getQuote(invoice.quoteId) : null;
-  const stageConfig = INVOICE_STATUS_STYLE[invoice.status];
-  const isOverdue   = invoice.status === "past_due";
+  const st = INVOICE_STATUS_STYLE[invoice.status];
+  const isOverdue = invoice.status === "past_due";
+  const collected = invoice.total - invoice.balanceDue;
 
-  const LinkedIcon = invoice.linkedType === "job" ? Briefcase
-    : invoice.linkedType === "project" ? FolderKanban
-    : invoice.linkedType === "quote" ? FilePen
-    : ChevronRight;
-
-  const linkedHref = invoice.linkedType === "job"     ? `/jobs/${invoice.linkedId}`
-    : invoice.linkedType === "project"  ? `/projects/${invoice.linkedId}`
-    : invoice.linkedType === "quote"    ? `/quotes/${invoice.linkedId}`
-    : "#";
+  // Records this invoice ties back to. The work order (whose captured lines are
+  // what's billed) is the primary link; the job it belongs to nests under it so
+  // the hierarchy reads work order → job. The job uses its real title rather
+  // than the "Work Order: …" linkedLabel.
+  const workOrder = invoice.workOrderId ? getWorkOrderById(invoice.workOrderId) : undefined;
+  const jobEntry = invoice.linkedType === "job" && invoice.linkedId
+    ? { href: `/jobs/${invoice.linkedId}`, label: getJob(invoice.linkedId)?.title ?? invoice.linkedLabel ?? "Job" }
+    : null;
+  const otherEntry =
+    invoice.linkedType === "project" && invoice.linkedId ? { href: `/projects/${invoice.linkedId}`, label: invoice.linkedLabel ?? "Project", type: "project" } :
+    invoice.linkedType === "agreement" && invoice.linkedId ? { href: `/agreements/${invoice.linkedId}`, label: invoice.linkedLabel ?? "Agreement", type: "agreement" } :
+    null;
+  const hasLinks = Boolean(workOrder || jobEntry || otherEntry || sourceQuote);
 
   return (
-    <div className="grid grid-cols-3 gap-6">
-      {/* ── Left ─────────────────────────────────── */}
-      <div className="space-y-4">
-        <div className="rounded-xl p-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
-          <p className="text-[10px] font-semibold uppercase tracking-widest mb-3" style={{ color: "var(--text-muted)" }}>Invoice Info</p>
-          <div className="space-y-2.5">
-            <div className="flex justify-between"><span className="text-xs" style={{ color: "var(--text-muted)" }}>Status</span>
-              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
-                style={{ backgroundColor: stageConfig.bg, color: stageConfig.color }}>{stageConfig.label}</span>
-            </div>
-            <div className="flex justify-between"><span className="text-xs" style={{ color: "var(--text-muted)" }}>Total</span>
-              <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{fmt(invoice.total)}</span>
-            </div>
-            <div className="flex justify-between"><span className="text-xs" style={{ color: "var(--text-muted)" }}>Balance Due</span>
-              <span className="text-sm font-semibold"
-                style={{ color: invoice.balanceDue > 0 ? (isOverdue ? "#dc2626" : "var(--text-primary)") : "#10b981" }}>
-                {invoice.balanceDue > 0 ? fmt(invoice.balanceDue) : "Paid"}
-              </span>
-            </div>
-            <div className="flex justify-between"><span className="text-xs" style={{ color: "var(--text-muted)" }}>Due Date</span>
-              <span className="text-xs font-medium" style={{ color: isOverdue ? "#dc2626" : "var(--text-primary)" }}>
-                {invoice.dueDate}{isOverdue ? " ⚠" : ""}
-              </span>
-            </div>
-            {invoice.paidAt && (
-              <div className="flex justify-between"><span className="text-xs" style={{ color: "var(--text-muted)" }}>Paid</span>
-                <span className="text-xs font-medium text-emerald-600">{invoice.paidAt}</span>
-              </div>
-            )}
-            <div className="flex justify-between"><span className="text-xs" style={{ color: "var(--text-muted)" }}>Created</span>
-              <span className="text-xs" style={{ color: "var(--text-secondary)" }}>{invoice.createdAt}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Customer */}
-        <div className="rounded-xl p-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
-          <p className="text-[10px] font-semibold uppercase tracking-widest mb-3" style={{ color: "var(--text-muted)" }}>Customer</p>
-          {customer ? (
-            <Link href={`/customers/${customer.id}`} className="flex items-start gap-3 hover:opacity-80 transition-opacity">
-              <div className="w-8 h-8 rounded-full bg-[#e5e0db] flex items-center justify-center text-[#5c5545] text-[10px] font-bold shrink-0">{customer.initials}</div>
-              <div>
-                <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{customer.name}</p>
-                {customer.phone && <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>{customer.phone}</p>}
-                <p className="text-[10px] mt-1" style={{ color: "#4f46e5" }}>View account →</p>
-              </div>
-            </Link>
-          ) : (
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-[10px] font-bold text-indigo-600 shrink-0">{invoice.customerInitials}</div>
-              <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{invoice.customerName}</p>
-            </div>
-          )}
-        </div>
-
-        {/* Source quote */}
-        {sourceQuote && (
-          <div className="rounded-xl p-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
-            <p className="text-[10px] font-semibold uppercase tracking-widest mb-3" style={{ color: "var(--text-muted)" }}>From Quote</p>
-            <Link href={`/quotes/${sourceQuote.id}`} className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-              <div className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center shrink-0">
-                <FilePen className="w-4 h-4 text-purple-600" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{sourceQuote.quoteNumber}</p>
-                <p className="text-xs truncate" style={{ color: "var(--text-muted)" }}>{sourceQuote.title}</p>
-              </div>
-              <ChevronRight className="w-4 h-4 shrink-0" style={{ color: "var(--text-muted)" }} />
-            </Link>
-          </div>
-        )}
-
-        {/* Linked record */}
-        {invoice.linkedLabel && invoice.linkedType !== "quote" && (
-          <div className="rounded-xl p-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
-            <p className="text-[10px] font-semibold uppercase tracking-widest mb-3" style={{ color: "var(--text-muted)" }}>Linked To</p>
-            <Link href={linkedHref} className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-              <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center shrink-0">
-                <LinkedIcon className="w-4 h-4 text-indigo-600" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{invoice.linkedLabel}</p>
-                <p className="text-[10px] capitalize" style={{ color: "var(--text-muted)" }}>{invoice.linkedType}</p>
-              </div>
-              <ChevronRight className="w-4 h-4 shrink-0" style={{ color: "var(--text-muted)" }} />
-            </Link>
-          </div>
-        )}
+    <div className="min-h-full w-full flex flex-col gap-4">
+      {/* Stat cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 shrink-0">
+        <Stat icon={Activity} label="Status" value={st.label} accent={st.color} sub={invoice.isDeposit ? "Deposit" : undefined} />
+        <Stat icon={DollarSign} label="Total" value={fmt(invoice.total)} />
+        <Stat icon={CircleDollarSign} label="Collected" value={fmt(collected)} accent={collected > 0 ? "#16a34a" : undefined} />
+        <Stat icon={Wallet} label={invoice.balanceDue > 0 ? "Balance Due" : "Paid"}
+          value={invoice.balanceDue > 0 ? fmt(invoice.balanceDue) : "Paid in full"}
+          accent={invoice.balanceDue > 0 ? (isOverdue ? "#dc2626" : undefined) : "#16a34a"}
+          sub={invoice.balanceDue > 0 ? `Due ${invoice.dueDate}${isOverdue ? " · overdue" : ""}` : invoice.paidAt} />
       </div>
 
-      {/* ── Right ────────────────────────────────── */}
-      <div className="col-span-2">
-        <LineItemsTable invoiceId={id} />
+      {/* Main grid */}
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-4 min-h-0">
+        {/* Left (2/3): Invoice Details, then Line Items filling the rest */}
+        <div className="lg:col-span-2 flex flex-col gap-4 min-h-0">
+          <DCard className="p-4 shrink-0">
+            <DLabel>Invoice Details</DLabel>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 mt-3">
+              <InfoRow icon={Activity} label="Status" value={<span style={{ color: st.color, fontWeight: 600 }}>{st.label}</span>} />
+              <InfoRow icon={Receipt} label="Invoice #" value={<span className="font-mono">{invoice.invoiceNumber}</span>} />
+              <InfoRow icon={FileText} label="Description" value={invoice.title} />
+              <InfoRow icon={DollarSign} label="Total" value={fmt(invoice.total)} />
+              <InfoRow icon={Wallet} label="Balance Due" value={<span style={{ color: invoice.balanceDue > 0 ? (isOverdue ? "#dc2626" : undefined) : "#16a34a", fontWeight: 600 }}>{invoice.balanceDue > 0 ? fmt(invoice.balanceDue) : "Paid in full"}</span>} />
+              <InfoRow icon={Calendar} label="Due Date" value={<span style={{ color: isOverdue ? "#dc2626" : undefined }}>{invoice.dueDate}{isOverdue ? " · overdue" : ""}</span>} />
+              <InfoRow icon={Clock} label="Created" value={invoice.createdAt} />
+              {invoice.paidAt && <InfoRow icon={CircleDollarSign} label="Paid" value={<span style={{ color: "#16a34a" }}>{invoice.paidAt}</span>} />}
+              {invoice.isDeposit && <InfoRow icon={Wallet} label="Type" value="Deposit" />}
+            </div>
+          </DCard>
+
+          <div className="flex-1 min-h-0"><InvoiceLineItems invoice={invoice} /></div>
+        </div>
+
+        {/* Right: Linked To (tasks-style) + Customer */}
+        <div className="flex flex-col gap-4 min-h-0">
+          <DCard className="p-4 shrink-0">
+            <DLabel>Customer</DLabel>
+            {customer ? (
+              <div className="flex items-center gap-3 mt-3">
+                <div className="w-8 h-8 rounded-full bg-[#e5e0db] flex items-center justify-center text-[#5c5545] text-[10px] font-bold shrink-0">{customer.initials}</div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{customer.name}</p>
+                  {customer.phone && <p className="text-xs mt-0.5 inline-flex items-center gap-1" style={{ color: "var(--text-muted)" }}><Phone className="w-3 h-3" /> {customer.phone}</p>}
+                </div>
+                <Link href={`/customers/${customer.id}`}
+                  className="group inline-flex items-center gap-1 text-[11px] font-medium shrink-0 hover:underline"
+                  style={{ color: "var(--accent-text)", textDecoration: "none" }}>
+                  View account
+                  <ArrowUpRight className="w-3.5 h-3.5 shrink-0 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                </Link>
+              </div>
+            ) : (
+              <div className="flex items-center gap-3 mt-3">
+                <div className="w-8 h-8 rounded-full bg-[#e5e0db] flex items-center justify-center text-[10px] font-bold text-[#5c5545] shrink-0">{invoice.customerInitials}</div>
+                <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{invoice.customerName}</p>
+              </div>
+            )}
+          </DCard>
+
+          {hasLinks && (
+            <DCard className="p-4 flex-1">
+              <DLabel>Linked Records</DLabel>
+              <div className="mt-3 space-y-3.5">
+                {/* Nesting mirrors the real hierarchy: the job is the parent, the
+                    work order (whose lines this invoice bills) sits under it. */}
+                {jobEntry && (
+                  <div>
+                    <LinkedRow relation="For" href={jobEntry.href} label={jobEntry.label} type="job" />
+                    {workOrder && (
+                      <div className="mt-2.5 ml-1.5 pl-3" style={{ borderLeft: "2px solid var(--border)" }}>
+                        <LinkedRow relation="Billed from" href={`/work-orders/${workOrder.id}`} label={workOrder.title || "Work Order"} type="work_order" />
+                      </div>
+                    )}
+                  </div>
+                )}
+                {!jobEntry && workOrder && <LinkedRow relation="Billed from" href={`/work-orders/${workOrder.id}`} label={workOrder.title || "Work Order"} type="work_order" />}
+                {otherEntry && <LinkedRow relation="For" href={otherEntry.href} label={otherEntry.label} type={otherEntry.type} />}
+                {sourceQuote && <LinkedRow relation="Created from" href={`/quotes/${sourceQuote.id}`} label={sourceQuote.quoteNumber} type="quote" />}
+              </div>
+            </DCard>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -254,19 +280,11 @@ function PaymentModal({ balanceDue, invoiceNumber, onSubmit, onClose }: {
 export default function InvoiceDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
-  const [tab, setTab] = useState("Details");
+  const [tab, setTab] = useState("Overview");
   const [invoice, setInvoice] = useState(() => getInvoice(id));
   const [showPreview, setShowPreview] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
   const [showPay, setShowPay] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!menuOpen) return;
-    const onDown = (e: MouseEvent) => { if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false); };
-    document.addEventListener("mousedown", onDown);
-    return () => document.removeEventListener("mousedown", onDown);
-  }, [menuOpen]);
 
   if (!invoice) {
     return (
@@ -279,8 +297,6 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
     );
   }
 
-  const stageConfig = INVOICE_STATUS_STYLE[invoice.status];
-  const isOverdue   = invoice.status === "past_due";
   const refresh = () => setInvoice(getInvoice(id));
 
   const previewData = {
@@ -291,10 +307,7 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
     stamp: invoice.status === "paid" ? "PAID" : undefined,
   };
 
-  function handleAction(next: InvoiceStatus | "payment") {
-    if (next === "payment") { setShowPay(true); return; }
-    updateInvoiceStatus(id, next); refresh();
-  }
+  function setStatus(next: InvoiceStatus) { updateInvoiceStatus(id, next); refresh(); }
   function submitPayment(amount: number) { recordPayment(id, amount); setShowPay(false); refresh(); }
   function downloadPdf() { downloadInvoicePdf(previewData); }
   function printInvoice() {
@@ -305,9 +318,27 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
     window.print();
   }
   function doDuplicate() { const copy = duplicateInvoice(id); if (copy) router.push(`/invoices/${copy.id}`); }
-  function doVoid() { if (window.confirm(`Void ${invoice!.invoiceNumber}?`)) { voidInvoice(id); setMenuOpen(false); refresh(); } }
+  function doVoid() { if (window.confirm(`Void ${invoice!.invoiceNumber}?`)) { voidInvoice(id); refresh(); } }
+  function doDelete() {
+    if (window.confirm(`Permanently delete ${invoice!.invoiceNumber}? This cannot be undone — use Void to cancel an invoice while keeping the record.`)) {
+      deleteInvoice(id);
+      router.push("/invoices");
+    }
+  }
 
-  const menuItem = "flex items-center gap-2 w-full px-3 py-2 text-sm text-left transition-colors hover:bg-[var(--bg-surface-2)]";
+  const canPay = invoice.status === "sent" || invoice.status === "partially_paid" || invoice.status === "past_due";
+  // Every header action lives in the shared 4-dot menu.
+  const actions: (ActionItem | false)[] = [
+    invoice.status === "draft" && { label: "Send invoice", icon: Receipt, onClick: () => setStatus("sent") },
+    canPay && { label: "Record payment", icon: DollarSign, onClick: () => setShowPay(true) },
+    { label: "Preview", icon: Eye, onClick: () => setShowPreview(true) },
+    { label: "Download PDF", icon: Download, onClick: downloadPdf },
+    { label: "Print", icon: Printer, onClick: printInvoice },
+    { label: "Edit", icon: Pencil, onClick: () => setShowEdit(true), separated: true },
+    { label: "Duplicate", icon: Copy, onClick: doDuplicate },
+    (invoice.status !== "void" && invoice.status !== "paid") && { label: "Void invoice", icon: Ban, onClick: doVoid, danger: true, separated: true },
+    { label: "Delete invoice", icon: Trash2, onClick: doDelete, danger: true },
+  ];
 
   return (
     <div className="flex flex-col h-full">
@@ -319,68 +350,14 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
             </Link>
             <div className="w-px h-5 shrink-0" style={{ backgroundColor: "var(--border)" }} />
             <Commentable anchor={{ recordType: "invoice", recordId: id, recordLabel: invoice.invoiceNumber }}>
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="w-9 h-9 rounded-lg bg-indigo-100 flex items-center justify-center shrink-0">
-                <Receipt className="w-4.5 h-4.5 text-indigo-600" />
-              </div>
               <div className="min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h1 className="text-base font-semibold font-mono" style={{ color: "var(--text-primary)" }}>{invoice.invoiceNumber}</h1>
-                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
-                    style={{ backgroundColor: stageConfig.bg, color: stageConfig.color }}>{stageConfig.label}</span>
-                  <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{fmt(invoice.total)}</span>
-                  {invoice.balanceDue > 0 && (
-                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
-                      style={{ backgroundColor: isOverdue ? "#fee2e2" : "#fef3c7", color: isOverdue ? "#991b1b" : "#92400e" }}>
-                      {fmt(invoice.balanceDue)} due
-                    </span>
-                  )}
-                </div>
-                <p className="text-xs mt-0.5 truncate" style={{ color: "var(--text-muted)" }}>
-                  {invoice.customerName} · Due {invoice.dueDate}
-                </p>
+                <h1 className="text-base font-semibold font-mono truncate" style={{ color: "var(--text-primary)" }}>{invoice.invoiceNumber}</h1>
+                <p className="text-xs mt-0.5 truncate" style={{ color: "var(--text-muted)" }}>{invoice.customerName}</p>
               </div>
-            </div>
             </Commentable>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            <StatusActions status={invoice.status} onAction={handleAction} />
-            <button onClick={() => setShowPreview(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors hover:bg-[var(--bg-surface-2)]"
-              style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>
-              <Eye className="w-3.5 h-3.5" /> Preview
-            </button>
-            <button onClick={downloadPdf} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors hover:bg-[var(--bg-surface-2)]"
-              style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>
-              <Download className="w-3.5 h-3.5" /> PDF
-            </button>
-            <div className="relative" ref={menuRef}>
-              <button onClick={() => setMenuOpen(o => !o)} className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm transition-colors hover:bg-[var(--bg-surface-2)]"
-                style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>
-                More <ChevronDown className="w-3.5 h-3.5" />
-              </button>
-              {menuOpen && (
-                <div className="absolute right-0 top-full mt-1 w-48 rounded-xl overflow-hidden z-20 py-1"
-                  style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "0 8px 24px rgba(0,0,0,0.16)" }}>
-                  <button className={menuItem} style={{ color: "var(--text-primary)" }} onClick={() => { setMenuOpen(false); setShowEdit(true); }}>
-                    <Pencil className="w-3.5 h-3.5" style={{ color: "var(--text-muted)" }} /> Edit
-                  </button>
-                  <button className={menuItem} style={{ color: "var(--text-primary)" }} onClick={() => { setMenuOpen(false); printInvoice(); }}>
-                    <Printer className="w-3.5 h-3.5" style={{ color: "var(--text-muted)" }} /> Print
-                  </button>
-                  <button className={menuItem} style={{ color: "var(--text-primary)" }} onClick={() => { setMenuOpen(false); doDuplicate(); }}>
-                    <Copy className="w-3.5 h-3.5" style={{ color: "var(--text-muted)" }} /> Duplicate
-                  </button>
-                  {invoice.status !== "void" && invoice.status !== "paid" && (
-                    <>
-                      <div className="my-1 h-px" style={{ backgroundColor: "var(--border-subtle)" }} />
-                      <button className={menuItem} style={{ color: "#dc2626" }} onClick={doVoid}>
-                        <Ban className="w-3.5 h-3.5" /> Void invoice
-                      </button>
-                    </>
-                  )}
-                </div>
-              )}
-            </div>
+            <ActionsMenu actions={actions} />
           </div>
         </div>
 
@@ -388,9 +365,9 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
       </div>
 
       <div className="flex-1 overflow-y-auto p-6" style={{ backgroundColor: "var(--bg-page)" }}>
-        {tab === "Details" && <DetailsTab id={id} />}
-        {tab === "Notes"   && <InvoiceNotesTab invoice={invoice} onSaved={refresh} />}
-        {tab === "History" && <InvoiceHistoryTab invoice={invoice} />}
+        {tab === "Overview" && <OverviewTab id={id} />}
+        {tab === "Notes"    && <InvoiceNotesTab invoice={invoice} onSaved={refresh} />}
+        {tab === "Activity" && <InvoiceActivityTab invoice={invoice} />}
       </div>
 
       {/* Preview modal */}
@@ -449,32 +426,34 @@ function InvoiceNotesTab({ invoice, onSaved }: { invoice: InvoiceRecord; onSaved
   );
 }
 
-// ─── History tab (created → sent → payments → paid) ───────
-function InvoiceHistoryTab({ invoice }: { invoice: InvoiceRecord }) {
-  const events: { label: string; detail?: string; at?: string }[] = [];
-  events.push({ label: "Invoice created", detail: invoice.invoiceNumber, at: invoice.createdAt });
-  if (invoice.status !== "draft") events.push({ label: "Marked sent", detail: `Due ${invoice.dueDate}` });
-  (invoice.payments ?? []).forEach(p => events.push({ label: "Payment recorded", detail: fmt(p.amount), at: p.at }));
-  if (invoice.status === "paid" && invoice.paidAt) events.push({ label: "Paid in full", at: invoice.paidAt });
-  if (invoice.status === "void") events.push({ label: "Invoice voided" });
+// ─── Activity tab (created → sent → payments → paid) ──────
+function InvoiceActivityTab({ invoice }: { invoice: InvoiceRecord }) {
+  const events: { label: string; detail?: string; at?: string; color: string }[] = [];
+  events.push({ label: "Invoice created", detail: invoice.invoiceNumber, at: invoice.createdAt, color: "#6b7280" });
+  if (invoice.status !== "draft") events.push({ label: "Marked sent", detail: `Due ${invoice.dueDate}`, color: "#4f46e5" });
+  (invoice.payments ?? []).forEach(p => events.push({ label: "Payment recorded", detail: fmt(p.amount), at: p.at, color: "#16a34a" }));
+  if (invoice.status === "paid" && invoice.paidAt) events.push({ label: "Paid in full", at: invoice.paidAt, color: "#16a34a" });
+  if (invoice.status === "void") events.push({ label: "Invoice voided", color: "#dc2626" });
 
   return (
-    <div className="max-w-2xl rounded-xl p-5" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
-      <p className="text-xs font-semibold uppercase tracking-widest mb-4" style={{ color: "var(--text-muted)" }}>History</p>
-      <div className="space-y-0">
-        {events.map((e, i) => (
-          <div key={i} className="flex gap-3 pb-4 last:pb-0">
-            <div className="flex flex-col items-center">
-              <div className="w-2 h-2 rounded-full mt-1.5 shrink-0" style={{ backgroundColor: "#4f46e5" }} />
-              {i < events.length - 1 && <div className="w-px flex-1 mt-1" style={{ backgroundColor: "var(--border-subtle)" }} />}
+    <div className="max-w-2xl">
+      <DCard className="p-5">
+        <DLabel>Activity</DLabel>
+        <div className="mt-4 space-y-0">
+          {events.map((e, i) => (
+            <div key={i} className="flex gap-3 pb-4 last:pb-0">
+              <div className="flex flex-col items-center">
+                <div className="w-2 h-2 rounded-full mt-1.5 shrink-0" style={{ backgroundColor: e.color }} />
+                {i < events.length - 1 && <div className="w-px flex-1 mt-1" style={{ backgroundColor: "var(--border-subtle)" }} />}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm" style={{ color: "var(--text-primary)" }}>{e.label}{e.detail ? <span style={{ color: "var(--text-muted)" }}> · {e.detail}</span> : null}</p>
+                {e.at && <p className="text-[10px] mt-0.5" style={{ color: "var(--text-muted)" }}>{e.at}</p>}
+              </div>
             </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-sm" style={{ color: "var(--text-primary)" }}>{e.label}{e.detail ? <span style={{ color: "var(--text-muted)" }}> · {e.detail}</span> : null}</p>
-              {e.at && <p className="text-[10px] mt-0.5" style={{ color: "var(--text-muted)" }}>{e.at}</p>}
-            </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      </DCard>
     </div>
   );
 }

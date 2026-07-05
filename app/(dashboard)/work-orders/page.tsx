@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { ClipboardList, Plus, Search, SlidersHorizontal, CalendarClock, ImageOff, CheckCircle2 } from "lucide-react";
 import { getAllJobs, getAllWorkOrders, type WorkOrderStatus } from "@/lib/jobs/data";
+import { recencyTs } from "@/lib/recency";
 import WorkOrderWizard from "@/components/jobs/WorkOrderWizard";
 import PageTitle from "@/components/shared/PageTitle";
 import { getFiles } from "@/lib/files/data";
@@ -51,7 +52,11 @@ export default function WorkOrdersPage() {
         wo.title.toLowerCase().includes(q) ||
         (job?.customerName ?? "").toLowerCase().includes(q)
       );
-    });
+    })
+    // Newest created/changed first.
+    .sort((a, b) =>
+      recencyTs(b.wo.id, b.wo.completedAt, b.wo.signedAt) -
+      recencyTs(a.wo.id, a.wo.completedAt, a.wo.signedAt));
 
   const tabCount = (key: "all" | WorkOrderStatus) =>
     key === "all"

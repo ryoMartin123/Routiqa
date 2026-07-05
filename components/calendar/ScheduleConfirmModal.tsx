@@ -19,13 +19,14 @@ export interface ScheduleDraft {
 
 // Confirmation before an unscheduled item becomes a scheduled job — never schedule silently.
 export default function ScheduleConfirmModal({
-  item, draft, technicians, dayStart, dayEnd, onConfirm, onClose, checkOverlap,
+  item, draft, technicians, dayStart, dayEnd, increment = 30, onConfirm, onClose, checkOverlap,
 }: {
   item: UnscheduledItem;
   draft: ScheduleDraft;
   technicians: string[];
   dayStart: number;   // board opening hour (24h)
   dayEnd: number;     // board closing hour (24h)
+  increment?: number; // board slot size — durations step in this unit
   onConfirm: (d: ScheduleDraft) => void;
   onClose: () => void;
   checkOverlap?: (d: ScheduleDraft) => boolean;   // true = clashes with another job in the lane
@@ -37,14 +38,16 @@ export default function ScheduleConfirmModal({
   // Only meaningful once a tech is assigned and the time is valid.
   const conflict = !isPast && !outsideHours && !!d.tech && !!checkOverlap?.(d);
 
-  // Suggest the best techs for THIS job at the drafted slot (proximity + free + skill).
+  // Suggest the best techs for THIS job — but only once a REAL slot is set
+  // (valid date + time). Suggestions rank by who's free/closest at that slot,
+  // so suggesting before a time exists would just be noise.
   const timeValid = !!d.date && !!d.time && !isPast && !outsideHours;
   const suggestions = useMemo(
-    () => suggestTechsForJob({
+    () => timeValid ? suggestTechsForJob({
       seed: item.sourceId, serviceAreaId: item.serviceAreaId, companyId: item.companyId, locationId: item.locationId,
       keywords: item.title, techNames: technicians,
-      isAvailable: name => timeValid ? !checkOverlap?.({ ...d, tech: name }) : true,
-    }).slice(0, 3),
+      isAvailable: name => !checkOverlap?.({ ...d, tech: name }),
+    }).slice(0, 3) : [],
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [item.sourceId, technicians, d.date, d.time, d.durationMinutes, timeValid],
   );
@@ -116,7 +119,8 @@ export default function ScheduleConfirmModal({
           )}
 
           <Field label="Duration (minutes)">
-            <NumberStepper min={15} step={15} suffix="min" value={String(d.durationMinutes)} onChange={v => set("durationMinutes", parseInt(v, 10) || 60)} />
+            {/* Durations step in the board's slot size — a 30-min board can't hold 15-min slivers. */}
+            <NumberStepper min={increment} step={increment} suffix="min" value={String(d.durationMinutes)} onChange={v => set("durationMinutes", parseInt(v, 10) || increment)} />
           </Field>
 
           {outsideHours && !isPast && (

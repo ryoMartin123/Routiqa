@@ -76,16 +76,17 @@ export default function JobWizard({ preset, onClose, onCreated }: {
       .map(u => ({ name: u.fullName, initials: u.initials }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [customer?.companyId, customer?.locationId]);
-  // Suggest the best techs for this job (proximity + on-duty + soft skill match).
-  // No overlap check here (creation flow) → all treated as available; the board's
-  // ScheduleConfirmModal adds live availability when scheduling from the queue.
+  // Suggest the best techs for this job (proximity + on-duty + soft skill match)
+  // — but only once a real date is entered. An unscheduled job goes to the queue
+  // and gets its suggestion when it's dragged onto the board, so suggesting here
+  // without a slot would be premature (and redundant with the schedule modal).
   const suggestions = useMemo(() => {
-    if (!customer || roster.length === 0) return [];
+    if (!customer || roster.length === 0 || !date) return [];
     return suggestTechsForJob({
       seed: customer.id, serviceAreaId: customer.serviceAreaId, companyId: customer.companyId, locationId: customer.locationId,
       keywords: `${jobTypeLabel(type)} ${title}`, techNames: roster.map(r => r.name),
     }).slice(0, 3);
-  }, [customer, roster, type, title]);
+  }, [customer, roster, type, title, date]);
 
   const properties = useMemo(() => (customerId ? getProperties(customerId) : []), [customerId]);
   // One property → just use it. Multiple → let the user pick which (default to

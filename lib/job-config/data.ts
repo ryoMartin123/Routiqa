@@ -54,14 +54,14 @@ export const JOB_TYPE_CATEGORY_LABELS: Record<JobTypeCategory, string> = {
 // JOB_TYPE_CONFIG, but it's no longer a configurable type.)
 const DEFAULT_JOB_TYPES: JobTypeDef[] = [
   { id: "jt-agr", name: "Maintenance",  key: "agreement_visit", description: "Preventive maintenance — also used for recurring agreement visits", duration: 90,  category: "maintenance", color: "#6366f1", active: true, order: 1, core: true, workOrderPolicy: "auto" },
-  { id: "jt-2", name: "Repair",       key: "repair",       description: "Diagnose and fix a problem",       duration: 60,  category: "service",     color: "#ef4444", active: true, order: 2, workOrderPolicy: "auto" },
-  { id: "jt-3", name: "Installation", key: "installation", description: "New equipment install",            duration: 240, category: "install",     color: "#10b981", active: true, order: 3, workOrderPolicy: "auto" },
-  { id: "jt-4", name: "Inspection",   key: "inspection",   description: "Site or equipment inspection",     duration: 60,  category: "service",     color: "#3b82f6", active: true, order: 4, workOrderPolicy: "auto" },
-  { id: "jt-5", name: "Emergency",    key: "emergency",    description: "Urgent / after-hours dispatch",    duration: 120, category: "emergency",   color: "#dc2626", active: true, order: 5, workOrderPolicy: "auto" },
-  { id: "jt-6", name: "Estimate",     key: "estimate",     description: "On-site estimate or consult",      duration: 45,  category: "sales",       color: "#8b5cf6", active: true, order: 6, workOrderPolicy: "optional" },
-  { id: "jt-7", name: "Warranty",     key: "warranty",     description: "Warranty-covered work",            duration: 90,  category: "warranty",    color: "#f59e0b", active: true, order: 7, workOrderPolicy: "auto" },
-  { id: "jt-8", name: "Replacement",  key: "replacement",  description: "Replace existing equipment",       duration: 240, category: "install",     color: "#0891b2", active: true, order: 8, workOrderPolicy: "auto" },
-  { id: "jt-9", name: "Other",        key: "other",        description: "Anything else",                    duration: 60,  category: "service",     color: "#6b7280", active: true, order: 9, workOrderPolicy: "optional" },
+  { id: "jt-2", name: "Repair",       key: "repair",       description: "Diagnose and fix a problem",       duration: 60,  category: "service",     color: "#ef4444", active: true, order: 2, workOrderPolicy: "auto", core: true },
+  { id: "jt-3", name: "Installation", key: "installation", description: "New equipment install",            duration: 240, category: "install",     color: "#10b981", active: true, order: 3, workOrderPolicy: "auto", core: true },
+  { id: "jt-4", name: "Inspection",   key: "inspection",   description: "Site or equipment inspection",     duration: 60,  category: "service",     color: "#3b82f6", active: true, order: 4, workOrderPolicy: "auto", core: true },
+  { id: "jt-5", name: "Emergency",    key: "emergency",    description: "Urgent / after-hours dispatch",    duration: 120, category: "emergency",   color: "#dc2626", active: true, order: 5, workOrderPolicy: "auto", core: true },
+  { id: "jt-6", name: "Estimate",     key: "estimate",     description: "On-site estimate or consult",      duration: 45,  category: "sales",       color: "#8b5cf6", active: true, order: 6, workOrderPolicy: "optional", core: true },
+  { id: "jt-7", name: "Warranty",     key: "warranty",     description: "Warranty-covered work",            duration: 90,  category: "warranty",    color: "#f59e0b", active: true, order: 7, workOrderPolicy: "auto", core: true },
+  { id: "jt-8", name: "Replacement",  key: "replacement",  description: "Replace existing equipment",       duration: 240, category: "install",     color: "#0891b2", active: true, order: 8, workOrderPolicy: "auto", core: true },
+  { id: "jt-9", name: "Other",        key: "other",        description: "Anything else",                    duration: 60,  category: "service",     color: "#6b7280", active: true, order: 9, workOrderPolicy: "optional", core: true },
 ];
 
 // ─── Job Statuses ─────────────────────────────────────────
@@ -93,14 +93,14 @@ export const STATUS_COLORS = [
 ];
 
 const DEFAULT_JOB_STATUSES: JobStatusDef[] = [
-  { id: "js-1",  name: "New",                 key: "new",                  order: 1,  color: "#6b7280", category: "open",      active: true },
+  { id: "js-1",  name: "New",                 key: "new",                  order: 1,  color: "#6b7280", category: "open",      active: true, core: true },
   { id: "js-2",  name: "Scheduled",           key: "scheduled",            order: 2,  color: "#6366f1", category: "scheduled", active: true, core: true },
   { id: "js-3",  name: "Dispatched",          key: "dispatched",           order: 3,  color: "#3b82f6", category: "scheduled", active: true, core: true },
   { id: "js-4",  name: "En Route",            key: "en_route",             order: 4,  color: "#3b82f6", category: "active",    active: true, core: true },
   { id: "js-5",  name: "In Progress",         key: "in_progress",          order: 5,  color: "#0891b2", category: "active",    active: true, core: true },
-  { id: "js-6",  name: "Waiting on Parts",    key: "waiting_on_parts",     order: 6,  color: "#f59e0b", category: "waiting",   active: true },
-  { id: "js-7",  name: "Waiting on Customer", key: "waiting_on_customer",  order: 7,  color: "#f59e0b", category: "waiting",   active: true },
-  { id: "js-8",  name: "Waiting on Approval", key: "waiting_on_approval",  order: 8,  color: "#f59e0b", category: "waiting",   active: true },
+  { id: "js-6",  name: "Waiting on Parts",    key: "waiting_on_parts",     order: 6,  color: "#f59e0b", category: "waiting",   active: true, core: true },
+  { id: "js-7",  name: "Waiting on Customer", key: "waiting_on_customer",  order: 7,  color: "#f59e0b", category: "waiting",   active: true, core: true },
+  { id: "js-8",  name: "Waiting on Approval", key: "waiting_on_approval",  order: 8,  color: "#f59e0b", category: "waiting",   active: true, core: true },
   { id: "js-9",  name: "Completed",           key: "completed",            order: 9,  color: "#10b981", category: "completed", active: true, core: true },
   { id: "js-10", name: "Invoiced",            key: "invoiced",             order: 10, color: "#8b5cf6", category: "completed", active: true, core: true },
   { id: "js-11", name: "Closed",              key: "closed",               order: 11, color: "#6b7280", category: "completed", active: true, core: true },

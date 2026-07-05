@@ -68,14 +68,14 @@ export default function WorkOrderTemplatesSection() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const reload = () => setTemplates(getTemplates());
 
+  // New/duplicated/edited templates go to the TOP of the stack: order 0 sorts
+  // first, then saveTemplates renumbers 1..n (stable sort keeps the rest put).
   function startNew() {
-    const max = templates.length ? Math.max(...templates.map(t => t.order)) : 0;
-    const t: WorkOrderTemplate = { id: woId("wt"), name: "New template", key: woSlug(`template_${Date.now()}`), description: "", jobTypeKey: jobTypes[0]?.key ?? "", priority: "normal", duration: 60, active: true, order: max + 1 };
+    const t: WorkOrderTemplate = { id: woId("wt"), name: "New template", key: woSlug(`template_${Date.now()}`), description: "", jobTypeKey: jobTypes[0]?.key ?? "", priority: "normal", duration: 60, active: true, order: 0 };
     saveTemplates([...templates, t]); reload(); setEditingId(t.id);
   }
   function duplicate(t: WorkOrderTemplate) {
-    const max = templates.length ? Math.max(...templates.map(x => x.order)) : 0;
-    const copy: WorkOrderTemplate = { ...t, id: woId("wt"), name: `${t.name} (Copy)`, key: woSlug(`${t.key}_copy_${Date.now()}`), order: max + 1 };
+    const copy: WorkOrderTemplate = { ...t, id: woId("wt"), name: `${t.name} (Copy)`, key: woSlug(`${t.key}_copy_${Date.now()}`), order: 0 };
     saveChecklist(copy.id, getChecklist(t.id).map(c => ({ ...c, id: woId("ci"), templateId: copy.id })));
     savePhotos(copy.id, getPhotos(t.id).map(p => ({ ...p, id: woId("rp"), templateId: copy.id })));
     saveInstructions({ ...getInstructions(t.id), templateId: copy.id });
@@ -111,7 +111,20 @@ export default function WorkOrderTemplatesSection() {
               style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)", opacity: t.active ? 1 : 0.65 }}>
               <div className="flex items-start gap-3 p-4">
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold truncate" style={{ color: "var(--text-primary)" }}>{t.name}</p>
+                  <div className="flex items-center gap-2 min-w-0">
+                    <p className="text-sm font-semibold truncate" style={{ color: "var(--text-primary)" }}>{t.name}</p>
+                    {/* Linked job type — the chip makes the type→template wiring visible at a glance. */}
+                    {(() => {
+                      const jt = jobTypes.find(j => j.key === t.jobTypeKey);
+                      return jt ? (
+                        <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded inline-flex items-center gap-1 shrink-0" style={{ backgroundColor: jt.color + "22", color: jt.color }}>
+                          <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: jt.color }} />{jt.name}
+                        </span>
+                      ) : (
+                        <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded shrink-0" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>No job type</span>
+                      );
+                    })()}
+                  </div>
                   <p className="text-[11px] mt-0.5 truncate" style={{ color: "var(--text-muted)" }}>{t.description || `For ${jobTypeName(t.jobTypeKey)} jobs`}</p>
                 </div>
                 <div onClick={e => e.stopPropagation()} className="shrink-0 -mt-1 -mr-1">
@@ -198,7 +211,8 @@ function TemplateBuilder({ templateId, jobTypes, onBack }: {
     if (lastSnap.current === null) { lastSnap.current = snap; return; }
     if (lastSnap.current === snap) return;
     lastSnap.current = snap;
-    saveTemplates(getTemplates().map(t => t.id === tpl.id ? tpl : t));
+    // Editing bubbles the template to the top of the stack (order 0 → renumbered first).
+    saveTemplates(getTemplates().map(t => t.id === tpl.id ? { ...tpl, order: 0 } : t));
     saveChecklist(templateId, checklist); savePhotos(templateId, photos); saveInstructions({ ...instructions, templateId });
     pingSaved();
     // eslint-disable-next-line react-hooks/exhaustive-deps

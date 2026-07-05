@@ -140,10 +140,22 @@ let _checklist: ChecklistItem[] | null = null;
 let _photos: RequiredPhoto[] | null = null;
 let _instructions: WOInstructions[] | null = null;
 
+// Legacy template job-type keys → real job-config keys. Early seeds linked
+// templates with a keyspace ("service_call", "maintenance_visit", …) that never
+// existed in lib/job-config, so those links resolved to nothing (the builder
+// showed "None" and job-type matching fell through to a blind fallback).
+// Migrated transparently on read.
+const LEGACY_JOBKEY: Record<string, string> = {
+  service_call: "repair", maintenance_visit: "agreement_visit",
+  callback: "repair", commercial_pm: "agreement_visit", warranty_visit: "warranty",
+};
+
 // Templates
 export function getTemplates(): WorkOrderTemplate[] {
   if (!_templates) _templates = read(T_KEY, DEFAULT_TEMPLATES);
-  return [..._templates].sort((a, b) => a.order - b.order);
+  return [..._templates]
+    .map(t => LEGACY_JOBKEY[t.jobTypeKey] ? { ...t, jobTypeKey: LEGACY_JOBKEY[t.jobTypeKey] } : t)
+    .sort((a, b) => a.order - b.order);
 }
 export function saveTemplates(list: WorkOrderTemplate[]): void {
   const ordered = [...list].sort((a, b) => a.order - b.order).map((t, i) => ({ ...t, order: i + 1 }));
@@ -194,27 +206,28 @@ export function woSlug(name: string): string {
   return name.toLowerCase().trim().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, "").slice(0, 48);
 }
 
-// Maps a job's `type` enum to the job-config job type key used by templates.
-const JOBTYPE_TO_JOBKEY: Record<string, string> = {
-  maintenance:     "maintenance_visit",
-  agreement_visit: "maintenance_visit",
-  repair:       "service_call",
-  installation: "installation",
-  inspection:   "inspection",
-  emergency:    "emergency",
-  estimate:     "estimate",
-  warranty:     "warranty",
-  replacement:  "installation",
-  other:        "service_call",
+// Job.type values ARE job-config keys, with two legacy aliases still carried by
+// old records. (Templates link via the same keyspace since the LEGACY_JOBKEY
+// migration above.)
+const TYPE_ALIAS: Record<string, string> = {
+  maintenance: "agreement_visit",   // legacy JobType, no longer configurable
+  replacement: "installation",      // no dedicated template — installs cover it
 };
 
-// Suggests the work order template for a given job type.
-// Matches by the template's linked job type, then falls back to a general
-// template, then the first active template.
+// Suggests the work order template for a given job type: the template LINKED to
+// that exact job type first, else the general service-call template. Never a
+// blind "first template" fallback — a Service job must not silently pick up a
+// Maintenance template just because it sorts first.
 export function suggestTemplateForJobType(jobType: string): WorkOrderTemplate | undefined {
-  const targetKey = JOBTYPE_TO_JOBKEY[jobType] ?? "service_call";
+  const key = TYPE_ALIAS[jobType] ?? jobType;
   const active = getTemplates().filter(t => t.active);
-  return active.find(t => t.jobTypeKey === targetKey)
-      ?? active.find(t => t.key === "general_service_call")
-      ?? active[0];
+  return active.find(t => t.jobTypeKey === key)
+      ?? active.find(t => t.key === "general_service_call");
+}
+
+// Every active template LINKED to this job type (a type can have several
+// variants — the picker shows these first and tucks the rest away).
+export function templatesForJobType(jobType: string): WorkOrderTemplate[] {
+  const key = TYPE_ALIAS[jobType] ?? jobType;
+  return getTemplates().filter(t => t.active && t.jobTypeKey === key);
 }

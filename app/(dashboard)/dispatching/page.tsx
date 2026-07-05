@@ -849,11 +849,12 @@ export default function CalendarPage() {
       )}
 
       {/* Drawer */}
-      {selScheduled && <CalendarItemDrawer scheduled={selScheduled} technicians={technicians} onClose={() => setSelScheduled(null)} onReassign={reassign} />}
+      {selScheduled && <CalendarItemDrawer scheduled={selScheduled} technicians={technicians} onClose={() => setSelScheduled(null)} onReassign={reassign}
+        increment={hourly.increment} onChanged={() => { setRefreshKey(k => k + 1); setSelScheduled(null); }} />}
       {selUnscheduled && <CalendarItemDrawer unscheduled={selUnscheduled} technicians={technicians} onClose={() => setSelUnscheduled(null)} onSchedule={() => scheduleFromDrawer(selUnscheduled)} />}
 
       {/* Confirm modal */}
-      {confirm && <ScheduleConfirmModal item={confirm.item} draft={confirm.draft} technicians={technicians} dayStart={hourly.startHour} dayEnd={hourly.endHour} onConfirm={confirmSchedule} onClose={() => setConfirm(null)} checkOverlap={slotConflict} />}
+      {confirm && <ScheduleConfirmModal item={confirm.item} draft={confirm.draft} technicians={technicians} dayStart={hourly.startHour} dayEnd={hourly.endHour} increment={hourly.increment} onConfirm={confirmSchedule} onClose={() => setConfirm(null)} checkOverlap={slotConflict} />}
 
       {/* Time off / availability modal */}
       {timeOffOpen && <TimeOffModal technicians={technicians} defaultDate={ymd(focus)} onClose={() => setTimeOffOpen(false)} onSave={handleAddTimeOff} />}
@@ -866,7 +867,7 @@ export default function CalendarPage() {
       {showVisitScheduler && (
         <ScheduleVisitModal
           visits={schedulable} technicians={technicians}
-          defaultDate={ymd(focus)} dayStart={hourly.startHour} dayEnd={hourly.endHour}
+          defaultDate={ymd(focus)} dayStart={hourly.startHour} dayEnd={hourly.endHour} increment={hourly.increment}
           checkOverlap={slotConflict} error={visitSchedErr}
           onConfirm={confirmScheduleVisit}
           onClose={() => setShowVisitScheduler(false)}
@@ -943,7 +944,26 @@ function DispatchBoard({ focus, mode, items, roster, availability, dayStart, day
   };
 
   // Live preview while moving / resizing a block (tech = target row); queue-drag row.
-  const [preview, setPreview] = useState<{ id: string; startMin: number; durationMinutes: number; tech: string } | null>(null);
+  // kind "move" renders as a dashed ghost at the target slot (origin block stays
+  // put, dimmed) — same language for same-lane and cross-tech; "resize" tracks
+  // live on the block itself. `committed` = the drop was accepted but the board's
+  // data hasn't re-rendered yet — hold the ghost so the block never flashes at
+  // its OLD slot across the commit gap (session items load via an effect).
+  const [preview, setPreview] = useState<{ id: string; startMin: number; durationMinutes: number; tech: string; kind: "move" | "resize"; committed?: boolean } | null>(null);
+
+  // Release a committed drag-ghost once the moved item actually renders at its
+  // new slot (data lands a commit after the drop) — never before, or the block
+  // would flash at the old position for a frame.
+  useEffect(() => {
+    if (!preview?.committed) return;
+    const it = items.find(i => i.id === preview.id);
+    const landed = !it || (
+      startMinOf(it) === preview.startMin &&
+      (preview.kind === "move" ? (it.assignedTo ?? "") === preview.tech : it.durationMinutes === preview.durationMinutes)
+    );
+    if (landed) setPreview(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items, preview]);
   const [dragTech, setDragTech] = useState<string | null>(null);
   // Live drop preview while dragging a queue job onto a lane (which lane + slot).
   const [queuePreview, setQueuePreview] = useState<{ tech: string; startMin: number } | null>(null);
@@ -979,20 +999,12 @@ function DispatchBoard({ focus, mode, items, roster, availability, dayStart, day
   function laneOverlap(tech: string, startMin: number, durationMinutes: number, excludeId: string): boolean {
     const end = startMin + durationMinutes;
     return dayItems.some(i => {
-      if (i.id === excludeId || (i.assignedTo ?? "") !== tech) return false;
+      // All-day items (reminders/reviews) aren't slot bookings — same rule as slotConflict.
+      if (i.allDay || i.id === excludeId || (i.assignedTo ?? "") !== tech) return false;
       const s = startMinOf(i);
       return startMin < s + i.durationMinutes && end > s;
     });
   }
-  // Does a point in time fall inside an existing block in this lane? (queue drops)
-  function pointInLane(tech: string, min: number): boolean {
-    return dayItems.some(i => {
-      if ((i.assignedTo ?? "") !== tech) return false;
-      const s = startMinOf(i);
-      return min >= s && min < s + i.durationMinutes;
-    });
-  }
-
   // "Now" indicator — the user's LOCAL current time, ticked each minute. Computed
   // client-side (new Date() is the browser's local zone) so it's hydration-safe
   // and always matches the viewer's clock.
@@ -1023,6 +1035,13 @@ function DispatchBoard({ focus, mode, items, roster, availability, dayStart, day
     return clamp(((clientX - rect.left) / rect.width) * totalMin, 0, totalMin);
   }
 
+  // ─── Now-line rule ────────────────────────────────────────
+  // The now-line is a wall: nothing schedules INTO the past. Moves clamp so the
+  // start never lands before now (a job can slip later, never earlier — and a
+  // missed job can be picked up and moved forward). Resizes can't make a running
+  // job end before now. Off-today (now == null) there's no wall.
+  const nowFloor = now == null ? 0 : Math.min(Math.ceil(now.min / increment) * increment, totalMin - increment);
+
   // Pointer-driven move (drag body, across rows) / resize (drag right edge).
   function beginDrag(e: React.MouseEvent, item: CalendarItem, kind: "move" | "resize") {
     e.preventDefault(); e.stopPropagation();
@@ -1030,58 +1049,100 @@ function DispatchBoard({ focus, mode, items, roster, availability, dayStart, day
     const track   = blockEl?.closest("[data-track]") as HTMLElement | null;
     if (!track || !blockEl) return;
     const base = startMinOf(item); const dur0 = item.durationMinutes;
-    const grab = commitFromX(e.clientX, track) - base;
+    // A visit that already ENDED is history — it can't be dragged around the
+    // board. Rebooking a missed/past visit goes through Reschedule in the visit
+    // panel, which validates the sequence properly. (Click still opens the panel.)
+    const lockedPast = now != null && base + dur0 <= now.min;
     const startX = e.clientX, startY = e.clientY;     // for click-vs-drag detection
     const originTech = item.assignedTo ?? "";
     let moved = false; let curStart = base; let curDur = dur0; let curTech = originTech;
     document.body.style.userSelect = "none";
     if (kind === "move") blockEl.style.pointerEvents = "none"; // so elementFromPoint sees the row below
+    // Fast drags fire mousemove faster than the board can render. Dedupe (snapping
+    // means most events resolve to the SAME slot) and coalesce updates into one
+    // per animation frame — without this the whole board re-renders per event and
+    // the tracked card stutters/flickers, worst on cross-lane moves where the
+    // card also swaps between "tracking" and "ghost" rendering.
+    let lastKey = ""; let raf = 0;
+    const pushPreview = () => {
+      const key = `${curStart}:${curDur}:${curTech}`;
+      if (key === lastKey) return;
+      lastKey = key;
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => setPreview({ id: item.id, startMin: curStart, durationMinutes: curDur, tech: curTech, kind }));
+    };
+    // Listener/style teardown only — each release path decides what happens to
+    // the preview (rejects clear it; a successful drop HOLDS it, see onUp).
+    const cleanup = () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+      cancelAnimationFrame(raf);
+      document.body.style.userSelect = "";
+      blockEl.style.pointerEvents = "";
+    };
     const onMove = (ev: MouseEvent) => {
       const mm = commitFromX(ev.clientX, track);
       // Treat it as a drag once the cursor travels past a small threshold in
       // EITHER axis — a near-vertical drag to another tech's row barely changes
       // X, so an X-only test would misread it as a click and open the drawer.
       if (Math.abs(ev.clientX - startX) > 4 || Math.abs(ev.clientY - startY) > 4) moved = true;
+      // Ended visits are locked: the first real drag movement ends the gesture
+      // with an explanation instead of tracking.
+      if (lockedPast) {
+        if (moved) { cleanup(); flashOverlap("This visit already ended — it can't be dragged. Use Reschedule in the visit panel to rebook it."); }
+        return;
+      }
       if (kind === "move") {
         curDur = dur0;
         const overTrack = (document.elementFromPoint(ev.clientX, ev.clientY) as HTMLElement | null)?.closest("[data-track]") as HTMLElement | null;
         if (overTrack?.dataset.tech) curTech = overTrack.dataset.tech;
-        // Cross-tech reassignment behaves like a queue drop — snap the START to the
-        // beginning of the time block under the cursor (ignore where you grabbed it).
-        // Same-tech nudges keep the grab offset so the block tracks your pointer.
-        curStart = curTech !== originTech
-          ? clamp(Math.floor(mm / increment) * increment, 0, totalMin - dur0)
-          : clamp(snap(mm - grab), 0, totalMin - dur0);
-      } else { curDur = clamp(snap(mm - base), 30, totalMin - base); curStart = base; }
+        // EVERY move — same lane or cross-tech — behaves like a queue drop: the
+        // ghost snaps its START to the slot boundary under the cursor (the grab
+        // offset is ignored). One snap feel everywhere.
+        curStart = clamp(Math.floor(mm / increment) * increment, nowFloor, totalMin - dur0);
+      } else {
+        // A job that already started can't be shrunk to end before now.
+        const minDur = Math.max(30, base < nowFloor ? nowFloor - base : 30);
+        const rawDur = mm - base;
+        const snappedDur = clamp(snap(rawDur), minDur, totalMin - base);
+        // Same hysteresis on the resize edge.
+        if (snappedDur !== curDur && Math.abs(rawDur - curDur) >= increment * 0.55) curDur = snappedDur;
+        curStart = base;
+      }
       // Reassigning to a different tech is always a move, never a click.
       if (curTech !== originTech) moved = true;
       // Only enter the live "tracking" preview once it's an actual drag. A click
       // carries a few px of jitter; without this guard that jitter flips the card
       // into tracking mode and flickers its subline (customer → time readout)
       // before the click resolves to a selection.
-      if (moved) setPreview({ id: item.id, startMin: curStart, durationMinutes: curDur, tech: curTech });
+      if (moved) pushPreview();
     };
     const onUp = () => {
-      window.removeEventListener("mousemove", onMove);
-      window.removeEventListener("mouseup", onUp);
-      document.body.style.userSelect = "";
-      blockEl.style.pointerEvents = "";
-      setPreview(null);
+      cleanup();
+      if (lockedPast) { setPreview(null); if (!moved) onSelect(item); return; }
       if (moved) {
         const targetTech = kind === "move" ? curTech : originTech;
         // Reject a move/resize that would overlap another job in the lane — revert.
-        if (laneOverlap(targetTech, curStart, curDur, item.id)) { flashOverlap(); return; }
+        if (laneOverlap(targetTech, curStart, curDur, item.id)) { setPreview(null); flashOverlap(); return; }
         // A linked/return visit must stay after the first visit — never let a drag
         // reorder the visits of the same job.
         if (visitOrderViolation(item, curStart, curDur)) {
+          setPreview(null);
           flashOverlap(item.visitIndex === 1
             ? "The first visit must stay before the return visit."
             : "A return visit must stay after the first visit.");
           return;
         }
+        // Accepted: HOLD the ghost (committed) across the commit gap — the board's
+        // data re-renders one commit later, and clearing now would flash the block
+        // at its old slot. The items-effect clears it once the move lands; the
+        // timeout is a safety net so a mismatch can never strand the ghost.
+        setPreview({ id: item.id, startMin: curStart, durationMinutes: curDur, tech: curTech, kind, committed: true });
+        window.setTimeout(() => setPreview(prev => (prev?.committed ? null : prev)), 400);
         const nd = new Date(focus); nd.setHours(dayStart + Math.floor(curStart / 60), curStart % 60, 0, 0);
         onMoveResize(item.id, nd, curDur, kind === "move" ? curTech : undefined);
       } else {
+        setPreview(null);
         onSelect(item);
       }
     };
@@ -1169,30 +1230,31 @@ function DispatchBoard({ focus, mode, items, roster, availability, dayStart, day
                     <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>{sc.label}</span>
                   </div>
                 )}
-                <p className="text-[9px] mt-0.5" style={{ color: "var(--text-muted)" }}>{techItems.length} job{techItems.length===1?"":"s"}{isUnassigned ? "" : ` · ~${openHrs}h open`}{!isUnassigned && routeMin > 0 ? ` · ~${routeMin}m drive` : ""}</p>
+                {/* One line, truncated — wrapping makes this cell taller than the
+                    64px track and un-levels the lane rows. */}
+                <p className="text-[9px] mt-0.5 truncate whitespace-nowrap" style={{ color: "var(--text-muted)" }}>{techItems.length} job{techItems.length===1?"":"s"}{isUnassigned ? "" : ` · ~${openHrs}h open`}{!isUnassigned && routeMin > 0 ? ` · ~${routeMin}m drive` : ""}</p>
               </div>
             </div>
 
             {/* Time track — drop target (queue → schedule) + interactive blocks */}
+            {/* minHeight (not height) so the track stretches to the full row when
+                the tech cell is taller — otherwise gridlines, the now-line, and
+                the drop highlight stop short and the lane looks broken mid-drag. */}
             <div data-track data-tech={tech.name}
-              className="flex-1 relative transition-colors"
-              style={{ height: `${ROW_H}px`, backgroundColor: isDropTarget ? "var(--accent-soft-bg)" : undefined }}
+              className="flex-1 relative transition-colors self-stretch"
+              style={{ minHeight: `${ROW_H}px`, backgroundColor: isDropTarget ? "var(--accent-soft-bg)" : undefined }}
               onDragOver={e => {
                 e.preventDefault();
                 if (dragTech !== tech.name) setDragTech(tech.name);
                 if (draggedQueueItem) {
                   const mm = Math.floor(commitFromX(e.clientX, e.currentTarget) / increment) * increment;
-                  const startMin = clamp(mm, 0, totalMin - increment);
-                  const dur = draggedQueueItem.durationMinutes || increment;
-                  // Only preview a slot we can actually drop on; a conflicting slot
-                  // is "can't drop here" → no board preview, cursor card shows instead.
-                  if (laneOverlap(tech.name, startMin, dur, "")) {
-                    overValidSlot = false;
-                    if (queuePreview) setQueuePreview(null);
-                  } else {
-                    overValidSlot = true;
-                    if (!queuePreview || queuePreview.tech !== tech.name || queuePreview.startMin !== startMin) setQueuePreview({ tech: tech.name, startMin });
-                  }
+                  // Floor at the now-line — a queue job can't be aimed at the past.
+                  const startMin = clamp(mm, nowFloor, totalMin - increment);
+                  // ALWAYS show the board ghost while over a lane — red when the slot
+                  // is taken (mirrors the move-preview). Toggling between the ghost
+                  // and the cursor card per-slot made the drag flicker ("glitchy").
+                  overValidSlot = true;
+                  if (!queuePreview || queuePreview.tech !== tech.name || queuePreview.startMin !== startMin) setQueuePreview({ tech: tech.name, startMin });
                 }
               }}
               onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget as Node)) { setDragTech(null); setQueuePreview(null); overValidSlot = false; } }}
@@ -1200,9 +1262,11 @@ function DispatchBoard({ focus, mode, items, roster, availability, dayStart, day
                 e.preventDefault(); setDragTech(null); setQueuePreview(null); overValidSlot = false;
                 const id = e.dataTransfer.getData("text/plain"); if (!id) return;
                 const mm = Math.floor(commitFromX(e.clientX, e.currentTarget) / increment) * increment;
-                const safe = clamp(mm, 0, totalMin - increment);
-                // Don't drop onto a slot already taken by another job in this lane.
-                if (pointInLane(tech.name, safe)) { flashOverlap(); return; }
+                const safe = clamp(mm, nowFloor, totalMin - increment);
+                // Don't drop onto a span already taken by another job in this lane —
+                // the same overlap test that turns the ghost red.
+                const dropDur = draggedQueueItem?.durationMinutes || increment;
+                if (laneOverlap(tech.name, safe, dropDur, "")) { flashOverlap(); return; }
                 onDropItem(id, tech.name, dayStart + Math.floor(safe / 60), safe % 60);
               }}>
               {/* Gridlines (visual only) */}
@@ -1210,27 +1274,31 @@ function DispatchBoard({ focus, mode, items, roster, availability, dayStart, day
                 {gridCells.map(c => <div key={c.key} className="h-full" style={{ flex: c.span, borderLeft: `1px ${c.half ? "dashed" : "solid"} var(--border-subtle)` }} />)}
               </div>
 
-              {/* Live drop preview — ghost of the dragged job at the valid slot it lands in */}
+              {/* Live drop preview — ghost of the dragged job at the slot under the
+                  cursor; red with "· taken" when that slot conflicts (same language
+                  as the move-preview, and no flickery ghost↔cursor-card swapping). */}
               {queuePreview && queuePreview.tech === tech.name && draggedQueueItem && (() => {
                 const dur = draggedQueueItem.durationMinutes || increment;
                 const left = clamp((queuePreview.startMin / totalMin) * 100, 0, 100);
                 const width = clamp((dur / totalMin) * 100, 1, 100 - left);
-                const c = draggedQueueItem.color;
+                const invalid = laneOverlap(tech.name, queuePreview.startMin, dur, "");
+                const c = invalid ? "#ef4444" : draggedQueueItem.color;
                 return (
                   <div className="absolute top-1 bottom-1 rounded-lg pointer-events-none overflow-hidden flex flex-col justify-center px-2 z-30"
                     style={{ left: `${left}%`, width: `${width}%`, backgroundColor: c + "26", border: `1.5px dashed ${c}` }}>
                     <p className="text-[10px] font-semibold truncate" style={{ color: "var(--text-primary)" }}>{draggedQueueItem.title}</p>
-                    <p className="text-[9px] truncate" style={{ color: "var(--text-muted)" }}>{minToTime(queuePreview.startMin)} – {minToTime(queuePreview.startMin + dur)}</p>
+                    <p className="text-[9px] truncate" style={{ color: invalid ? "#ef4444" : "var(--text-muted)" }}>{minToTime(queuePreview.startMin)} – {minToTime(queuePreview.startMin + dur)}{invalid ? " · taken" : ""}</p>
                   </div>
                 );
               })()}
 
-              {/* Live MOVE preview — ghost of an existing board job at the slot it
-                  lands in on ANOTHER tech's row. Mirrors the queue-drag ghost so
-                  reassigning across techs reads the same as scheduling from the queue. */}
-              {preview && preview.tech === tech.name && (() => {
+              {/* Live MOVE preview — dashed ghost of the dragged job at the slot it
+                  lands in (same lane OR another tech's row; the origin block stays
+                  put, dimmed). Mirrors the queue-drag ghost so every move reads the
+                  same: ghost = where it's going. */}
+              {preview && preview.kind === "move" && preview.tech === tech.name && (() => {
                 const mv = dayItems.find(x => x.id === preview.id);
-                if (!mv || (mv.assignedTo ?? "") === tech.name) return null;   // same lane → the block itself shows the move
+                if (!mv) return null;
                 const dur = preview.durationMinutes;
                 const left = clamp((preview.startMin / totalMin) * 100, 0, 100);
                 const width = clamp((dur / totalMin) * 100, 1, 100 - left);
@@ -1280,10 +1348,17 @@ function DispatchBoard({ focus, mode, items, roster, availability, dayStart, day
               {/* Job blocks */}
               {techItems.map(i => {
                 const p = preview?.id === i.id ? preview : null;
-                const movingAway = p ? p.tech !== (i.assignedTo ?? "") : false;  // dragging to another tech
-                // Same-lane move/resize → the block follows the cursor. Cross-tech move
-                // → the origin block stays put (faded) and the target lane shows the ghost.
-                const tracking = !!p && !movingAway;
+                // MOVE → the origin block stays put (dimmed) and a dashed ghost
+                // previews the target slot — same language whether the move is
+                // within the lane or to another tech. RESIZE → the block's right
+                // edge tracks the cursor live.
+                const movingAway = !!p && p.kind === "move";
+                const crossTech = movingAway && p!.tech !== (i.assignedTo ?? "");
+                // Same-lane move → the ghost IS the card; hide the origin so the
+                // lane doesn't show the job twice. Cross-tech keeps the dimmed
+                // origin ("→ tech") so it's clear where it's coming from.
+                if (movingAway && !crossTech) return null;
+                const tracking = !!p && p.kind === "resize";
                 const sm = tracking ? p!.startMin : startMinOf(i);
                 const dur = tracking ? p!.durationMinutes : i.durationMinutes;
                 const left = clamp((sm / totalMin) * 100, 0, 100);
@@ -1299,7 +1374,11 @@ function DispatchBoard({ focus, mode, items, roster, availability, dayStart, day
                     onMouseDown={e => beginDrag(e, i, "move")}
                     title="Drag to move (across techs) · drag right edge to resize"
                     className="absolute top-1.5 bottom-1.5 rounded-lg overflow-hidden select-none flex"
-                    style={{ left: `${left}%`, width: `${width}%`, backgroundColor: invalid ? "#ef444426" : typeColor + "26", cursor: p ? "grabbing" : "grab", boxShadow: p ? (invalid ? "0 0 0 2px #ef4444, 0 4px 14px rgba(0,0,0,0.25)" : "0 4px 14px rgba(0,0,0,0.25)") : undefined, opacity: movingAway ? 0.55 : 1, zIndex: p ? 20 : 1 }}>
+                    // NO left/width transition here: the drag previews via the dashed
+                    // ghost (which snaps slot-to-slot), and on drop the block must
+                    // appear AT the new time — a transition makes it visibly slide
+                    // from the old slot to the new one across the commit.
+                    style={{ left: `${left}%`, width: `${width}%`, backgroundColor: invalid ? "#ef444426" : typeColor + "26", cursor: p ? "grabbing" : "grab", boxShadow: tracking ? (invalid ? "0 0 0 2px #ef4444, 0 4px 14px rgba(0,0,0,0.25)" : "0 4px 14px rgba(0,0,0,0.25)") : undefined, opacity: movingAway ? 0.55 : 1, zIndex: tracking ? 20 : 1 }}>
                     {/* Stage icon as the full-height left section, colored by status —
                         click it to change status. */}
                     {/* Appointment cards carry the job id separately (sourceId is the
@@ -1314,7 +1393,7 @@ function DispatchBoard({ focus, mode, items, roster, availability, dayStart, day
                       <div className="flex items-center gap-1">
                         <p className="text-[10px] font-semibold truncate leading-tight flex-1 min-w-0" style={{ color: "var(--text-primary)" }}>{i.customerName ?? i.title}</p>
                         {i.techIds && i.techIds.length > 1 && <span className="text-[8px] font-bold px-1 rounded shrink-0" style={{ backgroundColor: "var(--bg-surface-2)", color: "var(--text-secondary)" }}>+{i.techIds.length - 1}</span>}
-                        {movingAway && <span className="text-[8px] font-bold px-1 rounded shrink-0" style={{ backgroundColor: "var(--accent-soft-2-bg)", color: "var(--accent-text)" }}>→ {p!.tech}</span>}
+                        {crossTech && <span className="text-[8px] font-bold px-1 rounded shrink-0" style={{ backgroundColor: "var(--accent-soft-2-bg)", color: "var(--accent-text)" }}>→ {p!.tech}</span>}
                         {!movingAway && prio && <span className="text-[8px] font-bold px-1 rounded shrink-0" style={{ backgroundColor: prio.bg, color: prio.color }}>{prio.label}</span>}
                         {!tracking && legMin[i.id] != null && (
                           <span className="inline-flex items-center gap-0.5 text-[8px] font-semibold shrink-0" title={`~${legMin[i.id]} min drive from the previous stop`} style={{ color: "var(--accent-text)" }}>

@@ -3,7 +3,7 @@
 import React, { use, useState, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowLeft, CheckCircle, Circle, ChevronRight, Phone, MapPin, User, Clock, Calendar, DollarSign, Briefcase, AlertTriangle, ListChecks, Plus, Trash2, Ban, RotateCcw, Info, Repeat, Users, Check, Receipt } from "lucide-react";
+import { ArrowLeft, CheckCircle, Circle, ChevronRight, Phone, MapPin, User, Clock, Calendar, DollarSign, Briefcase, AlertTriangle, ListChecks, Plus, Trash2, Ban, RotateCcw, Info, Repeat, Users, Check, Receipt, CircleDollarSign, Wallet } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getJob, updateJob, deleteJob, getWorkOrder, getWorkOrderById, getWorkOrdersForJob, getJobNotes, resolveJobStatus, type JobNoteType, type WorkOrderStatus } from "@/lib/jobs/data";
 import { getAppointmentsForJob, VISIT_TYPE_CONFIG, type AppointmentStatus } from "@/lib/appointments/data";
@@ -11,6 +11,8 @@ import { useDataVersion } from "@/lib/sync/useDataVersion";
 import ReturnVisitModal from "@/components/jobs/ReturnVisitModal";
 import { canAddVisit } from "@/lib/jobs/serviceCall";
 import WorkOrderWizard from "@/components/jobs/WorkOrderWizard";
+import JobPartsCard from "@/components/jobs/JobPartsCard";
+import NumberStepper from "@/components/ui/NumberStepper";
 import { getJobStatuses, jobTypeLabel } from "@/lib/job-config/data";
 import StatusBadge from "@/components/shared/StatusBadge";
 import ActionsMenu from "@/components/shared/ActionsMenu";
@@ -191,8 +193,9 @@ function OverviewTab({ jobId }: { jobId: string }) {
           </Card>
         </div>
 
-        {/* Right (1/3): Recent Activity + Visits */}
+        {/* Right (1/3): Parts on order (when waiting) + Recent Activity + Visits */}
         <div className="flex flex-col gap-4 min-h-0">
+          <JobPartsCard jobId={jobId} />
           <Card className="p-4 shrink-0">
             <SectionLabel>Recent Activity</SectionLabel>
             <div className="mt-3">
@@ -480,10 +483,8 @@ function JobDepositControl({ jobId }: { jobId: string }) {
           {onFile > 0 ? `${fmt(onFile)} paid deposit on file — credited on the final invoice.` : "Collect a down payment before work begins."}
         </p>
       </div>
-      <div className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-input)" }}>
-        <span className="text-sm" style={{ color: "var(--text-muted)" }}>$</span>
-        <input value={amt} onChange={e => setAmt(e.target.value)} onKeyDown={e => e.key === "Enter" && request()} type="number" min="0" step="0.01" placeholder="0.00"
-          className="w-24 text-sm outline-none bg-transparent" style={{ color: "var(--text-primary)" }} />
+      <div onKeyDown={e => e.key === "Enter" && request()}>
+        <NumberStepper size="sm" min={0} step={50} prefix="$" placeholder="0.00" value={amt} onChange={setAmt} className="w-32" />
       </div>
       <DetailActionButton icon={Receipt} onClick={request} disabled={!parseFloat(amt)}>Request deposit</DetailActionButton>
     </div>
@@ -593,17 +594,22 @@ function JobLedgerCard({ jobId }: { jobId: string }) {
 }
 
 // Small labeled figure for the Billing summary strip.
-function BillingKpi({ label, value, tone, color }: { label: string; value: string; tone?: "accent" | "green"; color?: string }) {
-  const c = color ?? (tone === "accent" ? "var(--accent-text)" : tone === "green" ? "#16a34a" : "var(--text-primary)");
+// Matches the Work Order Overview Stat card: icon + label row, bold value; the
+// accent (or status color) tints both the icon and value, muted/primary otherwise.
+function BillingKpi({ label, value, tone, color, icon: Icon }: { label: string; value: string; tone?: "accent" | "green"; color?: string; icon?: React.ElementType }) {
+  const accent = color ?? (tone === "accent" ? "var(--accent-text)" : tone === "green" ? "#16a34a" : undefined);
   return (
-    <div className="rounded-xl px-4 py-3" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
-      <p className="text-[10px] font-semibold uppercase tracking-wider truncate" style={{ color: "var(--text-muted)" }}>{label}</p>
-      <p className="text-lg font-bold tabular-nums mt-0.5 truncate" style={{ color: c }}>{value}</p>
+    <div className="rounded-xl p-3.5" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
+      <div className="flex items-center gap-1.5 mb-1.5">
+        {Icon && <Icon className="w-3.5 h-3.5 shrink-0" style={{ color: accent ?? "var(--text-muted)" }} />}
+        <p className="text-[10px] font-semibold uppercase tracking-widest truncate" style={{ color: "var(--text-muted)" }}>{label}</p>
+      </div>
+      <p className="text-base font-bold leading-tight truncate" style={{ color: accent ?? "var(--text-primary)" }}>{value}</p>
     </div>
   );
 }
 
-type Kpi = { label: string; value: string; tone?: "accent" | "green"; color?: string };
+type Kpi = { label: string; value: string; tone?: "accent" | "green"; color?: string; icon?: React.ElementType };
 const KPI_COLS: Record<number, string> = { 2: "md:grid-cols-2", 3: "md:grid-cols-3", 4: "md:grid-cols-4", 5: "md:grid-cols-5" };
 
 // Shared billing summary strip — used on both the Overview and Billing tabs.
@@ -623,16 +629,16 @@ function JobBillingKpis({ jobId, status }: { jobId: string; status?: { label: st
   const depositOnFile = getUnappliedDeposits(jobId).reduce((s, d) => s + d.total, 0);
 
   const kpis = [
-    status && { label: "Status", value: status.label, color: status.color },
-    showPricing && { label: "Unbilled", value: fmt(unbilled), tone: unbilled > 0 ? "accent" as const : undefined },
-    { label: "Invoiced", value: fmt(invoiced) },
-    { label: "Collected", value: fmt(collected), tone: "green" as const },
-    showPricing && { label: "Deposit on file", value: fmt(depositOnFile) },
+    status && { label: "Status", value: status.label, color: status.color, icon: CheckCircle },
+    showPricing && { label: "Unbilled", value: fmt(unbilled), tone: unbilled > 0 ? "accent" as const : undefined, icon: DollarSign },
+    { label: "Invoiced", value: fmt(invoiced), icon: Receipt },
+    { label: "Collected", value: fmt(collected), tone: "green" as const, icon: CircleDollarSign },
+    showPricing && { label: "Deposit on file", value: fmt(depositOnFile), icon: Wallet },
   ].filter(Boolean) as Kpi[];
 
   return (
     <div className={`grid grid-cols-2 ${KPI_COLS[kpis.length] ?? "md:grid-cols-4"} gap-3`}>
-      {kpis.map(k => <BillingKpi key={k.label} label={k.label} value={k.value} tone={k.tone} color={k.color} />)}
+      {kpis.map(k => <BillingKpi key={k.label} label={k.label} value={k.value} tone={k.tone} color={k.color} icon={k.icon} />)}
     </div>
   );
 }
@@ -669,9 +675,6 @@ function JobFinancialsTab({ jobId }: { jobId: string }) {
           onClose={() => setWizard(false)} />
       )}
 
-      <JobBillingKpis jobId={jobId} />
-
-      <JobLedgerCard jobId={jobId} />
       <JobDepositControl jobId={jobId} />
 
       {/* Quotes + Invoices — side by side once there's room, stacked on narrow */}
@@ -683,13 +686,14 @@ function JobFinancialsTab({ jobId }: { jobId: string }) {
           const s = QUOTE_STATUS_STYLE[q.status];
           return (
             <Link key={q.id} href={`/quotes/${q.id}`}
-              className="flex items-center gap-4 px-4 py-3 hover:bg-[var(--bg-surface-2)] transition-colors"
+              className="group flex items-center gap-4 px-4 py-3 hover:bg-[var(--bg-surface-2)] transition-colors"
               style={{ borderBottom: i < quotes.length - 1 ? "1px solid var(--border)" : "none", textDecoration: "none" }}>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-mono font-medium" style={{ color: "var(--text-primary)" }}>{q.quoteNumber}</p>
                 <p className="text-xs mt-0.5 truncate" style={{ color: "var(--text-muted)" }}>{q.title}</p>
               </div>
-              <StatusBadge label={s.label} color={s.color} className="shrink-0" />
+              {/* Status appears on row hover only — rows stay quiet at rest. */}
+              <StatusBadge label={s.label} color={s.color} className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
               <span className="text-sm font-semibold shrink-0" style={{ color: "var(--text-primary)" }}>{q.total > 0 ? fmt(q.total) : "TBD"}</span>
               <ChevronRight className="w-4 h-4 shrink-0" style={{ color: "var(--text-muted)" }} />
             </Link>
@@ -704,7 +708,7 @@ function JobFinancialsTab({ jobId }: { jobId: string }) {
           const s = INVOICE_STATUS_STYLE[inv.status];
           return (
             <Link key={inv.id} href={`/invoices/${inv.id}`}
-              className="flex items-center gap-4 px-4 py-3 hover:bg-[var(--bg-surface-2)] transition-colors"
+              className="group flex items-center gap-4 px-4 py-3 hover:bg-[var(--bg-surface-2)] transition-colors"
               style={{ borderBottom: i < invoices.length - 1 ? "1px solid var(--border)" : "none", textDecoration: "none" }}>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-mono font-medium flex items-center gap-1.5" style={{ color: "var(--text-primary)" }}>
@@ -713,7 +717,8 @@ function JobFinancialsTab({ jobId }: { jobId: string }) {
                 </p>
                 <p className="text-xs mt-0.5 truncate" style={{ color: "var(--text-muted)" }}>{inv.title}</p>
               </div>
-              <StatusBadge label={s.label} color={s.color} className="shrink-0" />
+              {/* Status appears on row hover only — rows stay quiet at rest. */}
+              <StatusBadge label={s.label} color={s.color} className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
               <div className="text-right shrink-0">
                 <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{fmt(inv.total)}</p>
                 {inv.balanceDue > 0 && <p className="text-[10px]" style={{ color: inv.status === "past_due" ? "#dc2626" : "var(--text-muted)" }}>{fmt(inv.balanceDue)} due</p>}
@@ -724,6 +729,9 @@ function JobFinancialsTab({ jobId }: { jobId: string }) {
         })}
       </Section>
       </div>
+
+      {/* Billable work last — it's edited at the job layer, below the documents. */}
+      <JobLedgerCard jobId={jobId} />
     </div>
   );
 }

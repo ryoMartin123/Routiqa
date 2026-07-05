@@ -10,6 +10,7 @@ import { QUOTE_STATUS_STYLE, type QuoteStatus } from "@/lib/quotes/types";
 type QuoteTab = "all" | "archived" | QuoteStatus;
 import QuoteTypeChooser from "@/components/quotes/create/QuoteTypeChooser";
 import { useHierarchy } from "@/components/providers/HierarchyProvider";
+import { recencyTs } from "@/lib/recency";
 import ModuleSummaryCards, { type SummaryCard } from "@/components/shared/ModuleSummaryCards";
 import PageTitle from "@/components/shared/PageTitle";
 import ModuleViewToggle, { type ModuleView } from "@/components/shared/ModuleViewToggle";
@@ -35,7 +36,14 @@ const STATUS_TABS: { key: QuoteTab; label: string }[] = [
   { key: "archived",  label: "Archived"  },
 ];
 
-type SortField = "quoteNumber" | "customerName" | "status" | "total" | "createdAt";
+// "recent" is the default pseudo-sort: newest created/changed first (top of the
+// list, front of the card grid). Clicking a column header switches to that field.
+type SortField = "recent" | "quoteNumber" | "customerName" | "status" | "total" | "createdAt";
+
+// Recency = newest created/changed (any logged activity counts).
+function quoteRecency(q: QuoteRecord): number {
+  return recencyTs(q.id, q.updatedAt, q.createdAt, ...(q.activity ?? []).map(a => a.iso ?? a.at));
+}
 
 // Full column layout (Quote# · Customer · Property · Related · Status · Total · Assigned · Location · Created · Expires)
 const GRID_COLS = "110px 1.7fr 1.4fr 1.4fr 100px 110px 1fr 1fr 110px 110px";
@@ -53,7 +61,7 @@ export default function QuotesPage() {
 
   const [tab, setTab]         = useState<QuoteTab>("all");
   const [search, setSearch]   = useState("");
-  const [sortField, setSort]  = useState<SortField>("createdAt");
+  const [sortField, setSort]  = useState<SortField>("recent");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [quotes, setQuotes]   = useState<QuoteRecord[]>([]);
   const [archived, setArchived] = useState<QuoteRecord[]>([]);
@@ -85,10 +93,11 @@ export default function QuotesPage() {
       );
     })
     .sort((a, b) => {
-      const av = String(a[sortField] ?? ""), bv = String(b[sortField] ?? "");
+      if (sortField === "recent") return quoteRecency(b) - quoteRecency(a);
       if (sortField === "total") {
         return sortDir === "asc" ? a.total - b.total : b.total - a.total;
       }
+      const av = String(a[sortField] ?? ""), bv = String(b[sortField] ?? "");
       return sortDir === "asc" ? av.localeCompare(bv) : bv.localeCompare(av);
     });
 
@@ -124,7 +133,7 @@ export default function QuotesPage() {
         <div className="flex-1 min-w-0">
           <PageTitle title="Quotes" count={contextFiltered.length} description="Create, track, and send customer quotes and proposals." />
         </div>
-        <ModuleViewToggle view={moduleView} onChange={setModuleView} />
+        <ModuleViewToggle view={moduleView} onChange={setModuleView} withCards overviewFirst />
         <div className="flex-1 flex justify-end">
           <button onClick={() => setShowCreate(true)}
             className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-3 py-2 rounded-lg transition-colors">
@@ -139,7 +148,7 @@ export default function QuotesPage() {
         </div>
       )}
 
-      {moduleView === "list" && (
+      {(moduleView === "list" || moduleView === "cards") && (
       <>
         {/* Toolbar — tabs · search · filter, OUTSIDE the table card (consistent with Customers/Leads) */}
         <div className="flex items-center justify-between flex-wrap gap-2 mb-3">
@@ -158,6 +167,18 @@ export default function QuotesPage() {
           </div>
         </div>
 
+        {moduleView === "cards" ? (
+          displayed.length === 0 ? (
+            <div className="rounded-xl py-16 text-center" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
+              <p className="text-sm" style={{ color: "var(--text-muted)" }}>No quotes match the current filter.</p>
+            </div>
+          ) : (
+            <div className="grid gap-3 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
+              {displayed.map(q => <QuoteCard key={q.id} quote={q} />)}
+            </div>
+          )
+        ) : (
+        <>
         {/* Table card */}
         <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
         {/* Table — horizontal scroll so all columns stay visible on narrow screens */}
@@ -247,9 +268,45 @@ export default function QuotesPage() {
         </div>
       </div>
       </>
+        )}
+      </>
       )}
 
       {showCreate && <QuoteTypeChooser onClose={() => setShowCreate(false)} />}
     </div>
+  );
+}
+
+// ─── Card view — one quote per card, status color on the left edge ───────────
+function QuoteCard({ quote: q }: { quote: QuoteRecord }) {
+  const s = QUOTE_STATUS_STYLE[q.status];
+  const lt = q.linkedType ? LINKED_TYPE_STYLE[q.linkedType] : null;
+  return (
+    <Link href={`/quotes/${q.id}`}
+      className="group block rounded-lg p-3 transition-all hover:-translate-y-0.5 hover:shadow-md"
+      style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", borderLeft: `3px solid ${s.color}`, textDecoration: "none" }}>
+      <div className="flex items-start justify-between gap-2 mb-1.5">
+        <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
+          <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded inline-flex items-center gap-1 shrink-0" style={{ backgroundColor: s.color + "22", color: s.color }}>
+            <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: s.color }} />{s.label}
+          </span>
+          <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded font-mono shrink-0" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>{q.quoteNumber}</span>
+        </div>
+        <span className="text-xs font-bold shrink-0" style={{ color: q.total > 0 ? "var(--text-primary)" : "var(--text-muted)" }}>{q.total > 0 ? fmt(q.total) : "TBD"}</span>
+      </div>
+      <p className="text-sm font-semibold truncate" style={{ color: "var(--text-primary)" }}>{q.title}</p>
+      <p className="text-xs truncate" style={{ color: "var(--text-secondary)" }}>{q.customerName}</p>
+      <div className="flex items-center justify-between gap-2 mt-2 pt-2" style={{ borderTop: "1px solid var(--border)" }}>
+        {q.linkedLabel && lt ? (
+          <span className="inline-flex items-center gap-1.5 min-w-0 text-[10px] font-medium" style={{ color: "var(--text-muted)" }}>
+            <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: lt.color }} />
+            <span className="truncate">{q.linkedLabel}</span>
+          </span>
+        ) : (
+          <span className="text-[10px] truncate" style={{ color: "var(--text-muted)" }}>{q.expiresAt ? `Expires ${q.expiresAt}` : `Created ${q.createdAt}`}</span>
+        )}
+        <span className="text-[10px] shrink-0" style={{ color: "var(--text-muted)" }}>{q.createdAt}</span>
+      </div>
+    </Link>
   );
 }

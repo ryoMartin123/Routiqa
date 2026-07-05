@@ -28,7 +28,7 @@ export default function ModuleViewToggle({
   const cardsTab    = { key: "cards" as const,     icon: LayoutGrid, label: "Cards" };
   const overviewTab = { key: "overview" as const,  icon: BarChart3,  label: "Overview" };
   const tabs = overviewFirst
-    ? [overviewTab, ...(withCards ? [cardsTab] : []), listTab]
+    ? [overviewTab, listTab, ...(withCards ? [cardsTab] : [])]
     : [listTab, ...(withCards ? [cardsTab] : []), overviewTab];
   return (
     <div className={centered ? "flex justify-center" : "flex"}>

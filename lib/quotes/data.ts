@@ -9,7 +9,8 @@
 import type { Quote, Invoice, QuoteStatus, QuoteMode, QuoteRenderMode, QuotePricing, InvoiceStatus, LineItemCategory, QuoteSection } from "./types";
 import type { QuoteBlock } from "./blocks";
 import { QUOTE_STATUS_STYLE } from "./types";
-import { createJob, getJob, getWorkOrderById, type Job, type WorkOrderLineItem } from "@/lib/jobs/data";
+import { createJob, getJob, getWorkOrderById, createWorkOrder, updateWorkOrderById, updateJob, type Job, type WorkOrder, type WorkOrderLineItem } from "@/lib/jobs/data";
+import { createPartOrder } from "@/lib/jobs/parts";
 import { isBilled, markLinesBilled, markLedgerLinesBilled, releaseInvoiceLines, markInvoicePaid, getJobLedger } from "@/lib/billing/ledger";
 import { createProject, type Project } from "@/lib/projects/data";
 import { currentUser } from "@/lib/hierarchy/data";   // signed-in user (org admin) — drives createdBy / assignedTo / activity actor
@@ -381,6 +382,45 @@ export function convertQuoteToProject(id: string, actor = currentUser.fullName):
     { status: "converted", projectId: project.id, linkedType: "project", linkedId: project.id, linkedLabel: `Project: ${q.title}` },
     newActivity("converted", `Converted to a project from ${q.quoteNumber}`, actor));
   return project;
+}
+
+// ─── Quote → return-visit bridge ──────────────────────────
+// An approved field quote (raised on a job's work order) sets up the return
+// visit in one step: a new work order on the same job pre-seeded with the
+// quoted lines — so what the tech bills is exactly what was quoted — the job
+// parked on Waiting on Parts, and an optional down-payment invoice.
+export function createReturnVisitFromQuote(
+  quoteId: string,
+  opts?: { depositAmount?: number; actor?: string },
+): { workOrder: WorkOrder; deposit?: InvoiceRecord } | undefined {
+  const q = getQuote(quoteId);
+  if (!q?.jobId) return;
+  const job = getJob(q.jobId);
+  if (!job) return;
+  const kindOf = (c?: string): WorkOrderLineItem["kind"] =>
+    c === "Labor" ? "labor" : c === "Materials" || c === "Equipment" ? "part" : "fee";
+  const lines: WorkOrderLineItem[] = q.lineItems.map((li, i) => ({
+    id: `wol-${Date.now()}-${i}`, kind: kindOf(li.category), description: li.description,
+    qty: li.quantity, unitPrice: li.unitPrice, taxable: li.taxable,
+  }));
+  const wo = createWorkOrder({
+    jobId: job.id,
+    title: `Return visit — ${q.title}`,
+    instructions: `Approved on quote ${q.quoteNumber}. Line items are seeded from the quote — capture any changes here and bill from this work order.`,
+    checklist: [],
+  });
+  updateWorkOrderById(wo.id, { lineItems: lines });
+  updateJob(job.id, { status: "waiting_on_parts" });
+  // Track each quoted part as an ordered part — receiving them all flips the job
+  // to "ready to reschedule" (surfaced automatically in the dispatch queue).
+  lines.filter(l => l.kind === "part").forEach(l =>
+    createPartOrder({ jobId: job.id, workOrderId: wo.id, description: l.description, note: `From quote ${q.quoteNumber}` }));
+  const deposit = opts?.depositAmount && opts.depositAmount > 0
+    ? createDepositInvoice(job.id, opts.depositAmount, "Down payment")
+    : undefined;
+  persistEdit(quoteId, {},
+    newActivity("status", `Return visit set up — work order seeded with ${lines.length} quoted line${lines.length === 1 ? "" : "s"}${deposit ? `, ${fmt(deposit.total)} down payment invoiced` : ""}`, opts?.actor ?? currentUser.fullName));
+  return { workOrder: wo, deposit };
 }
 
 // Duplicate a quote into a fresh draft (new number, cleared status/approval).

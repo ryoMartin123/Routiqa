@@ -38,6 +38,7 @@ const SalesbookLibrarySection   = dynamic(() => import("@/components/settings/Sa
 const TermsConditionsSection    = dynamic(() => import("@/components/settings/TermsConditionsSection"),    { loading: SectionLoading, ssr: false });
 const TaxesFeesSection          = dynamic(() => import("@/components/settings/TaxesFeesSection"),          { loading: SectionLoading, ssr: false });
 const AgreementsSettingsSection = dynamic(() => import("@/components/settings/AgreementsSettingsSection"), { loading: SectionLoading, ssr: false });
+const ReferenceSection          = dynamic(() => import("@/components/settings/ReferenceSection"),          { loading: SectionLoading, ssr: false });
 import { SettingsScopeProvider } from "@/components/providers/SettingsScopeProvider";
 import SectionGate from "@/components/settings/SectionGate";
 import EditingScopeHeader from "@/components/settings/EditingScopeHeader";
@@ -51,7 +52,7 @@ type SectionKey =
   | "pipelines" | "job_types" | "projects" | "work_orders" | "tasks" | "photo_categories" | "calendar_dispatch" | "tracking" | "agreements"
   | "items_categories" | "salesbook_library" | "terms_conditions" | "taxes_fees"
   | "communication"
-  | "industry" | "custom_fields" | "dashboard_layouts";
+  | "industry" | "custom_fields" | "dashboard_layouts" | "reference";
 
 type CategoryKey =
   | "operations" | "sales_catalog" | "customization" | "communication";
@@ -87,7 +88,7 @@ const CATEGORIES: Category[] = [
     icon: Briefcase,
     items: [
       { key: "pipelines",        label: "Pipelines",            description: "Lead pipeline stages and order",                 icon: TrendingUp },
-      { key: "job_types",        label: "Job Types & Statuses", description: "Job categories and status labels",               icon: Briefcase },
+      { key: "job_types",        label: "Job Types",            description: "Job categories, colors, and work-order policy",  icon: Briefcase },
       { key: "projects",         label: "Projects",             description: "Project pipeline stages, types, templates, and defaults", icon: FolderKanban },
       { key: "work_orders",      label: "Work Orders",          description: "Checklist templates and field instructions",     icon: ClipboardList },
       { key: "tasks",            label: "Tasks & Comments",     description: "Task types, defaults, and contextual-comment behavior", icon: ListChecks },
@@ -116,6 +117,7 @@ const CATEGORIES: Category[] = [
       { key: "industry",       label: "Industry Defaults",    description: "Default pipeline, job types, and fields by industry", icon: Factory },
       { key: "custom_fields",  label: "Custom Fields",        description: "Add custom fields to any record type",                icon: Sliders },
       { key: "dashboard_layouts", label: "Dashboard Layouts", description: "Save, apply, and import dashboard layout templates",  icon: LayoutDashboard },
+      { key: "reference",       label: "Reference",            description: "How the system works — job status lifecycle and record model", icon: BookOpen },
     ],
   },
   {
@@ -147,6 +149,7 @@ const SECTION_LAYERS: Record<SectionKey, SectionLayers> = {
   industry:           ["org", "company"],
   custom_fields:      ["org", "company"],
   dashboard_layouts:  "any",
+  reference:          "any",
 };
 
 // Sections that render as a hub: a container picker first, then the chosen
@@ -305,6 +308,7 @@ export default function SettingsPage() {
       case "tracking":           return <TrackingSection />;
       case "dashboard_layouts":  return <DashboardLayoutsSection />;
       case "industry":           return <IndustryDefaultsSection />;
+      case "reference":          return <ReferenceSection />;
       default:                   return null;
     }
   }

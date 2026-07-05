@@ -2,6 +2,7 @@
 // CalendarItem[]. Filtering by hierarchy scope happens here so views stay dumb.
 
 import { ALL_JOBS, getAllJobs, getSessionJobs, getJob, getWorkOrderById, WORK_ORDERS, JOB_STATUS_CONFIG, type Job } from "@/lib/jobs/data";
+import { jobPartsReady } from "@/lib/jobs/parts";
 import { getAllAppointments, getAppointmentsForJob, jobIdsWithAppointments, type Appointment } from "@/lib/appointments/data";
 import { getAllTasks } from "@/lib/tasks/data";
 import { getAllAgreements, getVisitsToSchedule, type CustomerAgreement, type AgreementVisit } from "@/lib/agreements/data";
@@ -276,6 +277,23 @@ export function getUnscheduledItems(scope: CalendarScope, agreementLeadDays = 30
       customerName: q.customerName, accountId: q.customerId, value: `$${q.total.toLocaleString()}`,
       sourceId: q.id, sourceModule: "quotes", color: LAYER_CONFIG.job.color,
       priority: "high", durationMinutes: 240, jobType: "installation",
+    });
+  }
+
+  // Jobs parked on Waiting on Parts whose ordered parts have ALL arrived — the
+  // return visit is ready to book, so it surfaces here on its own.
+  for (const job of getAllJobs()) {
+    if (job.status !== "waiting_on_parts") continue;
+    if (!jobPartsReady(job.id)) continue;
+    if (!inScope({ companyId: job.companyId, locationId: job.locationId, serviceAreaId: job.serviceAreaId }, scope)) continue;
+    out.push({
+      id: `uq-parts-${job.id}`, type: "job", sourceType: "job", title: job.title,
+      reason: "Parts received — schedule the return visit", status: "waiting_on_parts",
+      companyId: job.companyId, locationId: job.locationId, serviceAreaId: job.serviceAreaId,
+      customerName: job.customerName, accountId: job.accountId,
+      sourceId: job.id, sourceModule: "jobs", color: LAYER_CONFIG.job.color,
+      priority: "high", durationMinutes: job.durationMinutes || 120, jobType: job.type,
+      address: job.propertyAddress,
     });
   }
 

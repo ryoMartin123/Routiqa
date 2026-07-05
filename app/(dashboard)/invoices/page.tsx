@@ -3,17 +3,23 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Search, Plus, SlidersHorizontal, ChevronUp, ChevronDown, AlertTriangle, CalendarClock, CheckCircle2, DollarSign } from "lucide-react";
+import { Search, Plus, SlidersHorizontal, ChevronUp, ChevronDown, AlertTriangle, CalendarClock, CheckCircle2, DollarSign, ArrowUpRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getAllInvoices, fmt, type InvoiceRecord } from "@/lib/quotes/data";
 import { INVOICE_STATUS_STYLE, type InvoiceStatus } from "@/lib/quotes/types";
 import InvoiceWizard from "@/components/quotes/InvoiceWizard";
 import { useHierarchy } from "@/components/providers/HierarchyProvider";
+import { recencyTs } from "@/lib/recency";
 import ModuleSummaryCards, { type SummaryCard } from "@/components/shared/ModuleSummaryCards";
 import ModuleViewToggle, { type ModuleView } from "@/components/shared/ModuleViewToggle";
 import StatusBadge from "@/components/shared/StatusBadge";
 import StatusTabs from "@/components/shared/StatusTabs";
 import PageTitle from "@/components/shared/PageTitle";
+
+// Recency = newest created/changed (payments count as activity).
+function invoiceRecency(i: InvoiceRecord): number {
+  return recencyTs(i.id, i.updatedAt, i.createdAt, ...(i.payments ?? []).map(p => p.at));
+}
 
 const NOW = new Date();
 function daysUntil(dateStr?: string): number {
@@ -38,14 +44,28 @@ const STATUS_TABS: { key: "all" | InvoiceStatus; label: string }[] = [
   { key: "void",           label: "Void"    },
 ];
 
-type SortField = "invoiceNumber" | "customerName" | "status" | "total" | "balanceDue" | "dueDate";
+// "recent" is the default pseudo-sort: newest created/changed first (top of the
+// list, front of the card grid). Clicking a column header switches to that field.
+type SortField = "recent" | "invoiceNumber" | "customerName" | "status" | "total" | "balanceDue" | "dueDate";
 
 const LINKED_TYPE_STYLE: Record<string, { bg: string; color: string }> = {
-  quote:     { bg: "#f5f3ff", color: "#6d28d9" },
-  job:       { bg: "#e0e7ff", color: "#3730a3" },
-  project:   { bg: "#ede9fe", color: "#5b21b6" },
-  agreement: { bg: "#ecfdf5", color: "#059669" },
+  quote:      { bg: "#f5f3ff", color: "#6d28d9" },
+  job:        { bg: "#e0e7ff", color: "#3730a3" },
+  project:    { bg: "#ede9fe", color: "#5b21b6" },
+  agreement:  { bg: "#ecfdf5", color: "#059669" },
+  work_order: { bg: "#ecfeff", color: "#0891b2" },
 };
+
+// Where the "Linked To" cell navigates, and which type colors it. Invoices
+// raised from a field work order carry linkedType "job" but label the work
+// order — those route to the work order itself.
+function linkedTarget(inv: InvoiceRecord): { href: string; type: string } | null {
+  if (inv.workOrderId && inv.linkedLabel?.startsWith("Work Order")) {
+    return { href: `/work-orders/${inv.workOrderId}`, type: "work_order" };
+  }
+  if (!inv.linkedType || !inv.linkedId) return null;
+  return { href: `/${inv.linkedType}s/${inv.linkedId}`, type: inv.linkedType };
+}
 
 export default function InvoicesPage() {
   const { effectiveCompanyId, effectiveLocationId, effectiveServiceAreaId } = useHierarchy();
@@ -53,7 +73,7 @@ export default function InvoicesPage() {
   const router = useRouter();
   const [tab, setTab]         = useState<"all" | InvoiceStatus>("all");
   const [search, setSearch]   = useState("");
-  const [sortField, setSort]  = useState<SortField>("dueDate");
+  const [sortField, setSort]  = useState<SortField>("recent");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [invoices, setInvoices] = useState<InvoiceRecord[]>([]);
   const [showCreate, setShowCreate] = useState(false);
@@ -78,6 +98,7 @@ export default function InvoicesPage() {
       );
     })
     .sort((a, b) => {
+      if (sortField === "recent") return invoiceRecency(b) - invoiceRecency(a);
       if (sortField === "total" || sortField === "balanceDue") {
         const av = a[sortField], bv = b[sortField];
         return sortDir === "asc" ? av - bv : bv - av;
@@ -123,7 +144,7 @@ export default function InvoicesPage() {
           <PageTitle title="Invoices" count={contextFiltered.length}
             description="Track customer invoices, balances, payments, and billing status." />
         </div>
-        <ModuleViewToggle view={moduleView} onChange={setModuleView} />
+        <ModuleViewToggle view={moduleView} onChange={setModuleView} withCards overviewFirst />
         <div className="flex-1 flex justify-end">
           <button onClick={() => setShowCreate(true)} className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-3 py-2 rounded-lg transition-colors">
             <Plus className="w-4 h-4" /> New Invoice
@@ -137,7 +158,7 @@ export default function InvoicesPage() {
         </div>
       )}
 
-      {moduleView === "list" && (
+      {(moduleView === "list" || moduleView === "cards") && (
       <>
         {/* Toolbar — tabs · search · filter, OUTSIDE the table card (consistent with Customers/Leads) */}
         <div className="flex items-center justify-between flex-wrap gap-2 mb-3">
@@ -156,6 +177,18 @@ export default function InvoicesPage() {
           </div>
         </div>
 
+        {moduleView === "cards" ? (
+          displayed.length === 0 ? (
+            <div className="rounded-xl py-16 text-center" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
+              <p className="text-sm" style={{ color: "var(--text-muted)" }}>No invoices match the current filter.</p>
+            </div>
+          ) : (
+            <div className="grid gap-3 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
+              {displayed.map(inv => <InvoiceCard key={inv.id} invoice={inv} />)}
+            </div>
+          )
+        ) : (
+        <>
         {/* Table card */}
         <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
         {/* Column headers */}
@@ -186,7 +219,8 @@ export default function InvoicesPage() {
             </div>
           ) : displayed.map((inv, i) => {
             const s  = INVOICE_STATUS_STYLE[inv.status];
-            const lt = inv.linkedType ? LINKED_TYPE_STYLE[inv.linkedType] : null;
+            const target = linkedTarget(inv);
+            const lt = target ? LINKED_TYPE_STYLE[target.type] : (inv.linkedType ? LINKED_TYPE_STYLE[inv.linkedType] : null);
             const isOverdue = inv.status === "past_due";
             return (
               <Link key={inv.id} href={`/invoices/${inv.id}`}
@@ -197,11 +231,21 @@ export default function InvoicesPage() {
                   <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{inv.title}</p>
                   <p className="text-[10px] truncate mt-0.5" style={{ color: "var(--text-muted)" }}>{inv.customerName}</p>
                 </div>
-                <div>
-                  {inv.linkedLabel && lt ? (
-                    <span className="inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full"
-                      style={{ backgroundColor: lt.bg, color: lt.color }}>
-                      {inv.linkedLabel}
+                <div className="min-w-0">
+                  {inv.linkedLabel && lt && target ? (
+                    // The row itself links to the invoice; this cell hijacks the
+                    // click and routes to the linked record instead.
+                    <span role="link" tabIndex={0}
+                      onClick={e => { e.preventDefault(); e.stopPropagation(); router.push(target.href); }}
+                      onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); router.push(target.href); } }}
+                      className="group/linked inline-flex items-center gap-1 text-[11px] font-medium max-w-full cursor-pointer hover:underline"
+                      style={{ color: lt.color }}>
+                      <span className="truncate">{inv.linkedLabel}</span>
+                      <ArrowUpRight className="w-3 h-3 shrink-0 transition-transform group-hover/linked:translate-x-0.5 group-hover/linked:-translate-y-0.5" />
+                    </span>
+                  ) : inv.linkedLabel && lt ? (
+                    <span className="inline-flex items-center text-[11px] font-medium max-w-full" style={{ color: lt.color }}>
+                      <span className="truncate">{inv.linkedLabel}</span>
                     </span>
                   ) : <span style={{ color: "var(--text-muted)" }}>—</span>}
                 </div>
@@ -230,6 +274,8 @@ export default function InvoicesPage() {
         </div>
       </div>
       </>
+        )}
+      </>
       )}
 
       {showCreate && (
@@ -238,5 +284,44 @@ export default function InvoicesPage() {
           onCreated={(id) => { setShowCreate(false); router.push(`/invoices/${id}`); }} />
       )}
     </div>
+  );
+}
+
+// ─── Card view — one invoice per card, status color on the left edge ─────────
+function InvoiceCard({ invoice: inv }: { invoice: InvoiceRecord }) {
+  const s = INVOICE_STATUS_STYLE[inv.status];
+  const target = linkedTarget(inv);
+  const lt = target ? LINKED_TYPE_STYLE[target.type] : (inv.linkedType ? LINKED_TYPE_STYLE[inv.linkedType] : null);
+  const isOverdue = inv.status === "past_due";
+  return (
+    <Link href={`/invoices/${inv.id}`}
+      className="group block rounded-lg p-3 transition-all hover:-translate-y-0.5 hover:shadow-md"
+      style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", borderLeft: `3px solid ${s.color}`, textDecoration: "none" }}>
+      <div className="flex items-start justify-between gap-2 mb-1.5">
+        <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
+          <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded inline-flex items-center gap-1 shrink-0" style={{ backgroundColor: s.color + "22", color: s.color }}>
+            <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: s.color }} />{s.label}
+          </span>
+          <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded font-mono shrink-0" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>{inv.invoiceNumber}</span>
+          {inv.isDeposit && <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded shrink-0" style={{ backgroundColor: "var(--accent-soft-bg)", color: "var(--accent-text)" }}>Deposit</span>}
+        </div>
+        <span className="text-xs font-bold shrink-0" style={{ color: inv.balanceDue > 0 ? (isOverdue ? "#dc2626" : "var(--text-primary)") : "#10b981" }}>
+          {inv.balanceDue > 0 ? fmt(inv.balanceDue) : "Paid"}
+        </span>
+      </div>
+      <p className="text-sm font-semibold truncate" style={{ color: "var(--text-primary)" }}>{inv.title}</p>
+      <p className="text-xs truncate" style={{ color: "var(--text-secondary)" }}>{inv.customerName}</p>
+      <div className="flex items-center justify-between gap-2 mt-2 pt-2" style={{ borderTop: "1px solid var(--border)" }}>
+        {inv.linkedLabel && lt ? (
+          <span className="inline-flex items-center gap-1.5 min-w-0 text-[10px] font-medium" style={{ color: "var(--text-muted)" }}>
+            <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: lt.color }} />
+            <span className="truncate">{inv.linkedLabel}</span>
+          </span>
+        ) : (
+          <span className="text-[10px] truncate" style={{ color: "var(--text-muted)" }}>{fmt(inv.total)} total</span>
+        )}
+        <span className="text-[10px] shrink-0" style={{ color: isOverdue ? "#dc2626" : "var(--text-muted)" }}>Due {inv.dueDate}</span>
+      </div>
+    </Link>
   );
 }

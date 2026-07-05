@@ -14,8 +14,9 @@ import {
 import {
   getQuote, fmt, duplicateQuote, updateQuoteStatus, convertQuoteToJob, convertQuoteToProject,
   getQuoteActivity, reopenQuote, resendQuote, archiveQuote, unarchiveQuote, deleteQuote,
-  createInvoiceFromQuote, type QuoteRecord, type QuoteActivityKind, type QuoteOption,
+  createInvoiceFromQuote, createReturnVisitFromQuote, type QuoteRecord, type QuoteActivityKind, type QuoteOption,
 } from "@/lib/quotes/data";
+import { getJob } from "@/lib/jobs/data";
 import { downloadProposalPdf } from "@/lib/quotes/proposalPdf";
 import { downloadCustomProposalPdf } from "@/lib/quotes/customProposalPdf";
 import { resolveQuoteDesign, legacyDesignForQuoteDesign } from "@/lib/quotes/quoteDesigns";
@@ -480,6 +481,85 @@ function OverviewTab({ id, onTab }: { id: string; onTab: (tab: string) => void }
   );
 }
 
+// ─── Return-visit modal — offered when a job-linked quote is approved ────────
+// One step sets up the whole return: a new work order on the job seeded with
+// the quoted lines (so billing matches the quote exactly), the job parked on
+// Waiting on Parts, and an optional down-payment invoice.
+function ReturnVisitModal({ quote, onClose }: { quote: QuoteRecord; onClose: () => void }) {
+  const router = useRouter();
+  const job = quote.jobId ? getJob(quote.jobId) : undefined;
+  const [deposit, setDeposit] = useState("");
+  const [created, setCreated] = useState<{ workOrderId: string; depositId?: string } | null>(null);
+  const depositVal = parseFloat(deposit) || 0;
+
+  function create() {
+    const res = createReturnVisitFromQuote(quote.id, { depositAmount: depositVal > 0 ? depositVal : undefined });
+    if (res) setCreated({ workOrderId: res.workOrder.id, depositId: res.deposit?.id });
+    else onClose();
+  }
+
+  return (
+    <div className="fixed inset-0 z-[60] bg-black/40 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="w-full max-w-md rounded-2xl overflow-hidden" onClick={e => e.stopPropagation()}
+        style={{ backgroundColor: "var(--bg-surface)", boxShadow: "0 16px 48px rgba(0,0,0,0.24)" }}>
+        <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: "1px solid var(--border)" }}>
+          <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
+            {created ? "Return visit ready" : "Set up the return visit"}
+          </p>
+          <button onClick={onClose} style={{ color: "var(--text-muted)" }}><X className="w-4 h-4" /></button>
+        </div>
+
+        {created ? (
+          <div className="p-5 space-y-3">
+            <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
+              A return work order was created on <span className="font-medium" style={{ color: "var(--text-primary)" }}>{job?.title ?? "the job"}</span> with the quoted lines,
+              and the job is now <span className="font-medium" style={{ color: "#92400e" }}>Waiting on Parts</span>.
+              {created.depositId && <> A <span className="font-medium" style={{ color: "var(--text-primary)" }}>{fmt(depositVal)}</span> down-payment invoice is ready to collect.</>}
+            </p>
+            <div className="flex justify-end gap-2 pt-1">
+              {created.depositId && (
+                <button onClick={() => router.push(`/invoices/${created.depositId}`)}
+                  className="px-3 py-1.5 rounded-lg text-sm" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>
+                  Collect deposit
+                </button>
+              )}
+              <button onClick={() => router.push(`/work-orders/${created.workOrderId}`)}
+                className="px-4 py-1.5 rounded-lg text-sm font-medium text-white" style={{ backgroundColor: "#4f46e5" }}>
+                View work order
+              </button>
+              <button onClick={onClose} className="px-3 py-1.5 rounded-lg text-sm" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>
+                Done
+              </button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <div className="p-5 space-y-4">
+              <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
+                This quote was raised on <span className="font-medium" style={{ color: "var(--text-primary)" }}>{job?.title ?? "a job"}</span>.
+                Creating the return visit seeds a new work order with the {quote.lineItems.length} quoted line{quote.lineItems.length === 1 ? "" : "s"} ({fmt(quote.total)})
+                and parks the job on <span className="font-medium">Waiting on Parts</span> until it's rescheduled.
+              </p>
+              <div>
+                <label className="block text-xs font-medium mb-1" style={{ color: "var(--text-secondary)" }}>Down payment to collect now <span style={{ color: "var(--text-muted)" }}>(optional)</span></label>
+                <input type="number" min={0} step="0.01" value={deposit} onChange={e => setDeposit(e.target.value)} placeholder="0.00" autoFocus
+                  className="w-full rounded-lg px-3 py-2 text-sm outline-none" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface)", color: "var(--text-primary)" }} />
+                {depositVal > 0 && <p className="text-[11px] mt-1" style={{ color: "var(--text-muted)" }}>A {fmt(depositVal)} deposit invoice will be created — it's credited automatically on the final invoice.</p>}
+              </div>
+            </div>
+            <div className="px-5 py-4 flex justify-end gap-2" style={{ borderTop: "1px solid var(--border)" }}>
+              <button onClick={onClose} className="px-3 py-1.5 rounded-lg text-sm" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>Skip</button>
+              <button onClick={create} className="px-4 py-1.5 rounded-lg text-sm font-medium text-white" style={{ backgroundColor: "#10b981" }}>
+                Create return visit{depositVal > 0 ? ` + ${fmt(depositVal)} deposit` : ""}
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── Page ─────────────────────────────────────────────────
 export default function QuoteDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -487,6 +567,7 @@ export default function QuoteDetailPage({ params }: { params: Promise<{ id: stri
   const [tab, setTab] = useState("Overview");
   const [quote, setQuote] = useState(() => getQuote(id));
   const [showPreview, setShowPreview] = useState(false);
+  const [showReturnVisit, setShowReturnVisit] = useState(false);
 
   if (!quote) {
     return (
@@ -584,7 +665,7 @@ export default function QuoteDetailPage({ params }: { params: Promise<{ id: stri
               status={quote.status}
               onPreview={() => setShowPreview(true)}
               onSend={() => changeStatus("sent")}
-              onApprove={() => changeStatus("approved")}
+              onApprove={() => { changeStatus("approved"); if (quote.jobId) setShowReturnVisit(true); }}
               onReject={() => changeStatus("rejected")}
               onExpire={() => changeStatus("expired")}
               onReopen={doReopen}
@@ -639,6 +720,9 @@ export default function QuoteDetailPage({ params }: { params: Promise<{ id: stri
           </div>
         </div>
       )}
+
+      {/* Return-visit setup — offered right after approving a job-linked quote. */}
+      {showReturnVisit && <ReturnVisitModal quote={quote} onClose={() => { setShowReturnVisit(false); refresh(); }} />}
 
       {/* Hidden printable document — the only thing shown when Print triggers. */}
       <div className="print-doc" aria-hidden>

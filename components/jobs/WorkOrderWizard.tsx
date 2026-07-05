@@ -12,8 +12,9 @@ import { getAllJobs, getWorkOrder, createWorkOrder } from "@/lib/jobs/data";
 // Sentinel template id for the hand-built (no template) path.
 const BLANK = "__blank__";
 import {
-  getTemplates, getChecklist, getPhotos, getInstructions, suggestTemplateForJobType,
+  getTemplates, getChecklist, getPhotos, getInstructions, suggestTemplateForJobType, templatesForJobType,
 } from "@/lib/work-order-templates/data";
+import { jobTypeLabel } from "@/lib/job-config/data";
 
 export interface WorkOrderWizardPreset { jobId?: string }
 
@@ -35,6 +36,13 @@ export default function WorkOrderWizard({ preset, onClose, onCreated }: {
   // Default the template to the one suggested by the job's type.
   const suggested = job ? suggestTemplateForJobType(job.type) : undefined;
   const [templateId, setTemplateId] = useState(suggested?.id ?? templates[0]?.id ?? "");
+
+  // Templates linked to the job's type lead; unrelated ones (a maintenance
+  // template on a repair job) hide behind "Show other templates".
+  const matching = job ? templatesForJobType(job.type) : [];
+  const others = matching.length > 0 ? templates.filter(t => !matching.some(m => m.id === t.id)) : [];
+  const [showAll, setShowAll] = useState(false);
+  const visibleTemplates = matching.length === 0 || showAll ? templates : matching;
 
   // Keep the suggestion in sync when the job changes (unless the user picked one).
   const [touchedTemplate, setTouchedTemplate] = useState(false);
@@ -120,9 +128,19 @@ export default function WorkOrderWizard({ preset, onClose, onCreated }: {
 
               {/* Template */}
               <div>
-                <label className="block text-xs font-medium mb-2" style={{ color: "var(--text-secondary)" }}>Template <span style={{ color: "#ef4444" }}>*</span></label>
+                <div className="flex items-baseline justify-between mb-2">
+                  <label className="block text-xs font-medium" style={{ color: "var(--text-secondary)" }}>
+                    Template <span style={{ color: "#ef4444" }}>*</span>
+                    {job && matching.length > 0 && <span className="ml-1.5 font-normal" style={{ color: "var(--text-muted)" }}>for {jobTypeLabel(job.type)} jobs</span>}
+                  </label>
+                  {others.length > 0 && (
+                    <button onClick={() => setShowAll(s => !s)} className="text-[11px] font-medium hover:underline" style={{ color: "var(--accent-text)" }}>
+                      {showAll ? "Show matching only" : `Show ${others.length} other template${others.length === 1 ? "" : "s"}`}
+                    </button>
+                  )}
+                </div>
                 <div className="grid grid-cols-2 gap-2">
-                  {templates.map(t => {
+                  {visibleTemplates.map(t => {
                     const active = effectiveTemplateId === t.id;
                     const isSuggested = suggested?.id === t.id;
                     return (

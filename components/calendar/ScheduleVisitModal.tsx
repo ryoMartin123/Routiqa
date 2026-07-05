@@ -25,13 +25,14 @@ type SchedulableVisit = { agreement: CustomerAgreement; visit: AgreementVisit };
 // lifecycle) and counts against the agreement. Any planned visit can be scheduled at
 // any time, regardless of its target date.
 export default function ScheduleVisitModal({
-  visits, technicians, defaultDate, dayStart, dayEnd, onConfirm, onClose, checkOverlap, error,
+  visits, technicians, defaultDate, dayStart, dayEnd, increment = 30, onConfirm, onClose, checkOverlap, error,
 }: {
   visits: SchedulableVisit[];
   technicians: string[];
   defaultDate: string;   // yyyy-mm-dd (board's focused day)
   dayStart: number;      // board opening hour (24h)
   dayEnd: number;        // board closing hour (24h)
+  increment?: number;    // board slot size — durations step in this unit
   onConfirm: (d: VisitScheduleDraft) => void;
   onClose: () => void;
   checkOverlap?: (d: { tech: string; date: string; time: string; durationMinutes: number }) => boolean;
@@ -127,7 +128,7 @@ export default function ScheduleVisitModal({
             </div>
 
             <Field label="Duration (minutes)">
-              <NumberStepper min={15} step={15} suffix="min" value={String(durationMinutes)} onChange={v => setDuration(parseInt(v, 10) || 90)} />
+              <NumberStepper min={increment} step={increment} suffix="min" value={String(durationMinutes)} onChange={v => setDuration(parseInt(v, 10) || 90)} />
             </Field>
 
             {isPast && (

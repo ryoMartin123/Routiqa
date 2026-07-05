@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import JobWizard from "@/components/jobs/JobWizard";
 import { Search, Plus, SlidersHorizontal, ChevronUp, ChevronDown, FolderKanban, Calendar, CalendarClock, Loader, CheckCircle2, X, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { recencyTs } from "@/lib/recency";
 import { ALL_JOBS, getSessionJobs, resolveJobStatus, type Job, type JobType } from "@/lib/jobs/data";
 import UiSelect from "@/components/ui/Select";
 import PageTitle from "@/components/shared/PageTitle";
@@ -93,7 +94,15 @@ function matchesTime(j: Job, window: TimeFilter, today: string): boolean {
   return true;
 }
 
-type SortField = "customerName" | "type" | "status" | "scheduledDate" | "assignedTo";
+// "recent" is the default pseudo-sort: newest created/changed first (top of the
+// list, front of the card grid). Clicking a column header switches to that field.
+type SortField = "recent" | "customerName" | "type" | "status" | "scheduledDate" | "assignedTo";
+
+// Recency = newest created/changed (lifecycle stamps + status history count).
+function jobRecency(j: Job): number {
+  return recencyTs(j.id, j.completedAt, j.startedAt, j.enRouteAt, j.dispatchedAt,
+    ...(j.statusHistory ?? []).map(h => h.at));
+}
 
 // ─── Mini projects table (shown when Projects tab active) ─
 function ProjectsInline({ projects, companyId, locationId }: { projects: Project[]; companyId?: string; locationId?: string }) {
@@ -200,7 +209,7 @@ export default function JobsPage() {
   useEffect(() => { setToday(todayStr()); }, []);
   const TABS = tabsFor(today);
   const [search, setSearch]   = useState("");
-  const [sortField, setSort]  = useState<SortField>("scheduledDate");
+  const [sortField, setSort]  = useState<SortField>("recent");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
   // Configured job statuses from settings (drive badge labels + colors).
@@ -249,6 +258,7 @@ export default function JobsPage() {
       return j.customerName.toLowerCase().includes(q) || j.title.toLowerCase().includes(q) || j.assignedTo.toLowerCase().includes(q);
     })
     .sort((a, b) => {
+      if (sortField === "recent") return jobRecency(b) - jobRecency(a);
       const av = a[sortField] ?? "", bv = b[sortField] ?? "";
       return sortDir === "asc" ? av.localeCompare(bv) : bv.localeCompare(av);
     });
