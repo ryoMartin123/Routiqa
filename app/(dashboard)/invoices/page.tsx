@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import RowArrow from "@/components/shared/RowArrow";
 import { Search, Plus, SlidersHorizontal, ChevronUp, ChevronDown, AlertTriangle, CalendarClock, CheckCircle2, DollarSign, ArrowUpRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getAllInvoices, fmt, type InvoiceRecord } from "@/lib/quotes/data";
@@ -224,8 +225,9 @@ export default function InvoicesPage() {
             const isOverdue = inv.status === "past_due";
             return (
               <Link key={inv.id} href={`/invoices/${inv.id}`}
-                className="grid px-4 py-3 items-center hover:bg-[var(--bg-surface-2)] transition-colors"
+                className="relative group grid px-4 py-3 items-center hover:bg-[var(--bg-surface-2)] transition-colors"
                 style={{ gridTemplateColumns: "1fr 2fr 1.8fr 1.2fr 0.9fr 0.9fr 1fr", borderBottom: i < displayed.length - 1 ? "1px solid var(--border)" : "none", textDecoration: "none" }}>
+                <RowArrow />
                 <span className="text-sm font-mono font-medium" style={{ color: "var(--text-primary)" }}>{inv.invoiceNumber}</span>
                 <div className="min-w-0">
                   <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{inv.title}</p>

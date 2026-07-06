@@ -9,6 +9,7 @@ import AppLoadingOverlay from "@/components/platform/AppLoadingOverlay";
 import CommentsDrawer from "@/components/comments/CommentsDrawer";
 import CommentModeController from "@/components/comments/CommentModeController";
 import CommentDeepLinkWatcher from "@/components/comments/CommentDeepLinkWatcher";
+import SavedPill from "@/components/shared/SavedPill";
 
 export default function DashboardLayout({
   children,
@@ -27,6 +28,8 @@ export default function DashboardLayout({
       {/* Brief branded loader when entering the CRM app — holds, then fades. */}
       <AppLoadingOverlay appId="crm" />
       <CommentsDrawer />
+      {/* The ONE transient-feedback anchor (Saved + errors), bottom-right. */}
+      <SavedPill />
       <Suspense fallback={null}><CommentModeController /></Suspense>
       <Suspense fallback={null}><CommentDeepLinkWatcher /></Suspense>
       </CommentsProvider>

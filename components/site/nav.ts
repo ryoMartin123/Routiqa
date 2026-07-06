@@ -1,58 +1,143 @@
-// ─── Marketing site navigation + platform data ────────────
-// Single source of truth for the mega-menu, footer, and the platform/features
-// pages so the nav and the page content never drift apart.
+// ─── Marketing site navigation + content data ─────────────
+// Single source of truth for the mega nav, homepage sections, and footer so
+// the menu and the page never drift apart. Everything links to homepage
+// anchors — the site is one confident, continuous story.
 
 import type { LucideIcon } from "lucide-react";
 import {
-  Users, CalendarRange, Smartphone, Megaphone, BarChart3, CreditCard,
-  FileText, Boxes, UsersRound, MapPinned, LayoutGrid,
+  LayoutGrid, Users, CalendarRange, Briefcase, MessageSquare, CreditCard,
+  Megaphone, UsersRound, BarChart3, Sparkles, Smartphone, FolderKanban,
+  PhoneCall, TrendingUp, CalendarClock, Radio, ClipboardList, Camera,
+  History, MapPinned, FilePen, ListChecks, Receipt, Wallet, Calculator,
+  Boxes, PieChart, FileBarChart, Star, RefreshCw, BadgePercent, Landmark,
+  Bot, AudioLines, FileText, BellRing, SearchCheck, Route, PenLine,
+  Home, Building2, HardHat, KeyRound, Rocket, Layers,
 } from "lucide-react";
 
-export interface PlatformArea {
-  id: string;            // anchor id on the home page (e.g. "dispatch")
-  title: string;
-  blurb: string;
-  icon: LucideIcon;
-}
-
-// The two mega-menu columns. "Product" = the customer-facing operating surfaces;
-// "Operations" = the back-office systems that round out the platform.
-export const PRODUCT_AREAS: PlatformArea[] = [
-  { id: "overview",  title: "Platform Overview",   blurb: "One connected system for the whole operation", icon: LayoutGrid },
-  { id: "crm",       title: "CRM & Jobs",          blurb: "Customers, leads, estimates, and jobs in one record", icon: Users },
-  { id: "dispatch",  title: "Dispatch & Routing",  blurb: "Live board, drag-and-drop scheduling, smart routes", icon: CalendarRange },
-  { id: "mobile",    title: "Technician Mobile",   blurb: "A field-ready app for the team in the truck", icon: Smartphone },
-  { id: "marketing", title: "Marketing Automation",blurb: "Campaigns and follow-ups that run themselves", icon: Megaphone },
-  { id: "analytics", title: "Analytics & Reporting",blurb: "Build the reports your business actually runs on", icon: BarChart3 },
-];
-
-export const OPERATIONS_AREAS: PlatformArea[] = [
-  { id: "payments",  title: "Payments & Accounting", blurb: "Invoicing, payments, and the books, connected", icon: CreditCard },
-  { id: "documents", title: "Documents & SOPs",      blurb: "Standard work and paperwork in one library", icon: FileText },
-  { id: "inventory", title: "Inventory & Procurement",blurb: "Track parts, stock, and purchasing", icon: Boxes },
-  { id: "hr",        title: "HR & Team Management",   blurb: "People, roles, time, and onboarding", icon: UsersRound },
-  { id: "fleet",     title: "Field & Fleet Visibility",blurb: "See every job, truck, and tech in real time", icon: MapPinned },
-];
-
-export const ALL_AREAS: PlatformArea[] = [...PRODUCT_AREAS, ...OPERATIONS_AREAS];
-
-// Primary nav links (right of the mega-menu trigger).
-export const NAV_LINKS: { label: string; href: string }[] = [
-  { label: "Industries",      href: "/industries" },
-  { label: "Design Partners", href: "/design-partners" },
-  { label: "Early Access",    href: "/early-access" },
-];
-
-export const INDUSTRIES: { name: string; blurb: string }[] = [
-  { name: "HVAC",                 blurb: "Maintenance plans, seasonal demand, and fast dispatch." },
-  { name: "Roofing",              blurb: "Inspections, estimates, and multi-crew project work." },
-  { name: "Plumbing",             blurb: "Service calls, memberships, and emergency routing." },
-  { name: "Electrical",          blurb: "Service and project work with clean documentation." },
-  { name: "Restoration",          blurb: "Multi-day jobs, documentation, and coordination." },
-  { name: "Property Maintenance", blurb: "Recurring work across many properties and sites." },
-  { name: "B2B Service",          blurb: "Contracts, retainers, and account-based operations." },
-];
-
-// App entry points (existing routes — the marketing site links into the app).
 export const APP_LOGIN_HREF = "/login";
-export const APP_LAUNCH_HREF = "/welcome";
+export const DEMO_HREF = "#demo";
+
+// ── Platform (mega menu + platform grid) ──
+export interface NavItem { title: string; blurb: string; icon: LucideIcon; href: string }
+
+export const PLATFORM_ITEMS: NavItem[] = [
+  { title: "Overview",               blurb: "One connected system, first call to final payment", icon: LayoutGrid,    href: "#platform" },
+  { title: "CRM",                    blurb: "Every customer, property, and conversation in one record", icon: Users,  href: "#platform" },
+  { title: "Dispatch & Scheduling",  blurb: "A live board your dispatcher can actually run",     icon: CalendarRange, href: "#front-office" },
+  { title: "Jobs & Projects",        blurb: "From single visits to multi-phase projects",        icon: Briefcase,     href: "#segments" },
+  { title: "Customer Communication", blurb: "Two-way texting, email, and reminders built in",    icon: MessageSquare, href: "#customer-experience" },
+  { title: "Accounting & Billing",   blurb: "Invoices, payments, and clean books",               icon: CreditCard,    href: "#financial" },
+  { title: "Marketing",              blurb: "Campaigns that run off your real customer data",    icon: Megaphone,     href: "#growth" },
+  { title: "HR & Team Workspace",    blurb: "People, roles, time, and training in one place",    icon: UsersRound,    href: "#team" },
+  { title: "Reporting",              blurb: "The numbers behind every job and every crew",       icon: BarChart3,     href: "#financial" },
+  { title: "Riq AI Assistant",       blurb: "The built-in assistant that keeps work moving",     icon: Sparkles,      href: "#riq" },
+];
+
+// ── Solutions ──
+export const SOLUTION_ITEMS: NavItem[] = [
+  { title: "Residential Service",     blurb: "Book, dispatch, sell, and collect in the home", icon: Home,        href: "#segments" },
+  { title: "Commercial Service",      blurb: "Locations, assets, agreements, and terms billing", icon: Building2, href: "#segments" },
+  { title: "Construction & Projects", blurb: "Stages, crews, budgets, and progress billing",  icon: HardHat,      href: "#segments" },
+  { title: "Maintenance Agreements",  blurb: "Recurring visits that schedule and bill themselves", icon: RefreshCw, href: "#segments" },
+  { title: "Multi-Location Businesses", blurb: "Every branch on one platform, one rollup",    icon: Layers,       href: "#segments" },
+  { title: "Property Management",     blurb: "Tenants, owners, vendors, and work orders",     icon: KeyRound,     href: "#segments" },
+  { title: "Startups & Growing Shops", blurb: "Strong defaults now, deep control later",      icon: Rocket,       href: "#packages" },
+];
+
+// ── Features (grouped) ──
+export interface FeatureGroup { title: string; anchor: string; items: { title: string; icon: LucideIcon }[] }
+
+export const FEATURE_GROUPS: FeatureGroup[] = [
+  {
+    title: "Front Office", anchor: "#front-office",
+    items: [
+      { title: "Call Booking",       icon: PhoneCall },
+      { title: "Lead Management",    icon: TrendingUp },
+      { title: "Scheduling",         icon: CalendarClock },
+      { title: "Dispatch",           icon: Radio },
+      { title: "Customer Profiles",  icon: Users },
+      { title: "Two-Way Messaging",  icon: MessageSquare },
+    ],
+  },
+  {
+    title: "Field Operations", anchor: "#field-ops",
+    items: [
+      { title: "Mobile App",          icon: Smartphone },
+      { title: "Job Forms",           icon: ClipboardList },
+      { title: "Photos & Files",      icon: Camera },
+      { title: "Equipment History",   icon: History },
+      { title: "Technician Tracking", icon: MapPinned },
+      { title: "Estimates",           icon: FilePen },
+      { title: "Checklists",          icon: ListChecks },
+    ],
+  },
+  {
+    title: "Business Management", anchor: "#financial",
+    items: [
+      { title: "Invoicing",            icon: Receipt },
+      { title: "Payments",             icon: Wallet },
+      { title: "Accounting",           icon: Calculator },
+      { title: "Payroll",              icon: UsersRound },
+      { title: "Inventory",            icon: Boxes },
+      { title: "Job Costing",          icon: PieChart },
+      { title: "Reports & Dashboards", icon: FileBarChart },
+    ],
+  },
+  {
+    title: "Growth", anchor: "#growth",
+    items: [
+      { title: "Marketing Campaigns", icon: Megaphone },
+      { title: "Review Requests",     icon: Star },
+      { title: "Customer Follow-Up",  icon: BellRing },
+      { title: "Memberships",         icon: RefreshCw },
+      { title: "Lead Attribution",    icon: BadgePercent },
+      { title: "Financing",           icon: Landmark },
+    ],
+  },
+  {
+    title: "AI & Automation", anchor: "#riq",
+    items: [
+      { title: "Riq Assistant",          icon: Bot },
+      { title: "Call Summaries",         icon: AudioLines },
+      { title: "Job Summaries",          icon: FileText },
+      { title: "Smart Follow-Ups",       icon: BellRing },
+      { title: "Missing Info Detection", icon: SearchCheck },
+      { title: "Dispatch Suggestions",   icon: Route },
+      { title: "Estimate Drafting",      icon: PenLine },
+    ],
+  },
+];
+
+// ── Industries ──
+export interface Industry { name: string; blurb: string }
+export const INDUSTRIES: Industry[] = [
+  { name: "HVAC",                 blurb: "Seasonal demand, maintenance plans, and same-day dispatch without the whiteboard." },
+  { name: "Plumbing",             blurb: "Emergency routing, service memberships, and options techs can sell at the door." },
+  { name: "Electrical",           blurb: "Clean documentation from panel swap to full-project work." },
+  { name: "Roofing",              blurb: "Inspections, photo reports, insurance paperwork, and multi-crew production." },
+  { name: "Garage Door",          blurb: "Fast in-and-out calls with parts, pricing, and payment on the truck." },
+  { name: "Pest Control",         blurb: "Recurring routes, treatment history, and renewals that don't slip." },
+  { name: "Landscaping",          blurb: "Crews, recurring visits, and property-by-property billing." },
+  { name: "Restoration",          blurb: "Multi-day losses with photos, equipment, and documentation that holds up." },
+  { name: "Property Maintenance", blurb: "Work orders across hundreds of units — tenants, owners, and vendors coordinated." },
+  { name: "Construction",         blurb: "Stages, budgets, change orders, and progress billing on one timeline." },
+  { name: "Commercial Facilities", blurb: "Assets, agreements, and multi-site service with terms billing." },
+];
+
+// ── Resources (placeholder destinations for now) ──
+export const RESOURCE_ITEMS: NavItem[] = [
+  { title: "Product Tour",   blurb: "Walk the platform section by section", icon: LayoutGrid, href: "#platform" },
+  { title: "Feature Library", blurb: "Everything Routiqa does, in one list", icon: ListChecks, href: "#front-office" },
+  { title: "Industry Fit",   blurb: "How Routiqa maps to your trade",       icon: HardHat,     href: "#industries" },
+  { title: "Meet Riq",       blurb: "What the built-in assistant handles",  icon: Sparkles,    href: "#riq" },
+];
+
+// ── Top-level nav ──
+export const NAV: { label: string; type: "platform" | "solutions" | "features" | "industries" | "resources" | "link"; href?: string }[] = [
+  { label: "Platform",   type: "platform" },
+  { label: "Solutions",  type: "solutions" },
+  { label: "Features",   type: "features" },
+  { label: "Industries", type: "industries" },
+  { label: "Resources",  type: "resources" },
+  { label: "Pricing",    type: "link", href: "#packages" },
+];

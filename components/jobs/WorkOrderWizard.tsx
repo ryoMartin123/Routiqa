@@ -2,12 +2,13 @@
 
 // ─── Work Order Wizard ────────────────────────────────────
 // Creates a work order for a job by instantiating a Work Order Template:
-// snapshots the template's checklist into the job's work order. One WO per job.
+// snapshots the template's checklist into the new work order. A job can hold
+// MANY work orders (one per distinct scope) — this always ADDS one.
 
 import { useMemo, useState } from "react";
 import { X, ClipboardList, Check, Camera, Plus, Trash2 } from "lucide-react";
 import UiSelect from "@/components/ui/Select";
-import { getAllJobs, getWorkOrder, createWorkOrder } from "@/lib/jobs/data";
+import { getAllJobs, getWorkOrdersForJob, createWorkOrder } from "@/lib/jobs/data";
 
 // Sentinel template id for the hand-built (no template) path.
 const BLANK = "__blank__";
@@ -23,9 +24,10 @@ export default function WorkOrderWizard({ preset, onClose, onCreated }: {
   onClose: () => void;
   onCreated: (jobId: string) => void;
 }) {
-  // Jobs without a work order yet (plus the preset job, even if it has one).
+  // Any job can take another work order (multi-WO model) — offer them all,
+  // skipping only jobs that are closed out.
   const jobs = useMemo(
-    () => getAllJobs().filter(j => preset?.jobId === j.id || !getWorkOrder(j.id)),
+    () => getAllJobs().filter(j => preset?.jobId === j.id || (j.status !== "canceled" && j.status !== "closed")),
     [preset?.jobId],
   );
   const templates = useMemo(() => getTemplates().filter(t => t.active), []);
@@ -65,7 +67,7 @@ export default function WorkOrderWizard({ preset, onClose, onCreated }: {
   }
 
   const lockedJob = Boolean(preset?.jobId);
-  const alreadyHasWO = Boolean(jobId && getWorkOrder(jobId));
+  const existingWOs = jobId ? getWorkOrdersForJob(jobId).length : 0;
   const canCreate = Boolean(jobId) && (isBlank ? customItems.length > 0 : Boolean(template));
 
   function handleCreate() {
@@ -80,7 +82,7 @@ export default function WorkOrderWizard({ preset, onClose, onCreated }: {
         title: template.name,
         instructions: instructions?.customerFacing || instructions?.internal || template.description,
         templateId: template.id,
-        checklist: checklist.map(c => ({ label: c.label, required: c.required })),
+        checklist: checklist.map(c => ({ label: c.label, required: c.required, type: c.type, options: c.options, unit: c.unit })),
       });
     }
     onCreated(job.id);
@@ -103,7 +105,7 @@ export default function WorkOrderWizard({ preset, onClose, onCreated }: {
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
           {jobs.length === 0 ? (
             <p className="text-sm py-8 text-center" style={{ color: "var(--text-muted)" }}>
-              Every job already has a work order. Create a job first, or open a job to edit its work order.
+              No open jobs to attach a work order to — create a job first.
             </p>
           ) : (
             <>
@@ -120,9 +122,9 @@ export default function WorkOrderWizard({ preset, onClose, onCreated }: {
                 )}
               </div>
 
-              {alreadyHasWO && (
-                <p className="text-xs px-3 py-2 rounded-lg" style={{ backgroundColor: "#fef3c7", color: "#92400e" }}>
-                  This job already has a work order — creating a new one replaces it.
+              {existingWOs > 0 && (
+                <p className="text-xs px-3 py-2 rounded-lg" style={{ backgroundColor: "var(--bg-surface-2)", color: "var(--text-secondary)" }}>
+                  This job already has {existingWOs} work order{existingWOs === 1 ? "" : "s"} — this adds another scope of work alongside {existingWOs === 1 ? "it" : "them"}.
                 </p>
               )}
 

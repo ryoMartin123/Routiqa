@@ -2,19 +2,18 @@ import type { Metadata } from "next";
 import SiteHeader from "@/components/site/SiteHeader";
 import SiteFooter from "@/components/site/SiteFooter";
 
-// The public marketing site. Structurally separate from the logged-in app: its
-// own header/footer, no CRM/platform providers, and a forced DARK foundation
-// (the data-theme="dark" wrapper drives the same token set the app uses, so the
-// site stays premium-dark regardless of a visitor's app theme preference).
+// The public marketing site — structurally separate from the logged-in app:
+// its own light, premium B2B chrome (announcement bar + mega nav + footer),
+// no CRM providers, no app theme dependency.
 
 export const metadata: Metadata = {
-  title: "Routiqa — The operating system for service businesses",
+  title: "Routiqa — The all-in-one operating platform for service businesses",
   description:
-    "Routiqa runs customers, jobs, dispatch, routing, technician mobile, marketing, payments, documents, and operations in one connected platform built for service businesses.",
+    "Routiqa brings CRM, dispatch, marketing, communication, accounting, HR, projects, reporting, and Riq AI into one connected workspace built for the trades.",
   openGraph: {
-    title: "Routiqa — The operating system for service businesses",
+    title: "Routiqa — The all-in-one operating platform for service businesses",
     description:
-      "One connected platform for CRM, dispatch, routing, technician mobile, marketing, payments, and operations.",
+      "One connected platform for CRM, dispatch, marketing, accounting, HR, field operations, and Riq AI.",
     siteName: "Routiqa",
     type: "website",
   },
@@ -22,7 +21,7 @@ export const metadata: Metadata = {
 
 export default function SiteLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div data-theme="dark" className="min-h-screen flex flex-col" style={{ backgroundColor: "var(--bg-page)", color: "var(--text-primary)" }}>
+    <div className="min-h-screen flex flex-col bg-white" style={{ scrollBehavior: "smooth" }}>
       <SiteHeader />
       <main className="flex-1">{children}</main>
       <SiteFooter />

@@ -58,7 +58,8 @@ export default function RecordTasks({ type, id, accent = "#4f46e5" }: { type: Li
   }
 
   return (
-    <div className="w-full space-y-3">
+    // space-y-4 matches the sibling record tabs (Photos & Files, Billing, History).
+    <div className="w-full space-y-4">
       {/* Search (left) · status tabs (center) · New Task (right) */}
       <div className="flex flex-wrap items-center gap-2">
         <div className="flex-1 min-w-0 flex items-center">

@@ -16,6 +16,7 @@ import { todayYMD } from "@/lib/utils/schedule";
 import { useHierarchy } from "@/components/providers/HierarchyProvider";
 import PageTitle from "@/components/shared/PageTitle";
 import CalendarItemDrawer from "@/components/calendar/CalendarItemDrawer";
+import { pingError } from "@/components/shared/SavedPill";
 import StatusBadge from "@/components/shared/StatusBadge";
 import ScheduleConfirmModal, { type ScheduleDraft } from "@/components/calendar/ScheduleConfirmModal";
 import ScheduleVisitModal, { type VisitScheduleDraft } from "@/components/calendar/ScheduleVisitModal";
@@ -972,11 +973,10 @@ function DispatchBoard({ focus, mode, items, roster, availability, dayStart, day
     document.addEventListener("dragend", onEnd);
     return () => document.removeEventListener("dragend", onEnd);
   }, []);
-  // Brief notice when a move/drop is rejected (overlap, or a return visit dropped
-  // out of order). Holds the message text; null = hidden.
-  const [rejectMsg, setRejectMsg] = useState<string | null>(null);
+  // Rejected move/drop (overlap, past, visit order) → the app-wide notice host
+  // (bottom-right, same anchor as Saved) so all transient feedback lives in one place.
   function flashOverlap(msg = "Jobs can't overlap — that slot is already taken.") {
-    setRejectMsg(msg); window.setTimeout(() => setRejectMsg(null), 2600);
+    pingError(msg);
   }
 
   // A linked visit must stay in order: a later visit can't start before an earlier
@@ -1056,6 +1056,7 @@ function DispatchBoard({ focus, mode, items, roster, availability, dayStart, day
     const startX = e.clientX, startY = e.clientY;     // for click-vs-drag detection
     const originTech = item.assignedTo ?? "";
     let moved = false; let curStart = base; let curDur = dur0; let curTech = originTech;
+    let warnedPast = false;   // one past-drag notice per gesture, not per mousemove
     document.body.style.userSelect = "none";
     if (kind === "move") blockEl.style.pointerEvents = "none"; // so elementFromPoint sees the row below
     // Fast drags fire mousemove faster than the board can render. Dedupe (snapping
@@ -1076,9 +1077,16 @@ function DispatchBoard({ focus, mode, items, roster, availability, dayStart, day
     const cleanup = () => {
       window.removeEventListener("mousemove", onMove);
       window.removeEventListener("mouseup", onUp);
+      window.removeEventListener("keydown", onKey);
       cancelAnimationFrame(raf);
       document.body.style.userSelect = "";
       blockEl.style.pointerEvents = "";
+    };
+    // Escape aborts the drag outright — the card returns to where it was.
+    const onKey = (ev: KeyboardEvent) => {
+      if (ev.key !== "Escape") return;
+      cleanup();
+      setPreview(null);
     };
     const onMove = (ev: MouseEvent) => {
       const mm = commitFromX(ev.clientX, track);
@@ -1099,7 +1107,20 @@ function DispatchBoard({ focus, mode, items, roster, availability, dayStart, day
         // EVERY move — same lane or cross-tech — behaves like a queue drop: the
         // ghost snaps its START to the slot boundary under the cursor (the grab
         // offset is ignored). One snap feel everywhere.
-        curStart = clamp(Math.floor(mm / increment) * increment, nowFloor, totalMin - dur0);
+        const slot = Math.floor(mm / increment) * increment;
+        // A visit that already STARTED (12:00 start, it's 12:01) can still slip
+        // forward — but its ORIGINAL slot always stays legal: dragging back to /
+        // past its own start snaps the ghost home, and releasing there changes
+        // nothing. Without this, one accidental grab forces the visit forward
+        // with no way to put it back.
+        const restore = curTech === originTech && base < nowFloor && slot <= base;
+        // Aiming at the past (and not restoring home) → the ghost stops at the
+        // now-line; say why, once per gesture.
+        if (now != null && !restore && slot < nowFloor && moved && !warnedPast) {
+          warnedPast = true;
+          flashOverlap("That time is in the past — visits can only move from now forward.");
+        }
+        curStart = restore ? base : clamp(slot, nowFloor, totalMin - dur0);
       } else {
         // A job that already started can't be shrunk to end before now.
         const minDur = Math.max(30, base < nowFloor ? nowFloor - base : 30);
@@ -1121,6 +1142,9 @@ function DispatchBoard({ focus, mode, items, roster, availability, dayStart, day
       cleanup();
       if (lockedPast) { setPreview(null); if (!moved) onSelect(item); return; }
       if (moved) {
+        // Nothing actually changed (dropped back on its own slot) → a no-op,
+        // not a move: no write, no validation, the card is simply back.
+        if (curStart === base && curDur === dur0 && curTech === originTech) { setPreview(null); return; }
         const targetTech = kind === "move" ? curTech : originTech;
         // Reject a move/resize that would overlap another job in the lane — revert.
         if (laneOverlap(targetTech, curStart, curDur, item.id)) { setPreview(null); flashOverlap(); return; }
@@ -1148,17 +1172,11 @@ function DispatchBoard({ focus, mode, items, roster, availability, dayStart, day
     };
     window.addEventListener("mousemove", onMove);
     window.addEventListener("mouseup", onUp);
+    window.addEventListener("keydown", onKey);
   }
 
   return (
     <div className="relative">
-      {/* Rejected-move notice — overlap, or a return visit dropped out of order. */}
-      {rejectMsg && (
-        <div role="alert" className="fixed left-1/2 top-20 -translate-x-1/2 z-50 flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium shadow-lg"
-          style={{ backgroundColor: "#fee2e2", color: "#991b1b", border: "1px solid #fecaca" }}>
-          <X className="w-4 h-4" /> {rejectMsg}
-        </div>
-      )}
       {/* Current-time box — OUTSIDE the board container (which clips), pinned above
           it and aligned to the now-line. Offset by the 180px technician column so
           its x matches the dashed line inside the grid. */}
@@ -1217,9 +1235,10 @@ function DispatchBoard({ focus, mode, items, roster, availability, dayStart, day
           <div key={tech.name || "__unassigned"} className="flex" style={{ borderBottom: ri < rows.length - 1 ? "1px solid var(--border)" : "none", backgroundColor: isUnassigned ? "var(--warning-soft-bg)" : undefined }}>
             {/* Tech cell */}
             <div className="w-[180px] shrink-0 px-3 py-2.5 flex items-start gap-2" style={{ borderRight: "1px solid var(--border)" }}>
-              {/* Rounded-square tech tile — matches the technician markers on the map. */}
-              <div className="w-7 h-7 rounded-lg flex items-center justify-center text-[9px] font-bold shrink-0"
-                style={{ backgroundColor: isUnassigned ? "var(--warning-soft-border)" : "#4f46e5", color: isUnassigned ? "var(--warning-text)" : "#fff" }}>{tech.initials}</div>
+              {/* People wear the swiss-coffee circle (same as contact avatars);
+                  the unassigned lane keeps its warning tile — it's a state, not a person. */}
+              <div className={`w-7 h-7 ${isUnassigned ? "rounded-lg" : "rounded-full"} flex items-center justify-center text-[9px] font-bold shrink-0`}
+                style={{ backgroundColor: isUnassigned ? "var(--warning-soft-border)" : "#e5e0db", color: isUnassigned ? "var(--warning-text)" : "#5c5545" }}>{tech.initials}</div>
               <div className="min-w-0">
                 <p className="text-xs font-semibold truncate" style={{ color: isUnassigned ? "var(--warning-text)" : "var(--text-primary)" }}>{isUnassigned ? "Unassigned" : tech.name}</p>
                 {isUnassigned ? (

@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import RowArrow from "@/components/shared/RowArrow";
 import { ClipboardList, Plus, Search, SlidersHorizontal, CalendarClock, ImageOff, CheckCircle2 } from "lucide-react";
 import { getAllJobs, getAllWorkOrders, type WorkOrderStatus } from "@/lib/jobs/data";
 import { recencyTs } from "@/lib/recency";
@@ -139,30 +140,18 @@ export default function WorkOrdersPage() {
               <p className="text-sm" style={{ color: "var(--text-muted)" }}>No work orders match the current filter.</p>
             </div>
           ) : displayed.map(({ wo, job }, i) => {
-            // Checklist progress
-            const done  = wo.checklist.filter(c => c.isComplete).length;
-            const total = wo.checklist.length;
-            const pct   = total > 0 ? Math.round((done / total) * 100) : 0;
-
             return (
               <Link key={wo.id} href={`/work-orders/${wo.id}`}
-                className="grid px-4 py-3 items-center hover:bg-[var(--bg-surface-2)] transition-colors"
+                className="relative group grid px-4 py-3 items-center hover:bg-[var(--bg-surface-2)] transition-colors"
                 style={{ gridTemplateColumns: "2.5fr 2fr 1.5fr 1fr", borderBottom: i < displayed.length - 1 ? "1px solid var(--border)" : "none", textDecoration: "none" }}>
+                <RowArrow />
 
-                {/* Work order */}
-                <div className="min-w-0">
+                {/* Work order — module tile + title (progress lives on the detail page) */}
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: "var(--accent-soft-bg)" }}>
+                    <ClipboardList className="w-3.5 h-3.5" style={{ color: "var(--accent-text)" }} />
+                  </div>
                   <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{wo.title}</p>
-                  {total > 0 && (
-                    <div className="flex items-center gap-1.5 mt-1">
-                      <div className="flex-1 max-w-24 h-1 rounded-full" style={{ backgroundColor: "var(--bg-input)" }}>
-                        <div className="h-1 rounded-full"
-                          style={{ width: `${pct}%`, backgroundColor: pct === 100 ? "#10b981" : "#4f46e5" }} />
-                      </div>
-                      <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>
-                        {done}/{total}
-                      </span>
-                    </div>
-                  )}
                 </div>
 
                 {/* Customer / Job */}

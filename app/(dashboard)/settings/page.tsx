@@ -6,7 +6,7 @@ import {
   TrendingUp, Briefcase, FolderKanban, ClipboardList,
   FileText, Image as ImageIcon, MessageSquare,
   Sliders, ChevronRight, Settings2, ArrowLeft,
-  CalendarClock, ListChecks, Package, Tag, Percent, BookOpen, Factory,
+  CalendarClock, ListChecks, Package, Tag, Percent, BookOpen, Factory, Gauge,
   ShieldCheck, ExternalLink, Navigation, LayoutDashboard,
 } from "lucide-react";
 import dynamic from "next/dynamic";
@@ -39,11 +39,11 @@ const TermsConditionsSection    = dynamic(() => import("@/components/settings/Te
 const TaxesFeesSection          = dynamic(() => import("@/components/settings/TaxesFeesSection"),          { loading: SectionLoading, ssr: false });
 const AgreementsSettingsSection = dynamic(() => import("@/components/settings/AgreementsSettingsSection"), { loading: SectionLoading, ssr: false });
 const ReferenceSection          = dynamic(() => import("@/components/settings/ReferenceSection"),          { loading: SectionLoading, ssr: false });
+const UsageSection              = dynamic(() => import("@/components/settings/UsageSection"),              { loading: SectionLoading, ssr: false });
 import { SettingsScopeProvider } from "@/components/providers/SettingsScopeProvider";
 import SectionGate from "@/components/settings/SectionGate";
 import EditingScopeHeader from "@/components/settings/EditingScopeHeader";
 import { SettingsActionsProvider } from "@/components/settings/SettingsActions";
-import SavedPill from "@/components/shared/SavedPill";
 import type { SectionLayers } from "@/lib/settings-scope/types";
 import Commentable from "@/components/comments/Commentable";
 
@@ -52,10 +52,10 @@ type SectionKey =
   | "pipelines" | "job_types" | "projects" | "work_orders" | "tasks" | "photo_categories" | "calendar_dispatch" | "tracking" | "agreements"
   | "items_categories" | "salesbook_library" | "terms_conditions" | "taxes_fees"
   | "communication"
-  | "industry" | "custom_fields" | "dashboard_layouts" | "reference";
+  | "industry" | "custom_fields" | "dashboard_layouts" | "reference" | "usage";
 
 type CategoryKey =
-  | "operations" | "sales_catalog" | "customization" | "communication";
+  | "operations" | "sales_catalog" | "customization" | "communication" | "account";
 
 // View modes — drives what the right panel renders
 type View =
@@ -128,6 +128,14 @@ const CATEGORIES: Category[] = [
       { key: "communication", label: "Communication",       description: "CRM email, SMS, and phone usage settings", icon: MessageSquare },
     ],
   },
+  {
+    key: "account", label: "Account",
+    description: "Plan, metered usage, and billing",
+    icon: Gauge,
+    items: [
+      { key: "usage", label: "Plan & Usage", description: "Storage, SMS, voice, email, and AI usage against your plan", icon: Gauge },
+    ],
+  },
 ];
 
 // ─── Which hierarchy layer each section is edited at ──────
@@ -150,6 +158,7 @@ const SECTION_LAYERS: Record<SectionKey, SectionLayers> = {
   custom_fields:      ["org", "company"],
   dashboard_layouts:  "any",
   reference:          "any",
+  usage:              "any",
 };
 
 // Sections that render as a hub: a container picker first, then the chosen
@@ -309,6 +318,7 @@ export default function SettingsPage() {
       case "dashboard_layouts":  return <DashboardLayoutsSection />;
       case "industry":           return <IndustryDefaultsSection />;
       case "reference":          return <ReferenceSection />;
+      case "usage":              return <UsageSection />;
       default:                   return null;
     }
   }
@@ -349,7 +359,7 @@ export default function SettingsPage() {
     } : undefined;
     return (
       <div className="space-y-5">
-        {/* Breadcrumb row — Save action sits inline on the right */}
+        {/* Breadcrumb row */}
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-1.5 text-sm min-w-0" style={{ color: "var(--text-muted)" }}>
             <button onClick={goHome}
@@ -453,7 +463,6 @@ export default function SettingsPage() {
           {renderContent()}
         </div>
       </div>
-      <SavedPill />
     </div>
     </SettingsActionsProvider>
     </SettingsScopeProvider>

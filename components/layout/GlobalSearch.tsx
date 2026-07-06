@@ -6,12 +6,13 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Search, Users, Briefcase, TrendingUp, FileText, Receipt, FolderKanban, FileCheck, MessageSquare } from "lucide-react";
+import { Search, Users, Briefcase, TrendingUp, FileText, Receipt, FolderKanban, FilePen, ClipboardList, MessageSquare } from "lucide-react";
 import { searchAll, type SearchGroup, type SearchResult } from "@/lib/search/global";
 
+// One icon per module — the SAME icons the sidebar sections use.
 const GROUP_ICON: Record<SearchGroup, typeof Users> = {
-  Customers: Users, Jobs: Briefcase, Leads: TrendingUp,
-  Quotes: FileText, Invoices: Receipt, Projects: FolderKanban, Agreements: FileCheck,
+  Customers: Users, Jobs: Briefcase, "Work Orders": ClipboardList, Leads: TrendingUp,
+  Quotes: FilePen, Invoices: Receipt, Projects: FolderKanban, Agreements: FileText,
   Comments: MessageSquare,
 };
 

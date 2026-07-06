@@ -2,10 +2,11 @@
 
 import React, { use, useState, Suspense } from "react";
 import Link from "next/link";
+import RowArrow from "@/components/shared/RowArrow";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowLeft, CheckCircle, Circle, ChevronRight, Phone, MapPin, User, Clock, Calendar, DollarSign, Briefcase, AlertTriangle, ListChecks, Plus, Trash2, Ban, RotateCcw, Info, Repeat, Users, Check, Receipt, CircleDollarSign, Wallet } from "lucide-react";
+import { ArrowLeft, ArrowUpRight, CheckCircle, Circle, ChevronRight, Phone, MapPin, User, Clock, Calendar, DollarSign, Briefcase, AlertTriangle, ListChecks, Plus, Trash2, Ban, RotateCcw, Info, Repeat, Users, Check, Receipt, CircleDollarSign, Wallet } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { getJob, updateJob, deleteJob, getWorkOrder, getWorkOrderById, getWorkOrdersForJob, getJobNotes, resolveJobStatus, type JobNoteType, type WorkOrderStatus } from "@/lib/jobs/data";
+import { getJob, updateJob, deleteJob, getWorkOrder, getWorkOrderById, getWorkOrdersForJob, getJobNotes, resolveJobStatus, type Job, type JobStatus, type JobNoteType, type WorkOrderStatus } from "@/lib/jobs/data";
 import { getAppointmentsForJob, VISIT_TYPE_CONFIG, type AppointmentStatus } from "@/lib/appointments/data";
 import { useDataVersion } from "@/lib/sync/useDataVersion";
 import ReturnVisitModal from "@/components/jobs/ReturnVisitModal";
@@ -23,13 +24,18 @@ import { getQuotesForJob, getInvoicesForJob, createInvoiceFromJob, createInvoice
 import { getJobLedger, sumUnbilled } from "@/lib/billing/ledger";
 import { usePermissions } from "@/components/providers/PermissionProvider";
 import { QUOTE_STATUS_STYLE, INVOICE_STATUS_STYLE } from "@/lib/quotes/types";
-import PhotoGallery from "@/components/files/PhotoGallery";
+import NotesAndFiles from "@/components/files/NotesAndFiles";
 import QuoteTypeChooser from "@/components/quotes/create/QuoteTypeChooser";
 import DetailTabs from "@/components/shared/DetailTabs";
 import RecordTasks from "@/components/tasks/RecordTasks";
-import { JobHistoryList } from "@/components/jobs/JobStatusControl";
+import HistoryFeed from "@/components/shared/HistoryFeed";
+import { getPartOrders } from "@/lib/jobs/parts";
+import type { ActivityEvent, EventType } from "@/lib/activity/types";
 
-const TABS = ["Overview", "Billing", "Work Order", "Visits", "Tasks", "Photos & Files", "Notes", "Customer", "History"];
+// Work-order status accent (hover-revealed status text on Overview rows).
+const WO_STATUS_COLOR: Record<WorkOrderStatus, string> = { pending: "#d97706", in_progress: "#0891b2", completed: "#10b981" };
+
+const TABS = ["Overview", "Billing", "Work Order", "Visits", "Tasks", "Notes & Files", "History"];
 
 const WO_STATUS_META: Record<WorkOrderStatus, { label: string; color: string }> = {
   pending:     { label: "Pending",     color: "#9ca3af" },
@@ -60,11 +66,7 @@ function VisitsTab({ jobId, onSchedule }: { jobId: string; onSchedule: () => voi
   const canVisit = React.useMemo(() => { const j = getJob(jobId); return j ? canAddVisit(j).allowed : false; }, [jobId, rev]);
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Visits</p>
-          <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>Each visit is its own appointment + work order — schedule the next when a job needs another trip.</p>
-        </div>
+      <div className="flex items-center justify-end gap-3">
         {canVisit && (
           <button onClick={onSchedule} className="group inline-flex items-center gap-1.5 text-xs font-medium shrink-0 transition-colors" style={{ color: "#4f46e5" }}>
             <span className="w-4 h-4 rounded-full flex items-center justify-center transition-all group-hover:brightness-95" style={{ backgroundColor: "#4f46e51a" }}><Repeat className="w-3 h-3" /></span>
@@ -81,13 +83,12 @@ function VisitsTab({ jobId, onSchedule }: { jobId: string; onSchedule: () => voi
         const m = APPT_STATUS_META[v.status];
         const vt = v.visitType ? VISIT_TYPE_CONFIG[v.visitType] : undefined;
         return (
-          <div key={v.id} className="rounded-xl p-3.5 flex items-start gap-3" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
+          <div key={v.id} className="group rounded-xl p-3.5 flex items-start gap-3" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
             <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 text-[11px] font-bold" style={{ backgroundColor: "var(--accent-soft-bg)", color: "var(--accent-text)" }}>{i + 1}</div>
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 flex-wrap">
                 <Link href={`/work-orders/${v.workOrderId}`} className="text-sm font-semibold truncate hover:underline" style={{ color: "var(--text-primary)" }}>{wo?.title || `Visit ${i + 1}`}</Link>
                 {vt && <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: vt.color + "22", color: vt.color }}>{vt.short}</span>}
-                <StatusBadge label={m.label} color={m.color} size="sm" />
               </div>
               <div className="flex items-center gap-3 mt-1 text-xs" style={{ color: "var(--text-muted)" }}>
                 <span className="inline-flex items-center gap-1"><Calendar className="w-3 h-3" /> {v.scheduledDate || "Unscheduled"}{v.scheduledTime ? ` · ${v.scheduledTime}` : ""}</span>
@@ -95,6 +96,10 @@ function VisitsTab({ jobId, onSchedule }: { jobId: string; onSchedule: () => voi
                 <span className="inline-flex items-center gap-1"><Users className="w-3 h-3" /> {v.techIds.length ? v.techIds.join(", ") : "Unassigned"}</span>
               </div>
             </div>
+            {/* Visit status — revealed on hover, right side */}
+            <span className="inline-flex items-center gap-1 shrink-0 pt-1 text-xs font-semibold opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: m.color }}>
+              <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: m.color }} />{m.label}
+            </span>
           </div>
         );
       })}
@@ -180,13 +185,15 @@ function OverviewTab({ jobId }: { jobId: string }) {
               {workOrders.length === 0 ? (
                 <p className="px-4 py-6 text-center text-sm" style={{ color: "var(--text-muted)" }}>No work order created for this job yet.</p>
               ) : workOrders.map((w, i) => (
-                <Link key={w.id} href={`/work-orders/${w.id}`} className="flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-[var(--bg-surface-2)]"
+                // Quiet at rest — status fades in on hover, and the arrow nudge
+                // says "click me, this opens the work order".
+                <Link key={w.id} href={`/work-orders/${w.id}`} className="group flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-[var(--bg-surface-2)]"
                   style={{ borderTop: i > 0 ? "1px solid var(--border)" : "none" }}>
-                  <div className="flex items-center gap-2 min-w-0">
-                    <ListChecks className="w-3.5 h-3.5 shrink-0" style={{ color: "var(--text-muted)" }} />
-                    <span className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{w.title}</span>
-                  </div>
-                  <span className="text-xs shrink-0 capitalize" style={{ color: "var(--text-muted)" }}>{w.checklist.filter(c => c.isComplete).length}/{w.checklist.length} · {w.status.replace(/_/g, " ")}</span>
+                  <span className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{w.title}</span>
+                  <span className="flex items-center gap-2 shrink-0">
+                    <span className="text-xs capitalize font-semibold opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: WO_STATUS_COLOR[w.status] ?? "var(--text-muted)" }}>{w.status.replace(/_/g, " ")}</span>
+                    <ArrowUpRight className="w-3.5 h-3.5 opacity-0 -translate-x-0.5 translate-y-0.5 transition-all group-hover:opacity-100 group-hover:translate-x-0 group-hover:translate-y-0" style={{ color: "var(--accent-text)" }} />
+                  </span>
                 </Link>
               ))}
             </div>
@@ -228,16 +235,22 @@ function OverviewTab({ jobId }: { jobId: string }) {
                     const vwo = getWorkOrderById(v.workOrderId);
                     const m = APPT_STATUS_META[v.status];
                     return (
-                      <Link key={v.id} href={`/work-orders/${v.workOrderId}`} className="flex items-start gap-2.5 group">
+                      // Visits are pure information (the work order is the thing you
+                      // open) — no link styling, no hover animation.
+                      <div key={v.id} className="group flex items-start gap-2.5">
                         <span className="w-5 h-5 rounded-md flex items-center justify-center shrink-0 text-[10px] font-bold" style={{ backgroundColor: "var(--accent-soft-bg)", color: "var(--accent-text)" }}>{i + 1}</span>
                         <div className="min-w-0 flex-1">
-                          <p className="text-sm font-medium truncate group-hover:underline" style={{ color: "var(--text-primary)" }}>{vwo?.title || `Visit ${i + 1}`}</p>
-                          <div className="flex items-center gap-2 mt-0.5">
-                            <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>{v.scheduledDate || "Unscheduled"}{v.scheduledTime ? ` · ${v.scheduledTime}` : ""}</span>
-                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold" style={{ color: m.color }}><span className="w-1 h-1 rounded-full" style={{ backgroundColor: m.color }} />{m.label}</span>
-                          </div>
+                          <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{vwo?.title || `Visit ${i + 1}`}</p>
+                          {/* Date & time live under the visit */}
+                          <p className="text-[10px] mt-0.5" style={{ color: "var(--text-muted)" }}>
+                            {v.scheduledDate || "Unscheduled"}{v.scheduledTime ? ` · ${v.scheduledTime}` : ""}
+                          </p>
                         </div>
-                      </Link>
+                        {/* Visit status — revealed on hover, right side */}
+                        <span className="inline-flex items-center gap-1 shrink-0 pt-0.5 text-[10px] font-semibold opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: m.color }}>
+                          <span className="w-1 h-1 rounded-full" style={{ backgroundColor: m.color }} />{m.label}
+                        </span>
+                      </div>
                     );
                   })}
                 </div>
@@ -256,14 +269,15 @@ function OverviewTab({ jobId }: { jobId: string }) {
           ) : quotes.map((q, i) => {
             const qs = QUOTE_STATUS_STYLE[q.status];
             return (
-              <Link key={q.id} href={`/quotes/${q.id}`} className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-[var(--bg-surface-2)]"
+              <Link key={q.id} href={`/quotes/${q.id}`} className="group flex items-center gap-3 px-4 py-3 transition-colors hover:bg-[var(--bg-surface-2)]"
                 style={{ borderTop: i > 0 ? "1px solid var(--border)" : "none", textDecoration: "none" }}>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-mono font-medium" style={{ color: "var(--text-primary)" }}>{q.quoteNumber}</p>
                   <p className="text-xs mt-0.5 truncate" style={{ color: "var(--text-muted)" }}>{q.title}</p>
                 </div>
-                <StatusBadge label={qs.label} color={qs.color} className="shrink-0" />
+                <span className="text-xs font-semibold shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: qs.color }}>{qs.label}</span>
                 <span className="text-sm font-semibold shrink-0" style={{ color: "var(--text-primary)" }}>{q.total > 0 ? fmt(q.total) : "TBD"}</span>
+                <ArrowUpRight className="w-3.5 h-3.5 shrink-0 opacity-0 -translate-x-0.5 translate-y-0.5 transition-all group-hover:opacity-100 group-hover:translate-x-0 group-hover:translate-y-0" style={{ color: "var(--accent-text)" }} />
               </Link>
             );
           })}
@@ -276,17 +290,18 @@ function OverviewTab({ jobId }: { jobId: string }) {
           ) : invoices.map((inv, i) => {
             const is = INVOICE_STATUS_STYLE[inv.status];
             return (
-              <Link key={inv.id} href={`/invoices/${inv.id}`} className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-[var(--bg-surface-2)]"
+              <Link key={inv.id} href={`/invoices/${inv.id}`} className="group flex items-center gap-3 px-4 py-3 transition-colors hover:bg-[var(--bg-surface-2)]"
                 style={{ borderTop: i > 0 ? "1px solid var(--border)" : "none", textDecoration: "none" }}>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-mono font-medium" style={{ color: "var(--text-primary)" }}>{inv.invoiceNumber}</p>
                   <p className="text-xs mt-0.5 truncate" style={{ color: "var(--text-muted)" }}>{inv.title}</p>
                 </div>
-                <StatusBadge label={is.label} color={is.color} className="shrink-0" />
+                <span className="text-xs font-semibold shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: is.color }}>{is.label}</span>
                 <div className="text-right shrink-0">
                   <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{fmt(inv.total)}</p>
                   {inv.balanceDue > 0 && <p className="text-[10px]" style={{ color: inv.status === "past_due" ? "#dc2626" : "var(--text-muted)" }}>{fmt(inv.balanceDue)} due</p>}
                 </div>
+                <ArrowUpRight className="w-3.5 h-3.5 shrink-0 opacity-0 -translate-x-0.5 translate-y-0.5 transition-all group-hover:opacity-100 group-hover:translate-x-0 group-hover:translate-y-0" style={{ color: "var(--accent-text)" }} />
               </Link>
             );
           })}
@@ -329,11 +344,7 @@ function WorkOrderTab({ jobId }: { jobId: string }) {
     <div className="space-y-3">
       {wizard && <WorkOrderWizard preset={{ jobId }} onClose={() => setWizard(false)} onCreated={() => { setWizard(false); setWoVersion(v => v + 1); }} />}
 
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Work Orders</p>
-          <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>The field-execution packets for this job — scope, checklist, materials &amp; photos live inside each one.</p>
-        </div>
+      <div className="flex items-center justify-end gap-3">
         <button onClick={() => setWizard(true)} className="group inline-flex items-center gap-1.5 text-xs font-medium shrink-0 transition-colors" style={{ color: "#4f46e5" }}>
           <span className="w-4 h-4 rounded-full flex items-center justify-center transition-all group-hover:brightness-95" style={{ backgroundColor: "#4f46e51a" }}><Plus className="w-3 h-3" /></span>
           New work order
@@ -349,21 +360,17 @@ function WorkOrderTab({ jobId }: { jobId: string }) {
         const done = w.checklist.filter(c => c.isComplete).length;
         const lines = w.lineItems?.length ?? 0;
         return (
-          <Link key={w.id} href={`/work-orders/${w.id}`} className="rounded-xl p-3.5 flex items-center gap-3 hover:bg-[var(--bg-surface-2)] transition-colors" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
-            <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: "var(--accent-soft-bg)" }}>
-              <ListChecks className="w-4 h-4" style={{ color: "var(--accent-text)" }} />
-            </div>
+          <Link key={w.id} href={`/work-orders/${w.id}`} className="group rounded-xl p-3.5 flex items-center gap-3 hover:bg-[var(--bg-surface-2)] transition-colors" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
             <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
-                <p className="text-sm font-semibold truncate" style={{ color: "var(--text-primary)" }}>{w.title}</p>
-                <StatusBadge label={st.label} color={st.color} size="sm" />
-              </div>
+              <p className="text-sm font-semibold truncate" style={{ color: "var(--text-primary)" }}>{w.title}</p>
               <div className="flex items-center gap-3 mt-1 text-xs" style={{ color: "var(--text-muted)" }}>
                 <span className="inline-flex items-center gap-1"><ListChecks className="w-3 h-3" /> {w.checklist.length ? `${done}/${w.checklist.length} checklist` : "No checklist"}</span>
                 {lines > 0 && <span className="inline-flex items-center gap-1"><DollarSign className="w-3 h-3" /> {lines} line item{lines === 1 ? "" : "s"}</span>}
               </div>
             </div>
-            <ChevronRight className="w-4 h-4 shrink-0" style={{ color: "var(--text-muted)" }} />
+            {/* Status + the "opens the work order" arrow — revealed on hover */}
+            <span className="text-xs font-semibold shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: st.color }}>{st.label}</span>
+            <ArrowUpRight className="w-3.5 h-3.5 shrink-0 opacity-0 -translate-x-0.5 translate-y-0.5 transition-all group-hover:opacity-100 group-hover:translate-x-0 group-hover:translate-y-0" style={{ color: "var(--accent-text)" }} />
           </Link>
         );
       })}
@@ -371,79 +378,7 @@ function WorkOrderTab({ jobId }: { jobId: string }) {
   );
 }
 
-// ─── Notes tab ────────────────────────────────────────────
-function NotesTab({ jobId }: { jobId: string }) {
-  const [draft, setDraft] = useState("");
-  const notes = getJobNotes(jobId);
 
-  return (
-    <div className="max-w-2xl space-y-4">
-      <div className="rounded-xl p-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
-        <textarea value={draft} onChange={e => setDraft(e.target.value)}
-          placeholder="Add a note..." rows={3}
-          className="w-full resize-none text-sm outline-none bg-transparent"
-          style={{ color: "var(--text-primary)" }} />
-        <div className="flex justify-end mt-3 pt-3" style={{ borderTop: "1px solid var(--border)" }}>
-          <button disabled={!draft.trim()}
-            className="px-3 py-1.5 rounded-lg text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 transition-colors">
-            Save Note
-          </button>
-        </div>
-      </div>
-      {notes.length === 0
-        ? <p className="text-sm text-center py-8" style={{ color: "var(--text-muted)" }}>No notes yet</p>
-        : notes.map(note => (
-          <div key={note.id} className="rounded-xl p-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
-            <div className="flex items-start gap-3">
-              <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold text-white"
-                style={{ backgroundColor: NOTE_COLORS[note.type] }}>
-                {note.userInitials}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-xs font-semibold" style={{ color: "var(--text-primary)" }}>{note.user}</span>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded capitalize" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>{note.type}</span>
-                  <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>{note.date}</span>
-                </div>
-                <p className="text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>{note.text}</p>
-              </div>
-            </div>
-          </div>
-        ))
-      }
-    </div>
-  );
-}
-
-// ─── Customer tab ─────────────────────────────────────────
-function CustomerTab({ jobId }: { jobId: string }) {
-  const job      = getJob(jobId)!;
-  const customer = getCustomer(job.accountId);
-  if (!customer) return <StubContent label="Customer record not found." />;
-  return (
-    <div className="max-w-sm">
-      <div className="rounded-xl p-5" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-full bg-[#e5e0db] flex items-center justify-center text-[#5c5545] text-sm font-bold">{customer.initials}</div>
-          <div>
-            <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{customer.name}</p>
-            <p className="text-xs" style={{ color: "var(--text-muted)" }}>{customer.locationName}</p>
-          </div>
-        </div>
-        <div className="space-y-2.5">
-          <InfoRow icon={Phone} label="Phone" value={customer.phone} />
-          {customer.email && <InfoRow icon={Phone} label="Email" value={customer.email} />}
-          <InfoRow icon={MapPin} label="Address" value={`${customer.address}, ${customer.city}, ${customer.state}`} />
-        </div>
-        <div className="mt-4 pt-4" style={{ borderTop: "1px solid var(--border)" }}>
-          <Link href={`/customers/${customer.id}`} className="flex items-center justify-between text-sm font-medium text-indigo-600 hover:text-indigo-700">
-            Open customer record <ChevronRight className="w-4 h-4" />
-          </Link>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 // ─── Stub content ─────────────────────────────────────────
 function StubContent({ label }: { label: string }) {
@@ -658,12 +593,15 @@ function JobFinancialsTab({ jobId }: { jobId: string }) {
 
   function Section({ title, onNew, newLabel = "New Quote", children }: { title: string; onNew?: () => void; newLabel?: string; children: React.ReactNode }) {
     return (
-      <div className="rounded-xl overflow-hidden self-start w-full" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
-        <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid var(--border)" }}>
+      // h-full so Quotes & Invoices always sit level (one card never ends short
+      // of its neighbor); long lists scroll INSIDE the capped body instead of
+      // stretching the card down the page.
+      <div className="rounded-xl overflow-hidden w-full h-full flex flex-col" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
+        <div className="shrink-0 flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid var(--border)" }}>
           <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{title}</p>
           {onNew && <DetailActionButton onClick={onNew}>{newLabel}</DetailActionButton>}
         </div>
-        {children}
+        <div className="flex-1 min-h-0 max-h-[400px] overflow-y-auto thin-scroll-y">{children}</div>
       </div>
     );
   }
@@ -677,8 +615,9 @@ function JobFinancialsTab({ jobId }: { jobId: string }) {
 
       <JobDepositControl jobId={jobId} />
 
-      {/* Quotes + Invoices — side by side once there's room, stacked on narrow */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 items-start">
+      {/* Quotes + Invoices — side by side once there's room, stacked on narrow.
+          Cells stretch so both cards end level regardless of row counts. */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
       <Section title={`Quotes (${quotes.length})`} onNew={() => setWizard(true)}>
         {quotes.length === 0 ? (
           <div className="px-4 py-8 text-center"><p className="text-sm" style={{ color: "var(--text-muted)" }}>No quotes for this job</p></div>
@@ -694,8 +633,8 @@ function JobFinancialsTab({ jobId }: { jobId: string }) {
               </div>
               {/* Status appears on row hover only — rows stay quiet at rest. */}
               <StatusBadge label={s.label} color={s.color} className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
-              <span className="text-sm font-semibold shrink-0" style={{ color: "var(--text-primary)" }}>{q.total > 0 ? fmt(q.total) : "TBD"}</span>
-              <ChevronRight className="w-4 h-4 shrink-0" style={{ color: "var(--text-muted)" }} />
+              <span className="text-sm font-semibold shrink-0 pr-3" style={{ color: "var(--text-primary)" }}>{q.total > 0 ? fmt(q.total) : "TBD"}</span>
+              <RowArrow />
             </Link>
           );
         })}
@@ -719,11 +658,11 @@ function JobFinancialsTab({ jobId }: { jobId: string }) {
               </div>
               {/* Status appears on row hover only — rows stay quiet at rest. */}
               <StatusBadge label={s.label} color={s.color} className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
-              <div className="text-right shrink-0">
+              <div className="text-right shrink-0 pr-3">
                 <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{fmt(inv.total)}</p>
                 {inv.balanceDue > 0 && <p className="text-[10px]" style={{ color: inv.status === "past_due" ? "#dc2626" : "var(--text-muted)" }}>{fmt(inv.balanceDue)} due</p>}
               </div>
-              <ChevronRight className="w-4 h-4 shrink-0" style={{ color: "var(--text-muted)" }} />
+              <RowArrow />
             </Link>
           );
         })}
@@ -734,6 +673,86 @@ function JobFinancialsTab({ jobId }: { jobId: string }) {
       <JobLedgerCard jobId={jobId} />
     </div>
   );
+}
+
+
+// ─── History tab — the customer-style activity feed, built from job data ─────
+// Status transitions, work orders, notes, quotes/invoices/payments, and ordered
+// parts all merge into one day-grouped, filterable feed (components/shared/HistoryFeed).
+function isoOf(v?: string): string {
+  if (!v) return "";
+  const d = new Date(v);
+  return isNaN(d.getTime()) ? "" : d.toISOString();
+}
+function idIso(id: string): string {
+  const m = id.match(/-(\d{13})(?:\D|$)/);
+  return m ? new Date(Number(m[1])).toISOString() : "";
+}
+function JobHistoryTab({ job, onTab }: { job: Job; onTab: (tab: string) => void }) {
+  const events = React.useMemo(() => {
+    const ev: ActivityEvent[] = [];
+    const push = (id: string, eventType: EventType, title: string, createdAt: string, createdBy = "—", description?: string) => {
+      if (!createdAt) createdAt = new Date().toISOString();
+      ev.push({ id, customerId: job.accountId, eventType, title, description, createdBy, createdAt, displayDate: createdAt.slice(0, 10) });
+    };
+
+    // Status audit trail — completed/scheduled get their milestone types; every
+    // other transition renders as an honest "Status Changed".
+    for (const h of job.statusHistory ?? []) {
+      const type: EventType = h.to === "completed" ? "job_completed" : h.to === "scheduled" || h.to === "dispatched" ? "job_scheduled" : "status_changed";
+      push(`jh-${h.id}`, type, `${jobStatusName(h.from)} → ${jobStatusName(h.to)}`, isoOf(h.at), h.byName, h.override ? `Override${h.reason ? ` — ${h.reason}` : ""}` : undefined);
+    }
+
+    // Work orders
+    for (const w of getWorkOrdersForJob(job.id)) {
+      push(`jw-${w.id}`, "work_order_created", w.title, idIso(w.id) || isoOf(job.scheduledDate), "—");
+      if (w.completedAt) push(`jwc-${w.id}`, "job_completed", `Work order completed — ${w.title}`, isoOf(w.completedAt), w.signatureName ?? "—");
+    }
+
+    // Notes
+    for (const n of getJobNotes(job.id)) {
+      push(`jn-${n.id}`, "note_added", "Note added", isoOf(n.date) || idIso(n.id), n.user, n.text);
+    }
+
+    // Quotes + invoices + payments
+    for (const q of getQuotesForJob(job.id)) {
+      push(`jq-${q.id}`, "quote_created", `${q.quoteNumber} — ${q.title}`, isoOf(q.createdAt) || idIso(q.id), q.createdBy);
+      if (q.approvedAt) push(`jqa-${q.id}`, "quote_accepted", `${q.quoteNumber} approved`, isoOf(q.approvedAt), "—");
+    }
+    for (const inv of getInvoicesForJob(job.id)) {
+      push(`ji-${inv.id}`, "invoice_created", `${inv.invoiceNumber} — ${inv.title}`, isoOf(inv.createdAt) || idIso(inv.id), "—", fmt(inv.total));
+      for (const pay of inv.payments ?? []) {
+        push(`jp-${pay.id}`, "payment_received", `Payment on ${inv.invoiceNumber}`, isoOf(pay.at) || idIso(pay.id), "—", fmt(pay.amount));
+      }
+    }
+
+    // Parts on order (arrivals matter to the story of a waiting job)
+    for (const part of getPartOrders(job.id)) {
+      push(`jpo-${part.id}`, "status_changed", `Part ordered — ${part.description}`, isoOf(part.orderedAt), "—", part.supplier);
+      if (part.receivedAt) push(`jpr-${part.id}`, "status_changed", `Part received — ${part.description}`, isoOf(part.receivedAt), "—");
+    }
+
+    return ev.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [job.id, job.statusHistory]);
+
+  // Remap the feed's destinations to THIS page's tabs; null = row not clickable.
+  const mapTab = (t: string): string | null => {
+    switch (t) {
+      case "WorkOrders": return "Work Order";
+      case "Jobs": return "Overview";
+      case "Billing": return "Billing";
+      case "Notes": case "Photos & Files": return "Notes & Files";
+      case "Tasks": return "Tasks";
+      default: return null;
+    }
+  };
+  return <HistoryFeed events={events} onTab={onTab} mapTab={mapTab} />;
+}
+
+// Human status names for the history feed (falls back to the raw key).
+function jobStatusName(key: string): string {
+  return resolveJobStatus(key as JobStatus, getJobStatuses().filter(st => st.active)).label ?? key;
 }
 
 // ─── Shared primitives ────────────────────────────────────
@@ -827,7 +846,7 @@ function JobDetailContent({ params }: { params: Promise<{ id: string }> }) {
             <div className="w-px h-5 shrink-0" style={{ backgroundColor: "var(--border)" }} />
             <div className="min-w-0">
               <h1 className="text-base font-semibold truncate" style={{ color: "var(--text-primary)" }}>{job.title}</h1>
-              <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>{job.customerName} · {job.scheduledDate} at {job.scheduledTime}</p>
+              <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>{job.customerName}</p>
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">
@@ -865,11 +884,14 @@ function JobDetailContent({ params }: { params: Promise<{ id: string }> }) {
         {tab === "Work Order"        && <WorkOrderTab jobId={id} />}
         {tab === "Visits"            && <VisitsTab    jobId={id} onSchedule={() => setReturnOpen(true)} />}
         {tab === "Tasks"             && <RecordTasks type="job" id={id} />}
-        {tab === "Notes"             && <NotesTab     jobId={id} />}
-        {tab === "Customer"          && <CustomerTab  jobId={id} />}
-        {tab === "Photos & Files"    && <PhotoGallery recordLevel="job" scope={{ accountId: job.accountId, jobId: id, projectId: job.projectId }} accountName={job.customerName} />}
+        {/* Notes & files go hand in hand — one combined tab. One "Add" chooser:
+            upload files, or write a document that saves AS a file. */}
+        {tab === "Notes & Files"     && (
+          <NotesAndFiles recordLevel="job" scope={{ accountId: job.accountId, jobId: id, projectId: job.projectId }}
+            accountName={job.customerName} />
+        )}
         {tab === "Billing"           && <JobFinancialsTab jobId={id} />}
-        {tab === "History"           && <JobHistoryList job={job} />}
+        {tab === "History"           && <JobHistoryTab job={job} onTab={setTab} />}
       </div>
 
       {/* Delete confirmation */}

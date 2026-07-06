@@ -190,12 +190,11 @@ export default function LeadWizard({ preset, onClose, onCreated }: {
         </div>
       </div>
 
-      {/* New account → reuse the full customer wizard, forced to Prospect, and
+      {/* New account → reuse the customer popup, forced to Prospect, and
           continue straight into the lead once it's created. */}
       {showNewAccount && (
         <NewCustomerModal
           open
-          forceFullWizard
           forceStatus="Prospect"
           onClose={() => setShowNewAccount(false)}
           onCreated={(c) => { setShowNewAccount(false); setAccountId(c.id); setMode("existing"); }}

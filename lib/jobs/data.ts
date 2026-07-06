@@ -8,7 +8,9 @@
 import { getJobTypes, getJobType, workOrderPolicyForType } from "@/lib/job-config/data";
 import {
   getTemplates, getChecklist, getInstructions, suggestTemplateForJobType,
+  type ChecklistItemType,
 } from "@/lib/work-order-templates/data";
+export type { ChecklistItemType } from "@/lib/work-order-templates/data";
 import { notifyDataChanged, invalidateOnStorage } from "@/lib/sync/liveData";
 import { getSupabase } from "@/lib/supabase/client";
 
@@ -95,6 +97,12 @@ export interface ChecklistItem {
   completedBy?: string;
   sortOrder: number;
   required?: boolean;     // blocks job completion until done (unless overridden)
+  // Typed steps (snapshotted from the template builder): how the tech answers,
+  // and their answer. Absent type = plain checkbox.
+  type?: ChecklistItemType;
+  options?: string[];        // dropdown / multi_select choices
+  unit?: string;             // number unit, e.g. "PSI"
+  value?: string | string[]; // the tech's entry (multi_select = array)
 }
 
 // A part/labor/fee captured on a work order — the line items the invoice is
@@ -496,7 +504,7 @@ export interface NewWorkOrderInput {
   templateId?: string;
   // Checklist items snapshotted from the chosen template (in order). `required`
   // items gate job completion (see lib/jobs/lifecycle).
-  checklist: { label: string; required?: boolean }[];
+  checklist: { label: string; required?: boolean; type?: ChecklistItemType; options?: string[]; unit?: string }[];
 }
 export function createWorkOrder(input: NewWorkOrderInput): WorkOrder {
   const wo: WorkOrder = {
@@ -507,6 +515,7 @@ export function createWorkOrder(input: NewWorkOrderInput): WorkOrder {
     status: "pending",
     checklist: input.checklist.map((c, i) => ({
       id: `ci-${Date.now()}-${i}`, label: c.label, isComplete: false, sortOrder: i + 1, required: c.required,
+      type: c.type, options: c.options, unit: c.unit,
     })),
   };
   _woById = { ...woStore(), [wo.id]: wo };
@@ -542,7 +551,7 @@ export function materializeWorkOrderForJob(job: Job): WorkOrder | undefined {
     title: tmpl.name,
     instructions: instr.customerFacing || instr.internal || tmpl.description,
     templateId: tmpl.id,
-    checklist: items.map(c => ({ label: c.label, required: c.required })),
+    checklist: items.map(c => ({ label: c.label, required: c.required, type: c.type, options: c.options, unit: c.unit })),
   });
 }
 

@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useRef, useEffect } from "react";
 import Link from "next/link";
+import RowArrow from "@/components/shared/RowArrow";
 import { Search, Plus, SlidersHorizontal, ChevronUp, ChevronDown, Users, UserPlus, TrendingUp, Building2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { type Customer, type AccountType, type CustomerType, type CustomerStatus } from "@/lib/customers/data";
@@ -294,7 +295,7 @@ export default function CustomersPage() {
               <Link
                 key={c.id}
                 href={`/customers/${c.id}`}
-                className="grid px-4 py-3 transition-colors hover:bg-[var(--bg-surface-2)] items-center"
+                className="relative group grid px-4 py-3 transition-colors hover:bg-[var(--bg-surface-2)] items-center"
                 style={{
                   gridTemplateColumns: "2fr 1fr 1fr 2.5fr 1fr 1fr",
                   // Keep the border at 1px always (transparent on the last row) so
@@ -305,9 +306,12 @@ export default function CustomersPage() {
                   textDecoration: "none",
                 }}
               >
+                <RowArrow />
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="w-7 h-7 rounded-full bg-[#e5e0db] flex items-center justify-center text-[#7a6f5c] shrink-0">
-                    <Users className="w-3.5 h-3.5" />
+                  {/* Same tile the global search shows for a customer result */}
+                  <div className="w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-bold shrink-0"
+                    style={{ backgroundColor: "var(--accent-soft-bg)", color: "var(--accent-text)" }}>
+                    {c.initials}
                   </div>
                   <div className="min-w-0">
                     <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{c.name}</p>

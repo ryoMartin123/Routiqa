@@ -206,6 +206,23 @@ export default function CommentsDrawer() {
   const soloPinLabel = soloId ? pinLabels[soloId] : undefined;
   const visibleThreads = soloId ? threads.filter(t => t.root.id === soloId) : threads;
 
+  // Enter/exit animation — same rhythm as the dispatch board's visit drawer:
+  // mount hidden → rAF flips visible (slide in); closing slides out first, then
+  // actually closes after the transition.
+  const [visible, setVisible] = useState(false);
+  const reduceMotion = useRef(false);
+  useEffect(() => {
+    if (!drawer.open) { setVisible(false); return; }
+    reduceMotion.current = typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const id = requestAnimationFrame(() => setVisible(true));
+    return () => cancelAnimationFrame(id);
+  }, [drawer.open]);
+  const requestClose = () => {
+    if (reduceMotion.current) { closeDrawer(); return; }
+    setVisible(false);
+    setTimeout(closeDrawer, 300);
+  };
+
   // Scroll to / highlight a thread opened from a deep-link.
   useEffect(() => {
     if (!drawer.open || !drawer.focusThreadId) return;
@@ -272,11 +289,16 @@ export default function CommentsDrawer() {
   return (
     <>
       {/* Backdrop — data-comment-ui so clicking it closes (not drops a pin) in comment mode */}
-      <div data-comment-ui className="fixed inset-0 z-[65]" style={{ backgroundColor: "rgba(0,0,0,0.25)" }} onClick={closeDrawer} />
+      <div data-comment-ui className="fixed inset-0 z-[65]" onClick={requestClose}
+        style={{ backgroundColor: "rgba(0,0,0,0.25)", opacity: visible ? 1 : 0, transition: "opacity 0.3s ease" }} />
 
       {/* Panel */}
       <div data-comment-ui data-comment-panel className="fixed top-0 right-0 bottom-0 z-[70] w-full max-w-md flex flex-col"
-        style={{ backgroundColor: "var(--bg-surface)", borderLeft: "1px solid var(--border)", boxShadow: "-16px 0 48px rgba(0,0,0,0.18)" }}>
+        style={{
+          backgroundColor: "var(--bg-surface)", borderLeft: "1px solid var(--border)", boxShadow: "-16px 0 48px rgba(0,0,0,0.18)",
+          transform: visible ? "translateX(0)" : "translateX(100%)",
+          transition: "transform 0.34s cubic-bezier(0.22, 1, 0.36, 1)",
+        }}>
 
         {/* Header */}
         <div className="flex items-start justify-between gap-3 px-5 py-4 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
@@ -304,7 +326,7 @@ export default function CommentsDrawer() {
               )
             )}
           </div>
-          <button onClick={closeDrawer} className="p-1.5 rounded-lg" style={{ color: "var(--text-muted)" }}><X className="w-4 h-4" /></button>
+          <button onClick={requestClose} className="p-1.5 rounded-lg" style={{ color: "var(--text-muted)" }}><X className="w-4 h-4" /></button>
         </div>
 
         {/* Composer for the targeted anchor */}

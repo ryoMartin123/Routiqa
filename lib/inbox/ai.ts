@@ -4,6 +4,7 @@
 // safe for the bot to send on its own vs. hold for human approval.
 
 import { notifyDataChanged } from "@/lib/sync/liveData";
+import { recordUsage } from "@/lib/usage/data";
 import type { Conversation, TimelineItem } from "./data";
 
 function firstName(name: string): string {
@@ -73,6 +74,8 @@ export function localDraft(c: Conversation): string {
 
 // ── Draft: Claude when available, else local ──────────────
 export async function draftReply(c: Conversation): Promise<{ text: string; source: "claude" | "local" }> {
+  // Every draft is a metered AI action against the plan (Settings → Plan & Usage).
+  recordUsage("ai");
   try {
     const res = await fetch("/api/ai/reply", {
       method: "POST",

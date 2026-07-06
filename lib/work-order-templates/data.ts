@@ -22,27 +22,32 @@ export const WO_PRIORITY_LABELS: Record<WOPriority, string> = {
 };
 
 // ─── Checklist items ──────────────────────────────────────
+// No "checkbox" type — a step with NO type is a simple check-off (the circle
+// on the step itself); Multi Select covers picking among options.
 export type ChecklistItemType =
-  | "checkbox" | "short_text" | "long_text" | "number"
-  | "dropdown" | "photo" | "signature" | "datetime";
+  | "short_text" | "long_text" | "number"
+  | "dropdown" | "multi_select" | "photo" | "signature" | "datetime";
 
 export interface ChecklistItem {
   id:         string;
   templateId: string;
   label:      string;
-  type:       ChecklistItemType;
+  type?:      ChecklistItemType;   // undefined = simple check-off step
   required:   boolean;
   order:      number;
   active:     boolean;
-  options?:   string[];    // for dropdown
+  options?:   string[];    // for dropdown / multi_select — the choices the tech picks from
+  unit?:      string;      // for number — e.g. "PSI", "°F"
   photoIds?:  string[];    // RequiredPhoto ids this step requires (drawn as links on the canvas)
 }
 
 export const CHECKLIST_TYPE_LABELS: Record<ChecklistItemType, string> = {
-  checkbox: "Checkbox", short_text: "Short Text", long_text: "Long Text",
-  number: "Number", dropdown: "Dropdown", photo: "Photo Required",
-  signature: "Signature", datetime: "Date / Time",
+  short_text: "Short Text", long_text: "Long Text",
+  number: "Number", dropdown: "Dropdown", multi_select: "Multi Select",
+  photo: "Photo Required", signature: "Signature", datetime: "Date / Time",
 };
+// Display label that tolerates untyped (check-off) steps.
+export const checklistTypeLabel = (t?: ChecklistItemType) => t ? CHECKLIST_TYPE_LABELS[t] : "Check-off";
 
 // ─── Required photos ──────────────────────────────────────
 export interface RequiredPhoto {
@@ -85,12 +90,12 @@ const DEFAULT_TEMPLATES: WorkOrderTemplate[] = [
 
 // Seed checklist items for the Maintenance Visit template (wt-2)
 const DEFAULT_CHECKLIST: ChecklistItem[] = [
-  { id: "ci-1", templateId: "wt-2", label: "Arrival / Site Verification", type: "checkbox",  required: true,  order: 1, active: true },
+  { id: "ci-1", templateId: "wt-2", label: "Arrival / Site Verification", required: true,  order: 1, active: true },
   { id: "ci-2", templateId: "wt-2", label: "Diagnosis / Inspection",      type: "long_text", required: true,  order: 2, active: true },
-  { id: "ci-3", templateId: "wt-2", label: "Safety Check",                type: "checkbox",  required: true,  order: 3, active: true },
-  { id: "ci-4", templateId: "wt-2", label: "Work Completed",              type: "checkbox",  required: true,  order: 4, active: true },
+  { id: "ci-3", templateId: "wt-2", label: "Safety Check",                required: true,  order: 3, active: true },
+  { id: "ci-4", templateId: "wt-2", label: "Work Completed",              required: true,  order: 4, active: true },
   { id: "ci-5", templateId: "wt-2", label: "Customer Review",             type: "signature", required: false, order: 5, active: true },
-  { id: "ci-6", templateId: "wt-2", label: "Cleanup",                     type: "checkbox",  required: true,  order: 6, active: true },
+  { id: "ci-6", templateId: "wt-2", label: "Cleanup",                     required: true,  order: 6, active: true },
   { id: "ci-7", templateId: "wt-2", label: "Final Photos",                type: "photo",     required: true,  order: 7, active: true },
   { id: "ci-8", templateId: "wt-2", label: "Completion Notes",            type: "long_text", required: false, order: 8, active: true },
 ];
@@ -165,7 +170,11 @@ export function saveTemplates(list: WorkOrderTemplate[]): void {
 // Checklist items (per template)
 export function getChecklist(templateId: string): ChecklistItem[] {
   if (!_checklist) _checklist = read(C_KEY, DEFAULT_CHECKLIST);
-  return _checklist.filter(c => c.templateId === templateId).sort((a, b) => a.order - b.order);
+  return _checklist
+    .filter(c => c.templateId === templateId)
+    // Legacy "checkbox" steps read back as plain check-offs.
+    .map(c => ((c.type as string) === "checkbox" ? { ...c, type: undefined } : c))
+    .sort((a, b) => a.order - b.order);
 }
 export function saveChecklist(templateId: string, items: ChecklistItem[]): void {
   if (!_checklist) _checklist = read(C_KEY, DEFAULT_CHECKLIST);

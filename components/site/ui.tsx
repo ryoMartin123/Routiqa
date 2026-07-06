@@ -1,120 +1,133 @@
-// ─── Marketing primitives ─────────────────────────────────
-// Small building blocks shared across the site sections. They mirror the app's
-// idioms (rounded-2xl, 1px var(--border-subtle), var(--shadow-glow), indigo soft
-// tints) so the site reads as the same product family.
+// ─── Marketing site primitives ────────────────────────────
+// The reusable pieces every section is built from: section shells, headings,
+// feature/industry/package cards, and the two CTA buttons. Light, premium,
+// trades-professional — navy ink, indigo brand, soft slate surfaces.
 
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import Image from "next/image";
+import type { LucideIcon } from "lucide-react";
+import { ArrowRight, CheckCircle2 } from "lucide-react";
 
-export function Section({ id, children, className = "", grid = false }: { id?: string; children: React.ReactNode; className?: string; grid?: boolean }) {
+export const INK = "#0f172a";        // headline navy
+export const BODY = "#475569";       // body slate
+export const BRAND = "#4f46e5";      // Routiqa indigo
+export const BRAND_DARK = "#4338ca";
+
+// ── Section shell ──
+export function Section({ id, className = "", tinted = false, children }: {
+  id?: string; className?: string; tinted?: boolean; children: React.ReactNode;
+}) {
   return (
-    <section id={id} className={`${grid ? "site-grid-bg" : ""} ${className}`} style={id ? { scrollMarginTop: "5rem" } : undefined}>
-      <div className="mx-auto max-w-7xl px-5 lg:px-8 py-20 lg:py-28">{children}</div>
+    <section id={id} className={`${tinted ? "bg-slate-50" : "bg-white"} ${className}`}>
+      <div className="mx-auto max-w-7xl px-6 lg:px-8 py-20 lg:py-28">{children}</div>
     </section>
   );
 }
 
-export function Eyebrow({ children }: { children: React.ReactNode }) {
+// ── Eyebrow + headline + sub ──
+export function SectionHeading({ eyebrow, title, sub, center = true }: {
+  eyebrow?: string; title: string; sub?: string; center?: boolean;
+}) {
   return (
-    <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-widest" style={{ color: "var(--accent-text)" }}>
-      <span className="w-5 h-px" style={{ backgroundColor: "var(--accent-text)" }} />
-      {children}
-    </span>
-  );
-}
-
-export function SectionHeading({ eyebrow, title, sub, center = false, className = "" }: { eyebrow?: string; title: React.ReactNode; sub?: React.ReactNode; center?: boolean; className?: string }) {
-  return (
-    <div className={`${center ? "text-center mx-auto" : ""} max-w-2xl ${className}`}>
-      {eyebrow && <div className={center ? "flex justify-center mb-4" : "mb-4"}><Eyebrow>{eyebrow}</Eyebrow></div>}
-      <h2 className="text-3xl lg:text-[2.6rem] font-bold tracking-tight leading-[1.1]" style={{ color: "var(--text-primary)" }}>{title}</h2>
-      {sub && <p className="mt-4 text-base lg:text-lg leading-relaxed" style={{ color: "var(--text-secondary)" }}>{sub}</p>}
+    <div className={`${center ? "text-center mx-auto" : ""} max-w-3xl mb-14`}>
+      {eyebrow && (
+        <p className="text-xs font-bold uppercase tracking-[0.18em] mb-3" style={{ color: BRAND }}>{eyebrow}</p>
+      )}
+      <h2 className="text-3xl lg:text-[2.6rem] lg:leading-[1.15] font-bold tracking-tight" style={{ color: INK }}>{title}</h2>
+      {sub && <p className="mt-4 text-lg leading-relaxed" style={{ color: BODY }}>{sub}</p>}
     </div>
   );
 }
 
-export function PrimaryCta({ href, children }: { href: string; children: React.ReactNode }) {
+// ── CTA buttons ──
+export function PrimaryCta({ href, children, large = false }: { href: string; children: React.ReactNode; large?: boolean }) {
   return (
-    <Link href={href} className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-sm font-semibold text-white transition-all hover:brightness-110 hover:gap-2.5" style={{ backgroundColor: "#4f46e5", boxShadow: "0 8px 28px -8px rgba(79,70,229,0.6)" }}>
+    <Link href={href}
+      className={`inline-flex items-center gap-2 rounded-xl font-semibold text-white transition-all hover:-translate-y-0.5 hover:shadow-lg ${large ? "px-7 py-3.5 text-base" : "px-5 py-2.5 text-sm"}`}
+      style={{ backgroundColor: BRAND, boxShadow: "0 8px 24px -8px rgba(79,70,229,0.5)" }}>
       {children} <ArrowRight className="w-4 h-4" />
     </Link>
   );
 }
 
-export function GhostCta({ href, children }: { href: string; children: React.ReactNode }) {
+export function SecondaryCta({ href, children, large = false }: { href: string; children: React.ReactNode; large?: boolean }) {
   return (
-    <Link href={href} className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-sm font-semibold transition-colors hover:bg-[var(--bg-surface-2)]" style={{ color: "var(--text-primary)", border: "1px solid var(--border)" }}>
+    <Link href={href}
+      className={`inline-flex items-center gap-2 rounded-xl font-semibold transition-all hover:-translate-y-0.5 hover:shadow-md bg-white ${large ? "px-7 py-3.5 text-base" : "px-5 py-2.5 text-sm"}`}
+      style={{ color: INK, border: "1px solid #e2e8f0", boxShadow: "0 2px 8px rgba(15,23,42,0.05)" }}>
       {children}
     </Link>
   );
 }
 
-export function CtaGroup({ className = "" }: { className?: string }) {
+// ── Feature card (platform grid + feature families) ──
+export function FeatureCard({ icon: Icon, title, blurb, href }: {
+  icon: LucideIcon; title: string; blurb: string; href?: string;
+}) {
   return (
-    <div className={`flex flex-wrap items-center gap-3 ${className}`}>
-      <PrimaryCta href="/early-access">Request Early Access</PrimaryCta>
-      <GhostCta href="/design-partners">Become a Design Partner</GhostCta>
-    </div>
-  );
-}
-
-// Card mirroring the app's elevated "glow" card.
-export function Card({ children, className = "", style }: { children: React.ReactNode; className?: string; style?: React.CSSProperties }) {
-  return (
-    <div className={`rounded-2xl ${className}`} style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-glow)", ...style }}>
-      {children}
-    </div>
-  );
-}
-
-// A macOS-style browser window for desktop product mockups.
-export function BrowserFrame({ children, url = "app.routiqa.com", className = "" }: { children: React.ReactNode; url?: string; className?: string }) {
-  return (
-    <div className={`rounded-2xl overflow-hidden ${className}`} style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "0 30px 80px -24px rgba(0,0,0,0.65), 0 0 0 1px rgba(255,255,255,0.04)" }}>
-      <div className="flex items-center gap-2 px-3.5 h-10 border-b" style={{ borderColor: "var(--border-subtle)", backgroundColor: "var(--bg-surface-2)" }}>
-        <span className="flex gap-1.5">
-          <span className="w-3 h-3 rounded-full" style={{ backgroundColor: "#ef4444" }} />
-          <span className="w-3 h-3 rounded-full" style={{ backgroundColor: "#f59e0b" }} />
-          <span className="w-3 h-3 rounded-full" style={{ backgroundColor: "#22c55e" }} />
-        </span>
-        <span className="mx-auto px-3 h-6 rounded-md text-[11px] flex items-center" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>{url}</span>
+    <div className="group rounded-2xl bg-white p-6 transition-all hover:-translate-y-1 hover:shadow-xl"
+      style={{ border: "1px solid #e2e8f0", boxShadow: "0 1px 3px rgba(15,23,42,0.06)" }}>
+      <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-4"
+        style={{ background: "linear-gradient(135deg, #eef2ff, #e0e7ff)" }}>
+        <Icon className="w-5 h-5" style={{ color: BRAND }} />
       </div>
-      <div>{children}</div>
+      <h3 className="text-[15px] font-semibold mb-1.5" style={{ color: INK }}>{title}</h3>
+      <p className="text-sm leading-relaxed" style={{ color: BODY }}>{blurb}</p>
+      {href && (
+        <Link href={href} className="mt-3 inline-flex items-center gap-1 text-sm font-semibold group-hover:gap-2 transition-all" style={{ color: BRAND }}>
+          Learn more <ArrowRight className="w-3.5 h-3.5" />
+        </Link>
+      )}
     </div>
   );
 }
 
-// A phone bezel for mobile mockups.
-export function PhoneFrame({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+// ── Compact feature row (inside family sections) ──
+export function FeatureRow({ icon: Icon, title, blurb }: { icon: LucideIcon; title: string; blurb: string }) {
   return (
-    <div className={`rounded-[2.5rem] p-2.5 ${className}`} style={{ backgroundColor: "#0a0a0a", border: "1px solid var(--border)", boxShadow: "0 30px 80px -24px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.05)" }}>
-      <div className="rounded-[2rem] overflow-hidden relative" style={{ backgroundColor: "var(--bg-page)" }}>
-        <div className="absolute top-2 left-1/2 -translate-x-1/2 w-24 h-5 rounded-full z-10" style={{ backgroundColor: "#0a0a0a" }} />
-        {children}
+    <div className="flex items-start gap-3.5 rounded-xl bg-white p-4 transition-all hover:shadow-md"
+      style={{ border: "1px solid #e2e8f0" }}>
+      <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: "#eef2ff" }}>
+        <Icon className="w-4.5 h-4.5" style={{ color: BRAND, width: 18, height: 18 }} />
+      </div>
+      <div className="min-w-0">
+        <p className="text-sm font-semibold" style={{ color: INK }}>{title}</p>
+        <p className="text-[13px] leading-relaxed mt-0.5" style={{ color: BODY }}>{blurb}</p>
       </div>
     </div>
   );
 }
 
-// Compact hero band for inner pages.
-export function PageHero({ eyebrow, title, sub, children }: { eyebrow?: string; title: React.ReactNode; sub?: React.ReactNode; children?: React.ReactNode }) {
+// ── Industry card ──
+export function IndustryCard({ name, blurb }: { name: string; blurb: string }) {
   return (
-    <section className="site-hero-bg border-b" style={{ borderColor: "var(--border-subtle)" }}>
-      <div className="mx-auto max-w-7xl px-5 lg:px-8 pt-20 pb-16 lg:pt-24 text-center">
-        {eyebrow && <div className="flex justify-center mb-4"><Eyebrow>{eyebrow}</Eyebrow></div>}
-        <h1 className="text-4xl lg:text-5xl font-bold tracking-tight leading-[1.08] max-w-3xl mx-auto" style={{ color: "var(--text-primary)" }}>{title}</h1>
-        {sub && <p className="mt-5 text-lg max-w-2xl mx-auto leading-relaxed" style={{ color: "var(--text-secondary)" }}>{sub}</p>}
-        {children && <div className="mt-8 flex justify-center">{children}</div>}
-      </div>
-    </section>
+    <div className="rounded-2xl bg-white p-5 transition-all hover:-translate-y-0.5 hover:shadow-lg"
+      style={{ border: "1px solid #e2e8f0" }}>
+      <p className="text-[15px] font-bold mb-1" style={{ color: INK }}>{name}</p>
+      <p className="text-[13px] leading-relaxed" style={{ color: BODY }}>{blurb}</p>
+    </div>
   );
 }
 
-export function StatPill({ label, value }: { label: string; value: string }) {
+// ── Photography ──
+// A rounded editorial photo with an optional floating proof chip — the visual
+// device used across the feature families and segment tabs.
+export function SitePhoto({ src, alt, chip, tall = false }: {
+  src: string; alt: string; chip?: string; tall?: boolean;
+}) {
   return (
-    <div className="rounded-xl px-4 py-3" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>
-      <div className="text-2xl font-bold" style={{ color: "var(--text-primary)" }}>{value}</div>
-      <div className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>{label}</div>
+    <div className={`relative w-full ${tall ? "aspect-[4/5] lg:aspect-[3/4]" : "aspect-[4/3]"}`}>
+      <div className="absolute inset-0 rounded-3xl overflow-hidden" style={{ boxShadow: "0 32px 80px -32px rgba(15,23,42,0.35)" }}>
+        <Image src={src} alt={alt} fill sizes="(max-width: 1024px) 100vw, 44vw" className="object-cover" />
+        <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, transparent 55%, rgba(15,23,42,0.25))" }} />
+      </div>
+      {chip && (
+        <div className="absolute -bottom-4 left-5 right-5 sm:right-auto flex items-center gap-2.5 rounded-2xl bg-white px-4 py-3"
+          style={{ border: "1px solid #e2e8f0", boxShadow: "0 16px 40px -16px rgba(15,23,42,0.3)" }}>
+          <CheckCircle2 className="w-4.5 h-4.5 shrink-0" style={{ color: "#10b981", width: 18, height: 18 }} />
+          <p className="text-[13px] font-semibold" style={{ color: INK }}>{chip}</p>
+        </div>
+      )}
     </div>
   );
 }

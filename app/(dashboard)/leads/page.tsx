@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
+import RowArrow from "@/components/shared/RowArrow";
 import {
   Search, Plus, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, LayoutList, Columns3,
   TrendingUp, DollarSign, CalendarClock, Trophy, MapPin, AlertTriangle,
@@ -591,13 +592,14 @@ export default function LeadsPage() {
               const s = resolve(lead.stage);
               return (
                 <Link key={lead.id} href={`/leads/${lead.id}`}
-                  className="grid px-4 py-3 items-center hover:bg-[var(--bg-surface-2)] transition-colors"
+                  className="relative group grid px-4 py-3 items-center hover:bg-[var(--bg-surface-2)] transition-colors"
                   style={{ gridTemplateColumns: "2.5fr 1.2fr 1fr 1fr 1fr 1fr 0.6fr", borderBottom: i < displayed.length - 1 ? "1px solid var(--border)" : "none", textDecoration: "none" }}>
+                  <RowArrow />
 
                   {/* Lead / Customer */}
                   <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: "var(--bg-input)" }}>
-                      <TrendingUp className="w-3.5 h-3.5" style={{ color: "var(--text-muted)" }} />
+                    <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: "var(--accent-soft-bg)" }}>
+                      <TrendingUp className="w-3.5 h-3.5" style={{ color: "var(--accent-text)" }} />
                     </div>
                     <div className="min-w-0">
                       <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{lead.title}</p>

@@ -302,7 +302,7 @@ export default function ProjectsPage() {
                 className="grid px-4 py-3 items-center hover:bg-[var(--bg-surface-2)] transition-colors"
                 style={{ gridTemplateColumns: "2.5fr 1fr 1fr 1fr 1fr 1fr 1.5fr", borderBottom: i < displayed.length - 1 ? "1px solid var(--border)" : "none", textDecoration: "none" }}>
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: "var(--bg-input)" }}><FolderKanban className="w-3.5 h-3.5" style={{ color: "var(--text-muted)" }} /></div>
+                  <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: "var(--accent-soft-bg)" }}><FolderKanban className="w-3.5 h-3.5" style={{ color: "var(--accent-text)" }} /></div>
                   <div className="min-w-0">
                     <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{p.name}</p>
                     <p className="text-[10px] truncate" style={{ color: "var(--text-muted)" }}>{p.locationName}</p>

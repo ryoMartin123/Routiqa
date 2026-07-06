@@ -3,6 +3,7 @@
 // Files are stored ONCE; getFiles() matches by any combination of linked IDs.
 
 import type { PhotoFile, FileScope, FileType, FileLinkKind, PhotoPhase } from "./types";
+export type { FileScope } from "./types";
 
 const STORAGE_KEY = "crm-photos-files-v2";
 

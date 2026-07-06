@@ -24,6 +24,7 @@ export type EventType =
   | "email_sent"
   | "sms_sent"
   | "call_logged"
+  | "status_changed"
   | "task_created"
   | "task_completed";
 
@@ -63,6 +64,7 @@ export const EVENT_FILTER_MAP: Record<EventType, FilterCategory | "all"> = {
   email_sent:         "communication",
   sms_sent:           "communication",
   call_logged:        "communication",
+  status_changed:     "jobs",
   task_created:       "tasks",
   task_completed:     "tasks",
 };

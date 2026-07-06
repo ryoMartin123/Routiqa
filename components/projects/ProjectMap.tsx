@@ -7,6 +7,7 @@
 // explains what the step needs, what completes it, its dependencies (with links
 // to go do them), and the right action. Mock/local.
 
+import SegmentedProgress from "@/components/shared/SegmentedProgress";
 import { Fragment, useMemo, useState } from "react";
 import {
   Layers, Flag, Briefcase, CheckSquare, ClipboardList, Package, ShoppingCart, HardHat,
@@ -83,16 +84,13 @@ export default function ProjectMap({ projectId, onOpenTab }: { projectId: string
     <div className="space-y-4">
       {/* Workflow header — a segmented bar (each step colored by status) + next step. */}
       <div className="rounded-xl px-4 py-3.5 space-y-3" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
-        <div className="flex items-center gap-1">
-          {allNodes.map(n => {
-            const dim = n.status === "not_started";
-            return (
-              <button key={n.id} onClick={() => setSelectedId(n.id)} title={`${n.title} · ${NODE_STATUS_META[n.status].label}`}
-                className="flex-1 h-1.5 rounded-full transition-all hover:h-2.5"
-                style={{ backgroundColor: dim ? "var(--bg-input)" : NODE_STATUS_META[n.status].color }} />
-            );
-          })}
-        </div>
+        <SegmentedProgress segments={allNodes.map(n => ({
+          filled: n.status !== "not_started",
+          color: NODE_STATUS_META[n.status].color,
+          current: next?.id === n.id,
+          title: `${n.title} · ${NODE_STATUS_META[n.status].label}`,
+          onClick: () => setSelectedId(n.id),
+        }))} />
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-baseline gap-2">
             <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{pct}%</span>

@@ -19,12 +19,15 @@ import {
   getInstructions, saveInstructions,
   getLayout, saveLayout, type TemplateLayout,
   woId, woSlug,
-  WO_PRIORITY_LABELS, CHECKLIST_TYPE_LABELS, PHOTO_CATEGORIES,
+  WO_PRIORITY_LABELS, CHECKLIST_TYPE_LABELS, checklistTypeLabel, PHOTO_CATEGORIES,
   type WorkOrderTemplate, type WOPriority,
   type ChecklistItem, type ChecklistItemType,
   type RequiredPhoto, type WOInstructions,
 } from "@/lib/work-order-templates/data";
-import { getJobTypes } from "@/lib/job-config/data";
+import {
+  getJobTypes, saveJobTypes, WORK_ORDER_POLICY_LABELS,
+  type JobTypeDef, type WorkOrderPolicy,
+} from "@/lib/job-config/data";
 import UiSelect from "@/components/ui/Select";
 import NumberStepper from "@/components/ui/NumberStepper";
 import ActionsMenu from "@/components/shared/ActionsMenu";
@@ -58,6 +61,8 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 // A selected node = one of: the scope node, a checklist step, or a photo rule.
 type Sel = { kind: "scope" } | { kind: "step"; id: string } | { kind: "photo"; id: string } | null;
+
+const WO_POLICIES = Object.keys(WORK_ORDER_POLICY_LABELS) as WorkOrderPolicy[];
 
 export default function WorkOrderTemplatesSection() {
   const jobTypes = getJobTypes();
@@ -185,7 +190,7 @@ function TemplateBuilder({ templateId, jobTypes, onBack }: {
   const sortedSteps = [...checklist].sort((a, b) => a.order - b.order);
   function addStep() {
     const max = checklist.length ? Math.max(...checklist.map(i => i.order)) : 0;
-    const n: ChecklistItem = { id: woId("ci"), templateId, label: "New step", type: "checkbox", required: false, order: max + 1, active: true };
+    const n: ChecklistItem = { id: woId("ci"), templateId, label: "New step", required: false, order: max + 1, active: true };
     setChecklist(prev => [...prev, n]); setSel({ kind: "step", id: n.id });
   }
   function moveStep(id: string, dir: -1 | 1) {
@@ -228,13 +233,6 @@ function TemplateBuilder({ templateId, jobTypes, onBack }: {
         <div className="h-5 w-px" style={{ backgroundColor: "var(--border)" }} />
         <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: tpl.active ? "#16a34a" : "#9ca3af" }} />
         <input value={tpl.name} onChange={e => patchTpl({ name: e.target.value })} placeholder="Template name" className="flex-1 max-w-md text-base font-semibold bg-transparent outline-none" style={{ color: "var(--text-primary)" }} />
-        <div className="flex items-center gap-3 ml-auto">
-          <button onClick={() => setSel(s => s?.kind === "scope" ? null : { kind: "scope" })} aria-expanded={sel?.kind === "scope"} title="Scope & defaults"
-            className="p-1.5 rounded-lg transition-colors"
-            style={{ border: `1px solid ${sel?.kind === "scope" ? "var(--accent-soft-border)" : "var(--border)"}`, color: sel?.kind === "scope" ? "var(--accent-text)" : "var(--text-secondary)", backgroundColor: sel?.kind === "scope" ? "var(--accent-soft-bg)" : "var(--bg-surface)" }}>
-            <FileText className="w-4 h-4" />
-          </button>
-        </div>
       </header>
 
       {/* Full-width canvas; inspector floats over it */}
@@ -479,6 +477,12 @@ function Canvas({ tpl, steps, photos, sel, onSelect, onAddStep, onAddPhoto, onMo
         <div className="w-px h-5 mx-0.5" style={{ backgroundColor: "var(--border)" }} />
         <CtrlBtn onClick={align} title="Align & tidy"><LayoutGrid className="w-4 h-4" /></CtrlBtn>
         <CtrlBtn onClick={center} title="Fit to view"><Maximize className="w-4 h-4" /></CtrlBtn>
+        <div className="w-px h-5 mx-0.5" style={{ backgroundColor: "var(--border)" }} />
+        <button onClick={() => onSelect(sel?.kind === "scope" ? null : { kind: "scope" })} aria-expanded={sel?.kind === "scope"} title="Scope & defaults"
+          className="inline-flex items-center gap-1.5 px-2.5 h-8 rounded-lg text-xs font-semibold transition-colors hover:bg-[var(--bg-surface-2)]"
+          style={sel?.kind === "scope" ? { backgroundColor: "var(--accent-soft-bg)", color: "var(--accent-text)" } : { color: "var(--text-secondary)" }}>
+          <FileText className="w-3.5 h-3.5" /> Scope & defaults
+        </button>
       </div>
       <p className="absolute bottom-3 right-3 z-10 text-[10px] pointer-events-none" style={{ color: "var(--text-muted)" }}>Hold Space to pan · ⌘-scroll to zoom</p>
     </div>
@@ -511,7 +515,7 @@ function StepNode({ step, idx, total, selected, linkCount, onClick, onUp, onDown
   step: ChecklistItem; idx: number; total: number; selected: boolean; linkCount: number; onClick: () => void; onUp: () => void; onDown: () => void; setRef: (el: HTMLElement | null) => void;
 }) {
   return (
-    <div ref={setRef} data-node onClick={onClick} title={`${CHECKLIST_TYPE_LABELS[step.type]}${step.required ? " · Required" : ""}`}
+    <div ref={setRef} data-node onClick={onClick} title={`${checklistTypeLabel(step.type)}${step.required ? " · Required" : ""}`}
       className="group rounded-xl p-2.5 cursor-pointer transition-all" style={{ backgroundColor: "var(--bg-surface)", border: `1.5px solid ${selected ? ACCENT : "var(--border-subtle)"}`, boxShadow: selected ? `0 0 0 3px ${ACCENT}22` : "var(--shadow-card)", opacity: step.active ? 1 : 0.55 }}>
       <div className="flex items-center gap-2">
         {/* Number badge — soft cream when the step is required. */}
@@ -629,6 +633,15 @@ function Inspector({ sel, tpl, jobTypes, steps, photos, instructions, onClose, p
   const photo = sel.kind === "photo" ? photos.find(p => p.id === sel.id) : undefined;
   const title = sel.kind === "scope" ? "Scope & defaults" : sel.kind === "step" ? "Edit step" : "Photo rule";
 
+  // Auto-create policy lives on the JOB TYPE (same field the Job Types settings
+  // used to edit) — shown here for the type this template is linked to.
+  const [, forcePolicy] = useState(0);
+  const linkedPolicy = getJobTypes().find(j => j.key === tpl.jobTypeKey)?.workOrderPolicy ?? "optional";
+  function setLinkedPolicy(v: WorkOrderPolicy) {
+    saveJobTypes(getJobTypes().map(t => t.key === tpl.jobTypeKey ? { ...t, workOrderPolicy: v } : t));
+    forcePolicy(x => x + 1); pingSaved();
+  }
+
   return (
     <>
       <div className="flex items-center justify-between px-4 py-3 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
@@ -647,6 +660,19 @@ function Inspector({ sel, tpl, jobTypes, steps, photos, instructions, onClose, p
               <Field label="Duration (min)"><NumberStepper size="sm" min={0} step={15} value={String(tpl.duration)} onChange={v => patchTpl({ duration: parseInt(v, 10) || 0 })} /></Field>
             </div>
             <Field label="Linked job type"><UiSelect size="sm" value={tpl.jobTypeKey} onChange={v => patchTpl({ jobTypeKey: v })} options={[{ value: "", label: "None" }, ...jobTypes.map(j => ({ value: j.key, label: j.name }))]} /></Field>
+            <Field label="Auto-create">
+              {tpl.jobTypeKey ? (
+                <>
+                  <UiSelect size="sm" value={linkedPolicy} onChange={v => setLinkedPolicy(v as WorkOrderPolicy)}
+                    options={WO_POLICIES.map(pk => ({ value: pk, label: WORK_ORDER_POLICY_LABELS[pk] }))} />
+                  <p className="text-[11px] mt-1" style={{ color: "var(--text-muted)" }}>
+                    What happens when a {jobTypes.find(j => j.key === tpl.jobTypeKey)?.name ?? "linked-type"} job is booked. Applies to the job type, not just this template.
+                  </p>
+                </>
+              ) : (
+                <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>Link a job type to control whether its work order auto-creates.</p>
+              )}
+            </Field>
             <Seg value={tpl.active} on="Active" off="Inactive" onChange={v => patchTpl({ active: v })} />
             <div className="pt-1" style={{ borderTop: "1px solid var(--border)" }} />
             {INSTRUCTION_FIELDS.map(f => (
@@ -659,7 +685,46 @@ function Inspector({ sel, tpl, jobTypes, steps, photos, instructions, onClose, p
         {sel.kind === "step" && step && (
           <>
             <Field label="Step label"><input value={step.label} onChange={e => patchStep(step.id, { label: e.target.value })} className={inputCls} style={inputStyle} autoFocus /></Field>
-            <Field label="Type"><UiSelect size="sm" value={step.type} onChange={v => patchStep(step.id, { type: v as ChecklistItemType })} options={CHECK_TYPES.map(t => ({ value: t, label: CHECKLIST_TYPE_LABELS[t] }))} /></Field>
+            <Field label="Type"><UiSelect size="sm" value={step.type ?? ""}
+              onChange={v => {
+                const t = (v || undefined) as ChecklistItemType | undefined;
+                const needsOptions = t === "dropdown" || t === "multi_select";
+                patchStep(step.id, { type: t, ...(needsOptions && !(step.options?.length) ? { options: ["", ""] } : {}) });
+              }}
+              options={[{ value: "", label: "Check-off" }, ...CHECK_TYPES.map(t => ({ value: t, label: CHECKLIST_TYPE_LABELS[t] }))]} /></Field>
+            {/* Creator-entered config per type: choice steps need their options,
+                number steps can carry a unit. */}
+            {(step.type === "dropdown" || step.type === "multi_select") && (
+              <Field label={step.type === "dropdown" ? "Options — tech picks one" : "Options — tech can pick several"}>
+                <div className="space-y-1.5">
+                  {(step.options ?? []).map((opt, i) => (
+                    <div key={i} className="flex items-center gap-1.5">
+                      <input value={opt} placeholder={`Option ${i + 1}`}
+                        onChange={e => { const next = [...(step.options ?? [])]; next[i] = e.target.value; patchStep(step.id, { options: next }); }}
+                        className={inputCls} style={inputStyle} />
+                      <button onClick={() => patchStep(step.id, { options: (step.options ?? []).filter((_, j) => j !== i) })}
+                        title="Remove option" className="p-1.5 rounded-lg shrink-0 hover:bg-[var(--bg-surface-2)]" style={{ color: "#9ca3af" }}>
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                  <button onClick={() => patchStep(step.id, { options: [...(step.options ?? []), ""] })}
+                    className="w-full flex items-center justify-center gap-1 py-1.5 rounded-lg text-[11px] font-medium transition-colors hover:bg-[var(--bg-surface-2)]"
+                    style={{ border: "1.5px dashed var(--border)", color: "var(--text-muted)" }}>
+                    <Plus className="w-3 h-3" /> Add option
+                  </button>
+                  {(step.options ?? []).filter(o => o.trim()).length === 0 && (
+                    <p className="text-[11px]" style={{ color: "#b45309" }}>This step needs at least one option for the tech to choose from.</p>
+                  )}
+                </div>
+              </Field>
+            )}
+            {step.type === "number" && (
+              <Field label="Unit (optional)">
+                <input value={step.unit ?? ""} onChange={e => patchStep(step.id, { unit: e.target.value })}
+                  placeholder="e.g. PSI, °F, V" className={inputCls} style={inputStyle} />
+              </Field>
+            )}
             <Seg value={step.required} on="Required" off="Optional" onChange={v => patchStep(step.id, { required: v })} />
             <Seg value={step.active} on="Active" off="Inactive" onChange={v => patchStep(step.id, { active: v })} />
             <div className="pt-1" style={{ borderTop: "1px solid var(--border)" }} />

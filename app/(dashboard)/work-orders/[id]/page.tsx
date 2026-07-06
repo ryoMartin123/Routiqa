@@ -18,8 +18,9 @@ import {
 } from "lucide-react";
 import {
   getWorkOrderById, updateWorkOrderById, getJob, JOB_STATUS_CONFIG,
-  type WorkOrderStatus,
+  type WorkOrderStatus, type ChecklistItem,
 } from "@/lib/jobs/data";
+import UiSelect from "@/components/ui/Select";
 import { getAppointmentsForWorkOrder, VISIT_TYPE_CONFIG, type AppointmentStatus } from "@/lib/appointments/data";
 import { getFiles } from "@/lib/files/data";
 import { getQuotesForWorkOrder, getInvoicesForWorkOrder, createQuoteFromWorkOrder, createInvoiceFromWorkOrder, fmt as fmtCurrency } from "@/lib/quotes/data";
@@ -84,6 +85,7 @@ export default function WorkOrderDetailPage(props: { params: Promise<{ id: strin
   const lineCount = wo.lineItems?.length ?? 0;
   const subtotal  = (wo.lineItems ?? []).reduce((s, li) => s + li.qty * li.unitPrice, 0);
   const toggle    = (ciId: string) => updateWorkOrderById(id, { checklist: wo.checklist.map(c => c.id === ciId ? { ...c, isComplete: !c.isComplete } : c) });
+  const patchItem = (ciId: string, p: Partial<ChecklistItem>) => updateWorkOrderById(id, { checklist: wo.checklist.map(c => c.id === ciId ? { ...c, ...p } : c) });
   const setStatus = (status: WorkOrderStatus) => updateWorkOrderById(id, { status, completedAt: status === "completed" ? new Date().toISOString() : undefined });
   const newQuote   = () => { const q = createQuoteFromWorkOrder(id); if (q) router.push(`/quotes/${q.id}`); };
   const newInvoice = () => { const inv = createInvoiceFromWorkOrder(id); if (inv) router.push(`/invoices/${inv.id}`); };
@@ -237,17 +239,9 @@ export default function WorkOrderDetailPage(props: { params: Promise<{ id: strin
                   {wo.checklist.length === 0 ? (
                     <p className="text-sm" style={{ color: "var(--text-muted)" }}>No checklist items.</p>
                   ) : (
-                    <div className="space-y-1.5">
+                    <div className="space-y-2">
                       {[...wo.checklist].sort((a, b) => a.sortOrder - b.sortOrder).map(c => (
-                        <button key={c.id} onClick={() => toggle(c.id)} className="flex items-start gap-2 w-full text-left group">
-                          {c.isComplete
-                            ? <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0" style={{ color: "#16a34a" }} />
-                            : <Circle className="w-4 h-4 mt-0.5 shrink-0" style={{ color: "var(--text-muted)" }} />}
-                          <span className="text-sm" style={{ color: c.isComplete ? "var(--text-muted)" : "var(--text-secondary)", textDecoration: c.isComplete ? "line-through" : "none" }}>
-                            {c.label}
-                            {c.required && <span className="ml-1.5 text-[10px] font-semibold" style={{ color: "#dc2626" }}>Required</span>}
-                          </span>
-                        </button>
+                        <ChecklistStep key={c.id} item={c} onToggle={() => toggle(c.id)} onPatch={p => patchItem(c.id, p)} />
                       ))}
                     </div>
                   )}
@@ -450,6 +444,101 @@ function ReqRow({ met, label }: { met: boolean; label: string }) {
         ? <CheckCircle2 className="w-4 h-4 shrink-0" style={{ color: "#16a34a" }} />
         : <Circle className="w-4 h-4 shrink-0" style={{ color: "var(--text-muted)" }} />}
       <span className="text-sm" style={{ color: met ? "var(--text-secondary)" : "var(--text-muted)" }}>{label}</span>
+    </div>
+  );
+}
+
+// ─── Typed checklist step (the tech's fill-out UI) ────────
+// Steps built in the template canvas carry a type + config (dropdown options,
+// multi-select options, number unit). Answering completes the step; untyped
+// check-off / photo steps keep the tap-to-toggle behavior.
+function ChecklistStep({ item, onToggle, onPatch }: {
+  item: ChecklistItem;
+  onToggle: () => void;
+  onPatch: (p: Partial<ChecklistItem>) => void;
+}) {
+  const t = item.type;
+  const answer = (value: string | string[], done: boolean) => onPatch({ value, isComplete: done });
+  const strVal = typeof item.value === "string" ? item.value : "";
+  const arrVal = Array.isArray(item.value) ? item.value : [];
+  const tappable = !t || t === "photo";   // simple check-off or photo reminder
+
+  const icon = item.isComplete
+    ? <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0" style={{ color: "#16a34a" }} />
+    : <Circle className="w-4 h-4 mt-0.5 shrink-0" style={{ color: "var(--text-muted)" }} />;
+  const label = (
+    <span className="text-sm" style={{ color: item.isComplete ? "var(--text-muted)" : "var(--text-secondary)", textDecoration: tappable && item.isComplete ? "line-through" : "none" }}>
+      {item.label}
+      {item.required && <span className="ml-1.5 text-[10px] font-semibold" style={{ color: "#dc2626" }}>Required</span>}
+      {t === "photo" && <span className="ml-1.5 text-[10px]" style={{ color: "var(--text-muted)" }}>attach in Photos</span>}
+    </span>
+  );
+
+  if (tappable) {
+    return (
+      <button onClick={onToggle} className="flex items-start gap-2 w-full text-left group">
+        {icon}{label}
+      </button>
+    );
+  }
+
+  return (
+    <div className="flex items-start gap-2">
+      {icon}
+      <div className="flex-1 min-w-0">
+        {label}
+        <div className="mt-1">
+          {t === "short_text" && (
+            <input value={strVal} onChange={e => answer(e.target.value, e.target.value.trim() !== "")}
+              placeholder="Enter…" className="w-full rounded-lg px-2.5 py-1.5 text-sm outline-none"
+              style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-input)", color: "var(--text-primary)" }} />
+          )}
+          {t === "long_text" && (
+            <textarea value={strVal} onChange={e => answer(e.target.value, e.target.value.trim() !== "")}
+              placeholder="Enter…" rows={2} className="w-full rounded-lg px-2.5 py-1.5 text-sm outline-none resize-none"
+              style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-input)", color: "var(--text-primary)" }} />
+          )}
+          {t === "number" && (
+            <div className="flex items-center gap-1.5">
+              <input type="number" value={strVal} onChange={e => answer(e.target.value, e.target.value.trim() !== "")}
+                placeholder="0" className="w-28 rounded-lg px-2.5 py-1.5 text-sm outline-none"
+                style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-input)", color: "var(--text-primary)" }} />
+              {item.unit && <span className="text-xs" style={{ color: "var(--text-muted)" }}>{item.unit}</span>}
+            </div>
+          )}
+          {t === "dropdown" && (
+            <UiSelect size="sm" value={strVal} onChange={v => answer(v, v !== "")}
+              options={[{ value: "", label: "Select…" }, ...(item.options ?? []).filter(o => o.trim()).map(o => ({ value: o, label: o }))]} />
+          )}
+          {t === "multi_select" && (
+            <div className="flex flex-wrap gap-1.5">
+              {(item.options ?? []).filter(o => o.trim()).map(o => {
+                const on = arrVal.includes(o);
+                return (
+                  <button key={o} onClick={() => { const next = on ? arrVal.filter(x => x !== o) : [...arrVal, o]; answer(next, next.length > 0); }}
+                    className="px-2.5 py-1 rounded-lg text-xs font-medium transition-all"
+                    style={{
+                      border: `1.5px solid ${on ? "#c9c0b2" : "var(--border)"}`,
+                      backgroundColor: on ? "#E5E0DB" : "var(--bg-surface-2)",
+                      color: on ? "#5c5545" : "var(--text-secondary)",
+                    }}>{o}</button>
+                );
+              })}
+            </div>
+          )}
+          {t === "datetime" && (
+            <input type="datetime-local" value={strVal} onChange={e => answer(e.target.value, e.target.value !== "")}
+              className="rounded-lg px-2.5 py-1.5 text-sm outline-none"
+              style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-input)", color: "var(--text-primary)" }} />
+          )}
+          {t === "signature" && (
+            <input value={strVal} onChange={e => answer(e.target.value, e.target.value.trim() !== "")}
+              placeholder="Type full name to sign"
+              className="w-full rounded-lg px-2.5 py-1.5 text-sm italic outline-none"
+              style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-input)", color: "var(--text-primary)", fontFamily: "Georgia, serif" }} />
+          )}
+        </div>
+      </div>
     </div>
   );
 }

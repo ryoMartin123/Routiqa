@@ -1,22 +1,24 @@
-import Hero from "@/components/site/sections/Hero";
-import ProblemSection from "@/components/site/sections/ProblemSection";
-import SolutionSection from "@/components/site/sections/SolutionSection";
-import AppEcosystemGrid from "@/components/site/sections/AppEcosystemGrid";
-import ProductShowcase from "@/components/site/sections/ProductShowcase";
-import WhyRoutiqa from "@/components/site/sections/WhyRoutiqa";
-import DesignPartnerSection from "@/components/site/sections/DesignPartnerSection";
-import FinalCta from "@/components/site/sections/FinalCta";
+// ─── Routiqa marketing homepage ───────────────────────────
+// The full story in one confident page: hero → trust → platform → segments →
+// feature families → Riq → outcomes → industries → packages → demo CTA.
+
+import {
+  Hero, TrustStrip, PlatformGrid, SegmentTabs, FeatureFamilies,
+  RiqSection, Outcomes, IndustriesSection, Packages, FinalCta,
+} from "@/components/site/sections";
 
 export default function HomePage() {
   return (
     <>
       <Hero />
-      <ProblemSection />
-      <SolutionSection />
-      <AppEcosystemGrid />
-      <ProductShowcase withIds />
-      <WhyRoutiqa />
-      <DesignPartnerSection />
+      <TrustStrip />
+      <PlatformGrid />
+      <SegmentTabs />
+      <FeatureFamilies />
+      <RiqSection />
+      <Outcomes />
+      <IndustriesSection />
+      <Packages />
       <FinalCta />
     </>
   );

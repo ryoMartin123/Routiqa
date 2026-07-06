@@ -3,7 +3,7 @@
 // results carry a route so the command bar can navigate straight to the record.
 
 import { getAllCustomers, getCustomer } from "@/lib/customers/data";
-import { getAllJobs } from "@/lib/jobs/data";
+import { getAllJobs, getAllWorkOrders } from "@/lib/jobs/data";
 import { getAllQuotes, getAllInvoices } from "@/lib/quotes/data";
 import { getAllLeads } from "@/lib/leads/data";
 import { getAllProjects } from "@/lib/projects/data";
@@ -11,7 +11,7 @@ import { getAllAgreements } from "@/lib/agreements/data";
 import { getAllThreads, anchorHref, anchorLabel } from "@/lib/comments/data";
 
 export type SearchGroup =
-  | "Customers" | "Jobs" | "Leads" | "Quotes" | "Invoices" | "Projects" | "Agreements" | "Comments";
+  | "Customers" | "Jobs" | "Work Orders" | "Leads" | "Quotes" | "Invoices" | "Projects" | "Agreements" | "Comments";
 
 export interface SearchResult {
   id: string;
@@ -38,7 +38,17 @@ export function searchAll(query: string, perGroup = 5): SearchResult[] {
   for (const c of customers) out.push({ id: c.id, group: "Customers", title: c.name, subtitle: sub(c.city && c.state ? `${c.city}, ${c.state}` : c.city, c.phone), href: `/customers/${c.id}`, initials: c.initials });
 
   const jobs = getAllJobs().filter(j => has(q, j.title, j.customerName, j.assignedTo, j.propertyAddress)).slice(0, perGroup);
-  for (const j of jobs) out.push({ id: j.id, group: "Jobs", title: j.title, subtitle: sub(j.customerName, j.scheduledDate || "Unscheduled"), href: `/jobs/${j.id}`, initials: j.customerInitials });
+  for (const j of jobs) out.push({ id: j.id, group: "Jobs", title: j.title, subtitle: sub(j.customerName, j.scheduledDate || "Unscheduled"), href: `/jobs/${j.id}` });
+
+  // Work orders — searchable by their scope title or the job/customer they belong to.
+  const wos = getAllWorkOrders().filter(({ wo, jobId }) => {
+    const job = getAllJobs().find(j => j.id === jobId);
+    return has(q, wo.title, job?.title, job?.customerName);
+  }).slice(0, perGroup);
+  for (const { wo, jobId } of wos) {
+    const job = getAllJobs().find(j => j.id === jobId);
+    out.push({ id: wo.id, group: "Work Orders", title: wo.title, subtitle: sub(job?.customerName, job?.title), href: `/work-orders/${wo.id}` });
+  }
 
   const leads = getAllLeads().filter(l => has(q, l.title, l.customerName, l.customerPhone)).slice(0, perGroup);
   for (const l of leads) out.push({ id: l.id, group: "Leads", title: l.title, subtitle: sub(l.customerName, l.stage), href: `/leads/${l.id}`, initials: l.customerInitials });
@@ -50,13 +60,13 @@ export function searchAll(query: string, perGroup = 5): SearchResult[] {
   for (const inv of invoices) { const cust = getCustomer(inv.customerId); out.push({ id: inv.id, group: "Invoices", title: inv.title || inv.invoiceNumber, subtitle: sub(inv.invoiceNumber, cust?.name), href: `/invoices/${inv.id}` }); }
 
   const projects = getAllProjects().filter(p => has(q, p.name, p.customerName)).slice(0, perGroup);
-  for (const p of projects) out.push({ id: p.id, group: "Projects", title: p.name, subtitle: sub(p.customerName, p.status), href: `/projects/${p.id}`, initials: p.customerInitials });
+  for (const p of projects) out.push({ id: p.id, group: "Projects", title: p.name, subtitle: sub(p.customerName, p.status), href: `/projects/${p.id}` });
 
   const agreements = getAllAgreements().filter(a => has(q, a.type, a.customer, a.location)).slice(0, perGroup);
   for (const a of agreements) out.push({ id: a.id, group: "Agreements", title: a.type, subtitle: sub(a.customer, a.location), href: `/agreements/${a.id}`, initials: a.customerInitials });
 
   const threads = getAllThreads().filter(t => has(q, t.root.body, t.root.authorName, anchorLabel(t.root.anchor))).slice(0, perGroup);
-  for (const t of threads) out.push({ id: t.root.id, group: "Comments", title: t.root.body, subtitle: sub(t.root.authorName, anchorLabel(t.root.anchor)), href: anchorHref(t.root.anchor, t.root.threadId), initials: t.root.authorInitials });
+  for (const t of threads) out.push({ id: t.root.id, group: "Comments", title: t.root.body, subtitle: sub(t.root.authorName, anchorLabel(t.root.anchor)), href: anchorHref(t.root.anchor, t.root.threadId) });
 
   return out;
 }

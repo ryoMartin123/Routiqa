@@ -3,6 +3,7 @@
 import { use, useState, Suspense } from "react";
 import Link from "next/link";
 import { ArrowLeft, Pencil, Circle, ChevronRight, ArrowRight, MapPin, User, Calendar, DollarSign, Clock, Plus, Trash2, AlertCircle, Tag, Activity, Briefcase, ShoppingCart, Building2, UserCog, HardHat, Package, TrendingUp } from "lucide-react";
+import SegmentedProgress from "@/components/shared/SegmentedProgress";
 import { getProject, getProjectProgress, deleteProject, PROJECT_TYPE_LABELS } from "@/lib/projects/data";
 import { getTasksForProject } from "@/lib/tasks/data";
 import RecordTasks from "@/components/tasks/RecordTasks";
@@ -78,9 +79,11 @@ function WorkflowSummary({ projectId, onOpenMap }: { projectId: string; onOpenMa
         <>
           <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{allDone ? "All steps complete" : `${prog.done} of ${prog.total} steps done`}</p>
           <div className="flex items-center gap-2 mt-2">
-            <div className="flex-1 h-1.5 rounded-full" style={{ backgroundColor: "var(--bg-input)" }}>
-              <div className="h-1.5 rounded-full" style={{ width: `${prog.pct}%`, backgroundColor: allDone ? "#10b981" : "#4f46e5" }} />
-            </div>
+            <SegmentedProgress className="flex-1" segments={Array.from({ length: prog.total }, (_, i) => ({
+              filled: i < prog.done,
+              color: allDone ? "#10b981" : "#4f46e5",
+              current: !allDone && i === prog.done,
+            }))} />
             <span className="text-[10px] shrink-0" style={{ color: "var(--text-muted)" }}>{prog.done}/{prog.total} · {prog.pct}%</span>
           </div>
         </>

@@ -2,9 +2,10 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import RowArrow from "@/components/shared/RowArrow";
 import { useRouter } from "next/navigation";
 import JobWizard from "@/components/jobs/JobWizard";
-import { Search, Plus, SlidersHorizontal, ChevronUp, ChevronDown, FolderKanban, Calendar, CalendarClock, Loader, CheckCircle2, X, ArrowRight } from "lucide-react";
+import { Search, Plus, SlidersHorizontal, ChevronUp, ChevronDown, FolderKanban, Briefcase, Calendar, CalendarClock, Loader, CheckCircle2, X, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { recencyTs } from "@/lib/recency";
 import { ALL_JOBS, getSessionJobs, resolveJobStatus, type Job, type JobType } from "@/lib/jobs/data";
@@ -413,11 +414,12 @@ export default function JobsPage() {
                 const s = resolveJobStatus(job.status, statusConfig);
                 return (
                   <Link key={job.id} href={`/jobs/${job.id}`}
-                    className="grid px-4 py-3 items-center hover:bg-[var(--bg-surface-2)] transition-colors"
+                    className="relative group grid px-4 py-3 items-center hover:bg-[var(--bg-surface-2)] transition-colors"
                     style={{ gridTemplateColumns: gridCols, borderBottom: i < displayed.length - 1 ? "1px solid var(--border)" : "none", textDecoration: "none" }}>
+                    <RowArrow />
                     {/* Job / Customer */}
                     <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: "var(--bg-input)" }}><Calendar className="w-3.5 h-3.5" style={{ color: "var(--text-muted)" }} /></div>
+                      <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: "var(--accent-soft-bg)" }}><Briefcase className="w-3.5 h-3.5" style={{ color: "var(--accent-text)" }} /></div>
                       <div className="min-w-0">
                         <div className="flex items-center gap-1.5">
                           <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{job.title}</p>

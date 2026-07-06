@@ -32,6 +32,9 @@ interface Props {
   // Lets the host page show the live filtered file count (e.g. next to its
   // heading) instead of the toolbar showing it.
   onCount?: (n: number) => void;
+  // Rendered in the toolbar where Upload would sit (used with externalUpload so
+  // the host's action lives on the SAME row — no extra toolbar stacking).
+  toolbarAction?: React.ReactNode;
 }
 
 const FILE_ICON: Record<FileType, typeof ImageIcon> = {
@@ -92,7 +95,7 @@ function linkedRecords(f: PhotoFile): { label: string; value: string }[] {
   return out;
 }
 
-export default function PhotoGallery({ recordLevel, scope = {}, accountName, uploaderName = "Ryo Martin", externalUpload = false, uploadSignal = 0, onCount }: Props) {
+export default function PhotoGallery({ recordLevel, scope = {}, accountName, uploaderName = "Ryo Martin", externalUpload = false, uploadSignal = 0, onCount, toolbarAction }: Props) {
   const categories = useMemo(() => getPhotoCategories().filter(c => c.active), []);
   const catByKey   = useMemo(() => new Map(categories.map(c => [c.key, c])), [categories]);
   const catLabel   = (key: string) => catByKey.get(key)?.name ?? key;
@@ -398,13 +401,13 @@ export default function PhotoGallery({ recordLevel, scope = {}, accountName, upl
 
           {/* Toolbar Upload — minimal accent +chip (matches New Vendor); hidden
               when the page renders its own in the header */}
-          {!externalUpload && (
+          {!externalUpload ? (
             <button onClick={() => setShowUpload(true)}
               className="group flex items-center gap-1.5 text-sm font-medium transition-colors shrink-0" style={{ color: "#4f46e5" }}>
               <span className="w-5 h-5 rounded-full flex items-center justify-center transition-all group-hover:brightness-95" style={{ backgroundColor: "#4f46e51a" }}><Upload className="w-3 h-3" /></span>
               Upload
             </button>
-          )}
+          ) : toolbarAction}
         </div>
       </div>
 

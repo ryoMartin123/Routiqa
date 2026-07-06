@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import RowArrow from "@/components/shared/RowArrow";
 import { Search, Plus, SlidersHorizontal, ChevronUp, ChevronDown, FilePen, Send, AlarmClock, DollarSign } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getAllQuotes, getArchivedQuotes, fmt, type QuoteRecord } from "@/lib/quotes/data";
@@ -218,8 +219,9 @@ export default function QuotesPage() {
                 const lt = q.linkedType ? LINKED_TYPE_STYLE[q.linkedType] : null;
                 return (
                   <Link key={q.id} href={`/quotes/${q.id}`}
-                    className="grid px-4 py-3 items-center hover:bg-[var(--bg-surface-2)] transition-colors"
+                    className="relative group grid px-4 py-3 items-center hover:bg-[var(--bg-surface-2)] transition-colors"
                     style={{ gridTemplateColumns: GRID_COLS, borderBottom: i < displayed.length - 1 ? "1px solid var(--border)" : "none", textDecoration: "none" }}>
+                    <RowArrow />
                     {/* Quote # */}
                     <span className="text-sm font-mono font-medium truncate" style={{ color: "var(--text-primary)" }}>{q.quoteNumber}</span>
                     {/* Customer / Account (+ title) */}

@@ -9,6 +9,7 @@
 // One status-based primary action at the bottom; destructive actions live in a
 // "More" menu with Cancel Visit vs Cancel Job clearly separated.
 
+import SegmentedProgress from "@/components/shared/SegmentedProgress";
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
@@ -205,7 +206,7 @@ export default function CalendarItemDrawer({
           {item.customerName && <p className="text-sm mt-0.5" style={{ color: "var(--text-secondary)" }}>{item.customerName}</p>}
           {scheduled?.visitCount && scheduled.visitCount > 1 && (
             <p className="inline-flex items-center gap-1 text-xs mt-1.5" style={{ color: "var(--accent-text)" }}>
-              <Link2 className="w-3 h-3" /> Visit {scheduled.visitIndex} of {scheduled.visitCount} · same job
+              <Link2 className="w-3 h-3" /> Visit {scheduled.visitIndex} of {scheduled.visitCount}{job?.title ? <> · <span className="truncate">{job.title}</span></> : null}
             </p>
           )}
           {/* Status chip (left, in line) + the 4-dot menu (right, below the X). */}
@@ -313,9 +314,11 @@ export default function CalendarItemDrawer({
                     <span className="text-xs" style={{ color: "var(--text-secondary)" }}>Checklist</span>
                     <span className="text-xs font-bold" style={{ color: checklistDone === checklistTotal ? "#10b981" : "var(--text-secondary)" }}>{checklistDone} of {checklistTotal} complete</span>
                   </div>
-                  <div className="h-1.5 rounded-full" style={{ backgroundColor: "var(--bg-input)" }}>
-                    <div className="h-1.5 rounded-full" style={{ width: `${Math.round((checklistDone / checklistTotal) * 100)}%`, backgroundColor: checklistDone === checklistTotal ? "#10b981" : "#4f46e5" }} />
-                  </div>
+                  <SegmentedProgress segments={Array.from({ length: checklistTotal }, (_, i) => ({
+                    filled: i < checklistDone,
+                    color: checklistDone === checklistTotal ? "#10b981" : "#4f46e5",
+                    current: checklistDone < checklistTotal && i === checklistDone,
+                  }))} />
                 </div>
               ) : (
                 <p className="text-xs" style={{ color: "var(--text-muted)" }}>No checklist assigned yet</p>

@@ -1,10 +1,11 @@
 "use client";
 
 // ─── EditingScopeHeader ───────────────────────────────────
-// Compact "you are here" scope bar at the top of a settings section: one scope
-// badge, the scope name, a one-line path summary, a short plain-English note, and
-// a Change scope button (opens ScopeSwitcherModal). Scope/inheritance logic is
-// unchanged — this is presentation only. Global ("any") settings get a one-liner.
+// Full-width "you are here" scope bar below the settings breadcrumb: one scope
+// badge on the left, a Change scope button on the right (opens
+// ScopeSwitcherModal). Details live in hover tooltips. Scope/inheritance logic
+// is unchanged — this is presentation only. Global ("any") settings get a
+// one-liner bar.
 
 import { useState } from "react";
 import { Layers } from "lucide-react";
@@ -39,7 +40,7 @@ export default function EditingScopeHeader({ sectionLayers }: { sectionLayers: S
   // Global setting — scope doesn't apply.
   if (sectionLayers === "any") {
     return (
-      <div className="rounded-xl px-4 py-2.5 mb-5 flex items-center gap-2.5"
+      <div className="rounded-xl px-4 py-2.5 flex items-center gap-2.5"
         style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}>
         <Layers className="w-4 h-4 shrink-0" style={{ color: "var(--text-muted)" }} />
         <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
@@ -76,9 +77,9 @@ export default function EditingScopeHeader({ sectionLayers }: { sectionLayers: S
 
   return (
     <>
-      <div className="rounded-xl mb-5 flex items-center gap-3 px-4 py-2.5"
+      <div className="rounded-xl flex items-center gap-3 px-4 py-2.5"
         style={{ border: `1px solid ${meta.color}40`, backgroundColor: meta.color + "0a" }}>
-        {/* Scope container — hover reveals "Editing defaults for X" + the path */}
+        {/* Scope badge — hover reveals "Editing defaults for X" + the path */}
         <div className="relative group shrink-0">
           <span className="inline-block text-[10px] font-bold uppercase tracking-widest px-2.5 py-1.5 rounded-lg cursor-default"
             style={{ backgroundColor: meta.color + "14", color: meta.color, border: `1px solid ${meta.color}33` }}>{SCOPE_BADGE[activeLayer]}</span>
@@ -91,7 +92,7 @@ export default function EditingScopeHeader({ sectionLayers }: { sectionLayers: S
 
         <div className="flex-1" />
 
-        {/* Change scope — sliders knobs animate on hover; explanation tooltips above */}
+        {/* Change scope — sliders knobs animate on hover; explanation tooltip below */}
         {canSwitch && (
           <div className="relative group shrink-0">
             <button onClick={() => setSwitcherOpen(true)}
@@ -99,7 +100,7 @@ export default function EditingScopeHeader({ sectionLayers }: { sectionLayers: S
               style={{ border: `1px solid ${meta.color}66`, color: meta.color, backgroundColor: switcherOpen ? meta.color + "12" : "transparent" }}>
               <SlidersGlyph active={switcherOpen} className="w-3 h-3" /> Change scope
             </button>
-            <span className="pointer-events-none absolute bottom-full right-0 mb-2 w-60 px-3 py-2 rounded-lg text-[11px] leading-snug text-left opacity-0 group-hover:opacity-100 transition-opacity duration-200 group-hover:delay-700 z-30"
+            <span className="pointer-events-none absolute top-full right-0 mt-2 w-60 px-3 py-2 rounded-lg text-[11px] leading-snug text-left opacity-0 group-hover:opacity-100 transition-opacity duration-200 group-hover:delay-700 z-30"
               style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", color: "var(--text-secondary)", boxShadow: "0 12px 32px -8px rgba(0,0,0,0.4)" }}>{explain}</span>
           </div>
         )}
