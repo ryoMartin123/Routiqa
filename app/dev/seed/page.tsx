@@ -21,6 +21,10 @@ import { getManifest } from "@/lib/sample-data/manifest";
 import { getInvoice, updateInvoice } from "@/lib/quotes/data";
 import { getJob, updateJob } from "@/lib/jobs/data";
 import { getUsers, upsertUser } from "@/lib/users/data";
+import { createProject, getAllProjects } from "@/lib/projects/data";
+import { createJob, createWorkOrder } from "@/lib/jobs/data";
+import { createAppointment, updateAppointment } from "@/lib/appointments/data";
+import { createForNode, setMapNodeExpected } from "@/lib/projects/map";
 import type { SampleType } from "@/lib/sample-data/types";
 
 const PLAN: Array<[SampleType, number]> = [
@@ -124,6 +128,78 @@ function enrichHistory(withJobs: boolean): void {
   }
 }
 
+// ─── Showcase project: a mini-split install mid-flight ────
+// One project rigged so the Map + Timeline lens have something real to show:
+// a 5-working-day install (2 days done w/ handoff notes, today in progress),
+// an equipment PO waiting with an expected date, and a contract value so the
+// staged billing nodes can compute their percentages.
+function offsetYmd(days: number): string {
+  const d = new Date(); d.setDate(d.getDate() + days); return ymd(d);
+}
+// Nearest working day (skips weekends) at the given offset direction.
+function workday(from: Date, step: number): Date {
+  const d = new Date(from);
+  d.setDate(d.getDate() + step);
+  while (d.getDay() === 0 || d.getDay() === 6) d.setDate(d.getDate() + (step >= 0 ? 1 : -1));
+  return d;
+}
+function seedShowcaseProject(): void {
+  if (getAllProjects().some(pr => pr.name === "Chen Residence — Mini-Split Install")) return;
+
+  const proj = createProject({
+    companyId: "co_hvac", locationId: "loc_augusta",
+    accountId: "1", customerName: "Sarah Chen", customerInitials: "SC", locationName: "Augusta Branch",
+    name: "Chen Residence — Mini-Split Install",
+    description: "4-zone mini-split: condenser + 4 heads, lineset runs, electrical sub, startup & commissioning.",
+    type: "installation", estimatedValue: "$14,200",
+    propertyAddress: "412 Walton Way, Augusta, GA",
+    startDate: offsetYmd(-3), targetDate: offsetYmd(12),
+    assignedTo: "Tucker Hayes", assignedToInitials: "TH",
+  });
+
+  const job = createJob({
+    companyId: "co_hvac", locationId: "loc_augusta",
+    accountId: "1", customerName: "Sarah Chen", customerInitials: "SC", locationName: "Augusta Branch",
+    title: "Mini-Split Installation", type: "installation", projectId: proj.id,
+    propertyAddress: "412 Walton Way, Augusta, GA", estimatedAmount: "$14,200",
+    assignedTo: "Tucker Hayes", assignedToInitials: "TH",
+  });
+  const wo = createWorkOrder({
+    jobId: job.id, title: "Mini-Split Install — 4 Zones",
+    instructions: "Set condenser pad, mount heads 1–4, pull linesets, vacuum + charge, commission each zone.",
+    checklist: [
+      { label: "Condenser set & secured", required: true },
+      { label: "Heads mounted (all zones)", required: true },
+      { label: "Vacuum reading", required: true, type: "number", unit: "microns" },
+      { label: "Zones commissioned", required: true, type: "multi_select", options: ["Zone 1", "Zone 2", "Zone 3", "Zone 4"] },
+      { label: "Final walkthrough photos", required: true, type: "photo" },
+    ],
+  });
+
+  // 5 working days: two behind us (done, with crew handoffs), today live, two ahead.
+  const today = new Date();
+  const plan: Array<{ d: Date; status: "completed" | "in_progress" | "scheduled"; note?: string }> = [
+    { d: workday(today, -2), status: "completed", note: "Condenser set on pad, power run to disconnect. Start on lineset chases." },
+    { d: workday(today, -1), status: "completed", note: "Linesets pulled to heads 1–3. Head 4 chase needs the long bit — it's in the van." },
+    { d: today, status: "in_progress" },
+    { d: workday(today, 1), status: "scheduled" },
+    { d: workday(today, 2), status: "scheduled" },
+  ];
+  for (const v of plan) {
+    const appt = createAppointment({
+      jobId: job.id, workOrderId: wo.id, techIds: ["Tucker Hayes", "Luis Romero"],
+      scheduledDate: ymd(v.d), scheduledTime: "08:00", durationMinutes: 480, status: v.status,
+    });
+    if (v.note) updateAppointment(appt.id, { handoffNote: v.note });
+  }
+
+  // Equipment on order → the "received" node goes waiting; give it a date so
+  // the dated-wait bar (and the follow-up machinery) has something to chew on.
+  createForNode(proj.id, "material_request");
+  createForNode(proj.id, "purchase_order");
+  setMapNodeExpected(`${proj.id}__received`, offsetYmd(2));
+}
+
 export default function DevSeedPage() {
   const [status, setStatus] = useState<"idle" | "seeding" | "done" | "skipped">("idle");
   const [total, setTotal] = useState(0);
@@ -142,6 +218,7 @@ export default function DevSeedPage() {
     let made = 0;
     for (const [type, count] of plan) made += loadSamples(type, count, ctx);
     enrichHistory(withJobs);
+    seedShowcaseProject();
     setTotal(made);
     setStatus("done");
   }

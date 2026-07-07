@@ -22,6 +22,8 @@ import {
 } from "@/lib/projects/map";
 import DatePicker from "@/components/ui/DatePicker";
 import MultiDayBookModal from "@/components/calendar/MultiDayBookModal";
+import { getAppointmentsForJob, getAppointmentsForWorkOrder, updateAppointment, createAppointment, deleteAppointment } from "@/lib/appointments/data";
+import { pingSaved, pingError } from "@/components/shared/SavedPill";
 
 const ACCENT = "#0f8578"; // CRM indigo
 const initials = (n: string) => { const p = n.trim().split(/\s+/); return (p.length >= 2 ? p[0][0] + p[p.length - 1][0] : n.slice(0, 2)).toUpperCase(); };
@@ -131,7 +133,7 @@ export default function ProjectMap({ projectId, onOpenTab }: { projectId: string
         </div>
       </div>
 
-      {view === "timeline" && <TimelineView nodes={allNodes} onSelect={setSelectedId} />}
+      {view === "timeline" && <TimelineView nodes={allNodes} onSelect={setSelectedId} onChanged={refresh} />}
 
       {/* Full-width adaptive columns: grow to fill on wide screens, scroll when cramped. */}
       {view === "map" && (
@@ -156,18 +158,36 @@ export default function ProjectMap({ projectId, onOpenTab }: { projectId: string
   );
 }
 
-// ─── Timeline lens (read-only Gantt) ──────────────────────
+// ─── Timeline lens (Gantt) ────────────────────────────────
 // Bars are drawn only from REAL time data (visits, dated waits) — undated
-// steps are listed below rather than given invented dates. Scheduling still
-// happens on the dispatch board; this is the "when do we finish" picture.
+// steps are listed below rather than given invented dates. Bars can be
+// dragged to replan: moving a visit run reschedules its visits (started work
+// stays put, nothing lands in the past), the right edge adds/removes days,
+// and dashed wait bars drag their expected date. The dispatch board remains
+// the source of truth — this edits the same visits it shows.
 const DAY_W = 26;
 const dayMs = 86400000;
 const ymd = (d: Date) => d.toISOString().slice(0, 10);
 const addDays = (base: string, n: number) => { const d = new Date(`${base}T12:00:00`); d.setDate(d.getDate() + n); return ymd(d); };
 const diffDays = (a: string, b: string) => Math.round((new Date(`${b}T12:00:00`).getTime() - new Date(`${a}T12:00:00`).getTime()) / dayMs);
+const isWeekend = (d: string) => { const dow = new Date(`${d}T12:00:00`).getDay(); return dow === 0 || dow === 6; };
+// Lay out `count` days from `start`, skipping weekends when the crew works weekdays.
+const layoutDays = (start: string, count: number, weekdaysOnly: boolean): string[] => {
+  const out: string[] = [];
+  let d = start;
+  while (out.length < count) {
+    if (!weekdaysOnly || !isWeekend(d)) out.push(d);
+    d = addDays(d, 1);
+  }
+  return out;
+};
+const STARTED = new Set(["in_progress", "completed"]);
 
-function TimelineView({ nodes, onSelect }: { nodes: ProjectMapNode[]; onSelect: (id: string) => void }) {
+function TimelineView({ nodes, onSelect, onChanged }: { nodes: ProjectMapNode[]; onSelect: (id: string) => void; onChanged: () => void }) {
   const today = ymd(new Date());
+  // Live drag preview: which node, which handle, how many days so far.
+  const [drag, setDrag] = useState<{ id: string; mode: "move" | "resize"; delta: number } | null>(null);
+
   const rows = nodes
     .map(n => ({ node: n, span: nodeDateSpan(n) }))
     .filter((r): r is { node: ProjectMapNode; span: NonNullable<ReturnType<typeof nodeDateSpan>> } => !!r.span);
@@ -185,10 +205,101 @@ function TimelineView({ nodes, onSelect }: { nodes: ProjectMapNode[]; onSelect: 
   // Axis: a few days of air around everything that has a date (today included).
   const allDates = rows.flatMap(r => [r.span.start, r.span.end]).concat([today]);
   const min = addDays(allDates.reduce((a, b) => (a < b ? a : b)), -2);
-  const max = addDays(allDates.reduce((a, b) => (a > b ? a : b)), 3);
+  const max = addDays(allDates.reduce((a, b) => (a > b ? a : b)), 5);
   const total = diffDays(min, max) + 1;
   const days = Array.from({ length: total }, (_, i) => addDays(min, i));
   const todayX = diffDays(min, today);
+
+  const visitsFor = (node: ProjectMapNode) =>
+    (node.mirror === "work_order" ? getAppointmentsForWorkOrder(node.linkedId!) : getAppointmentsForJob(node.linkedId!))
+      .filter(a => a.scheduledDate && a.status !== "canceled")
+      .sort((a, b) => a.scheduledDate.localeCompare(b.scheduledDate));
+
+  // ── Commit handlers ──
+  function commitMove(node: ProjectMapNode, span: NonNullable<ReturnType<typeof nodeDateSpan>>, delta: number) {
+    if (delta === 0) return;
+    if (span.kind === "wait") {
+      const next = addDays(node.expectedDate!, delta);
+      setMapNodeExpected(node.id, next);
+      pingSaved(`Expected date → ${new Date(`${next}T12:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`);
+      onChanged();
+      return;
+    }
+    const visits = visitsFor(node);
+    const movable = visits.filter(v => !STARTED.has(v.status));
+    if (movable.length === 0) { pingError("Started work stays put — nothing here can move."); return; }
+    const weekdaysOnly = visits.every(v => !isWeekend(v.scheduledDate));
+    const newStart = addDays(movable[0].scheduledDate, delta);
+    if (newStart < today) { pingError("That lands in the past — visits can only move from today forward."); return; }
+    const dates = layoutDays(newStart, movable.length, weekdaysOnly);
+    movable.forEach((v, i) => updateAppointment(v.id, { scheduledDate: dates[i] }));
+    pingSaved(`Rescheduled ${movable.length} visit${movable.length === 1 ? "" : "s"}`);
+    onChanged();
+  }
+  function commitResize(node: ProjectMapNode, span: NonNullable<ReturnType<typeof nodeDateSpan>>, delta: number) {
+    if (delta === 0) return;
+    if (span.kind === "wait") { commitMove(node, span, delta); return; }
+    const visits = visitsFor(node);
+    const weekdaysOnly = visits.every(v => !isWeekend(v.scheduledDate));
+    if (delta > 0) {
+      // Extend: clone the last day's crew/time onto the next working days.
+      const last = visits[visits.length - 1];
+      let d = last.scheduledDate;
+      for (let i = 0; i < delta; i++) {
+        d = addDays(d, 1);
+        while (weekdaysOnly && isWeekend(d)) d = addDays(d, 1);
+        createAppointment({
+          jobId: last.jobId, workOrderId: last.workOrderId, techIds: last.techIds,
+          scheduledDate: d, scheduledTime: last.scheduledTime, durationMinutes: last.durationMinutes,
+        });
+      }
+      pingSaved(`Added ${delta} day${delta === 1 ? "" : "s"}`);
+    } else {
+      // Shrink: drop trailing days that haven't started; never below one visit.
+      const removable = [...visits].reverse().filter(v => !STARTED.has(v.status));
+      const toRemove = removable.slice(0, Math.min(-delta, Math.max(visits.length - 1, 0), removable.length));
+      if (toRemove.length === 0) { pingError("Those days have started work — they can't be removed."); return; }
+      toRemove.forEach(v => deleteAppointment(v.id));
+      pingSaved(`Removed ${toRemove.length} day${toRemove.length === 1 ? "" : "s"}`);
+    }
+    onChanged();
+  }
+
+  // ── Drag physics: snap per day, Escape cancels ──
+  function beginDrag(e: React.PointerEvent, node: ProjectMapNode, span: NonNullable<ReturnType<typeof nodeDateSpan>>, mode: "move" | "resize") {
+    e.preventDefault(); e.stopPropagation();
+    if (mode === "move" && span.kind === "visits") {
+      const visits = visitsFor(node);
+      if (visits.every(v => STARTED.has(v.status))) { pingError("Started work stays put — extend it from the right edge instead."); return; }
+    }
+    const startX = e.clientX;
+    let delta = 0, canceled = false, moved = false;
+    setDrag({ id: node.id, mode, delta: 0 });
+    document.body.style.userSelect = "none";
+    document.body.style.cursor = mode === "move" ? "grabbing" : "ew-resize";
+    const onMove = (ev: PointerEvent) => {
+      const d = Math.round((ev.clientX - startX) / DAY_W);
+      if (d !== delta) { delta = d; moved = true; setDrag({ id: node.id, mode, delta: d }); }
+    };
+    const onKey = (ev: KeyboardEvent) => { if (ev.key === "Escape") { canceled = true; cleanup(); } };
+    const onUp = () => {
+      cleanup();
+      if (canceled) return;
+      if (!moved) { onSelect(node.id); return; }   // a plain click still opens the step
+      if (mode === "move") commitMove(node, span, delta);
+      else commitResize(node, span, delta);
+    };
+    const cleanup = () => {
+      document.body.style.userSelect = ""; document.body.style.cursor = "";
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      window.removeEventListener("keydown", onKey);
+      setDrag(null);
+    };
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    window.addEventListener("keydown", onKey);
+  }
 
   return (
     <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
@@ -200,10 +311,9 @@ function TimelineView({ nodes, onSelect }: { nodes: ProjectMapNode[]; onSelect: 
             <div className="relative flex">
               {days.map(d => {
                 const dt = new Date(`${d}T12:00:00`);
-                const dow = dt.getDay();
                 return (
                   <div key={d} className="shrink-0 py-2 text-center text-[9px]"
-                    style={{ width: DAY_W, color: d === today ? "var(--accent-text)" : "var(--text-muted)", fontWeight: d === today ? 700 : 400, backgroundColor: dow === 0 || dow === 6 ? "var(--bg-surface-2)" : "transparent" }}>
+                    style={{ width: DAY_W, color: d === today ? "var(--accent-text)" : "var(--text-muted)", fontWeight: d === today ? 700 : 400, backgroundColor: isWeekend(d) ? "var(--bg-surface-2)" : "transparent" }}>
                     {dt.getDate() === 1 || d === min ? dt.toLocaleDateString("en-US", { month: "short" }) : dt.getDate()}
                   </div>
                 );
@@ -217,9 +327,13 @@ function TimelineView({ nodes, onSelect }: { nodes: ProjectMapNode[]; onSelect: 
             <div className="absolute top-0 bottom-0 w-px z-10 pointer-events-none" style={{ left: 176 + todayX * DAY_W + DAY_W / 2, backgroundColor: "var(--accent-text)" }} />
             {rows.map(({ node, span }, i) => {
               const sm = NODE_STATUS_META[node.status];
-              const x = diffDays(min, span.start);
-              const w = diffDays(span.start, span.end) + 1;
+              const dragging = drag?.id === node.id ? drag : null;
+              const shift = dragging?.mode === "move" ? dragging.delta : 0;
+              const grow = dragging?.mode === "resize" ? dragging.delta : 0;
+              const x = diffDays(min, span.start) + shift;
+              const w = Math.max(diffDays(span.start, span.end) + 1 + grow, 1);
               const overdue = node.status !== "completed" && span.end < today;
+              const done = node.status === "completed";
               return (
                 <div key={node.id} className="flex items-center" style={{ borderTop: i ? "1px solid var(--border-subtle)" : "none" }}>
                   <button onClick={() => onSelect(node.id)} className="w-44 shrink-0 px-3 py-2.5 flex items-center gap-1.5 text-left hover:underline">
@@ -227,17 +341,30 @@ function TimelineView({ nodes, onSelect }: { nodes: ProjectMapNode[]; onSelect: 
                     <span className="text-xs truncate" style={{ color: "var(--text-primary)" }}>{node.title}</span>
                   </button>
                   <div className="relative h-9 flex-1">
-                    {/* weekend shading */}
-                    {days.map((d, di) => { const dow = new Date(`${d}T12:00:00`).getDay(); return (dow === 0 || dow === 6) ? <span key={d} className="absolute top-0 bottom-0" style={{ left: di * DAY_W, width: DAY_W, backgroundColor: "var(--bg-surface-2)" }} /> : null; })}
-                    <button onClick={() => onSelect(node.id)}
-                      title={`${node.title} · ${span.start === span.end ? span.start : `${span.start} → ${span.end}`}`}
-                      className="absolute top-1/2 -translate-y-1/2 h-4 rounded-[3px] transition-all hover:brightness-95"
+                    {days.map((d, di) => isWeekend(d) ? <span key={d} className="absolute top-0 bottom-0" style={{ left: di * DAY_W, width: DAY_W, backgroundColor: "var(--bg-surface-2)" }} /> : null)}
+                    {/* The bar: drag body = move, drag right edge = resize; click = open */}
+                    <div
+                      onPointerDown={e => { if (!done) beginDrag(e, node, span, "move"); }}
+                      onClick={() => { if (done) onSelect(node.id); }}
+                      title={`${node.title} · ${span.start === span.end ? span.start : `${span.start} → ${span.end}`}${done ? "" : " — drag to replan"}`}
+                      className="group/bar absolute top-1/2 -translate-y-1/2 h-4 rounded-[3px]"
                       style={{
                         left: x * DAY_W + 2, width: Math.max(w * DAY_W - 4, 10),
                         backgroundColor: overdue ? "#ef4444" : span.kind === "wait" ? "transparent" : sm.color,
                         border: span.kind === "wait" ? `1.5px dashed ${overdue ? "#ef4444" : sm.color}` : "none",
-                        opacity: node.status === "completed" ? 0.55 : 1,
-                      }} />
+                        opacity: done ? 0.55 : dragging ? 0.85 : 1,
+                        cursor: done ? "pointer" : "grab",
+                        boxShadow: dragging ? `0 0 0 1.5px var(--bg-surface), 0 0 0 3px ${sm.color}` : "none",
+                        transition: dragging ? "none" : "left 120ms ease, width 120ms ease",
+                        zIndex: dragging ? 20 : 1,
+                      }}>
+                      {!done && (
+                        <span onPointerDown={e => beginDrag(e, node, span, "resize")}
+                          className="absolute -right-1 top-1/2 -translate-y-1/2 w-2.5 h-5 cursor-ew-resize opacity-0 group-hover/bar:opacity-100 flex items-center justify-center">
+                          <span className="w-[3px] h-3.5 rounded-full" style={{ backgroundColor: sm.color, filter: "brightness(0.7)" }} />
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
               );
@@ -256,6 +383,9 @@ function TimelineView({ nodes, onSelect }: { nodes: ProjectMapNode[]; onSelect: 
           ))}
         </div>
       )}
+      <p className="px-3 py-1.5 text-[10px]" style={{ borderTop: "1px solid var(--border-subtle)", color: "var(--text-muted)" }}>
+        Drag a bar to move it · drag the right edge to add or remove days · dashed = waiting, expected date · Esc cancels
+      </p>
     </div>
   );
 }
