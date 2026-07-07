@@ -97,10 +97,20 @@ export function setMapNodeExpected(nodeId: string, date: string): void {
   saveMeta(all);
 }
 
-// ─── Manual completion store (per node id) ────────────────
-const _manualDone = new Set<string>();
+// ─── Manual completion store (per node id, persisted) ─────
+const DONE_KEY = "crm-map-manual-done";
+let _manualDone: Set<string> | null = null;
+function manualDone(): Set<string> {
+  if (_manualDone) return _manualDone;
+  if (typeof window === "undefined") return new Set();
+  try { _manualDone = new Set(JSON.parse(localStorage.getItem(DONE_KEY) || "[]") as string[]); }
+  catch { _manualDone = new Set(); }
+  return _manualDone;
+}
 export function setMapNodeStatus(nodeId: string, status: MapNodeStatus): void {
-  if (status === "completed") _manualDone.add(nodeId); else _manualDone.delete(nodeId);
+  const set = manualDone();
+  if (status === "completed") set.add(nodeId); else set.delete(nodeId);
+  try { localStorage.setItem(DONE_KEY, JSON.stringify([...set])); } catch { /* ignore */ }
 }
 
 // ─── Mirror resolution — node status from a real record ───
@@ -191,7 +201,7 @@ function buildProjectMap(projectId: string): ProjectMapNode[] {
     let baseStatus: BaseStatus = null;
     let link: MirrorResult = { status: null };
     if (t.manual) {
-      baseStatus = (_manualDone.has(id) || t.key === "created") ? "completed" : null;
+      baseStatus = (manualDone().has(id) || t.key === "created") ? "completed" : null;
     } else if (t.type === "billing" && t.percent != null) {
       const invId = metaStore()[id]?.invoiceId;
       const inv = invId ? getInvoice(invId) : undefined;
@@ -411,4 +421,30 @@ export function createBillingInvoiceForNode(node: ProjectMapNode): boolean {
   all[node.id] = { ...(all[node.id] ?? {}), invoiceId: inv.id };
   saveMeta(all);
   return true;
+}
+
+// ─── Timeline span per node (read-only Gantt lens) ────────
+// Where a step sits in calendar time, derived from what already exists:
+// visits give job/WO steps real days; a dated wait spans today → expected.
+// Steps with no time info return null — the timeline lists them separately
+// rather than inventing dates.
+export interface NodeSpan { start: string; end: string; kind: "visits" | "wait" }
+export function nodeDateSpan(node: ProjectMapNode): NodeSpan | null {
+  if (node.linkedId && (node.mirror === "job" || node.mirror === "work_order")) {
+    const appts = (node.mirror === "work_order"
+      ? getAppointmentsForWorkOrder(node.linkedId)
+      : getAppointmentsForJob(node.linkedId))
+      .filter(a => a.scheduledDate && a.status !== "canceled")
+      .sort((a, b) => a.scheduledDate.localeCompare(b.scheduledDate));
+    if (appts.length > 0) return { start: appts[0].scheduledDate, end: appts[appts.length - 1].scheduledDate, kind: "visits" };
+  }
+  if ((node.status === "waiting" || node.status === "blocked") && node.expectedDate) {
+    const today = new Date().toISOString().slice(0, 10);
+    return {
+      start: today < node.expectedDate ? today : node.expectedDate,
+      end: node.expectedDate < today ? today : node.expectedDate,
+      kind: "wait",
+    };
+  }
+  return null;
 }

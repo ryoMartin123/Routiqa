@@ -17,7 +17,7 @@ import {
 import {
   getProjectMap, getProjectMapByGroup, setMapNodeStatus, createForNode, isQuickCreate, SOURCE_TAB,
   NODE_TYPE_LABEL, NODE_STATUS_META, nodeDayProgress, setMapNodeExpected, sweepDatedWaits,
-  billingNodeAmount, billingNodeAmountLabel, createBillingInvoiceForNode,
+  billingNodeAmount, billingNodeAmountLabel, createBillingInvoiceForNode, nodeDateSpan,
   type ProjectMapNode, type MapNodeType, type MapNodeStatus,
 } from "@/lib/projects/map";
 import DatePicker from "@/components/ui/DatePicker";
@@ -62,6 +62,7 @@ export default function ProjectMap({ projectId, onOpenTab }: { projectId: string
   const [tick, setTick] = useState(0);
   const refresh = () => setTick(t => t + 1);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [view, setView] = useState<"map" | "timeline">("map");
 
   // Overdue dated waits spawn their follow-up task once (guarded in the lib).
   useEffect(() => { sweepDatedWaits(projectId); }, [projectId, tick]);
@@ -104,6 +105,18 @@ export default function ProjectMap({ projectId, onOpenTab }: { projectId: string
             <span className="text-xs" style={{ color: "var(--text-muted)" }}>{completed} of {allNodes.length} steps complete</span>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
+            {/* Map ↔ Timeline lens toggle */}
+            <div className="flex items-center rounded-lg p-0.5" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}>
+              {(["map", "timeline"] as const).map(v => (
+                <button key={v} onClick={() => setView(v)}
+                  className="px-2.5 py-1 rounded-md text-[11px] font-semibold capitalize transition-colors"
+                  style={{
+                    backgroundColor: view === v ? "var(--bg-surface)" : "transparent",
+                    color: view === v ? "var(--text-primary)" : "var(--text-muted)",
+                    boxShadow: view === v ? "var(--shadow-card)" : "none",
+                  }}>{v}</button>
+              ))}
+            </div>
             {blocked > 0 && (
               <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: "#fee2e2", color: "#991b1b" }}>
                 <AlertTriangle className="w-3 h-3" /> {blocked} blocked
@@ -118,7 +131,10 @@ export default function ProjectMap({ projectId, onOpenTab }: { projectId: string
         </div>
       </div>
 
+      {view === "timeline" && <TimelineView nodes={allNodes} onSelect={setSelectedId} />}
+
       {/* Full-width adaptive columns: grow to fill on wide screens, scroll when cramped. */}
+      {view === "map" && (
       <div className="flex gap-1 overflow-x-auto thin-scroll-x pb-2 items-stretch">
         {groups.map((g, gi) => (
           <Fragment key={g.group}>
@@ -135,6 +151,111 @@ export default function ProjectMap({ projectId, onOpenTab }: { projectId: string
           </Fragment>
         ))}
       </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Timeline lens (read-only Gantt) ──────────────────────
+// Bars are drawn only from REAL time data (visits, dated waits) — undated
+// steps are listed below rather than given invented dates. Scheduling still
+// happens on the dispatch board; this is the "when do we finish" picture.
+const DAY_W = 26;
+const dayMs = 86400000;
+const ymd = (d: Date) => d.toISOString().slice(0, 10);
+const addDays = (base: string, n: number) => { const d = new Date(`${base}T12:00:00`); d.setDate(d.getDate() + n); return ymd(d); };
+const diffDays = (a: string, b: string) => Math.round((new Date(`${b}T12:00:00`).getTime() - new Date(`${a}T12:00:00`).getTime()) / dayMs);
+
+function TimelineView({ nodes, onSelect }: { nodes: ProjectMapNode[]; onSelect: (id: string) => void }) {
+  const today = ymd(new Date());
+  const rows = nodes
+    .map(n => ({ node: n, span: nodeDateSpan(n) }))
+    .filter((r): r is { node: ProjectMapNode; span: NonNullable<ReturnType<typeof nodeDateSpan>> } => !!r.span);
+  const undated = nodes.filter(n => !nodeDateSpan(n) && n.status !== "completed" && n.status !== "skipped");
+
+  if (rows.length === 0) {
+    return (
+      <div className="rounded-xl px-4 py-8 text-center" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
+        <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>Nothing on the calendar yet</p>
+        <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>Book visits or put expected dates on waiting steps and they'll appear here.</p>
+      </div>
+    );
+  }
+
+  // Axis: a few days of air around everything that has a date (today included).
+  const allDates = rows.flatMap(r => [r.span.start, r.span.end]).concat([today]);
+  const min = addDays(allDates.reduce((a, b) => (a < b ? a : b)), -2);
+  const max = addDays(allDates.reduce((a, b) => (a > b ? a : b)), 3);
+  const total = diffDays(min, max) + 1;
+  const days = Array.from({ length: total }, (_, i) => addDays(min, i));
+  const todayX = diffDays(min, today);
+
+  return (
+    <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
+      <div className="overflow-x-auto thin-scroll-x">
+        <div style={{ minWidth: 176 + total * DAY_W }}>
+          {/* Date header */}
+          <div className="flex" style={{ borderBottom: "1px solid var(--border)" }}>
+            <div className="w-44 shrink-0 px-3 py-2 text-[10px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Step</div>
+            <div className="relative flex">
+              {days.map(d => {
+                const dt = new Date(`${d}T12:00:00`);
+                const dow = dt.getDay();
+                return (
+                  <div key={d} className="shrink-0 py-2 text-center text-[9px]"
+                    style={{ width: DAY_W, color: d === today ? "var(--accent-text)" : "var(--text-muted)", fontWeight: d === today ? 700 : 400, backgroundColor: dow === 0 || dow === 6 ? "var(--bg-surface-2)" : "transparent" }}>
+                    {dt.getDate() === 1 || d === min ? dt.toLocaleDateString("en-US", { month: "short" }) : dt.getDate()}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Rows */}
+          <div className="relative">
+            {/* Today line across all rows */}
+            <div className="absolute top-0 bottom-0 w-px z-10 pointer-events-none" style={{ left: 176 + todayX * DAY_W + DAY_W / 2, backgroundColor: "var(--accent-text)" }} />
+            {rows.map(({ node, span }, i) => {
+              const sm = NODE_STATUS_META[node.status];
+              const x = diffDays(min, span.start);
+              const w = diffDays(span.start, span.end) + 1;
+              const overdue = node.status !== "completed" && span.end < today;
+              return (
+                <div key={node.id} className="flex items-center" style={{ borderTop: i ? "1px solid var(--border-subtle)" : "none" }}>
+                  <button onClick={() => onSelect(node.id)} className="w-44 shrink-0 px-3 py-2.5 flex items-center gap-1.5 text-left hover:underline">
+                    <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: sm.color }} />
+                    <span className="text-xs truncate" style={{ color: "var(--text-primary)" }}>{node.title}</span>
+                  </button>
+                  <div className="relative h-9 flex-1">
+                    {/* weekend shading */}
+                    {days.map((d, di) => { const dow = new Date(`${d}T12:00:00`).getDay(); return (dow === 0 || dow === 6) ? <span key={d} className="absolute top-0 bottom-0" style={{ left: di * DAY_W, width: DAY_W, backgroundColor: "var(--bg-surface-2)" }} /> : null; })}
+                    <button onClick={() => onSelect(node.id)}
+                      title={`${node.title} · ${span.start === span.end ? span.start : `${span.start} → ${span.end}`}`}
+                      className="absolute top-1/2 -translate-y-1/2 h-4 rounded-[3px] transition-all hover:brightness-95"
+                      style={{
+                        left: x * DAY_W + 2, width: Math.max(w * DAY_W - 4, 10),
+                        backgroundColor: overdue ? "#ef4444" : span.kind === "wait" ? "transparent" : sm.color,
+                        border: span.kind === "wait" ? `1.5px dashed ${overdue ? "#ef4444" : sm.color}` : "none",
+                        opacity: node.status === "completed" ? 0.55 : 1,
+                      }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* Steps with no calendar footprint yet */}
+      {undated.length > 0 && (
+        <div className="px-3 py-2 flex items-center gap-2 flex-wrap" style={{ borderTop: "1px solid var(--border)" }}>
+          <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>No dates yet</span>
+          {undated.map(n => (
+            <button key={n.id} onClick={() => onSelect(n.id)} className="text-[11px] px-2 py-0.5 rounded hover:underline"
+              style={{ backgroundColor: "var(--bg-surface-2)", color: "var(--text-secondary)" }}>{n.title}</button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
