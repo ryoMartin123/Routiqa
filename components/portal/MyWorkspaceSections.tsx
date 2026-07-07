@@ -99,7 +99,7 @@ export function MyAnnouncements() {
   const announcements = getAnnouncements();
   return (
     <div className="p-6 space-y-4">
-      <PageHeader title="Announcements" subtitle="Announcements for your role, company, and channels." accent="#6366f1" icon={Megaphone} />
+      <PageHeader title="Announcements" subtitle="Announcements for your role, company, and channels." accent="#239c8d" icon={Megaphone} />
       {announcements.length === 0 ? (
         <Empty icon={Megaphone} text="No announcements right now." />
       ) : (

@@ -40,7 +40,7 @@ export default function ServiceScopeSection({ d }: { d: UseAgreementDraft }) {
           ) : undefined
         } />
 
-      <button onClick={() => { d.addBlankService(); }} className="text-xs font-medium mb-3" style={{ color: "#4f46e5" }}>+ Add a custom service</button>
+      <button onClick={() => { d.addBlankService(); }} className="text-xs font-medium mb-3" style={{ color: "#0f8578" }}>+ Add a custom service</button>
 
       {d.services.length === 0 ? (
         <Empty>No services yet. Load one from your library or add a custom service.</Empty>

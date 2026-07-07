@@ -22,7 +22,7 @@ export default function AnalyticsBuilderPage() {
 
   return (
     <div className="p-4 sm:p-6 max-w-5xl mx-auto">
-      <Link href="/analytics" className="inline-flex items-center gap-1.5 text-sm font-medium mb-5 transition-opacity hover:opacity-80" style={{ color: "#4f46e5" }}>
+      <Link href="/analytics" className="inline-flex items-center gap-1.5 text-sm font-medium mb-5 transition-opacity hover:opacity-80" style={{ color: "#0f8578" }}>
         <ChevronLeft className="w-4 h-4" /> Back to analytics
       </Link>
       <AnalyticsBuilder initial={initial} onSaved={() => router.push("/analytics")} />

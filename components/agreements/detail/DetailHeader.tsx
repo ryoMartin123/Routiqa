@@ -86,7 +86,7 @@ export default function DetailHeader({ agreement, actions, menuOpen, setMenuOpen
           )}
           <button onClick={primary.run}
             className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-medium text-white cursor-pointer transition hover:brightness-110"
-            style={{ backgroundColor: "#4f46e5" }}>
+            style={{ backgroundColor: "#0f8578" }}>
             <primary.icon className="w-3.5 h-3.5" /> {primary.label}
           </button>
 

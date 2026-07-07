@@ -32,7 +32,7 @@ export default function AdminDashboard() {
         <StatCard label="Active Users" value={String(activeUsers)} hint="Signed-in accounts" icon={UserCheck} accent="#10b981" />
         <StatCard label="Pending Invites" value={String(invited)} hint="Awaiting acceptance" icon={MailPlus} accent="#f59e0b" />
         <StatCard label="Active Apps" value={String(PLATFORM_APPS.length)} hint="Across the platform" icon={AppWindow} accent="#0ea5e9" />
-        <StatCard label="Companies" value={String(activeCompanies)} hint="Active business units" icon={Building2} accent="#6366f1" />
+        <StatCard label="Companies" value={String(activeCompanies)} hint="Active business units" icon={Building2} accent="#239c8d" />
         <StatCard label="Locations" value={String(activeLocations)} hint="Active branches" icon={MapPin} accent="#ec4899" />
         <StatCard label="Security Alerts" value="0" hint="No issues detected" icon={ShieldAlert} accent="#10b981" />
         <StatCard label="Billing" value="Active" hint="Pro plan · mock" icon={CreditCard} accent="#10b981" />

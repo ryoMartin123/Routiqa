@@ -8,7 +8,7 @@
 // to go do them), and the right action. Mock/local.
 
 import SegmentedProgress from "@/components/shared/SegmentedProgress";
-import { Fragment, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import {
   Layers, Flag, Briefcase, CheckSquare, ClipboardList, Package, ShoppingCart, HardHat,
   FileText, Receipt, ChevronRight, Check, AlertTriangle, CornerDownRight, User, Calendar, Link2,
@@ -16,10 +16,14 @@ import {
 } from "lucide-react";
 import {
   getProjectMap, getProjectMapByGroup, setMapNodeStatus, createForNode, isQuickCreate, SOURCE_TAB,
-  NODE_TYPE_LABEL, NODE_STATUS_META, type ProjectMapNode, type MapNodeType, type MapNodeStatus,
+  NODE_TYPE_LABEL, NODE_STATUS_META, nodeDayProgress, setMapNodeExpected, sweepDatedWaits,
+  billingNodeAmount, billingNodeAmountLabel, createBillingInvoiceForNode,
+  type ProjectMapNode, type MapNodeType, type MapNodeStatus,
 } from "@/lib/projects/map";
+import DatePicker from "@/components/ui/DatePicker";
+import MultiDayBookModal from "@/components/calendar/MultiDayBookModal";
 
-const ACCENT = "#4f46e5"; // CRM indigo
+const ACCENT = "#0f8578"; // CRM indigo
 const initials = (n: string) => { const p = n.trim().split(/\s+/); return (p.length >= 2 ? p[0][0] + p[p.length - 1][0] : n.slice(0, 2)).toUpperCase(); };
 
 const TYPE_ICON: Record<MapNodeType, typeof Layers> = {
@@ -59,6 +63,9 @@ export default function ProjectMap({ projectId, onOpenTab }: { projectId: string
   const refresh = () => setTick(t => t + 1);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
+  // Overdue dated waits spawn their follow-up task once (guarded in the lib).
+  useEffect(() => { sweepDatedWaits(projectId); }, [projectId, tick]);
+
   const groups = useMemo(() => getProjectMapByGroup(projectId), [projectId, tick]);
   const allNodes = useMemo(() => getProjectMap(projectId), [projectId, tick]);
   const byId = useMemo(() => new Map(allNodes.map(n => [n.id, n])), [allNodes]);
@@ -67,7 +74,7 @@ export default function ProjectMap({ projectId, onOpenTab }: { projectId: string
   const selected = selectedId ? byId.get(selectedId) ?? null : null;
   if (selected) {
     return (
-      <NodeDetail node={selected} allNodes={allNodes} byId={byId}
+      <NodeDetail node={selected} allNodes={allNodes} byId={byId} onChanged={refresh}
         onBack={() => setSelectedId(null)} onSelectNode={setSelectedId} onOpenTab={onOpenTab}
         onComplete={() => { setMapNodeStatus(selected.id, "completed"); refresh(); }}
         onCreate={() => { if (selected.mirror) { createForNode(projectId, selected.mirror); refresh(); } }} />
@@ -149,9 +156,29 @@ function NodeCard({ node, deps, onClick }: { node: ProjectMapNode; deps: Project
           {done ? <Check className="w-3.5 h-3.5" style={{ color: "#10b981" }} /> : <span className="w-2 h-2 rounded-full" style={{ backgroundColor: sm.color }} />}
         </div>
         <p className="text-sm font-medium leading-snug" style={{ color: "var(--text-primary)", textDecoration: done ? "line-through" : "none" }}>{node.title}</p>
+        {/* Multi-day steps read as days, not a binary box */}
+        {(() => {
+          const dp = nodeDayProgress(node);
+          if (!dp || done) return null;
+          return (
+            <div className="mt-1.5">
+              <p className="text-[10px] font-semibold mb-1" style={{ color: "var(--text-secondary)" }}>Day {dp.day} of {dp.total}</p>
+              <SegmentedProgress segments={dp.visits.map(v => ({ filled: v.done, color: "#0f8578", current: v.today && !v.done }))} />
+            </div>
+          );
+        })()}
         {(node.status === "blocked" || node.status === "waiting") && node.blockedReason && (
           <p className="text-[10px] mt-1 flex items-center gap-1" style={{ color: node.status === "blocked" ? "#dc2626" : "#b45309" }}><AlertTriangle className="w-3 h-3 shrink-0" /> {node.blockedReason}</p>
         )}
+        {(node.status === "blocked" || node.status === "waiting") && node.expectedDate && (() => {
+          const overdue = node.expectedDate! < new Date().toISOString().slice(0, 10);
+          return (
+            <p className="text-[10px] mt-0.5 flex items-center gap-1" style={{ color: overdue ? "#dc2626" : "var(--text-muted)" }}>
+              <Calendar className="w-3 h-3 shrink-0" />
+              expected {new Date(`${node.expectedDate}T12:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric" })}{overdue ? " — overdue" : ""}
+            </p>
+          );
+        })()}
         <div className="flex items-center justify-between gap-1 mt-2">
           <div className="flex items-center gap-1 min-w-0">
             {node.assignedTo && <span title={node.assignedTo} className="w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-bold text-white shrink-0" style={{ backgroundColor: ACCENT }}>{initials(node.assignedTo)}</span>}
@@ -166,16 +193,20 @@ function NodeCard({ node, deps, onClick }: { node: ProjectMapNode; deps: Project
 }
 
 // ─── Node detail (its own full section) ───────────────────
-function NodeDetail({ node, allNodes, byId, onBack, onSelectNode, onOpenTab, onComplete, onCreate }: {
+function NodeDetail({ node, allNodes, byId, onBack, onSelectNode, onOpenTab, onComplete, onCreate, onChanged }: {
   node: ProjectMapNode; allNodes: ProjectMapNode[]; byId: Map<string, ProjectMapNode>;
   onBack: () => void; onSelectNode: (id: string) => void; onOpenTab?: (t: string) => void;
-  onComplete: () => void; onCreate: () => void;
+  onComplete: () => void; onCreate: () => void; onChanged: () => void;
 }) {
+  const [bookOpen, setBookOpen] = useState(false);
+  const dayProg = nodeDayProgress(node);
+  // The job to book multi-day visits against (job nodes directly; WO nodes via their job).
+  const bookJobId = node.mirror === "job" ? node.linkedId : undefined;
   const Icon = TYPE_ICON[node.type];
   const sm = NODE_STATUS_META[node.status];
   const done = node.status === "completed";
   const deps = node.dependencies.map(d => byId.get(d)).filter(Boolean) as ProjectMapNode[];
-  const tab = node.mirror ? SOURCE_TAB[node.mirror] : undefined;
+  const tab = node.mirror ? SOURCE_TAB[node.mirror] : node.type === "billing" && node.linkedId ? "Invoices" : undefined;
   const openTab = () => (tab && onOpenTab ? onOpenTab(tab) : undefined);
 
   // The primary "do this" action.
@@ -186,6 +217,17 @@ function NodeDetail({ node, allNodes, byId, onBack, onSelectNode, onOpenTab, onC
     primary = <button onClick={onComplete} className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg text-sm font-medium text-white hover:brightness-110" style={{ backgroundColor: ACCENT }}><Check className="w-4 h-4" /> Mark Complete</button>;
   } else if (node.linkedLabel) {
     primary = <button onClick={openTab} className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg text-sm font-medium text-white hover:brightness-110" style={{ backgroundColor: ACCENT }}><ExternalLink className="w-4 h-4" /> Open {node.linkedLabel}</button>;
+  } else if (node.type === "billing" && node.percent != null) {
+    // Staged billing: raise THIS stage's invoice for its share of the contract.
+    primary = (
+      <button onClick={() => { if (createBillingInvoiceForNode(node)) onChanged(); }}
+        disabled={billingNodeAmount(node) == null}
+        className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg text-sm font-medium text-white hover:brightness-110 disabled:opacity-40"
+        style={{ backgroundColor: ACCENT }}
+        title={billingNodeAmount(node) == null ? "Set the project's estimated value first" : undefined}>
+        <Receipt className="w-4 h-4" /> Create invoice — {node.percent}% · {billingNodeAmountLabel(node)}
+      </button>
+    );
   } else if (node.createable && isQuickCreate(node.mirror)) {
     primary = <button onClick={onCreate} className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg text-sm font-medium text-white hover:brightness-110" style={{ backgroundColor: ACCENT }}><Plus className="w-4 h-4" /> Create {NODE_TYPE_LABEL[node.type]} &amp; link</button>;
   } else {
@@ -236,9 +278,45 @@ function NodeDetail({ node, allNodes, byId, onBack, onSelectNode, onOpenTab, onC
                 <p className="text-xs" style={{ color: node.status === "blocked" ? "#991b1b" : "#92400e" }}>{node.blockedReason}</p>
               </div>
             )}
-            <div className="mt-4">{primary}</div>
+            {/* Multi-day steps: the day-by-day picture */}
+            {dayProg && !done && (
+              <div className="mt-3 rounded-lg p-3" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}>
+                <p className="text-[11px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-muted)" }}>Day {dayProg.day} of {dayProg.total}</p>
+                <SegmentedProgress segments={dayProg.visits.map(v => ({ filled: v.done, color: "#0f8578", current: v.today && !v.done }))} />
+                <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2">
+                  {dayProg.visits.map((v, i) => (
+                    <span key={v.date} className="text-[11px]" style={{ color: v.done ? "#10b981" : v.today ? "var(--accent-text)" : "var(--text-muted)", fontWeight: v.today ? 600 : 400 }}>
+                      Day {i + 1} · {new Date(`${v.date}T12:00:00`).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}{v.done ? " ✓" : v.today ? " · today" : ""}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+            {/* Dated waits: when should this resolve? Passing the date spawns a follow-up task. */}
+            {(node.status === "waiting" || node.status === "blocked") && (
+              <div className="mt-3">
+                <label className="block text-[11px] font-medium mb-1" style={{ color: "var(--text-secondary)" }}>Expected by
+                  <span className="font-normal" style={{ color: "var(--text-muted)" }}> — a follow-up task is created if this date passes</span>
+                </label>
+                <DatePicker size="sm" value={node.expectedDate ?? ""} className="w-44"
+                  onChange={d => { setMapNodeExpected(node.id, d); onChanged(); }} />
+              </div>
+            )}
+            <div className="mt-4 space-y-2">
+              {primary}
+              {bookJobId && !done && (
+                <button onClick={() => setBookOpen(true)}
+                  className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg text-sm font-medium"
+                  style={{ border: "1px solid var(--border)", color: "var(--text-secondary)", backgroundColor: "var(--bg-surface)" }}>
+                  <Calendar className="w-4 h-4" /> Book multi-day visits
+                </button>
+              )}
+            </div>
             {node.notes && <p className="text-[11px] mt-3 pt-3" style={{ borderTop: "1px solid var(--border)", color: "var(--text-muted)" }}>{node.notes}</p>}
           </Card>
+          {bookOpen && bookJobId && (
+            <MultiDayBookModal jobId={bookJobId} onClose={() => setBookOpen(false)} onBooked={onChanged} />
+          )}
 
           <Card title="Before this can start" icon={GitBranch}>
             {deps.length === 0 ? (

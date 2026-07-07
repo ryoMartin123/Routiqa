@@ -14,7 +14,7 @@ export default function ModuleViewToggle({
   listLabel = "List",
   withCards = false,
   overviewFirst = false,
-  accent = "#4f46e5",
+  accent = "#0f8578",
 }: {
   view: ModuleView;
   onChange: (v: ModuleView) => void;

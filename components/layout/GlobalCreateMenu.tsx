@@ -52,7 +52,7 @@ export default function GlobalCreateMenu() {
       <button
         onClick={() => setOpen(true)}
         title="Create"
-        className="plus-glow flex items-center justify-center w-9 h-9 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white transition-colors"
+        className="plus-glow flex items-center justify-center w-9 h-9 rounded-lg bg-[#0f8578] hover:bg-[#0c6b60] text-white transition-colors"
         aria-haspopup="dialog" aria-expanded={open}
       >
         <Plus className="w-5 h-5" />

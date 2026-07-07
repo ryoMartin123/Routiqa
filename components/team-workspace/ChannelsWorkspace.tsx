@@ -973,7 +973,7 @@ function CreateChannelModal({ onClose, onCreated }: { onClose: () => void; onCre
 }
 
 // ─── Edit drawer ──────────────────────────────────────────
-const ACCENT_SWATCHES = ["#14b8a6", "#0ea5e9", "#6366f1", "#a855f7", "#ec4899", "#f59e0b", "#f97316", "#ef4444", "#10b981", "#8b5cf6", "#6b7280"];
+const ACCENT_SWATCHES = ["#14b8a6", "#0ea5e9", "#239c8d", "#a855f7", "#ec4899", "#f59e0b", "#f97316", "#ef4444", "#10b981", "#8b5cf6", "#6b7280"];
 function EditChannelDrawer({ channel, onClose, onSaved, onArchived }: { channel: Channel; onClose: () => void; onSaved: () => void; onArchived: () => void }) {
   const [name, setName] = useState(channel.name); const [description, setDescription] = useState(channel.description);
   const [type, setType] = useState<ChannelType>(channel.type); const [visibility, setVisibility] = useState<ChannelVisibility>(channel.visibility);

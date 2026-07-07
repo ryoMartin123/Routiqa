@@ -30,14 +30,14 @@ export default function OpenWorkOrders() {
       <div className="flex items-center justify-between px-4 py-3 shrink-0"
         style={{ borderBottom: "1px solid var(--border)" }}>
         <div className="flex items-center gap-2">
-          <ClipboardList className="w-4 h-4" style={{ color: "#4f46e5" }} />
+          <ClipboardList className="w-4 h-4" style={{ color: "#0f8578" }} />
           <h2 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Open Work Orders</h2>
           {openWOs.length > 0 && (
             <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full"
               style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>{openWOs.length}</span>
           )}
         </div>
-        <Link href="/work-orders" className="flex items-center gap-1 text-xs font-medium text-indigo-600 hover:text-indigo-700">
+        <Link href="/work-orders" className="flex items-center gap-1 text-xs font-medium text-[#0f8578] hover:text-[#0c6b60]">
           View all <ExternalLink className="w-3 h-3" />
         </Link>
       </div>
@@ -66,7 +66,7 @@ export default function OpenWorkOrders() {
                     <div className="flex items-center gap-1.5 mt-1">
                       <div className="flex-1 max-w-20 h-1 rounded-full" style={{ backgroundColor: "var(--bg-input)" }}>
                         <div className="h-1 rounded-full"
-                          style={{ width: `${pct}%`, backgroundColor: pct === 100 ? "#10b981" : "#4f46e5" }} />
+                          style={{ width: `${pct}%`, backgroundColor: pct === 100 ? "#10b981" : "#0f8578" }} />
                       </div>
                       <span className="text-[9px]" style={{ color: "var(--text-muted)" }}>{done}/{total}</span>
                     </div>

@@ -21,7 +21,7 @@ import { scopeKeyOf, nextFreeY, type LayoutItem } from "@/lib/dashboard/layouts"
 import { resolveWidgetDef, REPORT_WIDGET_PREFIX, type ContextLevel } from "@/lib/dashboard/registry";
 import { getReport, getReports } from "@/lib/analytics/store";
 
-const ACCENT = "#4f46e5";
+const ACCENT = "#0f8578";
 function widgetLabel(id: string): string {
   if (id.startsWith("report:")) return getReport(id.slice(7))?.name ?? "Report";
   return resolveWidgetDef(id)?.title ?? id;

@@ -13,7 +13,7 @@ import { addFile } from "@/lib/files/data";
 import type { PhotoPhase } from "@/lib/files/types";
 import { getCurrentTech } from "@/lib/mobile/data";
 
-const ACCENT = "#4f46e5";
+const ACCENT = "#0f8578";
 const phaseOf = (key: string): PhotoPhase | undefined => (["before", "during", "after"].includes(key) ? (key as PhotoPhase) : undefined);
 
 interface Staged { id: string; url: string }

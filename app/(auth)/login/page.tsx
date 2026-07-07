@@ -45,7 +45,7 @@ export default function LoginPage() {
               style={{ border: "1px solid #e5e7eb", color: "#111827" }}
             />
           </div>
-          <button className="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2.5 rounded-lg transition-colors">
+          <button className="w-full bg-[#0f8578] hover:bg-[#0c6b60] text-white text-sm font-medium px-4 py-2.5 rounded-lg transition-colors">
             Sign in
           </button>
         </div>

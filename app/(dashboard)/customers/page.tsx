@@ -64,7 +64,7 @@ function typeDot(type: CustomerType) {
   return type === "Commercial" ? "#f59e0b" : "#6b7280";
 }
 function statusDot(status: CustomerStatus) {
-  return status === "Customer" ? "#10b981" : "#6366f1";
+  return status === "Customer" ? "#10b981" : "#239c8d";
 }
 
 // ─── Page ─────────────────────────────────────────────────
@@ -113,7 +113,7 @@ export default function CustomersPage() {
   const residential    = contextFiltered.filter(c => c.accountType === "residential").length;
 
   const summaryCards: SummaryCard[] = [
-    { icon: Users,      label: "Total Customers", value: String(totalCustomers), sub: "Active accounts",            iconColor: "#4f46e5" },
+    { icon: Users,      label: "Total Customers", value: String(totalCustomers), sub: "Active accounts",            iconColor: "#0f8578" },
     { icon: UserPlus,   label: "New This Month",  value: String(newThisMonth),   sub: THIS_MONTH,                   iconColor: "#10b981" },
     { icon: TrendingUp, label: "Active Leads",    value: String(activeLeads),    sub: "In pipeline",                iconColor: "#f59e0b" },
     { icon: Building2,  label: "Comm / Res Split",value: `${commercial} / ${residential}`, sub: "Commercial / Residential", iconColor: "#0891b2" },
@@ -150,8 +150,8 @@ export default function CustomersPage() {
   function SortIcon({ field }: { field: SortField }) {
     if (sortField !== field) return <ChevronDown className="w-3 h-3 opacity-30" />;
     return sortDir === "asc"
-      ? <ChevronUp   className="w-3 h-3" style={{ color: "#4f46e5" }} />
-      : <ChevronDown className="w-3 h-3" style={{ color: "#4f46e5" }} />;
+      ? <ChevronUp   className="w-3 h-3" style={{ color: "#0f8578" }} />
+      : <ChevronDown className="w-3 h-3" style={{ color: "#0f8578" }} />;
   }
 
   return (
@@ -166,7 +166,7 @@ export default function CustomersPage() {
           <button
             onClick={() => setModalOpen(true)}
             data-open={modalOpen}
-            className="btn-raised flex items-center gap-1.5 bg-indigo-600 text-white text-sm font-medium px-3.5 py-2 rounded-lg"
+            className="btn-raised flex items-center gap-1.5 bg-[#0f8578] text-white text-sm font-medium px-3.5 py-2 rounded-lg"
           >
             <Plus className="plus-icon w-4 h-4" />
             New Customer
@@ -274,7 +274,7 @@ export default function CustomersPage() {
               key={label}
               onClick={() => field && handleSort(field as SortField)}
               className={cn("flex items-center gap-1 text-left", field ? "cursor-pointer hover:opacity-80" : "cursor-default")}
-              style={{ color: sortField === field ? "#4f46e5" : "var(--text-muted)" }}
+              style={{ color: sortField === field ? "#0f8578" : "var(--text-muted)" }}
             >
               {label}
               {field && <SortIcon field={field as SortField} />}

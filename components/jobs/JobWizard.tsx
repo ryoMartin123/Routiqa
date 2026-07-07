@@ -164,7 +164,7 @@ export default function JobWizard({ preset, onClose, onCreated }: {
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
           <div className="flex items-center gap-2">
-            <Briefcase className="w-4 h-4" style={{ color: "#4f46e5" }} />
+            <Briefcase className="w-4 h-4" style={{ color: "#0f8578" }} />
             <p className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>New Job</p>
           </div>
           <button onClick={onClose} style={{ color: "var(--text-muted)" }}><X className="w-4 h-4" /></button>
@@ -252,12 +252,12 @@ export default function JobWizard({ preset, onClose, onCreated }: {
               </div>
               <div>
                 <label className="block text-[10px] font-medium mb-1" style={{ color: "var(--text-secondary)" }}>Time</label>
-                <TimePicker size="sm" value={time} onChange={setTime} placeholder="Pick a time"
+                <TimePicker size="sm" value={time} onChange={setTime} placeholder="Pick a time" minuteStep={board.increment}
                   startHour={Math.floor(board.startHour)} endHour={Math.ceil(board.endHour)} minTime={minTimeFor(date)} />
               </div>
               <div>
                 <label className="block text-[10px] font-medium mb-1" style={{ color: "var(--text-secondary)" }}>Duration (min)</label>
-                <NumberStepper size="sm" min={15} step={15} value={duration} onChange={setDuration} />
+                <NumberStepper size="sm" min={board.increment} step={board.increment} value={duration} onChange={setDuration} />
               </div>
             </div>
             {schedulePast && (
@@ -274,18 +274,18 @@ export default function JobWizard({ preset, onClose, onCreated }: {
               <label className="block text-[10px] font-medium mb-1" style={{ color: "var(--text-secondary)" }}>Assigned Technician</label>
               {suggestions.length > 0 && (
                 <div className="mb-1.5">
-                  <div className="flex items-center gap-1 mb-1"><Sparkles className="w-3 h-3" style={{ color: "#4f46e5" }} /><span className="text-[10px] font-medium" style={{ color: "var(--text-secondary)" }}>Suggested</span></div>
+                  <div className="flex items-center gap-1 mb-1"><Sparkles className="w-3 h-3" style={{ color: "#0f8578" }} /><span className="text-[10px] font-medium" style={{ color: "var(--text-secondary)" }}>Suggested</span></div>
                   <div className="flex flex-col gap-1">
                     {suggestions.map(s => {
                       const on = tech === s.name;
                       return (
                         <button key={s.name} onClick={() => setTech(s.name)} type="button"
                           className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-left transition-colors"
-                          style={{ border: `1px solid ${on ? "#a5b4fc" : "var(--border)"}`, backgroundColor: on ? "var(--accent-soft-bg)" : "var(--bg-surface-2)" }}>
+                          style={{ border: `1px solid ${on ? "#8ed0c6" : "var(--border)"}`, backgroundColor: on ? "var(--accent-soft-bg)" : "var(--bg-surface-2)" }}>
                           <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: s.onDuty ? "#16a34a" : "#9ca3af" }} />
                           <span className="text-xs font-medium flex-1 truncate" style={{ color: "var(--text-primary)" }}>{s.name}</span>
                           <span className="inline-flex items-center gap-1 text-[10px] shrink-0" style={{ color: on ? "var(--accent-text)" : "var(--text-muted)" }}>{s.onDuty && <Navigation className="w-2.5 h-2.5" />}{s.reason}</span>
-                          {on && <Check className="w-3 h-3 shrink-0" style={{ color: "#4f46e5" }} />}
+                          {on && <Check className="w-3 h-3 shrink-0" style={{ color: "#0f8578" }} />}
                         </button>
                       );
                     })}
@@ -303,7 +303,7 @@ export default function JobWizard({ preset, onClose, onCreated }: {
         <div className="px-6 py-4 flex justify-end gap-2 shrink-0" style={{ borderTop: "1px solid var(--border)" }}>
           <button onClick={onClose} className="px-3 py-2 rounded-lg text-sm" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>Cancel</button>
           <button onClick={handleCreate} disabled={!canCreate}
-            className="px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-40" style={{ backgroundColor: "#4f46e5" }}>
+            className="px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-40" style={{ backgroundColor: "#0f8578" }}>
             Create Job
           </button>
         </div>

@@ -23,7 +23,7 @@ export interface QuotePdfData {
   stamp?: string;          // e.g. "APPROVED" — diagonal green stamp across the page
 }
 
-const INDIGO: [number, number, number] = [79, 70, 229];
+const INDIGO: [number, number, number] = [15, 133, 120];
 const GRAY:   [number, number, number] = [107, 114, 128];
 const MUTED:  [number, number, number] = [156, 163, 175];
 const DARK:   [number, number, number] = [17, 24, 39];

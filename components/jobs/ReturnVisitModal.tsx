@@ -12,6 +12,7 @@
 //   • From the dispatch board "+" — no `job`, so a picker requires you to tie
 //     the return to an existing job (and it always creates the work order).
 
+import { resolveDispatchSettings } from "@/lib/calendar/settings";
 import { useMemo, useState, type CSSProperties } from "react";
 import { X, AlertTriangle, Info } from "lucide-react";
 import DatePicker from "@/components/ui/DatePicker";
@@ -51,6 +52,8 @@ export default function ReturnVisitModal({ job: jobProp, onClose, onScheduled }:
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
   const [duration, setDuration] = useState(jobProp?.durationMinutes || 120);
+  // Times/durations step in the dispatch-board slot size for this job's scope.
+  const increment = resolveDispatchSettings(job?.companyId, job?.locationId).hourly.increment;
   const [tech, setTech] = useState(jobProp?.assignedTo || techs[0] || "");
   const [instructions, setInstructions] = useState("");
 
@@ -159,7 +162,7 @@ export default function ReturnVisitModal({ job: jobProp, onClose, onScheduled }:
           </Field>
           <div className="grid grid-cols-2 gap-3">
             <Field label="Date"><DatePicker value={date} onChange={v => setDate(v || "")} min={minBookableYMD()} clearable={false} /></Field>
-            <Field label="Time"><TimePicker value={time} onChange={setTime} minTime={minTime} /></Field>
+            <Field label="Time"><TimePicker value={time} onChange={setTime} minTime={minTime} minuteStep={increment} /></Field>
           </div>
           {timeError
             ? <p className="text-xs" style={{ color: "#dc2626" }}>{timeError}</p>
@@ -169,14 +172,14 @@ export default function ReturnVisitModal({ job: jobProp, onClose, onScheduled }:
               <Select size="sm" value={tech} onChange={setTech}
                 options={techs.length === 0 ? [{ value: "", label: "Unassigned" }] : [{ value: "", label: "Unassigned" }, ...techs.map(t => ({ value: t, label: t }))]} />
             </Field>
-            <Field label="Duration (min)"><NumberStepper size="sm" min={15} step={15} value={String(duration)} onChange={v => setDuration(parseInt(v, 10) || 0)} /></Field>
+            <Field label="Duration (min)"><NumberStepper size="sm" min={increment} step={increment} value={String(duration)} onChange={v => setDuration(parseInt(v, 10) || 0)} /></Field>
           </div>
           <Field label="Instructions (optional)"><textarea value={instructions} onChange={e => setInstructions(e.target.value)} rows={2} placeholder="e.g. Bring the ordered compressor; customer prefers mornings." className={`${inp} resize-none`} style={inpStyle} /></Field>
         </div>
 
         <div className="flex items-center justify-end gap-2 px-5 py-3" style={{ borderTop: "1px solid var(--border)" }}>
           <button onClick={onClose} className="text-sm font-medium px-3 py-2 rounded-lg" style={{ color: "var(--text-secondary)" }}>Cancel</button>
-          <button onClick={schedule} disabled={!valid} className="text-sm font-semibold px-4 py-2 rounded-lg text-white disabled:opacity-40" style={{ backgroundColor: "#4f46e5" }}>Schedule visit</button>
+          <button onClick={schedule} disabled={!valid} className="text-sm font-semibold px-4 py-2 rounded-lg text-white disabled:opacity-40" style={{ backgroundColor: "#0f8578" }}>Schedule visit</button>
         </div>
       </div>
     </div>

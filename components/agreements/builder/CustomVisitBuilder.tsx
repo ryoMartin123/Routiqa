@@ -66,7 +66,7 @@ export default function CustomVisitBuilder({ config, onChange, minDate, maxDate 
                       onClick={() => set({ months: on ? (c.months ?? []).filter(x => x !== mo) : [...(c.months ?? []), mo] })}
                       className="px-2.5 py-1 rounded-lg text-xs font-medium transition-colors"
                       style={{
-                        border: `1px solid ${on ? "#4f46e5" : "var(--border)"}`,
+                        border: `1px solid ${on ? "#0f8578" : "var(--border)"}`,
                         backgroundColor: on ? "var(--accent-soft-bg)" : "var(--bg-surface)",
                         color: on ? "var(--accent-text-strong)" : "var(--text-secondary)",
                       }}>{m}</button>

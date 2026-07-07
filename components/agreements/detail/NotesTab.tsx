@@ -38,7 +38,7 @@ export default function NotesTab({ agreement }: { agreement: CustomerAgreement }
           style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface)", color: "var(--text-primary)" }} />
         <div className="flex justify-end mt-2">
           <button onClick={add} disabled={!draft.trim()}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-40 cursor-pointer transition hover:brightness-110 disabled:cursor-not-allowed" style={{ backgroundColor: "#4f46e5" }}>
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-40 cursor-pointer transition hover:brightness-110 disabled:cursor-not-allowed" style={{ backgroundColor: "#0f8578" }}>
             <Plus className="w-3.5 h-3.5" /> Add Note
           </button>
         </div>
@@ -52,11 +52,11 @@ export default function NotesTab({ agreement }: { agreement: CustomerAgreement }
       ) : (
         <div className="space-y-2.5">
           {sorted.map(n => (
-            <Card key={n.id} className="p-4" style={n.pinned ? { borderColor: "#c7d2fe" } : undefined}>
+            <Card key={n.id} className="p-4" style={n.pinned ? { borderColor: "#b9dfd8" } : undefined}>
               <div className="flex items-start justify-between gap-3">
                 <p className="text-sm leading-relaxed" style={{ color: "var(--text-primary)" }}>{n.text}</p>
                 <button onClick={() => togglePin(n.id)} title={n.pinned ? "Unpin" : "Pin"}
-                  className="p-1 rounded-lg shrink-0 cursor-pointer transition-colors hover:bg-[var(--bg-surface-2)]" style={{ color: n.pinned ? "#4f46e5" : "var(--text-muted)" }}>
+                  className="p-1 rounded-lg shrink-0 cursor-pointer transition-colors hover:bg-[var(--bg-surface-2)]" style={{ color: n.pinned ? "#0f8578" : "var(--text-muted)" }}>
                   {n.pinned ? <Pin className="w-3.5 h-3.5" /> : <PinOff className="w-3.5 h-3.5" />}
                 </button>
               </div>

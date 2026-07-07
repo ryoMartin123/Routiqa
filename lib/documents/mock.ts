@@ -34,7 +34,7 @@ export const DOC_VISIBILITIES: DocVisibility[] = [
   "Specific Roles", "Specific Users", "Company/Location", "Private", "Linked Record Only",
 ];
 export const VIS_COLOR: Record<DocVisibility, string> = {
-  Everyone: "#0ea5e9", "Field Employees": "#10b981", "Office/Admin": "#6366f1",
+  Everyone: "#0ea5e9", "Field Employees": "#10b981", "Office/Admin": "#239c8d",
   "Managers Only": "#a855f7", "Specific Roles": "#8b5cf6", "Specific Users": "#8b5cf6",
   "Company/Location": "#0891b2", Private: "#ef4444", "Linked Record Only": "#f59e0b",
 };
@@ -42,7 +42,7 @@ export const VIS_COLOR: Record<DocVisibility, string> = {
 export type LinkedApp = "CRM" | "HR" | "Inventory" | "Team Workspace" | "Accounting" | "Platform";
 export const LINKED_APPS: LinkedApp[] = ["CRM", "HR", "Inventory", "Team Workspace", "Accounting", "Platform"];
 export const LINKED_APP_COLOR: Record<LinkedApp, string> = {
-  CRM: "#6366f1", HR: "#ec4899", Inventory: "#f97316", "Team Workspace": "#2563eb", Accounting: "#10b981", Platform: "#a855f7",
+  CRM: "#239c8d", HR: "#ec4899", Inventory: "#f97316", "Team Workspace": "#2563eb", Accounting: "#10b981", Platform: "#a855f7",
 };
 
 export interface LinkedRecord { app: LinkedApp; label: string }

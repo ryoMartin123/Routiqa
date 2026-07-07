@@ -12,7 +12,7 @@ export default function MissingPhotos() {
           <h2 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Missing Required Photos</h2>
         </div>
         <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
-          style={{ backgroundColor: "#e0e7ff", color: "#4f46e5" }}>Phase 3</span>
+          style={{ backgroundColor: "#d3ebe6", color: "#0f8578" }}>Phase 3</span>
       </div>
       <div className="flex-1 min-h-0 py-4 text-center space-y-2">
         <p className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>

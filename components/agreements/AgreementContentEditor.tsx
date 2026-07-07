@@ -168,7 +168,7 @@ export default function AgreementContentEditor({ value, onChange }: {
           </Mini>
         </div>
         <label className="flex items-center gap-2 text-sm cursor-pointer" style={{ color: "var(--text-secondary)" }}>
-          <input type="checkbox" checked={billing.taxable} onChange={e => onChange({ billing: { ...billing, taxable: e.target.checked } })} className="accent-indigo-600" /> Taxable
+          <input type="checkbox" checked={billing.taxable} onChange={e => onChange({ billing: { ...billing, taxable: e.target.checked } })} className="accent-[#0f8578]" /> Taxable
         </label>
         <div className="rounded-xl p-3 flex items-center justify-between max-w-lg" style={cardStyle}>
           <span className="text-xs" style={{ color: "var(--text-muted)" }}>Estimated annual value</span>

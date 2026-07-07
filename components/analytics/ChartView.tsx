@@ -9,8 +9,8 @@ import { ArrowUpRight, ArrowDownRight } from "lucide-react";
 import type { ReportResult, VizType } from "@/lib/analytics/types";
 import { formatValue, formatFull } from "@/lib/analytics/engine";
 
-const ACCENT = "#4f46e5";
-const ACCENT_RGB = "79,70,229";
+const ACCENT = "#0f8578";
+const ACCENT_RGB = "15,133,120";
 const GRID = "var(--border-subtle)";
 // Opacity ramp for categorical series — monochrome, not rainbow.
 const shade = (i: number, n: number) => `rgba(${ACCENT_RGB},${(1 - (i / Math.max(1, n - 1)) * 0.62).toFixed(3)})`;

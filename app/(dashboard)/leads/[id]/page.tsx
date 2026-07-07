@@ -79,7 +79,7 @@ function SectionCard({
             <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>{count}</span>
           )}
         </div>
-        {action && <button onClick={action.onClick} className="text-xs font-medium text-indigo-600 hover:text-indigo-700">{action.label}</button>}
+        {action && <button onClick={action.onClick} className="text-xs font-medium text-[#0f8578] hover:text-[#0c6b60]">{action.label}</button>}
       </div>
       <div className="flex-1 min-h-0 overflow-y-auto">{children}</div>
     </div>
@@ -172,7 +172,7 @@ function OverviewTab({ id, onTab }: { id: string; onTab: (tab: string) => void }
               icon={customer ? Building2 : User}
               label={customer ? "Linked Account" : "Prospect"}
               value={customer
-                ? <Link href={`/customers/${customer.id}`} className="text-indigo-600 hover:text-indigo-700">{customer.name} →</Link>
+                ? <Link href={`/customers/${customer.id}`} className="text-[#0f8578] hover:text-[#0c6b60]">{customer.name} →</Link>
                 : lead.customerName}
             />
             <DetailField icon={Phone} label="Phone"   value={contactPhone} />
@@ -215,8 +215,8 @@ function OverviewTab({ id, onTab }: { id: string; onTab: (tab: string) => void }
               const Icon = NOTE_ICON[note.type];
               return (
                 <Row key={note.id} last={i === Math.min(3, notes.length - 1)}>
-                  <div className="w-6 h-6 rounded-full bg-indigo-100 flex items-center justify-center shrink-0 mr-3">
-                    <Icon className="w-3 h-3 text-indigo-600" />
+                  <div className="w-6 h-6 rounded-full bg-[#d3ebe6] flex items-center justify-center shrink-0 mr-3">
+                    <Icon className="w-3 h-3 text-[#0f8578]" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm leading-snug truncate" style={{ color: "var(--text-secondary)" }}>{note.text}</p>
@@ -254,13 +254,13 @@ function OverviewTab({ id, onTab }: { id: string; onTab: (tab: string) => void }
             <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Quotes</p>
             {quotes.length > 0 && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>{quotes.length}</span>}
           </div>
-          <button onClick={() => onTab("Quotes")} className="text-xs font-medium text-indigo-600 hover:text-indigo-700">View all</button>
+          <button onClick={() => onTab("Quotes")} className="text-xs font-medium text-[#0f8578] hover:text-[#0c6b60]">View all</button>
         </div>
         <div className="flex-1 min-h-0 overflow-y-auto p-4">
           {quotes.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center py-6">
               <p className="text-sm" style={{ color: "var(--text-muted)" }}>No quotes for this lead yet</p>
-              <button onClick={() => onTab("Quotes")} className="mt-1.5 text-xs font-medium text-indigo-600 hover:text-indigo-700">Create a quote →</button>
+              <button onClick={() => onTab("Quotes")} className="mt-1.5 text-xs font-medium text-[#0f8578] hover:text-[#0c6b60]">Create a quote →</button>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
@@ -293,7 +293,7 @@ function TasksTab({ id }: { id: string }) {
   return (
     <div className="space-y-4">
       <div className="flex justify-end">
-        <button className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-3 py-1.5 rounded-lg transition-colors">
+        <button className="flex items-center gap-1.5 bg-[#0f8578] hover:bg-[#0c6b60] text-white text-sm font-medium px-3 py-1.5 rounded-lg transition-colors">
           <Plus className="w-3.5 h-3.5" /> Add Task
         </button>
       </div>
@@ -354,7 +354,7 @@ function NotesTab({ id }: { id: string }) {
             ))}
           </div>
           <button disabled={!draft.trim()}
-            className="px-3 py-1.5 rounded-lg text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 transition-colors">
+            className="px-3 py-1.5 rounded-lg text-sm font-medium text-white bg-[#0f8578] hover:bg-[#0c6b60] disabled:opacity-40 transition-colors">
             Save
           </button>
         </div>
@@ -369,8 +369,8 @@ function NotesTab({ id }: { id: string }) {
             return (
               <div key={note.id} className="rounded-xl p-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
                 <div className="flex items-start gap-3">
-                  <div className="w-7 h-7 rounded-full bg-indigo-100 flex items-center justify-center shrink-0">
-                    <Icon className="w-3.5 h-3.5 text-indigo-600" />
+                  <div className="w-7 h-7 rounded-full bg-[#d3ebe6] flex items-center justify-center shrink-0">
+                    <Icon className="w-3.5 h-3.5 text-[#0f8578]" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
@@ -438,8 +438,8 @@ function ConvertTab({ id }: { id: string }) {
   return (
     <div className="max-w-xl space-y-4">
       {/* Info banner */}
-      <div className="rounded-xl px-4 py-3" style={{ backgroundColor: "#eef2ff", border: "1px solid #c7d2fe" }}>
-        <p className="text-xs" style={{ color: "#3730a3" }}>
+      <div className="rounded-xl px-4 py-3" style={{ backgroundColor: "#e8f4f1", border: "1px solid #b9dfd8" }}>
+        <p className="text-xs" style={{ color: "#0a5c53" }}>
           Converting this lead marks it as <strong>Won</strong> and creates either a Job or a Project. The lead record is preserved.
         </p>
       </div>
@@ -448,16 +448,16 @@ function ConvertTab({ id }: { id: string }) {
       {mode === "choose" && (
         <div className="grid grid-cols-2 gap-4">
           <button onClick={() => setMode("job")}
-            className="rounded-xl p-5 text-left transition-all hover:border-indigo-300"
+            className="rounded-xl p-5 text-left transition-all hover:border-[#8ed0c6]"
             style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
-            <Briefcase className="w-6 h-6 mb-3" style={{ color: "#4f46e5" }} />
+            <Briefcase className="w-6 h-6 mb-3" style={{ color: "#0f8578" }} />
             <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Convert to Job</p>
             <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>A single unit of scheduled work assigned to a technician.</p>
           </button>
           <button onClick={() => setMode("project")}
-            className="rounded-xl p-5 text-left transition-all hover:border-indigo-300"
+            className="rounded-xl p-5 text-left transition-all hover:border-[#8ed0c6]"
             style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
-            <FolderKanban className="w-6 h-6 mb-3" style={{ color: "#4f46e5" }} />
+            <FolderKanban className="w-6 h-6 mb-3" style={{ color: "#0f8578" }} />
             <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Convert to Project</p>
             <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>A larger scope with multiple jobs, phases, or milestones.</p>
           </button>
@@ -490,7 +490,7 @@ function ConvertTab({ id }: { id: string }) {
               className="px-3 py-1.5 rounded-lg text-sm transition-colors"
               style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>Back</button>
             <button onClick={() => setMode("done")} disabled={!jobTitle.trim()}
-              className="px-4 py-1.5 rounded-lg text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 transition-colors">
+              className="px-4 py-1.5 rounded-lg text-sm font-medium text-white bg-[#0f8578] hover:bg-[#0c6b60] disabled:opacity-40 transition-colors">
               Convert to Job
             </button>
           </div>
@@ -512,7 +512,7 @@ function ConvertTab({ id }: { id: string }) {
               className="px-3 py-1.5 rounded-lg text-sm transition-colors"
               style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>Back</button>
             <button onClick={() => setMode("done")} disabled={!projName.trim()}
-              className="px-4 py-1.5 rounded-lg text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 transition-colors">
+              className="px-4 py-1.5 rounded-lg text-sm font-medium text-white bg-[#0f8578] hover:bg-[#0c6b60] disabled:opacity-40 transition-colors">
               Convert to Project
             </button>
           </div>
@@ -667,7 +667,7 @@ function LeadActivityTab({ id }: { id: string }) {
           <div className="flex items-center justify-between mb-3">
             <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>Recent Account Activity</p>
             <Link href={`/customers/${lead.accountId}`}
-              className="text-xs font-medium" style={{ color: "#4f46e5", textDecoration: "none" }}>
+              className="text-xs font-medium" style={{ color: "#0f8578", textDecoration: "none" }}>
               View full timeline →
             </Link>
           </div>
@@ -698,7 +698,7 @@ function LeadQuotesTab({ id }: { id: string }) {
       <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid var(--border)" }}>
         <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Quotes ({quotes.length})</p>
         <button onClick={() => setWizard(true)} className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg"
-          style={{ backgroundColor: "#4f46e5", color: "#fff" }}>
+          style={{ backgroundColor: "#0f8578", color: "#fff" }}>
           <Plus className="w-3.5 h-3.5" /> New Quote
         </button>
       </div>
@@ -800,7 +800,7 @@ function LeadDetailContent({ params }: { params: Promise<{ id: string }> }) {
 
           <div className="flex items-center gap-2 shrink-0">
             <button onClick={() => setTab("Convert")}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-indigo-600 hover:bg-indigo-700 text-white transition-colors">
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-[#0f8578] hover:bg-[#0c6b60] text-white transition-colors">
               <TrendingUp className="w-3.5 h-3.5" /> Convert
             </button>
             <ActionsMenu actions={[

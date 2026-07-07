@@ -26,7 +26,7 @@ import {
 } from "@/lib/inbox/data";
 import { draftReply, canAutoSend, isAutopilot, setAutopilot, awaitingReply } from "@/lib/inbox/ai";
 
-const ACCENT = "#4f46e5";
+const ACCENT = "#0f8578";
 const ACCENT_SOFT = "var(--accent-soft-bg)";
 
 // Channel is the primary, centralized scope (top tabs, like the jobs module tabs).

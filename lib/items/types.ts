@@ -44,14 +44,14 @@ export const ITEM_TYPES: ItemType[] = [
 ];
 
 export const ITEM_TYPE_CONFIG: Record<ItemType, { label: string; bg: string; color: string }> = {
-  service:       { label: "Service",              bg: "#e0e7ff", color: "#3730a3" },
+  service:       { label: "Service",              bg: "#d3ebe6", color: "#0a5c53" },
   labor:         { label: "Labor",                bg: "#cffafe", color: "#155e75" },
   material:      { label: "Material",             bg: "#d1fae5", color: "#065f46" },
   equipment:     { label: "Equipment",            bg: "#ede9fe", color: "#5b21b6" },
   package:       { label: "Package",              bg: "#fce7f3", color: "#9d174d" },
   fee:           { label: "Fee",                  bg: "#ffedd5", color: "#9a3412" },
   discount:      { label: "Discount",             bg: "#fee2e2", color: "#991b1b" },
-  membership:    { label: "Membership / Agreement", bg: "#e0e7ff", color: "#4338ca" },
+  membership:    { label: "Membership / Agreement", bg: "#d3ebe6", color: "#0c6b60" },
   subcontractor: { label: "Subcontractor",        bg: "#fef9c3", color: "#854d0e" },
   other:         { label: "Other",                bg: "var(--bg-input)", color: "var(--text-muted)" },
 };

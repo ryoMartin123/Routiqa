@@ -316,7 +316,7 @@ export default function CalendarItemDrawer({
                   </div>
                   <SegmentedProgress segments={Array.from({ length: checklistTotal }, (_, i) => ({
                     filled: i < checklistDone,
-                    color: checklistDone === checklistTotal ? "#10b981" : "#4f46e5",
+                    color: checklistDone === checklistTotal ? "#10b981" : "#0f8578",
                     current: checklistDone < checklistTotal && i === checklistDone,
                   }))} />
                 </div>
@@ -394,16 +394,16 @@ export default function CalendarItemDrawer({
         {(( !isScheduled && onSchedule) || primary) && (
           <div className="px-4 py-3.5 shrink-0" style={{ backgroundColor: "var(--bg-surface)", borderTop: "1px solid var(--border)" }}>
             {!isScheduled && onSchedule ? (
-              <button onClick={onSchedule} className="w-full px-3 py-2.5 rounded-lg text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 transition-colors">
+              <button onClick={onSchedule} className="w-full px-3 py-2.5 rounded-lg text-sm font-semibold text-white bg-[#0f8578] hover:bg-[#0c6b60] transition-colors">
                 Schedule
               </button>
             ) : primary ? (
               primary.to ? (
-                <button onClick={() => setStatus(primary.to!)} className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 transition-colors">
+                <button onClick={() => setStatus(primary.to!)} className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm font-semibold text-white bg-[#0f8578] hover:bg-[#0c6b60] transition-colors">
                   <primary.icon className="w-4 h-4" /> {primary.label}
                 </button>
               ) : (
-                <Link href="/invoices" className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 transition-colors">
+                <Link href="/invoices" className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm font-semibold text-white bg-[#0f8578] hover:bg-[#0c6b60] transition-colors">
                   <primary.icon className="w-4 h-4" /> {primary.label}
                 </Link>
               )

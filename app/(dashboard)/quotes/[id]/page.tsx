@@ -38,7 +38,7 @@ const TABS = ["Overview", "Pricing", "Options", "Files", "Activity"];
 
 // Quote-mode badge (Quick / Template / Custom) — shown in the header next to status.
 const QUOTE_MODE_META: Record<string, { label: string; color: string; icon: typeof Send }> = {
-  quick:    { label: "Quick",    color: "#4f46e5", icon: Zap },
+  quick:    { label: "Quick",    color: "#0f8578", icon: Zap },
   template: { label: "Template", color: "#0891b2", icon: LayoutTemplate },
   custom:   { label: "Custom",   color: "#7c3aed", icon: SlidersHorizontal },
 };
@@ -77,7 +77,7 @@ function nextAction(status: QuoteStatus): string {
 const QUOTE_KIND_META: Record<QuoteActivityKind, { icon: typeof Send; color: string; label: string }> = {
   created:    { icon: FileText,      color: "#d97706", label: "Created" },
   duplicated: { icon: Copy,          color: "#d97706", label: "Duplicated" },
-  status:     { icon: RefreshCw,     color: "#4f46e5", label: "Status" },
+  status:     { icon: RefreshCw,     color: "#0f8578", label: "Status" },
   sent:       { icon: Send,          color: "#d97706", label: "Sent" },
   approved:   { icon: FileCheck,     color: "#059669", label: "Approved" },
   rejected:   { icon: XCircle,       color: "#b91c1c", label: "Rejected" },
@@ -140,7 +140,7 @@ function QuoteActionBar(h: ActionHandlers) {
 
   switch (h.status) {
     case "draft":
-      primary = [{ label: "Send Quote", icon: Send, onClick: h.onSend, color: "#4f46e5" }];
+      primary = [{ label: "Send Quote", icon: Send, onClick: h.onSend, color: "#0f8578" }];
       menu = [PREVIEW, EDIT, DUP, PDF, PRINT, "divider", ARCH, DEL];
       break;
     case "sent":
@@ -156,7 +156,7 @@ function QuoteActionBar(h: ActionHandlers) {
       ];
       break;
     case "approved":
-      primary = [{ label: "Convert to Job", icon: Briefcase, onClick: h.onConvertJob, color: "#4f46e5" }];
+      primary = [{ label: "Convert to Job", icon: Briefcase, onClick: h.onConvertJob, color: "#0f8578" }];
       menu = [
         PREVIEW, DUP, PDF, PRINT, COPY,
         { label: "Convert to Project", icon: FolderKanban, onClick: h.onConvertProject },
@@ -174,7 +174,7 @@ function QuoteActionBar(h: ActionHandlers) {
       break;
     case "rejected":
     case "expired":
-      primary = [{ label: "Duplicate", icon: Copy, onClick: h.onDuplicate, color: "#4f46e5" }];
+      primary = [{ label: "Duplicate", icon: Copy, onClick: h.onDuplicate, color: "#0f8578" }];
       menu = [
         PREVIEW,
         { label: "Reopen as Draft", icon: RotateCcw, onClick: h.onReopen },
@@ -301,7 +301,7 @@ function SectionCard({ title, count, action, children, className = "" }: {
           <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{title}</p>
           {count > 0 && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>{count}</span>}
         </div>
-        {action && <button onClick={action.onClick} className="text-xs font-medium text-indigo-600 hover:text-indigo-700">{action.label}</button>}
+        {action && <button onClick={action.onClick} className="text-xs font-medium text-[#0f8578] hover:text-[#0c6b60]">{action.label}</button>}
       </div>
       <div className="flex-1 min-h-0 overflow-y-auto">{children}</div>
     </div>
@@ -385,16 +385,16 @@ function OverviewTab({ id, onTab }: { id: string; onTab: (tab: string) => void }
           <OvCard title="Customer">
             {customer ? (
               <Link href={`/customers/${customer.id}`} className="group flex items-center gap-3 hover:opacity-80 transition-opacity">
-                <div className="w-8 h-8 rounded-full bg-[#e5e0db] flex items-center justify-center text-[#5c5545] text-[10px] font-bold shrink-0">{customer.initials}</div>
+                <div className="w-8 h-8 rounded-full bg-[var(--copper-soft-bg)] flex items-center justify-center text-[var(--copper-text)] text-[10px] font-bold shrink-0">{customer.initials}</div>
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{customer.name}</p>
                   {customer.phone && <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>{customer.phone}</p>}
                 </div>
-                <span className="text-[10px] shrink-0 whitespace-nowrap inline-flex items-center gap-0.5 transition-all group-hover:gap-1.5" style={{ color: "#4f46e5" }}>View account <span className="transition-transform group-hover:translate-x-0.5">→</span></span>
+                <span className="text-[10px] shrink-0 whitespace-nowrap inline-flex items-center gap-0.5 transition-all group-hover:gap-1.5" style={{ color: "#0f8578" }}>View account <span className="transition-transform group-hover:translate-x-0.5">→</span></span>
               </Link>
             ) : (
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 text-[10px] font-bold shrink-0">{quote.customerInitials}</div>
+                <div className="w-8 h-8 rounded-full bg-[#d3ebe6] flex items-center justify-center text-[#0f8578] text-[10px] font-bold shrink-0">{quote.customerInitials}</div>
                 <div>
                   <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{quote.customerName}</p>
                   <p className="text-[10px] mt-0.5" style={{ color: "var(--text-muted)" }}>Prospect — not yet a customer</p>
@@ -406,8 +406,8 @@ function OverviewTab({ id, onTab }: { id: string; onTab: (tab: string) => void }
           {quote.linkedLabel && (
             <OvCard title="Linked To">
               <Link href={linkedHref} className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-                <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center shrink-0">
-                  <LinkedIcon className="w-4 h-4 text-indigo-600" />
+                <div className="w-8 h-8 rounded-lg bg-[#d3ebe6] flex items-center justify-center shrink-0">
+                  <LinkedIcon className="w-4 h-4 text-[#0f8578]" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{quote.linkedLabel}</p>
@@ -448,13 +448,13 @@ function OverviewTab({ id, onTab }: { id: string; onTab: (tab: string) => void }
             <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Line Items</p>
             {quote.lineItems.length > 0 && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>{quote.lineItems.length}</span>}
           </div>
-          <button onClick={() => onTab("Pricing")} className="text-xs font-medium text-indigo-600 hover:text-indigo-700">View pricing</button>
+          <button onClick={() => onTab("Pricing")} className="text-xs font-medium text-[#0f8578] hover:text-[#0c6b60]">View pricing</button>
         </div>
         <div className="flex-1 min-h-0 overflow-y-auto">
           {quote.lineItems.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center py-8">
               <p className="text-sm" style={{ color: "var(--text-muted)" }}>No line items yet</p>
-              <button onClick={() => onTab("Pricing")} className="mt-1.5 text-xs font-medium text-indigo-600 hover:text-indigo-700">Add pricing →</button>
+              <button onClick={() => onTab("Pricing")} className="mt-1.5 text-xs font-medium text-[#0f8578] hover:text-[#0c6b60]">Add pricing →</button>
             </div>
           ) : (
             <>
@@ -524,7 +524,7 @@ function ReturnVisitModal({ quote, onClose }: { quote: QuoteRecord; onClose: () 
                 </button>
               )}
               <button onClick={() => router.push(`/work-orders/${created.workOrderId}`)}
-                className="px-4 py-1.5 rounded-lg text-sm font-medium text-white" style={{ backgroundColor: "#4f46e5" }}>
+                className="px-4 py-1.5 rounded-lg text-sm font-medium text-white" style={{ backgroundColor: "#0f8578" }}>
                 View work order
               </button>
               <button onClick={onClose} className="px-3 py-1.5 rounded-lg text-sm" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>
@@ -787,7 +787,7 @@ function OptionsTab({ quote, onEdit }: { quote: QuoteRecord; onEdit: () => void 
         <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>No alternate options added</p>
         <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>Add Good / Better / Best options or optional add-ons to give the customer choices.</p>
         <div className="flex items-center justify-center gap-2 mt-4">
-          <button onClick={onEdit} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-white" style={{ backgroundColor: "#4f46e5" }}>
+          <button onClick={onEdit} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-white" style={{ backgroundColor: "#0f8578" }}>
             <Plus className="w-4 h-4" /> Add Option
           </button>
           <button onClick={onEdit} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>
@@ -804,7 +804,7 @@ function OptionsTab({ quote, onEdit }: { quote: QuoteRecord; onEdit: () => void 
         <div>
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>Options <span className="text-xs font-normal" style={{ color: "var(--text-muted)" }}>· {options.length}</span></h2>
-            <button onClick={onEdit} className="text-xs font-medium text-indigo-600 hover:text-indigo-700">Edit options</button>
+            <button onClick={onEdit} className="text-xs font-medium text-[#0f8578] hover:text-[#0c6b60]">Edit options</button>
           </div>
           <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))" }}>
             {options.map(o => <OptionCardLg key={o.id} o={o} />)}
@@ -833,7 +833,7 @@ function OptionsTab({ quote, onEdit }: { quote: QuoteRecord; onEdit: () => void 
 }
 
 function OptionCardLg({ o }: { o: QuoteOption }) {
-  const accent = "#4f46e5";
+  const accent = "#0f8578";
   return (
     <div className="rounded-xl overflow-hidden flex flex-col" style={{ backgroundColor: "var(--bg-surface)", border: `1px solid ${o.featured ? accent : "var(--border-subtle)"}`, boxShadow: o.featured ? `0 0 0 3px ${accent}1a` : "var(--shadow-card)" }}>
       {o.image && (
@@ -885,7 +885,7 @@ function FilesTab({ quote, onDownloadPdf }: { quote: QuoteRecord; onDownloadPdf:
           <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>Photos, documents, brochures, and the generated proposal PDF for {quote.quoteNumber}.</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <button onClick={() => inputRef.current?.click()} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-white" style={{ backgroundColor: "#4f46e5" }}><Upload className="w-4 h-4" /> Upload File</button>
+          <button onClick={() => inputRef.current?.click()} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-white" style={{ backgroundColor: "#0f8578" }}><Upload className="w-4 h-4" /> Upload File</button>
           <button disabled className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium opacity-50" style={{ border: "1px solid var(--border)", color: "var(--text-muted)" }}><ImageIcon className="w-4 h-4" /> Attach from Media Library</button>
           <button onClick={onDownloadPdf} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}><FileBox className="w-4 h-4" /> Generate PDF</button>
         </div>
@@ -902,7 +902,7 @@ function FilesTab({ quote, onDownloadPdf }: { quote: QuoteRecord; onDownloadPdf:
           {files.map((f, i) => (
             <div key={f.id} className="flex items-center gap-3 px-4 py-3" style={{ borderBottom: i < files.length - 1 ? "1px solid var(--border)" : "none" }}>
               <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: "var(--bg-surface-2)" }}>
-                {f.kind.startsWith("image/") ? <ImageIcon className="w-4 h-4" style={{ color: "#4f46e5" }} /> : <FileText className="w-4 h-4" style={{ color: "#4f46e5" }} />}
+                {f.kind.startsWith("image/") ? <ImageIcon className="w-4 h-4" style={{ color: "#0f8578" }} /> : <FileText className="w-4 h-4" style={{ color: "#0f8578" }} />}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{f.name}</p>

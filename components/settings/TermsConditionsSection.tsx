@@ -43,7 +43,7 @@ export default function TermsConditionsSection() {
       <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
         <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)" }}>
           <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Terms Blocks <span className="ml-2 text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>{blocks.length}</span></p>
-          <button onClick={addBlock} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-white" style={{ backgroundColor: "#4f46e5" }}>
+          <button onClick={addBlock} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-white" style={{ backgroundColor: "#0f8578" }}>
             <Plus className="w-3.5 h-3.5" /> Add Block
           </button>
         </div>
@@ -55,7 +55,7 @@ export default function TermsConditionsSection() {
                 <input value={b.name} onChange={e => patch(b.id, { name: e.target.value })} placeholder="Block name" className={inputCls} style={inputStyle} />
                 <textarea value={b.body} onChange={e => patch(b.id, { body: e.target.value })} rows={4} placeholder="Terms text…" className={`${inputCls} resize-none thin-scroll-y`} style={inputStyle} />
                 <div className="flex justify-end">
-                  <button onClick={() => setEditingId(null)} className="px-4 py-1.5 rounded-lg text-sm font-medium text-white" style={{ backgroundColor: "#4f46e5" }}>Done</button>
+                  <button onClick={() => setEditingId(null)} className="px-4 py-1.5 rounded-lg text-sm font-medium text-white" style={{ backgroundColor: "#0f8578" }}>Done</button>
                 </div>
               </div>
             ) : (
@@ -65,7 +65,7 @@ export default function TermsConditionsSection() {
                   <button onClick={() => move(b.id, 1)} disabled={i === sorted.length - 1} className="disabled:opacity-20" style={{ color: "var(--text-muted)" }}><ChevronDown className="w-3.5 h-3.5" /></button>
                 </div>
                 <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: "var(--bg-surface-2)" }}>
-                  <FileText className="w-3.5 h-3.5" style={{ color: "#4f46e5" }} />
+                  <FileText className="w-3.5 h-3.5" style={{ color: "#0f8578" }} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{b.name}</p>

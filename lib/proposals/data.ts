@@ -173,7 +173,7 @@ const DEFAULT_TERMS: ProposalTermsBlock[] = [
 // ─── Seed: Branding & Defaults ────────────────────────────
 const DEFAULT_BRANDING: ProposalBranding = {
   logoUrl: "",
-  accentColor: "#4f46e5",
+  accentColor: "#0f8578",
   companyName: "Northstar Service Co.",
   companyInfo: "1200 Industrial Way, Augusta, GA 30901",
   contactInfo: "(706) 555-0100 · hello@northstar.example",

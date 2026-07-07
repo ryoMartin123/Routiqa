@@ -34,7 +34,7 @@ export default function IndustryCatalogModal({ onClose, onApplied }: {
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
           <div className="flex items-center gap-2.5">
-            <Layers className="w-5 h-5" style={{ color: "#4f46e5" }} />
+            <Layers className="w-5 h-5" style={{ color: "#0f8578" }} />
             <div>
               <p className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>Industry Starter Catalogs</p>
               <p className="text-xs" style={{ color: "var(--text-muted)" }}>Preview, then copy items into your catalog — fully editable after.</p>
@@ -52,7 +52,7 @@ export default function IndustryCatalogModal({ onClose, onApplied }: {
                 <button key={c.id} onClick={() => { setSelected(c.id); setConfirmReplace(false); }}
                   className="w-full text-left px-3 py-2.5 rounded-lg mb-1 transition-colors"
                   style={{ backgroundColor: active ? "var(--bg-surface)" : "transparent", border: active ? "1px solid var(--border)" : "1px solid transparent" }}>
-                  <p className="text-sm font-medium" style={{ color: active ? "#4f46e5" : "var(--text-primary)" }}>{c.label}</p>
+                  <p className="text-sm font-medium" style={{ color: active ? "#0f8578" : "var(--text-primary)" }}>{c.label}</p>
                   <p className="text-[10px] mt-0.5" style={{ color: "var(--text-muted)" }}>{c.items.length} items · {c.categories.length} categories</p>
                 </button>
               );
@@ -113,7 +113,7 @@ export default function IndustryCatalogModal({ onClose, onApplied }: {
               <div className="flex items-center gap-2">
                 <button onClick={() => setConfirmReplace(true)} className="px-3 py-2 rounded-lg text-sm font-medium" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>Replace All</button>
                 <button onClick={() => apply("missing")} disabled={missing === 0}
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-40" style={{ backgroundColor: "#4f46e5" }}>
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-40" style={{ backgroundColor: "#0f8578" }}>
                   <Check className="w-3.5 h-3.5" /> {missing === 0 ? "All present" : `Apply Missing (${missing})`}
                 </button>
               </div>

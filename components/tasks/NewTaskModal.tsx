@@ -277,7 +277,7 @@ export default function NewTaskModal({ open, onClose, onSaved, task, defaultCust
           <Field label="Link to Record">
             {lockLink && linkType !== "none" ? (
               <div className="flex items-center gap-2 px-3 py-2 rounded-lg" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)" }}>
-                <span className="text-[11px] font-semibold px-2 py-0.5 rounded" style={{ backgroundColor: "#e0e7ff", color: "#4f46e5" }}>
+                <span className="text-[11px] font-semibold px-2 py-0.5 rounded" style={{ backgroundColor: "#d3ebe6", color: "#0f8578" }}>
                   {LINK_TYPES.find(l => l.key === linkType)?.label}
                 </span>
                 <span className="text-sm truncate" style={{ color: "var(--text-primary)" }}>{linked?.fields.linkedLabel ?? "—"}</span>
@@ -292,9 +292,9 @@ export default function NewTaskModal({ open, onClose, onSaved, task, defaultCust
                   <button key={lt.key} onClick={() => changeLinkType(lt.key)}
                     className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
                     style={{
-                      border: `1.5px solid ${active ? "#4f46e5" : "var(--border)"}`,
-                      backgroundColor: active ? "#e0e7ff" : "var(--bg-surface-2)",
-                      color: active ? "#4f46e5" : "var(--text-secondary)",
+                      border: `1.5px solid ${active ? "#0f8578" : "var(--border)"}`,
+                      backgroundColor: active ? "#d3ebe6" : "var(--bg-surface-2)",
+                      color: active ? "#0f8578" : "var(--text-secondary)",
                     }}>
                     {lt.label}
                   </button>
@@ -350,7 +350,7 @@ export default function NewTaskModal({ open, onClose, onSaved, task, defaultCust
             Cancel
           </button>
           <button onClick={handleSave} disabled={!title.trim() || !due}
-            className="flex-1 py-2 rounded-lg text-sm font-medium bg-indigo-600 hover:bg-indigo-700 text-white transition-colors disabled:opacity-40">
+            className="flex-1 py-2 rounded-lg text-sm font-medium bg-[#0f8578] hover:bg-[#0c6b60] text-white transition-colors disabled:opacity-40">
             {task ? "Save Changes" : "Create Task"}
           </button>
         </div>

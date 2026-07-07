@@ -118,7 +118,7 @@ export default function ProjectWizard({ onClose, onCreated }: {
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
           <div className="flex items-center gap-2 min-w-0">
-            <FolderKanban className="w-4 h-4 shrink-0" style={{ color: "#4f46e5" }} />
+            <FolderKanban className="w-4 h-4 shrink-0" style={{ color: "#0f8578" }} />
             <div className="min-w-0">
               <p className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>New Project</p>
               <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>{step === 1 ? "Choose an account or lead" : "Project details"}</p>
@@ -199,9 +199,9 @@ export default function ProjectWizard({ onClose, onCreated }: {
 
               {/* The type selects the project's Map workflow. */}
               <div className="rounded-lg px-3 py-2 flex items-start gap-2" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}>
-                <FolderKanban className="w-3.5 h-3.5 mt-0.5 shrink-0" style={{ color: "#4f46e5" }} />
+                <FolderKanban className="w-3.5 h-3.5 mt-0.5 shrink-0" style={{ color: "#0f8578" }} />
                 <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>
-                  Creates the <span style={{ color: "#4f46e5", fontWeight: 600 }}>{templateForType(type).name}</span> workflow — milestones, linked records, and a connected project map.
+                  Creates the <span style={{ color: "#0f8578", fontWeight: 600 }}>{templateForType(type).name}</span> workflow — milestones, linked records, and a connected project map.
                 </p>
               </div>
 
@@ -246,12 +246,12 @@ export default function ProjectWizard({ onClose, onCreated }: {
           </button>
           {step === 1 ? (
             <button onClick={() => setStep(2)} disabled={!target}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-40" style={{ backgroundColor: "#4f46e5" }}>
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-40" style={{ backgroundColor: "#0f8578" }}>
               Next <ChevronRight className="w-3.5 h-3.5" />
             </button>
           ) : (
             <button onClick={handleCreate} disabled={!canCreate}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-40" style={{ backgroundColor: "#4f46e5" }}>
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-40" style={{ backgroundColor: "#0f8578" }}>
               <Check className="w-3.5 h-3.5" /> Create Project
             </button>
           )}
@@ -267,13 +267,13 @@ function ChoiceCard({ active, icon: Icon, title, desc, onClick }: {
   return (
     <button onClick={onClick} type="button"
       className="flex items-start gap-3 p-4 rounded-xl text-left transition-all"
-      style={{ border: `2px solid ${active ? "#4f46e5" : "var(--border)"}`, backgroundColor: active ? "#f5f3ff" : "var(--bg-surface-2)" }}>
+      style={{ border: `2px solid ${active ? "#0f8578" : "var(--border)"}`, backgroundColor: active ? "#f5f3ff" : "var(--bg-surface-2)" }}>
       <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5"
-        style={{ backgroundColor: active ? "#4f46e5" : "var(--bg-input)" }}>
+        style={{ backgroundColor: active ? "#0f8578" : "var(--bg-input)" }}>
         <Icon className="w-4 h-4" style={{ color: active ? "#ffffff" : "var(--text-muted)" }} />
       </div>
       <div className="min-w-0">
-        <p className="text-sm font-semibold" style={{ color: active ? "#4f46e5" : "var(--text-primary)" }}>{title}</p>
+        <p className="text-sm font-semibold" style={{ color: active ? "#0f8578" : "var(--text-primary)" }}>{title}</p>
         <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>{desc}</p>
       </div>
     </button>

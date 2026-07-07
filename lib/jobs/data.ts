@@ -150,7 +150,7 @@ export interface JobNote {
 // ─── Status display config ────────────────────────────────
 export const JOB_STATUS_CONFIG: Record<JobStatus, { label: string; bg: string; color: string }> = {
   new:                  { label: "New",                  bg: "var(--bg-input)", color: "var(--text-secondary)" },
-  scheduled:            { label: "Scheduled",            bg: "#e0e7ff",         color: "#3730a3" },
+  scheduled:            { label: "Scheduled",            bg: "#d3ebe6",         color: "#0a5c53" },
   en_route:             { label: "En Route",             bg: "#fef3c7",         color: "#92400e" },
   in_progress:          { label: "In Progress",          bg: "#dbeafe",         color: "#1e40af" },
   waiting_on_parts:     { label: "Waiting on Parts",     bg: "#fef3c7",         color: "#92400e" },
@@ -184,9 +184,9 @@ export function resolveJobStatus(
 // Types (Settings → Job Types); these only cover jobs whose type isn't configured.
 export const JOB_TYPE_CONFIG: Record<JobType, string> = {
   agreement_visit: "#ec4899",
-  maintenance:  "#6366f1", repair:      "#ef4444",
+  maintenance:  "#239c8d", repair:      "#ef4444",
   installation: "#10b981", inspection:  "#3b82f6",
-  emergency:    "#dc2626", estimate:    "#8b5cf6",
+  emergency:    "#dc2626", estimate:    "#c9703a",
   warranty:     "#f59e0b", replacement: "#0891b2",
   other:        "#6b7280",
 };

@@ -25,7 +25,7 @@ export default function MobileAccountingPage() {
           <Kpi icon={DollarSign} label="Collected" value={fmt(collected)} color="#16a34a" />
           <Kpi icon={Receipt} label="Outstanding AR" value={fmt(outstanding)} color="#dc2626" />
           <Kpi icon={AlertTriangle} label="Overdue" value={String(overdue.length)} color="#f59e0b" />
-          <Kpi icon={FileText} label="Open quotes" value={fmt(openQuoteValue)} color="#4f46e5" />
+          <Kpi icon={FileText} label="Open quotes" value={fmt(openQuoteValue)} color="#0f8578" />
         </div>
 
         <Section title="Recent invoices">

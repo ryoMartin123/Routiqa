@@ -44,7 +44,7 @@ export default function ProjectBudget({ projectId }: { projectId: string }) {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <Stat icon={DollarSign} label="Quoted Value" value={money(quoted)} sub={quotes.length ? `${quotes.length} estimate${quotes.length === 1 ? "" : "s"}` : "Project estimate"} />
         <Stat icon={TrendingUp} label="Committed Cost" value={money(committed)} accent="#f59e0b" sub="Materials · subs · labor" />
-        <Stat icon={Receipt} label="Invoiced" value={money(invoiced)} accent="#6366f1" sub={`${invoices.length} invoice${invoices.length === 1 ? "" : "s"}`} />
+        <Stat icon={Receipt} label="Invoiced" value={money(invoiced)} accent="#239c8d" sub={`${invoices.length} invoice${invoices.length === 1 ? "" : "s"}`} />
         <Stat icon={Wallet} label="Paid" value={money(paid)} accent="#10b981" sub={balance > 0 ? `${money(balance)} balance` : "Paid in full"} />
       </div>
 

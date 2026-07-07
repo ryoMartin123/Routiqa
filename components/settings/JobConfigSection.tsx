@@ -16,13 +16,13 @@ const TYPE_CATS   = Object.keys(JOB_TYPE_CATEGORY_LABELS)   as JobTypeCategory[]
 const WO_POLICIES = Object.keys(WORK_ORDER_POLICY_LABELS)   as WorkOrderPolicy[];
 
 // Head and rows share ONE template so every column lines up.
-const TYPE_COLS = "44px 1.8fr 0.8fr 1fr 64px 76px";
+const TYPE_COLS = "44px 1.6fr 0.8fr 0.9fr 1.2fr 64px 76px";
 
 function Toggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void }) {
   return (
     <button onClick={() => onChange(!on)} role="switch" aria-checked={on}
       className="relative w-8 h-4 rounded-full transition-colors shrink-0"
-      style={{ backgroundColor: on ? "#4f46e5" : "var(--bg-input)", border: "1px solid var(--border)" }}>
+      style={{ backgroundColor: on ? "#0f8578" : "var(--bg-input)", border: "1px solid var(--border)" }}>
       <span className="absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white shadow transition-transform"
         style={{ transform: on ? "translateX(16px)" : "translateX(0)" }} />
     </button>
@@ -148,16 +148,26 @@ function JobTypesTab() {
             ))}
           </div>
         </div>
-        {/* Work order template for this job type — the auto-create policy is
-            configured in Settings → Work Orders. */}
-        <div className="rounded-lg p-3 space-y-2" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}>
+        {/* Work order behavior for this job type */}
+        <div className="rounded-lg p-3 space-y-2.5" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}>
           <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Work Order</p>
-          <div>
-            <label className="block text-xs font-medium mb-1" style={{ color: "var(--text-secondary)" }}>Default Template</label>
-            <UiSelect value={form.defaultWorkOrderTemplateId} onChange={v => setForm(f => ({ ...f, defaultWorkOrderTemplateId: v }))}
-              options={[{ value: "", label: "Auto — match job type" }, ...woTemplates.map(t => ({ value: t.id, label: t.name }))]} />
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium mb-1" style={{ color: "var(--text-secondary)" }}>Auto-create</label>
+              <UiSelect value={form.workOrderPolicy} onChange={v => setForm(f => ({ ...f, workOrderPolicy: v as WorkOrderPolicy }))}
+                options={WO_POLICIES.map(p => ({ value: p, label: WORK_ORDER_POLICY_LABELS[p] }))} />
+            </div>
+            <div>
+              <label className="block text-xs font-medium mb-1" style={{ color: "var(--text-secondary)" }}>Default Template</label>
+              <UiSelect value={form.defaultWorkOrderTemplateId} onChange={v => setForm(f => ({ ...f, defaultWorkOrderTemplateId: v }))}
+                options={[{ value: "", label: "Auto — match job type" }, ...woTemplates.map(t => ({ value: t.id, label: t.name }))]} />
+            </div>
           </div>
-          <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>Whether a work order auto-creates when a job is booked is set in Settings → Work Orders.</p>
+          <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>
+            {form.workOrderPolicy === "auto" ? "A work order is created automatically from the template when a job of this type is booked."
+              : form.workOrderPolicy === "required" ? "A completed work order is required before a job of this type can be finished."
+              : "No work order by default — add one (template or blank) from the job when needed."}
+          </p>
         </div>
         {!editingType?.core && (
           <label className="flex items-center gap-2 cursor-pointer pt-1">
@@ -178,13 +188,13 @@ function JobTypesTab() {
         <div className="flex items-center justify-between px-4 py-3"
           style={{ borderBottom: "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)" }}>
           <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Job Types</p>
-          <button onClick={startAdd} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-white" style={{ backgroundColor: "#4f46e5" }}>
+          <button onClick={startAdd} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-white" style={{ backgroundColor: "#0f8578" }}>
             <Plus className="w-3.5 h-3.5" /> Add Job Type
           </button>
         </div>
         <div className="grid px-4 py-2.5 gap-3 text-[10px] font-semibold uppercase tracking-wider"
           style={{ gridTemplateColumns: TYPE_COLS, color: "var(--text-muted)", borderBottom: "1px solid var(--border)" }}>
-          <span>Order</span><span>Name</span><span>Duration</span><span>Category</span><span>Active</span><span />
+          <span>Order</span><span>Name</span><span>Duration</span><span>Category</span><span>Work Order</span><span>Active</span><span />
         </div>
         {sorted.map((t, i) => (
           <div key={t.id} className="group grid px-4 py-3 gap-3 items-center hover:bg-[var(--bg-surface-2)] transition-colors"
@@ -200,6 +210,8 @@ function JobTypesTab() {
             </div>
             <span className="text-xs" style={{ color: "var(--text-secondary)" }}>{t.duration}m</span>
             <span className="text-xs truncate" style={{ color: "var(--text-secondary)" }}>{JOB_TYPE_CATEGORY_LABELS[t.category]}</span>
+            {/* Auto-create policy — read-only here; change it in the edit popup */}
+            <span className="text-xs truncate" style={{ color: "var(--text-secondary)" }}>{WORK_ORDER_POLICY_LABELS[t.workOrderPolicy ?? "optional"]}</span>
             <div>
               {t.core
                 ? <span className="text-xs" title="Core type — stays active" style={{ color: "var(--text-muted)" }}>Active</span>
@@ -230,7 +242,7 @@ function JobTypesTab() {
             <div className="px-6 py-4 flex justify-end gap-2 shrink-0" style={{ borderTop: "1px solid var(--border)" }}>
               <button onClick={cancel} className="px-3 py-2 rounded-lg text-sm" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>Cancel</button>
               <button onClick={commit} disabled={!form.name.trim()}
-                className="px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-40" style={{ backgroundColor: "#4f46e5" }}>
+                className="px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-40" style={{ backgroundColor: "#0f8578" }}>
                 {editingId ? "Update" : "Add Job Type"}
               </button>
             </div>

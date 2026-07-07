@@ -26,7 +26,7 @@ export default function BasicInfoSection({ d, lockCustomer }: { d: UseAgreementD
             const blank = t.visits.length === 0;
             return (
               <button key={t.id} onClick={() => d.chooseTemplate(t.id)} className="text-left rounded-xl p-3 transition-all"
-                style={{ border: `2px solid ${active ? "#4f46e5" : "var(--border)"}`, backgroundColor: active ? "var(--accent-soft-bg)" : "var(--bg-surface-2)" }}>
+                style={{ border: `2px solid ${active ? "#0f8578" : "var(--border)"}`, backgroundColor: active ? "var(--accent-soft-bg)" : "var(--bg-surface-2)" }}>
                 <div className="flex items-center justify-between gap-2 mb-1">
                   <p className="text-sm font-semibold truncate" style={{ color: active ? "var(--accent-text-strong)" : "var(--text-primary)" }}>{t.name}</p>
                   <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full shrink-0" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>{blank ? "Blank" : t.industry}</span>

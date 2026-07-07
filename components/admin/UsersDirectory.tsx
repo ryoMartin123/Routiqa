@@ -143,12 +143,12 @@ export default function UsersDirectory({ users, canManage, onOpenUser }: {
                   style={{ gridTemplateColumns: DIR_COLS, gap: "0.75rem", borderBottom: "1px solid", borderBottomColor: i === filtered.length - 1 ? "transparent" : "var(--border-subtle)" }}>
                   {/* User */}
                   <div className="flex items-center gap-3 min-w-0 pr-2">
-                    <span className="w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-bold text-white shrink-0" style={{ backgroundColor: u.isOrgOwner ? "#4f46e5" : "#6b7280" }}>{u.initials}</span>
+                    <span className="w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-bold text-white shrink-0" style={{ backgroundColor: u.isOrgOwner ? "#0f8578" : "#6b7280" }}>{u.initials}</span>
                     <div className="min-w-0">
                       <div className="flex items-center gap-1.5">
                         <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{u.fullName}</p>
                         {u.id === "user_marcus" && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full shrink-0" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>YOU</span>}
-                        {u.isOrgOwner && <ShieldCheck className="w-3.5 h-3.5 shrink-0" style={{ color: "#4f46e5" }} />}
+                        {u.isOrgOwner && <ShieldCheck className="w-3.5 h-3.5 shrink-0" style={{ color: "#0f8578" }} />}
                       </div>
                       <p className="text-[11px] truncate" style={{ color: "var(--text-muted)" }}>{u.email}</p>
                     </div>

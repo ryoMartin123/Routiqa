@@ -22,7 +22,7 @@ import {
 } from "@/lib/projects/map-templates";
 import type { ProjectTypeOption } from "@/lib/projects/settings";
 
-const ACCENT = "#4f46e5";
+const ACCENT = "#0f8578";
 const TYPE_ICON: Record<MapNodeType, typeof Layers> = {
   phase: Layers, milestone: Flag, job: Briefcase, task: CheckSquare, work_order: ClipboardList,
   material_request: Package, purchase_order: ShoppingCart, subcontractor: HardHat, document: FileText, billing: Receipt,

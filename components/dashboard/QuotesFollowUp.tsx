@@ -27,7 +27,7 @@ export default function QuotesFollowUp() {
               style={{ backgroundColor: "#ede9fe", color: "#5b21b6" }}>{quotes.length}</span>
           )}
         </div>
-        <Link href="/quotes?tab=sent" className="flex items-center gap-1 text-xs font-medium text-indigo-600 hover:text-indigo-700">
+        <Link href="/quotes?tab=sent" className="flex items-center gap-1 text-xs font-medium text-[#0f8578] hover:text-[#0c6b60]">
           View all <ExternalLink className="w-3 h-3" />
         </Link>
       </div>

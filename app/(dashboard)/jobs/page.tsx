@@ -123,7 +123,7 @@ function ProjectsInline({ projects, companyId, locationId }: { projects: Project
           <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Active Projects</span>
           <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>{filtered.length}</span>
         </div>
-        <Link href="/projects" className="text-xs font-medium text-indigo-600 hover:text-indigo-700">View all projects →</Link>
+        <Link href="/projects" className="text-xs font-medium text-[#0f8578] hover:text-[#0c6b60]">View all projects →</Link>
       </div>
 
       {/* Column headers */}
@@ -152,7 +152,7 @@ function ProjectsInline({ projects, companyId, locationId }: { projects: Project
             <span className="text-sm" style={{ color: "var(--text-secondary)" }}>{p.targetDate ?? "—"}</span>
             <div className="flex items-center gap-2">
               <div className="w-16 h-1.5 rounded-full shrink-0" style={{ backgroundColor: "var(--bg-input)" }}>
-                <div className="h-1.5 rounded-full bg-indigo-500" style={{ width: `${pct}%` }} />
+                <div className="h-1.5 rounded-full bg-[#239c8d]" style={{ width: `${pct}%` }} />
               </div>
               <span className="text-[10px] shrink-0" style={{ color: "var(--text-muted)" }}>{prog.completed}/{prog.total}</span>
             </div>
@@ -235,7 +235,7 @@ export default function JobsPage() {
 
   // Summary metrics — respect the active context
   const summaryCards: SummaryCard[] = [
-    { icon: Calendar,      label: "Today's Jobs",        value: String(contextFiltered.filter(j => today !== "" && j.scheduledDate === today).length),                  sub: "Scheduled today",   iconColor: "#4f46e5" },
+    { icon: Calendar,      label: "Today's Jobs",        value: String(contextFiltered.filter(j => today !== "" && j.scheduledDate === today).length),                  sub: "Scheduled today",   iconColor: "#0f8578" },
     { icon: CalendarClock, label: "Scheduled",           value: String(contextFiltered.filter(j => j.status === "scheduled").length),                                   sub: "Upcoming work",     iconColor: "#0891b2" },
     { icon: Loader,        label: "In Progress",         value: String(contextFiltered.filter(j => j.status === "in_progress" || j.status === "en_route").length),       sub: "Active now",        iconColor: "#f59e0b" },
     { icon: CheckCircle2,  label: "Completed This Week", value: String(contextFiltered.filter(j => j.status === "completed" && daysAgo(j.completedDate) <= 7).length),    sub: "Last 7 days",       iconColor: "#10b981" },
@@ -271,7 +271,7 @@ export default function JobsPage() {
 
   function SortIcon({ field }: { field: SortField }) {
     if (sortField !== field) return <ChevronDown className="w-3 h-3 opacity-30" />;
-    return sortDir === "asc" ? <ChevronUp className="w-3 h-3" style={{ color: "#4f46e5" }} /> : <ChevronDown className="w-3 h-3" style={{ color: "#4f46e5" }} />;
+    return sortDir === "asc" ? <ChevronUp className="w-3 h-3" style={{ color: "#0f8578" }} /> : <ChevronDown className="w-3 h-3" style={{ color: "#0f8578" }} />;
   }
 
   return (
@@ -284,7 +284,7 @@ export default function JobsPage() {
         <ModuleViewToggle view={moduleView} onChange={setModuleView} withCards overviewFirst />
         <div className="flex-1 flex justify-end">
           {canCreateJob && (
-            <button onClick={() => setShowCreate(true)} data-open={showCreate} className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-3 py-2 rounded-lg transition-colors">
+            <button onClick={() => setShowCreate(true)} data-open={showCreate} className="flex items-center gap-1.5 bg-[#0f8578] hover:bg-[#0c6b60] text-white text-sm font-medium px-3 py-2 rounded-lg transition-colors">
               <Plus className="plus-icon w-4 h-4" /> New Job
             </button>
           )}
@@ -400,7 +400,7 @@ export default function JobsPage() {
               ] as { label: string; field: string | null }[]).map(({ label, field }) => (
                 <button key={label} onClick={() => field && handleSort(field as SortField)}
                   className={cn("flex items-center gap-1 text-left", field ? "cursor-pointer hover:opacity-80" : "cursor-default")}
-                  style={{ color: sortField === field ? "#4f46e5" : "var(--text-muted)" }}>
+                  style={{ color: sortField === field ? "#0f8578" : "var(--text-muted)" }}>
                   {label}{field && <SortIcon field={field as SortField} />}
                 </button>
               ))}
@@ -423,7 +423,7 @@ export default function JobsPage() {
                       <div className="min-w-0">
                         <div className="flex items-center gap-1.5">
                           <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{job.title}</p>
-                          {job.projectId && <span className="shrink-0 text-[9px] font-semibold px-1.5 py-0.5 rounded" style={{ backgroundColor: "#e0e7ff", color: "#4f46e5" }}>PROJECT</span>}
+                          {job.projectId && <span className="shrink-0 text-[9px] font-semibold px-1.5 py-0.5 rounded" style={{ backgroundColor: "#d3ebe6", color: "#0f8578" }}>PROJECT</span>}
                         </div>
                         <p className="text-[10px] truncate" style={{ color: "var(--text-muted)" }}>{job.customerName}</p>
                       </div>
@@ -439,7 +439,7 @@ export default function JobsPage() {
                     </div>
                     {/* Tech */}
                     <div className="flex items-center gap-1.5">
-                      <div className="w-5 h-5 rounded-full bg-[#e5e0db] flex items-center justify-center text-[8px] font-bold text-[#5c5545] shrink-0">{job.assignedToInitials}</div>
+                      <div className="w-5 h-5 rounded-full bg-[var(--copper-soft-bg)] flex items-center justify-center text-[8px] font-bold text-[var(--copper-text)] shrink-0">{job.assignedToInitials}</div>
                       <span className="text-sm truncate" style={{ color: "var(--text-secondary)" }}>{job.assignedTo}</span>
                     </div>
                     {/* Amount — hidden for roles without financial-totals access */}
@@ -493,7 +493,7 @@ function JobCard({ job, statusConfig, showAmount }: {
             <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: s.color }} />{s.label}
           </span>
           <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded shrink-0" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>{jobTypeLabel(job.type)}</span>
-          {job.projectId && <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded shrink-0" style={{ backgroundColor: "#e0e7ff", color: "#4f46e5" }}>PROJECT</span>}
+          {job.projectId && <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded shrink-0" style={{ backgroundColor: "#d3ebe6", color: "#0f8578" }}>PROJECT</span>}
         </div>
         {showAmount && amount && <span className="text-xs font-bold shrink-0" style={{ color: job.actualAmount ? "#10b981" : "var(--text-primary)" }}>{amount}</span>}
       </div>
@@ -504,9 +504,9 @@ function JobCard({ job, statusConfig, showAmount }: {
           {job.scheduledDate ? `${job.scheduledDate}${job.scheduledTime ? ` · ${job.scheduledTime}` : ""}` : "Unscheduled"}
         </span>
         <div className="flex items-center gap-1.5 shrink-0 min-w-0">
-          <div className="w-5 h-5 rounded-full bg-[#e5e0db] flex items-center justify-center text-[8px] font-bold text-[#5c5545] shrink-0">{job.assignedToInitials || "—"}</div>
+          <div className="w-5 h-5 rounded-full bg-[var(--copper-soft-bg)] flex items-center justify-center text-[8px] font-bold text-[var(--copper-text)] shrink-0">{job.assignedToInitials || "—"}</div>
           <span className="text-[10px] truncate" style={{ color: "var(--text-secondary)" }}>{job.assignedTo || "Unassigned"}</span>
-          <ArrowRight className="w-3.5 h-3.5 shrink-0 transition-transform group-hover:-rotate-45" style={{ color: "#4f46e5" }} />
+          <ArrowRight className="w-3.5 h-3.5 shrink-0 transition-transform group-hover:-rotate-45" style={{ color: "#0f8578" }} />
         </div>
       </div>
     </Link>

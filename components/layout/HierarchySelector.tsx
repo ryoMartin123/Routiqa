@@ -69,12 +69,12 @@ function Option({
       onClick={() => onSelect(value)}
       className="w-full flex items-center justify-between px-4 py-1.5 text-sm transition-colors"
       style={{
-        color: active ? "#4f46e5" : "var(--text-primary)",
+        color: active ? "#0f8578" : "var(--text-primary)",
         backgroundColor: active ? "var(--bg-surface-2)" : "transparent",
       }}
     >
       <span style={{ fontWeight: active ? 600 : 400 }}>{label}</span>
-      {active && <Check className="w-3.5 h-3.5 shrink-0 text-indigo-600" />}
+      {active && <Check className="w-3.5 h-3.5 shrink-0 text-[#0f8578]" />}
     </button>
   );
 }

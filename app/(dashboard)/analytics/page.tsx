@@ -12,7 +12,7 @@ import { runReport } from "@/lib/analytics/engine";
 import { sourceById, metricById, vizById } from "@/lib/analytics/catalog";
 import type { ReportConfig } from "@/lib/analytics/types";
 
-const ACCENT = "#4f46e5";
+const ACCENT = "#0f8578";
 type Tab = "all" | "mine" | "templates";
 
 export default function AnalyticsPage() {

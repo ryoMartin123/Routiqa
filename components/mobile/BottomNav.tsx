@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { getCurrentJob, getMobileCaps } from "@/lib/mobile/data";
 
-const ACCENT = "#4f46e5";
+const ACCENT = "#0f8578";
 
 // Tabs follow the SAME permissions the CRM declares: photos need files access,
 // messages need communications — a tech without them gets their SOP library.
@@ -76,7 +76,7 @@ function QuickActionSheet({ open, onClose }: { open: boolean; onClose: () => voi
   const go = (href: string) => { onClose(); router.push(href); };
 
   const ACTIONS: { icon: React.ElementType; label: string; color: string; onClick: () => void }[] = [
-    { icon: StickyNote, label: "Add note", color: "#4f46e5", onClick: () => go(jobHref) },
+    { icon: StickyNote, label: "Add note", color: "#0f8578", onClick: () => go(jobHref) },
     { icon: Map, label: "Map", color: "#2563eb", onClick: () => go("/mobile/map") },
     { icon: Package, label: "Add material", color: "#f59e0b", onClick: () => go(jobHref) },
     { icon: CheckSquare, label: "Create task", color: "#16a34a", onClick: () => go("/mobile/tasks") },

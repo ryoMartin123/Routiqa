@@ -15,7 +15,7 @@ export type RoleAppId = Exclude<PlatformAppId, never>;
 
 export const APP_META: Record<PlatformAppId, { name: string; description: string; accent: string }> = {
   portal:         { name: "My Portal",       description: "Personal home — schedule, pay, tasks, documents.",    accent: "#0ea5e9" },
-  crm:            { name: "CRM",             description: "Customers, leads, quotes, jobs, dispatching.",        accent: "#6366f1" },
+  crm:            { name: "CRM",             description: "Customers, leads, quotes, jobs, dispatching.",        accent: "#239c8d" },
   marketing:      { name: "Marketing",       description: "Campaigns, audiences, templates, follow-ups.",        accent: "#e11d48" },
   team_workspace: { name: "Team Workspace",  description: "Channels, meetings, announcements, action items.",    accent: "#2563eb" },
   inventory:      { name: "Inventory & Procurement", description: "Materials, truck stock, POs, vendors, subs.", accent: "#f97316" },

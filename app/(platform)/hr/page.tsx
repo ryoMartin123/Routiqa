@@ -16,7 +16,7 @@ export default function HrDashboard() {
         <StatCard label="Active Employees" value="24" hint="3 locations" icon={UsersRound} accent="#ec4899" />
         <StatCard label="Open Roles" value="3" hint="2 in interview" icon={UserPlus} accent="#0ea5e9" />
         <StatCard label="In Onboarding" value="2" hint="Starting this month" icon={ClipboardCheck} accent="#f59e0b" />
-        <StatCard label="Time Off Requests" value="5" hint="2 pending approval" icon={Plane} accent="#6366f1" />
+        <StatCard label="Time Off Requests" value="5" hint="2 pending approval" icon={Plane} accent="#239c8d" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

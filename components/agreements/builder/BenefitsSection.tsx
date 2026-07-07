@@ -28,7 +28,7 @@ export default function BenefitsSection({ d }: { d: UseAgreementDraft }) {
         <TextInput value={custom} onChange={e => setCustom(e.target.value)}
           onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); d.addCustomBenefit(custom); setCustom(""); } }}
           placeholder="Add a custom benefit…" className="flex-1" />
-        <button onClick={() => { d.addCustomBenefit(custom); setCustom(""); }} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-white shrink-0" style={{ backgroundColor: "#4f46e5" }}>
+        <button onClick={() => { d.addCustomBenefit(custom); setCustom(""); }} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-white shrink-0" style={{ backgroundColor: "#0f8578" }}>
           <Plus className="w-4 h-4" /> Add
         </button>
       </div>

@@ -14,7 +14,7 @@ export interface LayerMeta {
 }
 
 export const LAYER_META: Record<Layer, LayerMeta> = {
-  org:          { key: "org",          label: "Organization", color: "#4f46e5" },
+  org:          { key: "org",          label: "Organization", color: "#0f8578" },
   company:      { key: "company",      label: "Company",      color: "#0d9488" },
   location:     { key: "location",     label: "Branch",       color: "#d97706" },
   service_area: { key: "service_area", label: "Service Area", color: "#059669" },

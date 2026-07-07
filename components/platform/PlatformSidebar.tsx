@@ -55,7 +55,7 @@ export default function PlatformSidebar({ appId }: { appId: PlatformAppId }) {
         {!collapsed && (
           <div className="flex items-center gap-2.5 min-w-0">
             {Icon && (
-              <span className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: (app?.accent ?? "#6366f1") + "26" }}>
+              <span className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: (app?.accent ?? "#239c8d") + "26" }}>
                 <Icon className="w-5 h-5" style={{ color: app?.accent }} />
               </span>
             )}
@@ -97,7 +97,7 @@ export default function PlatformSidebar({ appId }: { appId: PlatformAppId }) {
       {/* User */}
       <div className={cn("py-3", collapsed ? "px-2 flex justify-center" : "px-3")} style={{ borderTop: "1px solid var(--sidebar-border)" }}>
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-full bg-[#e5e0db] flex items-center justify-center text-[#5c5545] text-xs font-semibold shrink-0" title={collapsed ? actingUser.fullName : undefined}>
+          <div className="w-8 h-8 rounded-full bg-[var(--copper-soft-bg)] flex items-center justify-center text-[var(--copper-text)] text-xs font-semibold shrink-0" title={collapsed ? actingUser.fullName : undefined}>
             {actingUser.initials}
           </div>
           {!collapsed && (

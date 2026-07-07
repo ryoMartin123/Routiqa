@@ -115,7 +115,7 @@ export default function RescheduleVisitModal({ jobId, appointmentId, increment =
         style={{ backgroundColor: "var(--bg-surface)", boxShadow: "0 16px 48px rgba(0,0,0,0.24)" }}>
         <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: "1px solid var(--border)" }}>
           <div className="flex items-center gap-2">
-            <CalendarClock className="w-4 h-4" style={{ color: "#4f46e5" }} />
+            <CalendarClock className="w-4 h-4" style={{ color: "#0f8578" }} />
             <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Reschedule Visit</p>
           </div>
           <button onClick={onClose} style={{ color: "var(--text-muted)" }}><X className="w-4 h-4" /></button>
@@ -129,7 +129,7 @@ export default function RescheduleVisitModal({ jobId, appointmentId, increment =
             </div>
             <div>
               <label className="block text-xs font-medium mb-1" style={{ color: "var(--text-secondary)" }}>Time</label>
-              <TimePicker value={time} onChange={setTime} />
+              <TimePicker value={time} onChange={setTime} minuteStep={increment} />
             </div>
           </div>
           <div>
@@ -178,7 +178,7 @@ export default function RescheduleVisitModal({ jobId, appointmentId, increment =
         <div className="px-5 py-4 flex justify-end gap-2" style={{ borderTop: "1px solid var(--border)" }}>
           <button onClick={onClose} className="px-3 py-1.5 rounded-lg text-sm" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>Cancel</button>
           <button onClick={save} disabled={blocked}
-            className="px-4 py-1.5 rounded-lg text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 transition-colors">
+            className="px-4 py-1.5 rounded-lg text-sm font-medium text-white bg-[#0f8578] hover:bg-[#0c6b60] disabled:opacity-40 transition-colors">
             Reschedule{shiftLater && laterViolation ? ` + shift ${later.length}` : ""}
           </button>
         </div>

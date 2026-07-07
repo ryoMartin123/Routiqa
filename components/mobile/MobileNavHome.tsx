@@ -29,7 +29,7 @@ import { useDataVersion } from "@/lib/sync/useDataVersion";
 import BottomSheet from "@/components/mobile/BottomSheet";
 import MyPortalContent from "@/components/mobile/MyPortalContent";
 
-const ACCENT = "#4f46e5";
+const ACCENT = "#0f8578";
 const GLASS: React.CSSProperties = {
   backgroundColor: "color-mix(in srgb, var(--bg-surface) 80%, transparent)",
   backdropFilter: "blur(18px)", WebkitBackdropFilter: "blur(18px)",

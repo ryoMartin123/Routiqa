@@ -13,7 +13,7 @@ type CommType = "email" | "text" | "call" | "voicemail" | "reminder";
 interface Comm { id: string; type: CommType; direction: "in" | "out"; summary: string; by: string; at: string; }
 
 const TYPE_META: Record<CommType, { icon: typeof Mail; color: string; label: string }> = {
-  email:     { icon: Mail,          color: "#6366f1", label: "Email" },
+  email:     { icon: Mail,          color: "#239c8d", label: "Email" },
   text:      { icon: MessageSquare, color: "#10b981", label: "Text" },
   call:      { icon: Phone,         color: "#0891b2", label: "Call" },
   voicemail: { icon: Voicemail,     color: "#f59e0b", label: "Voicemail" },
@@ -52,7 +52,7 @@ export default function CommunicationTab({ agreement }: { agreement: CustomerAgr
             onKeyDown={e => { if (e.key === "Enter") add(); }}
             className="flex-1 rounded-lg px-3 py-2 text-sm outline-none" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface)", color: "var(--text-primary)" }} />
           <button onClick={add} disabled={!draft.trim()}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-40 cursor-pointer transition hover:brightness-110 disabled:cursor-not-allowed" style={{ backgroundColor: "#4f46e5" }}>
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-40 cursor-pointer transition hover:brightness-110 disabled:cursor-not-allowed" style={{ backgroundColor: "#0f8578" }}>
             <Plus className="w-3.5 h-3.5" /> Log
           </button>
         </div>

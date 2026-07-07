@@ -78,7 +78,7 @@ export default function ScheduleVisitModal({
         style={{ backgroundColor: "var(--bg-surface)", boxShadow: "0 16px 48px rgba(0,0,0,0.24)" }}>
         <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: "1px solid var(--border)" }}>
           <div className="flex items-center gap-2">
-            <CalendarClock className="w-4 h-4" style={{ color: "#4f46e5" }} />
+            <CalendarClock className="w-4 h-4" style={{ color: "#0f8578" }} />
             <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Schedule Agreement Visit</p>
           </div>
           <button onClick={onClose} style={{ color: "var(--text-muted)" }}><X className="w-4 h-4" /></button>
@@ -105,7 +105,7 @@ export default function ScheduleVisitModal({
 
             {/* Summary — confirms which visit + its plan/target date (booking can differ). */}
             {selected && (
-              <div className="rounded-xl p-3" style={{ backgroundColor: "var(--bg-surface-2)", borderLeft: "3px solid #6366f1" }}>
+              <div className="rounded-xl p-3" style={{ backgroundColor: "var(--bg-surface-2)", borderLeft: "3px solid #239c8d" }}>
                 <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{selected.visit.label}</p>
                 <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>
                   {selected.agreement.customer} · target {selected.visit.scheduled}
@@ -123,7 +123,7 @@ export default function ScheduleVisitModal({
                 <DatePicker value={date} onChange={setDate} clearable={false} min={minBookableYMD(dayEnd)} />
               </Field>
               <Field label="Time">
-                <TimePicker value={time} onChange={setTime} minTime={minTimeFor(date)} />
+                <TimePicker value={time} onChange={setTime} minTime={minTimeFor(date)} minuteStep={increment} />
               </Field>
             </div>
 
@@ -154,7 +154,7 @@ export default function ScheduleVisitModal({
           <button onClick={onClose} className="px-3 py-1.5 rounded-lg text-sm" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>Cancel</button>
           {!empty && (
             <button onClick={() => valid && onConfirm({ agreementId, visitId, tech, date, time, durationMinutes })} disabled={!valid}
-              className="px-4 py-1.5 rounded-lg text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 transition-colors">
+              className="px-4 py-1.5 rounded-lg text-sm font-medium text-white bg-[#0f8578] hover:bg-[#0c6b60] disabled:opacity-40 transition-colors">
               Confirm &amp; Schedule
             </button>
           )}
@@ -207,7 +207,7 @@ function AgreementPicker({ agreements, value, onChange }: {
     <div ref={wrapRef} className="relative w-full">
       <button type="button" onClick={() => setOpen(o => !o)}
         className="w-full flex items-center justify-between gap-2 rounded-lg outline-none transition-colors px-3 py-2"
-        style={{ border: `1px solid ${open ? "#a5b4fc" : "var(--border)"}`, backgroundColor: "var(--bg-surface)", boxShadow: open ? "0 0 0 3px rgba(99,102,241,0.12)" : "none" }}>
+        style={{ border: `1px solid ${open ? "#8ed0c6" : "var(--border)"}`, backgroundColor: "var(--bg-surface)", boxShadow: open ? "0 0 0 3px rgba(35,156,141,0.12)" : "none" }}>
         <span className="min-w-0 text-left">
           {selected
             ? <span className="text-sm font-medium truncate block" style={{ color: "var(--text-primary)" }}>{selected.customer} — {selected.type}</span>
@@ -238,7 +238,7 @@ function AgreementPicker({ agreements, value, onChange }: {
                     <span className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{a.customer}</span>
                     <span className="text-[11px] truncate" style={{ color: "var(--text-muted)" }}>{a.type}{a.number ? ` · ${a.number}` : ""}{a.location ? ` · ${a.location}` : ""}</span>
                   </span>
-                  {isSel && <Check className="w-3.5 h-3.5 shrink-0" style={{ color: "#4f46e5" }} />}
+                  {isSel && <Check className="w-3.5 h-3.5 shrink-0" style={{ color: "#0f8578" }} />}
                 </button>
               );
             })}

@@ -23,7 +23,6 @@ export default function SegmentedProgress({ segments, className = "" }: {
       {segments.map((s, i) => {
         const style: React.CSSProperties = {
           backgroundColor: s.filled ? s.color : s.current ? `${s.color}2e` : "var(--bg-input)",
-          border: `1px solid ${s.filled || s.current ? `color-mix(in srgb, ${s.color} 78%, #1f2937)` : "var(--border)"}`,
           boxShadow: s.current ? `0 0 0 1.5px var(--bg-surface), 0 0 0 3px ${s.color}` : undefined,
         };
         const cls = "flex-1 h-2.5 rounded-[3px] transition-all";

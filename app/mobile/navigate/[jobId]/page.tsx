@@ -212,14 +212,14 @@ export default function NavigatePage() {
   // circle + shadow stay static (symmetric); only the arrow rotates.
   const navPuck = (heading: number): google.maps.Icon => {
     const rot = heading - 45;
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="38" height="38" viewBox="0 0 512 512"><defs><filter id="rqp" x="-30%" y="-30%" width="160%" height="170%"><feDropShadow dx="0" dy="18" stdDeviation="22" flood-color="#000" flood-opacity="0.35"/></filter></defs><circle cx="256" cy="256" r="206" fill="#4f46e5" stroke="#ffffff" stroke-width="22" filter="url(#rqp)"/><g transform="rotate(${rot.toFixed(1)} 256 256)"><path d="M248 409V264H103l259-114.11Z" fill="#ffffff"/></g></svg>`;
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="38" height="38" viewBox="0 0 512 512"><defs><filter id="rqp" x="-30%" y="-30%" width="160%" height="170%"><feDropShadow dx="0" dy="18" stdDeviation="22" flood-color="#000" flood-opacity="0.35"/></filter></defs><circle cx="256" cy="256" r="206" fill="#0f8578" stroke="#ffffff" stroke-width="22" filter="url(#rqp)"/><g transform="rotate(${rot.toFixed(1)} 256 256)"><path d="M248 409V264H103l259-114.11Z" fill="#ffffff"/></g></svg>`;
     return { url: "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(svg), scaledSize: new google.maps.Size(38, 38), anchor: new google.maps.Point(19, 19) };
   };
   // The directional "scan": a larger gradient cone that fades from the puck out to
   // its tip (radar-sweep look). Rotation is baked into the SVG so it points the
   // right way; the apex sits on the GPS position.
   const scanCone = (heading: number): google.maps.Icon => {
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96"><defs><linearGradient id="rqscan" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#4f46e5" stop-opacity="0.6"/><stop offset="0.5" stop-color="#6366f1" stop-opacity="0.22"/><stop offset="1" stop-color="#818cf8" stop-opacity="0"/></linearGradient></defs><g transform="rotate(${heading.toFixed(1)} 48 48)"><path d="M48 48 L25 4 Q48 -4 71 4 Z" fill="url(#rqscan)"/></g></svg>`;
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96"><defs><linearGradient id="rqscan" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#0f8578" stop-opacity="0.6"/><stop offset="0.5" stop-color="#239c8d" stop-opacity="0.22"/><stop offset="1" stop-color="#4db3a5" stop-opacity="0"/></linearGradient></defs><g transform="rotate(${heading.toFixed(1)} 48 48)"><path d="M48 48 L25 4 Q48 -4 71 4 Z" fill="url(#rqscan)"/></g></svg>`;
     return { url: "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(svg), scaledSize: new google.maps.Size(96, 96), anchor: new google.maps.Point(48, 48) };
   };
   // Init the map ONCE — centered tight on the start at a navigation zoom (no
@@ -271,7 +271,7 @@ export default function NavigatePage() {
     if (!mapRef.current || routePath.length === 0) return;
     const path = routePath.map(p => ({ lat: p.lat, lng: p.lng }));
     if (lineRef.current) lineRef.current.setPath(path);
-    else lineRef.current = new google.maps.Polyline({ path, strokeColor: "#4f46e5", strokeWeight: 8, strokeOpacity: 0.9, map: mapRef.current, zIndex: 1 });
+    else lineRef.current = new google.maps.Polyline({ path, strokeColor: "#0f8578", strokeWeight: 8, strokeOpacity: 0.9, map: mapRef.current, zIndex: 1 });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [routePath]);
 
@@ -411,7 +411,7 @@ export default function NavigatePage() {
       {/* Top next-turn banner */}
       {phase !== "error" && (
         <div className="relative z-10 m-3 rounded-2xl p-4 flex items-center gap-4" style={{ paddingTop: "calc(env(safe-area-inset-top) + 1rem)", backgroundColor: "rgba(20,22,30,0.92)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", border: "1px solid rgba(255,255,255,0.1)", boxShadow: "0 12px 40px rgba(0,0,0,0.5)" }}>
-          <div className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0" style={{ backgroundColor: "#4f46e5" }}><Icon className="w-8 h-8 text-white" /></div>
+          <div className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0" style={{ backgroundColor: "#0f8578" }}><Icon className="w-8 h-8 text-white" /></div>
           <div className="min-w-0 flex-1">
             <p className="text-2xl font-bold leading-tight truncate" style={{ color: "#fff" }}>{phase === "arrived" ? "Arriving" : step ? fmtDistance(turnDist || step.distanceMeters) : "—"}</p>
             <p className="text-base leading-snug truncate" style={{ color: "rgba(255,255,255,0.85)" }}>{step?.instruction ?? "Calculating route…"}{step?.streetName ? ` onto ${step.streetName}` : ""}</p>
@@ -457,7 +457,7 @@ export default function NavigatePage() {
                     ? "Turn on location for Safari: iOS Settings → Privacy & Security → Location Services → Safari Websites → While Using (Precise on), then tap Try again."
                     : (errMsg || geoErr)}
                 </p>
-                <button onClick={retry} className="mt-3 w-full inline-flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-semibold" style={{ backgroundColor: "#4f46e5", color: "#fff" }}><RotateCcw className="w-4 h-4" /> Try again</button>
+                <button onClick={retry} className="mt-3 w-full inline-flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-semibold" style={{ backgroundColor: "#0f8578", color: "#fff" }}><RotateCcw className="w-4 h-4" /> Try again</button>
                 <a href={mapsHref} target="_blank" rel="noopener noreferrer" className="mt-2 w-full inline-flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-semibold" style={{ backgroundColor: "rgba(255,255,255,0.08)", color: "#fff" }}><ExternalLink className="w-4 h-4" /> Open in Google Maps</a>
               </div>
             );
@@ -532,7 +532,7 @@ function getOrigin(): Promise<LatLng> {
 }
 
 function Ctrl({ onClick, active, children }: { onClick: () => void; active?: boolean; children: React.ReactNode }) {
-  return <button onClick={onClick} className="w-12 h-12 rounded-full flex items-center justify-center active:scale-95 transition-transform" style={{ backgroundColor: active ? "#4f46e5" : "rgba(20,22,30,0.92)", border: "1px solid rgba(255,255,255,0.12)", color: "#fff" }}>{children}</button>;
+  return <button onClick={onClick} className="w-12 h-12 rounded-full flex items-center justify-center active:scale-95 transition-transform" style={{ backgroundColor: active ? "#0f8578" : "rgba(20,22,30,0.92)", border: "1px solid rgba(255,255,255,0.12)", color: "#fff" }}>{children}</button>;
 }
 function Action({ icon: Icon, label, href, onClick, danger }: { icon: React.ElementType; label: string; href?: string; onClick?: () => void; danger?: boolean }) {
   const cls = "flex flex-col items-center gap-1 py-2.5 rounded-2xl active:scale-[0.97] transition-transform";

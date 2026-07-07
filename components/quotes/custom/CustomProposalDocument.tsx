@@ -34,7 +34,7 @@ export interface CustomDocData {
 }
 
 export default function CustomProposalDocument({ data, shadow = true, highlightId, design = DEFAULT_DESIGN }: { data: CustomDocData; shadow?: boolean; highlightId?: string; design?: ProposalDesign }) {
-  const accent = data.branding.accentColor || "#4f46e5";
+  const accent = data.branding.accentColor || "#0f8578";
   const ds = design.style;
   // When a section editor is open, also surface the block being edited even if
   // it's currently hidden — so the live preview never goes blank while editing.

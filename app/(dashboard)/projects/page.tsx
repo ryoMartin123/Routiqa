@@ -136,7 +136,7 @@ export default function ProjectsPage() {
 
   // Summary metrics — respect the active context (stage is the source of truth)
   const summaryCards: SummaryCard[] = [
-    { icon: PlayCircle,   label: "Active Projects", value: String(contextFiltered.filter(p => statusBucket(p, stageMap) === "active").length),    sub: "In progress", iconColor: "#4f46e5" },
+    { icon: PlayCircle,   label: "Active Projects", value: String(contextFiltered.filter(p => statusBucket(p, stageMap) === "active").length),    sub: "In progress", iconColor: "#0f8578" },
     { icon: PauseCircle,  label: "Overdue",         value: String(contextFiltered.filter(p => healthBucket(p) === "overdue").length),            sub: "Past target", iconColor: "#ef4444" },
     { icon: CheckCircle2, label: "Completed",       value: String(contextFiltered.filter(p => statusBucket(p, stageMap) === "completed").length), sub: "Finished",    iconColor: "#10b981" },
     { icon: DollarSign,   label: "Total Value",     value: fmtMoney(contextFiltered.reduce((s, p) => s + parseMoney(p.estimatedValue), 0)), sub: `${contextFiltered.length} projects`, iconColor: "#0891b2" },
@@ -154,7 +154,7 @@ export default function ProjectsPage() {
   }
   function SortIcon({ field }: { field: SortField }) {
     if (sortField !== field) return <ChevronDown className="w-3 h-3 opacity-30" />;
-    return sortDir === "asc" ? <ChevronUp className="w-3 h-3" style={{ color: "#4f46e5" }} /> : <ChevronDown className="w-3 h-3" style={{ color: "#4f46e5" }} />;
+    return sortDir === "asc" ? <ChevronUp className="w-3 h-3" style={{ color: "#0f8578" }} /> : <ChevronDown className="w-3 h-3" style={{ color: "#0f8578" }} />;
   }
 
   return (
@@ -169,7 +169,7 @@ export default function ProjectsPage() {
             return (
               <button key={v.key} onClick={() => setView(v.key)}
                 className="flex items-center gap-1.5 px-3 py-1.5 text-sm transition-colors"
-                style={{ backgroundColor: active ? "#4f46e5" : "var(--bg-surface)", color: active ? "#fff" : "var(--text-secondary)" }}>
+                style={{ backgroundColor: active ? "#0f8578" : "var(--bg-surface)", color: active ? "#fff" : "var(--text-secondary)" }}>
                 <v.icon className="w-3.5 h-3.5" /> {v.label}
               </button>
             );
@@ -177,7 +177,7 @@ export default function ProjectsPage() {
         </div>
         <div className="flex-1 flex justify-end">
           <button onClick={() => setWizardOpen(true)}
-            className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-3 py-2 rounded-lg transition-colors">
+            className="flex items-center gap-1.5 bg-[#0f8578] hover:bg-[#0c6b60] text-white text-sm font-medium px-3 py-2 rounded-lg transition-colors">
             <Plus className="w-4 h-4" /> New Project
           </button>
         </div>
@@ -283,7 +283,7 @@ export default function ProjectsPage() {
           ] as const).map(({ label, field }) => (
             <button key={label} onClick={() => field && handleSort(field as SortField)}
               className={cn("flex items-center gap-1 text-left", field ? "cursor-pointer hover:opacity-80" : "cursor-default")}
-              style={{ color: sortField === field ? "#4f46e5" : "var(--text-muted)" }}>
+              style={{ color: sortField === field ? "#0f8578" : "var(--text-muted)" }}>
               {label}{field && <SortIcon field={field as SortField} />}
             </button>
           ))}
@@ -314,7 +314,7 @@ export default function ProjectsPage() {
                 <span className="text-sm" style={{ color: "var(--text-secondary)" }}>{p.targetDate ?? "—"}</span>
                 <div className="flex items-center gap-2">
                   <div className="w-16 h-1.5 rounded-full shrink-0" style={{ backgroundColor: "var(--bg-input)" }}>
-                    <div className="h-1.5 rounded-full bg-indigo-500" style={{ width: `${pct}%` }} />
+                    <div className="h-1.5 rounded-full bg-[#239c8d]" style={{ width: `${pct}%` }} />
                   </div>
                   <span className="text-[10px] shrink-0" style={{ color: "var(--text-muted)" }}>{prog.completed}/{prog.total}</span>
                 </div>
@@ -373,7 +373,7 @@ function ProjectTimeline({ projects, stageMap, onOpen }: {
               <p className="text-[11px] truncate" style={{ color: "var(--text-muted)" }}>{p.customerName}{stage ? ` · ${stage.name}` : ""}</p>
             </div>
             <div className="h-2 rounded-full" style={{ backgroundColor: "var(--bg-input)" }}>
-              <div className="h-2 rounded-full" style={{ width: `${prog.pct}%`, backgroundColor: prog.pct === 100 ? "#10b981" : stage?.color ?? "#6366f1" }} />
+              <div className="h-2 rounded-full" style={{ width: `${prog.pct}%`, backgroundColor: prog.pct === 100 ? "#10b981" : stage?.color ?? "#239c8d" }} />
             </div>
             <span className="text-xs font-semibold text-right tabular-nums" style={{ color: "var(--text-secondary)" }}>{prog.pct}%</span>
           </button>
@@ -484,7 +484,7 @@ function ProjectCard({ project }: { project: Project }) {
       {/* Assigned + target date */}
       <div className="flex items-center justify-between pt-2" style={{ borderTop: "1px solid var(--border)" }}>
         <div className="flex items-center gap-1.5 min-w-0">
-          <div className="w-5 h-5 rounded-full bg-[#e5e0db] flex items-center justify-center text-[8px] font-bold text-[#5c5545] shrink-0" title={project.assignedTo}>
+          <div className="w-5 h-5 rounded-full bg-[var(--copper-soft-bg)] flex items-center justify-center text-[8px] font-bold text-[var(--copper-text)] shrink-0" title={project.assignedTo}>
             {project.assignedToInitials || "—"}
           </div>
           <span className="text-[10px] truncate" style={{ color: "var(--text-secondary)" }}>{project.assignedTo || "Unassigned"}</span>
@@ -498,7 +498,7 @@ function ProjectCard({ project }: { project: Project }) {
 // ─── Calendar view ────────────────────────────────────────
 // Same month-grid style as the Leads calendar; projects placed on target date.
 function ProjectCalendar({ stages, projects, focus }: { stages: ProjectStage[]; projects: Project[]; focus: Date }) {
-  const stageColor = (key?: string) => stages.find(s => s.key === key)?.color ?? "#6366f1";
+  const stageColor = (key?: string) => stages.find(s => s.key === key)?.color ?? "#239c8d";
   // Overflow popover: which week + where it was clicked (fixed-positioned so the
   // calendar's overflow-hidden corners don't clip it).
   const [pop, setPop] = useState<{ w: number; x: number; y: number } | null>(null);
@@ -592,7 +592,7 @@ function ProjectCalendar({ stages, projects, focus }: { stages: ProjectStage[]; 
                 return (
                   <div key={ci} className="px-2 pt-1.5" style={{ backgroundColor: inMonth ? "var(--bg-surface)" : "var(--bg-page)", borderRight: ci !== 6 ? "1px solid var(--border)" : undefined }}>
                     <span className="text-[11px]"
-                      style={{ color: isToday ? "#4f46e5" : inMonth ? "var(--text-secondary)" : "var(--text-muted)", fontWeight: isToday ? 700 : 500 }}
+                      style={{ color: isToday ? "#0f8578" : inMonth ? "var(--text-secondary)" : "var(--text-muted)", fontWeight: isToday ? 700 : 500 }}
                       title={isToday ? "Today" : undefined}>{day.getDate()}</span>
                   </div>
                 );
@@ -755,7 +755,7 @@ function ProjectsOverview({ projects, stages }: {
             <span className="font-semibold" style={{ color: "var(--text-primary)" }}>{avgProgress}%</span>
           </div>
           <div className="h-2 rounded-full" style={{ backgroundColor: "var(--bg-input)" }}>
-            <div className="h-2 rounded-full bg-indigo-500" style={{ width: `${avgProgress}%` }} />
+            <div className="h-2 rounded-full bg-[#239c8d]" style={{ width: `${avgProgress}%` }} />
           </div>
         </div>
       </OvPanel>
@@ -765,10 +765,10 @@ function ProjectsOverview({ projects, stages }: {
           {byAssignee.map(a => (
             <div key={a.name} className="flex items-center gap-3">
               <div className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-bold text-white shrink-0"
-                style={{ backgroundColor: a.name === "Unassigned" ? "#9ca3af" : "#6366f1" }}>{a.initials}</div>
+                style={{ backgroundColor: a.name === "Unassigned" ? "#9ca3af" : "#239c8d" }}>{a.initials}</div>
               <span className="text-xs truncate w-28 shrink-0" style={{ color: "var(--text-secondary)" }}>{a.name}</span>
               <div className="flex-1 h-2 rounded-full" style={{ backgroundColor: "var(--bg-input)" }}>
-                <div className="h-2 rounded-full" style={{ width: `${(a.count / maxAssignee) * 100}%`, backgroundColor: a.name === "Unassigned" ? "#9ca3af" : "#6366f1" }} />
+                <div className="h-2 rounded-full" style={{ width: `${(a.count / maxAssignee) * 100}%`, backgroundColor: a.name === "Unassigned" ? "#9ca3af" : "#239c8d" }} />
               </div>
               <span className="text-xs font-medium w-8 text-right shrink-0" style={{ color: "var(--text-primary)" }}>{a.count}</span>
               <span className="text-[11px] w-16 text-right shrink-0" style={{ color: "var(--text-muted)" }}>{fmtMoney(a.value)}</span>

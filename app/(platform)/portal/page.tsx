@@ -33,7 +33,7 @@ export default function PortalDashboard() {
         <StatCard label="Hours This Week" value="32.5" hint="of 40 scheduled" icon={Clock} accent="#0ea5e9" />
         <StatCard label="Next Pay Date" value="Jun 28" hint="Direct deposit" icon={DollarSign} accent="#10b981" />
         <StatCard label="Open Training" value="2" hint="1 due this week" icon={GraduationCap} accent="#f59e0b" />
-        <StatCard label="Time Off Balance" value="48 hrs" hint="6 days available" icon={Plane} accent="#6366f1" />
+        <StatCard label="Time Off Balance" value="48 hrs" hint="6 days available" icon={Plane} accent="#239c8d" />
       </div>
 
       {/* Quick panels */}

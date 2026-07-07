@@ -26,7 +26,7 @@ export default function TodaysJobs() {
           <h2 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Today&apos;s Jobs</h2>
           <p className="text-[10px] mt-0.5" style={{ color: "var(--text-muted)" }}>{TODAY}</p>
         </div>
-        <Link href="/jobs" className="flex items-center gap-1 text-xs font-medium text-indigo-600 hover:text-indigo-700">
+        <Link href="/jobs" className="flex items-center gap-1 text-xs font-medium text-[#0f8578] hover:text-[#0c6b60]">
           View all <ExternalLink className="w-3 h-3" />
         </Link>
       </div>

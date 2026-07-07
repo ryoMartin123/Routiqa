@@ -10,7 +10,7 @@ import { useRouter } from "next/navigation";
 import { Search, Plus, X, Briefcase, UserPlus, Camera, CheckSquare, Receipt, Megaphone } from "lucide-react";
 import MobileSearchPanel from "@/components/mobile/MobileSearchPanel";
 
-const ACCENT = "#4f46e5";
+const ACCENT = "#0f8578";
 const GLASS: React.CSSProperties = {
   backgroundColor: "color-mix(in srgb, var(--bg-surface) 82%, transparent)",
   backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)",
@@ -48,7 +48,7 @@ function QuickActions({ open, onClose }: { open: boolean; onClose: () => void })
   const router = useRouter();
   const go = (href: string) => { onClose(); router.push(href); };
   const ACTIONS = [
-    { icon: Briefcase, label: "New job", color: "#4f46e5", href: "/mobile/jobs" },
+    { icon: Briefcase, label: "New job", color: "#0f8578", href: "/mobile/jobs" },
     { icon: UserPlus, label: "New customer", color: "#0891b2", href: "/mobile/customers" },
     { icon: Camera, label: "Take photo", color: "#16a34a", href: "/mobile/photos" },
     { icon: CheckSquare, label: "Create task", color: "#f59e0b", href: "/mobile/tasks" },

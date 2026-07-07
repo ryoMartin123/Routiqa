@@ -41,7 +41,7 @@ const QUICK_SECTIONS  = ["cover_header", "customer_info", "property_info", "line
 const CUSTOM_SECTIONS = ["cover_header", "customer_info", "property_info", "recommended_solution", "scope_of_work", "line_items", "terms", "approval"] as const;
 
 const CARDS: { mode: QuoteMode; title: string; subtitle: string; bestFor: string; icon: typeof Zap; accent: string }[] = [
-  { mode: "quick",    title: "Quick Quote",            subtitle: "Simple branded quote from catalog items.",        bestFor: "Repairs, add-ons, standard services, simple line-item quotes.", icon: Zap,              accent: "#4f46e5" },
+  { mode: "quick",    title: "Quick Quote",            subtitle: "Simple branded quote from catalog items.",        bestFor: "Repairs, add-ons, standard services, simple line-item quotes.", icon: Zap,              accent: "#0f8578" },
   { mode: "template", title: "Proposal from Salesbook",  subtitle: "Pick a salesbook — the quote is built and opened instantly.", bestFor: "Good/Better/Best options, equipment replacements, packages, maintenance plans.", icon: LayoutTemplate, accent: "#0891b2" },
   { mode: "custom",   title: "Custom Proposal",        subtitle: "Build pricing, scope, photos, and layout from scratch.", bestFor: "Complex jobs, custom scopes, margin-based pricing, large installs, commercial.", icon: SlidersHorizontal, accent: "#7c3aed" },
 ];
@@ -260,7 +260,7 @@ export default function QuoteTypeChooser({ preset, onClose }: {
                     return (
                       <button key={k} onClick={() => { setRelatedKind(k); setRelatedId(""); }}
                         className="px-3 py-1.5 text-xs font-medium capitalize transition-colors"
-                        style={{ backgroundColor: active ? "#4f46e5" : "var(--bg-surface)", color: active ? "#fff" : "var(--text-secondary)" }}>
+                        style={{ backgroundColor: active ? "#0f8578" : "var(--bg-surface)", color: active ? "#fff" : "var(--text-secondary)" }}>
                         {k === "none" ? "None" : k}
                       </button>
                     );
@@ -319,7 +319,7 @@ function TemplateSourcePicker({ installed, value, onChange, onBrowseLibrary }: {
     <div className="rounded-xl p-3.5 space-y-3" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}>
       <div className="flex items-center justify-between">
         <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>Choose a Salesbook</p>
-        <button onClick={onBrowseLibrary} className="flex items-center gap-1 text-[11px] font-medium" style={{ color: "#4f46e5" }}>
+        <button onClick={onBrowseLibrary} className="flex items-center gap-1 text-[11px] font-medium" style={{ color: "#0f8578" }}>
           <BookOpen className="w-3 h-3" /> Salesbook Library
         </button>
       </div>
@@ -327,7 +327,7 @@ function TemplateSourcePicker({ installed, value, onChange, onBrowseLibrary }: {
       {installed.length === 0 ? (
         <div className="rounded-lg px-3 py-3 text-center" style={{ border: "1px dashed var(--border)" }}>
           <p className="text-xs" style={{ color: "var(--text-secondary)" }}>No salesbooks installed yet.</p>
-          <button onClick={onBrowseLibrary} className="mt-1.5 inline-flex items-center gap-1 text-[11px] font-medium" style={{ color: "#4f46e5" }}>
+          <button onClick={onBrowseLibrary} className="mt-1.5 inline-flex items-center gap-1 text-[11px] font-medium" style={{ color: "#0f8578" }}>
             <Settings2 className="w-3 h-3" /> Install one from the Salesbook Library
           </button>
         </div>
@@ -338,7 +338,7 @@ function TemplateSourcePicker({ installed, value, onChange, onBrowseLibrary }: {
             return (
               <button key={sb.id} onClick={() => onChange(`sb:${sb.id}`)}
                 className="flex items-center gap-3 p-2.5 rounded-lg text-left transition-all"
-                style={{ border: `1px solid ${active ? "#4f46e5" : "var(--border-subtle)"}`, backgroundColor: active ? "var(--accent-soft-bg)" : "var(--bg-surface)" }}>
+                style={{ border: `1px solid ${active ? "#0f8578" : "var(--border-subtle)"}`, backgroundColor: active ? "var(--accent-soft-bg)" : "var(--bg-surface)" }}>
                 <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: "#0891b21a" }}>
                   <LayoutTemplate className="w-3.5 h-3.5" style={{ color: "#0891b2" }} />
                 </div>
@@ -348,7 +348,7 @@ function TemplateSourcePicker({ installed, value, onChange, onBrowseLibrary }: {
                     {INDUSTRY_LABELS[sb.industry]} · {PROPOSAL_TYPE_LABELS[sb.proposalType]} · {sb.sections.length} sections
                   </p>
                 </div>
-                {active && <Check className="w-4 h-4 shrink-0" style={{ color: "#4f46e5" }} />}
+                {active && <Check className="w-4 h-4 shrink-0" style={{ color: "#0f8578" }} />}
               </button>
             );
           })}

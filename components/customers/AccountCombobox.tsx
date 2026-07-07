@@ -106,10 +106,10 @@ export default function AccountCombobox({
         onClick={() => !disabled && setOpen(o => !o)}
         className={`w-full flex items-center justify-between gap-2 rounded-lg outline-none transition-colors ${pad}`}
         style={{
-          border: `1px solid ${open ? "#a5b4fc" : "var(--border)"}`,
+          border: `1px solid ${open ? "#8ed0c6" : "var(--border)"}`,
           backgroundColor: "var(--bg-surface)",
           color: selected ? "var(--text-primary)" : "var(--text-muted)",
-          boxShadow: open ? "0 0 0 3px rgba(99,102,241,0.12)" : "none",
+          boxShadow: open ? "0 0 0 3px rgba(35,156,141,0.12)" : "none",
           opacity: disabled ? 0.5 : 1,
           cursor: disabled ? "not-allowed" : "pointer",
         }}
@@ -159,10 +159,10 @@ export default function AccountCombobox({
                   style={{ backgroundColor: isActive ? "var(--bg-surface-2)" : "transparent" }}
                 >
                   <span className="min-w-0">
-                    <span className="block text-sm truncate" style={{ color: isSelected ? "#4f46e5" : "var(--text-primary)", fontWeight: isSelected ? 600 : 400 }}>{c.name}</span>
+                    <span className="block text-sm truncate" style={{ color: isSelected ? "#0f8578" : "var(--text-primary)", fontWeight: isSelected ? 600 : 400 }}>{c.name}</span>
                     <span className="block text-[11px] truncate" style={{ color: "var(--text-muted)" }}>{sub(c)}</span>
                   </span>
-                  {isSelected && <Check className="w-3.5 h-3.5 shrink-0" style={{ color: "#4f46e5" }} />}
+                  {isSelected && <Check className="w-3.5 h-3.5 shrink-0" style={{ color: "#0f8578" }} />}
                 </button>
               );
             })}

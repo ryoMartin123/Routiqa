@@ -31,7 +31,7 @@ function PreviewModal({ tpl, onClose, onApply }: {
         <div className="flex items-center justify-between px-6 py-5 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: "var(--bg-surface-2)" }}>
-              <Factory className="w-4.5 h-4.5" style={{ color: "#4f46e5" }} />
+              <Factory className="w-4.5 h-4.5" style={{ color: "#0f8578" }} />
             </div>
             <div>
               <h2 className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>{tpl.name} Template</h2>
@@ -74,7 +74,7 @@ function PreviewModal({ tpl, onClose, onApply }: {
         {tpl.status === "available" && tpl.key !== "custom" && (
           <div className="px-6 py-4 shrink-0" style={{ borderTop: "1px solid var(--border)" }}>
             <button onClick={onApply}
-              className="w-full py-2.5 rounded-lg text-sm font-medium text-white" style={{ backgroundColor: "#4f46e5" }}>
+              className="w-full py-2.5 rounded-lg text-sm font-medium text-white" style={{ backgroundColor: "#0f8578" }}>
               Apply This Template
             </button>
           </div>
@@ -107,7 +107,7 @@ function ApplyModal({ tpl, onConfirm, onClose, result }: {
                   : `Added ${result.added} new default${result.added === 1 ? "" : "s"} that weren't already configured.`}
                 {" "}You can customize everything in Pipelines, Job Types, and Photo Categories.
               </p>
-              <button onClick={onClose} className="mt-2 px-4 py-2 rounded-lg text-sm font-medium text-white" style={{ backgroundColor: "#4f46e5" }}>Done</button>
+              <button onClick={onClose} className="mt-2 px-4 py-2 rounded-lg text-sm font-medium text-white" style={{ backgroundColor: "#0f8578" }}>Done</button>
             </div>
           ) : (
             <>
@@ -127,7 +127,7 @@ function ApplyModal({ tpl, onConfirm, onClose, result }: {
               </div>
               <div className="px-6 pb-6 space-y-2">
                 <button onClick={() => onConfirm("missing")}
-                  className="w-full flex items-center gap-3 p-3 rounded-xl text-left transition-colors hover:border-indigo-300"
+                  className="w-full flex items-center gap-3 p-3 rounded-xl text-left transition-colors hover:border-[#8ed0c6]"
                   style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)" }}>
                   <Check className="w-4 h-4 shrink-0" style={{ color: "#10b981" }} />
                   <div>
@@ -193,10 +193,10 @@ export default function IndustryDefaultsSection() {
           const comingSoon = tpl.status === "coming_soon";
           return (
             <div key={tpl.key} className="rounded-xl p-4 flex flex-col"
-              style={{ backgroundColor: "var(--bg-surface)", border: `1px solid ${isActive ? "#a5b4fc" : "var(--border-subtle)"}`, boxShadow: "var(--shadow-card)" }}>
+              style={{ backgroundColor: "var(--bg-surface)", border: `1px solid ${isActive ? "#8ed0c6" : "var(--border-subtle)"}`, boxShadow: "var(--shadow-card)" }}>
               <div className="flex items-start justify-between mb-2">
                 <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: "var(--bg-surface-2)" }}>
-                  <Factory className="w-4.5 h-4.5" style={{ color: "#4f46e5" }} />
+                  <Factory className="w-4.5 h-4.5" style={{ color: "#0f8578" }} />
                 </div>
                 {isActive ? (
                   <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: "#d1fae5", color: "#065f46" }}>
@@ -207,7 +207,7 @@ export default function IndustryDefaultsSection() {
                     <Clock className="w-3 h-3" /> Coming Soon
                   </span>
                 ) : (
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: "#e0e7ff", color: "#4f46e5" }}>Available</span>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: "#d3ebe6", color: "#0f8578" }}>Available</span>
                 )}
               </div>
 
@@ -229,7 +229,7 @@ export default function IndustryDefaultsSection() {
                 <button onClick={() => { setApplyResult(null); setApplyTpl(tpl); }}
                   disabled={comingSoon || tpl.key === "custom"}
                   className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-medium text-white transition-colors disabled:opacity-40"
-                  style={{ backgroundColor: "#4f46e5" }}>
+                  style={{ backgroundColor: "#0f8578" }}>
                   Apply
                 </button>
               </div>

@@ -56,7 +56,7 @@ export function TypeBadge({ role }: { role: RoleDefinition }) {
   }
   return role.system
     ? <Badge icon={ShieldCheck} label="System Default" bg="var(--bg-input)" color="var(--text-secondary)" />
-    : <Badge icon={Shield} label="Custom" bg="#e0e7ff" color="#4f46e5" />;
+    : <Badge icon={Shield} label="Custom" bg="#d3ebe6" color="#0f8578" />;
 }
 
 function Badge({ icon: Icon, label, bg, color }: { icon: typeof Shield; label: string; bg: string; color: string }) {
@@ -72,7 +72,7 @@ export function Toggle({ on, onChange, disabled }: { on: boolean; onChange: (v: 
   return (
     <button type="button" onClick={() => !disabled && onChange(!on)} disabled={disabled} role="switch" aria-checked={on}
       className="relative w-9 h-5 rounded-full transition-colors shrink-0"
-      style={{ backgroundColor: on ? "#4f46e5" : "var(--bg-input)", border: "1px solid var(--border)", opacity: disabled ? 0.6 : 1, cursor: disabled ? "not-allowed" : "pointer" }}>
+      style={{ backgroundColor: on ? "#0f8578" : "var(--bg-input)", border: "1px solid var(--border)", opacity: disabled ? 0.6 : 1, cursor: disabled ? "not-allowed" : "pointer" }}>
       <span className="absolute top-0.5 left-0.5 w-3.5 h-3.5 rounded-full bg-white shadow transition-transform" style={{ transform: on ? "translateX(16px)" : "none" }} />
     </button>
   );
@@ -88,13 +88,13 @@ export function DataScopeField({ draft, onChange }: { draft: RoleDefinition; onC
         return (
           <button key={s.value} type="button" onClick={() => onChange({ ...draft, dataScope: s.value })}
             className="text-left rounded-xl px-3.5 py-3 flex items-start gap-2.5 transition-all"
-            style={{ border: `1.5px solid ${on ? "#4f46e5" : "var(--border-subtle)"}`, backgroundColor: on ? "#f5f3ff" : "var(--bg-surface)" }}>
+            style={{ border: `1.5px solid ${on ? "#0f8578" : "var(--border-subtle)"}`, backgroundColor: on ? "#f5f3ff" : "var(--bg-surface)" }}>
             <span className="mt-0.5 w-4 h-4 rounded-full flex items-center justify-center shrink-0"
-              style={{ border: `1.5px solid ${on ? "#4f46e5" : "var(--border)"}`, backgroundColor: on ? "#4f46e5" : "transparent" }}>
+              style={{ border: `1.5px solid ${on ? "#0f8578" : "var(--border)"}`, backgroundColor: on ? "#0f8578" : "transparent" }}>
               {on && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
             </span>
             <span className="min-w-0">
-              <span className="text-sm font-medium block" style={{ color: on ? "#4f46e5" : "var(--text-primary)" }}>{s.label}</span>
+              <span className="text-sm font-medium block" style={{ color: on ? "#0f8578" : "var(--text-primary)" }}>{s.label}</span>
               <span className="text-[11px] block leading-snug" style={{ color: "var(--text-muted)" }}>{s.hint}</span>
             </span>
           </button>
@@ -165,7 +165,7 @@ export function AppAccessCards({ draft, onChange }: { draft: RoleDefinition; onC
                     return (
                       <button key={l} type="button" onClick={() => setLevel(app, l)}
                         className="px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors"
-                        style={sel ? { backgroundColor: "#4f46e5", color: "#fff" } : { backgroundColor: "var(--bg-input)", color: "var(--text-secondary)" }}>
+                        style={sel ? { backgroundColor: "#0f8578", color: "#fff" } : { backgroundColor: "var(--bg-input)", color: "var(--text-secondary)" }}>
                         {PILL_LABEL[l]}
                       </button>
                     );
@@ -194,7 +194,7 @@ export function PermissionAccordions({ draft, onChange, readOnly }: { draft: Rol
   if (draft.allAccess) {
     return (
       <div className="rounded-xl p-4 flex items-center gap-2.5" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
-        <ShieldCheck className="w-4 h-4" style={{ color: "#4f46e5" }} />
+        <ShieldCheck className="w-4 h-4" style={{ color: "#0f8578" }} />
         <p className="text-sm" style={{ color: "var(--text-secondary)" }}>Full access — every module across enabled apps (except Billing) within scope.</p>
       </div>
     );
@@ -265,7 +265,7 @@ const ACT_STYLE: Record<AccessLevel, { label: string; bg: string; color: string 
 const MODULE_BADGE_STYLE: Record<ModuleLevel, { bg: string; color: string }> = {
   none:        { bg: "var(--bg-input)", color: "var(--text-muted)" },
   view:        { bg: "var(--bg-input)", color: "var(--text-secondary)" },
-  create_edit: { bg: "#e0e7ff", color: "#4338ca" },
+  create_edit: { bg: "#d3ebe6", color: "#0c6b60" },
   manage:      { bg: "#d1fae5", color: "#065f46" },
   custom:      { bg: "#fef3c7", color: "#92400e" },
 };
@@ -329,7 +329,7 @@ export function PermissionMatrix({ draft, onChange, readOnly }: { draft: RoleDef
   if (draft.allAccess) {
     return (
       <div className="rounded-xl p-4 flex items-center gap-2.5" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
-        <ShieldCheck className="w-4 h-4" style={{ color: "#4f46e5" }} />
+        <ShieldCheck className="w-4 h-4" style={{ color: "#0f8578" }} />
         <p className="text-sm" style={{ color: "var(--text-secondary)" }}>Full access — every module across enabled apps (except Billing) within scope.</p>
       </div>
     );

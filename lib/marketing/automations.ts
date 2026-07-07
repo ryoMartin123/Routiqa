@@ -36,7 +36,7 @@ export interface TriggerDef {
 export const TRIGGER_OBJECTS: Record<TriggerObject, { label: string; icon: LucideIcon; color: string }> = {
   lead:             { label: "Lead",             icon: UserPlus,      color: "#2563eb" },
   customer:         { label: "Customer",         icon: Users,         color: "#0891b2" },
-  job:              { label: "Job",              icon: Wrench,        color: "#4f46e5" },
+  job:              { label: "Job",              icon: Wrench,        color: "#0f8578" },
   estimate:         { label: "Estimate",         icon: FileText,      color: "#059669" },
   invoice:          { label: "Invoice",          icon: Receipt,       color: "#16a34a" },
   payment:          { label: "Payment",          icon: CreditCard,    color: "#db2777" },

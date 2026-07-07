@@ -305,7 +305,7 @@ export default function PhotoGallery({ recordLevel, scope = {}, accountName, upl
               return (
                 <button key={opt.key} onClick={() => setActiveScopeKey(opt.key)}
                   className="px-3 py-1.5 text-xs font-medium transition-colors"
-                  style={{ backgroundColor: active ? "#4f46e5" : "var(--bg-surface)", color: active ? "#fff" : "var(--text-secondary)" }}>
+                  style={{ backgroundColor: active ? "#0f8578" : "var(--bg-surface)", color: active ? "#fff" : "var(--text-secondary)" }}>
                   {opt.label}
                 </button>
               );
@@ -403,8 +403,8 @@ export default function PhotoGallery({ recordLevel, scope = {}, accountName, upl
               when the page renders its own in the header */}
           {!externalUpload ? (
             <button onClick={() => setShowUpload(true)}
-              className="group flex items-center gap-1.5 text-sm font-medium transition-colors shrink-0" style={{ color: "#4f46e5" }}>
-              <span className="w-5 h-5 rounded-full flex items-center justify-center transition-all group-hover:brightness-95" style={{ backgroundColor: "#4f46e51a" }}><Upload className="w-3 h-3" /></span>
+              className="group flex items-center gap-1.5 text-sm font-medium transition-colors shrink-0" style={{ color: "#0f8578" }}>
+              <span className="w-5 h-5 rounded-full flex items-center justify-center transition-all group-hover:brightness-95" style={{ backgroundColor: "#0f85781a" }}><Upload className="w-3 h-3" /></span>
               Upload
             </button>
           ) : toolbarAction}
@@ -635,7 +635,7 @@ function FileDrawer({ file, catLabel, catColor, onClose }: {
             style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>
             <Pencil className="w-3.5 h-3.5" /> Edit
           </button>
-          <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-white transition-colors" style={{ backgroundColor: "#4f46e5" }}>
+          <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-white transition-colors" style={{ backgroundColor: "#0f8578" }}>
             <Download className="w-3.5 h-3.5" /> Download
           </button>
           <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm ml-auto transition-colors"
@@ -707,7 +707,7 @@ function UploadModal({ categories, onClose, onUpload }: {
             onDragLeave={() => setDragOver(false)}
             onDrop={e => { e.preventDefault(); setDragOver(false); addFiles(e.dataTransfer.files); }}
             className="rounded-xl py-8 text-center cursor-pointer transition-colors"
-            style={{ border: `2px dashed ${dragOver ? "#4f46e5" : "var(--border)"}`, backgroundColor: dragOver ? "var(--accent-soft-bg)" : "var(--bg-surface-2)" }}>
+            style={{ border: `2px dashed ${dragOver ? "#0f8578" : "var(--border)"}`, backgroundColor: dragOver ? "var(--accent-soft-bg)" : "var(--bg-surface-2)" }}>
             <input ref={inputRef} type="file" multiple hidden
               onChange={e => { addFiles(e.target.files); e.target.value = ""; }} />
             <Upload className="w-6 h-6 mx-auto mb-1.5" style={{ color: dragOver ? "var(--accent-text)" : "var(--text-muted)" }} />
@@ -726,7 +726,7 @@ function UploadModal({ categories, onClose, onUpload }: {
                 return (
                   <div key={`${f.name}-${i}`} className="flex items-center gap-2.5 rounded-lg px-2.5 py-2"
                     style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}>
-                    <Icon className="w-4 h-4 shrink-0" style={{ color: ft === "image" ? "#4f46e5" : "var(--text-muted)" }} />
+                    <Icon className="w-4 h-4 shrink-0" style={{ color: ft === "image" ? "#0f8578" : "var(--text-muted)" }} />
                     <div className="min-w-0 flex-1">
                       <p className="text-xs font-medium truncate" style={{ color: "var(--text-primary)" }}>{f.name}</p>
                       <p className="text-[10px] capitalize" style={{ color: "var(--text-muted)" }}>{ft} · {formatSize(f.size)}</p>
@@ -754,7 +754,7 @@ function UploadModal({ categories, onClose, onUpload }: {
         <div className="px-5 py-4 flex justify-end gap-2" style={{ borderTop: "1px solid var(--border)" }}>
           <button onClick={onClose} className="px-3 py-1.5 rounded-lg text-sm" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>Cancel</button>
           <button onClick={submit} disabled={!picked.length}
-            className="px-4 py-1.5 rounded-lg text-sm font-medium text-white disabled:opacity-40" style={{ backgroundColor: "#4f46e5" }}>
+            className="px-4 py-1.5 rounded-lg text-sm font-medium text-white disabled:opacity-40" style={{ backgroundColor: "#0f8578" }}>
             Upload{picked.length > 0 ? ` ${picked.length} file${picked.length === 1 ? "" : "s"}` : ""}
           </button>
         </div>

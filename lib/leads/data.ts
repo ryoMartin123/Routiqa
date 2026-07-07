@@ -80,7 +80,7 @@ export interface LeadTask {
 
 // ─── Stage config ─────────────────────────────────────────
 export const LEAD_STAGE_CONFIG: Record<LeadStage, { label: string; bg: string; color: string; order: number }> = {
-  new_lead:              { label: "New Lead",           bg: "#e0e7ff", color: "#4f46e5", order: 1 },
+  new_lead:              { label: "New Lead",           bg: "#d3ebe6", color: "#0f8578", order: 1 },
   contacted:             { label: "Contacted",          bg: "#fef3c7", color: "#92400e", order: 2 },
   appointment_scheduled: { label: "Appt. Scheduled",   bg: "#dbeafe", color: "#1e40af", order: 3 },
   estimate_needed:       { label: "Estimate Needed",   bg: "#fce7f3", color: "#9d174d", order: 4 },

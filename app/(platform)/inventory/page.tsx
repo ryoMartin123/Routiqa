@@ -43,7 +43,7 @@ export default function InventoryDashboard() {
         <StatCard label="Open Purchase Orders" value={String(openPOs.length)} hint="Awaiting receipt" icon={ShoppingCart} accent="#0ea5e9" />
         <StatCard label="Low Stock" value={String(lowStock.length)} hint="At/below reorder" icon={AlertTriangle} accent="#ef4444" />
         <StatCard label="Pending Receiving" value={String(pendingReceiving.length)} hint="Partially received" icon={PackageCheck} accent={ACCENT} />
-        <StatCard label="Active Vendors" value={String(vendors.length)} hint="Suppliers" icon={Building2} accent="#6366f1" />
+        <StatCard label="Active Vendors" value={String(vendors.length)} hint="Suppliers" icon={Building2} accent="#239c8d" />
         <StatCard label="Active Subcontractors" value={String(subs.length)} hint="Trades" icon={HardHat} accent="#10b981" />
         <StatCard label="Compliance Issues" value={String(complianceIssues)} hint="Vendors & subs" icon={AlertTriangle} accent="#f59e0b" />
       </div>
@@ -80,7 +80,7 @@ export default function InventoryDashboard() {
         </Panel>
 
         {/* Vendor / Subcontractor snapshot */}
-        <Panel title="Vendors & Subcontractors" icon={Building2} accent="#6366f1" href="/inventory/vendors">
+        <Panel title="Vendors & Subcontractors" icon={Building2} accent="#239c8d" href="/inventory/vendors">
           <div className="grid grid-cols-2 gap-2 mb-3">
             <Mini label="Vendors" value={vendors.length} icon={Building2} />
             <Mini label="Subcontractors" value={subs.length} icon={HardHat} />

@@ -141,7 +141,7 @@ export default function CreateDocumentModal({
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="text-xs font-semibold uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>Line Items</label>
-              <button onClick={addItem} className="flex items-center gap-1 text-xs font-medium" style={{ color: "#4f46e5" }}>
+              <button onClick={addItem} className="flex items-center gap-1 text-xs font-medium" style={{ color: "#0f8578" }}>
                 <Plus className="w-3 h-3" /> Add Item
               </button>
             </div>
@@ -171,10 +171,10 @@ export default function CreateDocumentModal({
                           className="w-24 rounded-lg px-2 py-1 text-xs outline-none" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface)", color: "var(--text-primary)" }} />
                       </div>
                       <label className="flex items-center gap-1 text-[11px] cursor-pointer" style={{ color: "var(--text-secondary)" }}>
-                        <input type="checkbox" checked={it.taxable} onChange={e => setItem(it.id, { taxable: e.target.checked })} className="accent-indigo-600" /> Taxable
+                        <input type="checkbox" checked={it.taxable} onChange={e => setItem(it.id, { taxable: e.target.checked })} className="accent-[#0f8578]" /> Taxable
                       </label>
                       <label className="flex items-center gap-1 text-[11px] cursor-pointer" style={{ color: "var(--text-secondary)" }}>
-                        <input type="checkbox" checked={it.optional} onChange={e => setItem(it.id, { optional: e.target.checked })} className="accent-indigo-600" /> Optional
+                        <input type="checkbox" checked={it.optional} onChange={e => setItem(it.id, { optional: e.target.checked })} className="accent-[#0f8578]" /> Optional
                       </label>
                       <span className="ml-auto text-sm font-semibold" style={{ color: it.optional ? "var(--text-muted)" : "var(--text-primary)" }}>{fmt(lineTotal)}</span>
                     </div>
@@ -210,7 +210,7 @@ export default function CreateDocumentModal({
         <div className="px-6 py-4 flex justify-end gap-2 shrink-0" style={{ borderTop: "1px solid var(--border)" }}>
           <button onClick={onClose} className="px-3 py-2 rounded-lg text-sm" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>Cancel</button>
           <button onClick={handleCreate} disabled={!canCreate}
-            className="px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-40" style={{ backgroundColor: "#4f46e5" }}>
+            className="px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-40" style={{ backgroundColor: "#0f8578" }}>
             Create {isQuote ? "Quote" : "Invoice"}
           </button>
         </div>

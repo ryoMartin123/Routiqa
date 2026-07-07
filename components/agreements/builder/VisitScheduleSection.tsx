@@ -40,7 +40,7 @@ export default function VisitScheduleSection({ d }: { d: UseAgreementDraft }) {
           ) : undefined
         } />
 
-      <button onClick={() => { d.addVisit(); }} className="text-xs font-medium mb-3" style={{ color: "#4f46e5" }}>+ Add a custom visit</button>
+      <button onClick={() => { d.addVisit(); }} className="text-xs font-medium mb-3" style={{ color: "#0f8578" }}>+ Add a custom visit</button>
 
       <p className="text-[11px] mb-3" style={{ color: "var(--text-muted)" }}>
         This plan generates <span style={{ color: "var(--accent-text)", fontWeight: 600 }}>{d.generatedVisits.length}</span> visit{d.generatedVisits.length === 1 ? "" : "s"} in the first year.

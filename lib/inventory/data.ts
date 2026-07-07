@@ -212,7 +212,7 @@ export type POStatus =
 export const PO_STATUS_STYLE: Record<POStatus, { label: string; dot: string }> = {
   draft:              { label: "Draft",              dot: "#9ca3af" },
   pending_approval:   { label: "Pending Approval",   dot: "#0ea5e9" },
-  approved:           { label: "Approved",           dot: "#6366f1" },
+  approved:           { label: "Approved",           dot: "#239c8d" },
   ordered:            { label: "Ordered",            dot: "#f59e0b" },
   partially_received: { label: "Partially Received", dot: "#f59e0b" },
   received:           { label: "Received",           dot: "#10b981" },

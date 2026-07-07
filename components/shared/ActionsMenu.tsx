@@ -70,9 +70,9 @@ export default function ActionsMenu({ actions, label = "Actions", size = "md" }:
         className={cn(
           "group flex items-center justify-center rounded-lg transition-all duration-200 active:scale-90",
           size === "sm" ? "w-7 h-7" : "w-9 h-9",
-          open ? "text-[#4f46e5]" : "text-[var(--text-secondary)] hover:text-[#4f46e5] hover:bg-[var(--bg-surface-2)]",
+          open ? "text-[#0f8578]" : "text-[var(--text-secondary)] hover:text-[#0f8578] hover:bg-[var(--bg-surface-2)]",
         )}
-        style={{ border: `1px solid ${open ? "#4f46e5" : "var(--border)"}` }}
+        style={{ border: `1px solid ${open ? "#0f8578" : "var(--border)"}` }}
       >
         <MoreActionsGlyph open={open} className={size === "sm" ? "w-[15px] h-[15px]" : "w-[18px] h-[18px]"} />
       </button>

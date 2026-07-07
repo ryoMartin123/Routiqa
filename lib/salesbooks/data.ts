@@ -48,7 +48,7 @@ export const COMPLEXITY_LABELS: Record<SalesbookComplexity, string> = {
 
 // Accent per industry — drives the card/preview color treatment.
 export const INDUSTRY_ACCENT: Record<SalesbookIndustry, string> = {
-  hvac: "#4f46e5", roofing: "#0891b2", plumbing: "#0d9488",
+  hvac: "#0f8578", roofing: "#0891b2", plumbing: "#0d9488",
   electrical: "#d97706", property_maintenance: "#059669", general: "#7c3aed",
 };
 

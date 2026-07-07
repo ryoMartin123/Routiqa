@@ -20,7 +20,7 @@ export interface SearchResult {
 }
 
 export const SEARCH_TYPE_META: Record<SearchType, { label: string; color: string }> = {
-  customer: { label: "Customer", color: "#4f46e5" },
+  customer: { label: "Customer", color: "#0f8578" },
   job:      { label: "Job",      color: "#0891b2" },
   lead:     { label: "Lead",     color: "#f59e0b" },
   quote:    { label: "Quote",    color: "#a855f7" },

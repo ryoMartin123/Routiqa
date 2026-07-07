@@ -196,9 +196,9 @@ export default function EditCustomerModal({
                   <button key={t.key} onClick={() => set("accountType", t.key)}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
                     style={{
-                      border: `1.5px solid ${active ? "#4f46e5" : "var(--border)"}`,
-                      backgroundColor: active ? "#e0e7ff" : "var(--bg-surface-2)",
-                      color: active ? "#4f46e5" : "var(--text-secondary)",
+                      border: `1.5px solid ${active ? "#0f8578" : "var(--border)"}`,
+                      backgroundColor: active ? "#d3ebe6" : "var(--bg-surface-2)",
+                      color: active ? "#0f8578" : "var(--text-secondary)",
                     }}>
                     <t.icon className="w-3.5 h-3.5" />{t.label}
                   </button>
@@ -213,9 +213,9 @@ export default function EditCustomerModal({
                 <button key={s} onClick={() => set("status", s)}
                   className="flex-1 py-2 rounded-lg text-sm font-medium transition-all"
                   style={{
-                    border: `1.5px solid ${data.status === s ? "#4f46e5" : "var(--border)"}`,
-                    backgroundColor: data.status === s ? "#e0e7ff" : "var(--bg-surface-2)",
-                    color: data.status === s ? "#4f46e5" : "var(--text-secondary)",
+                    border: `1.5px solid ${data.status === s ? "#0f8578" : "var(--border)"}`,
+                    backgroundColor: data.status === s ? "#d3ebe6" : "var(--bg-surface-2)",
+                    color: data.status === s ? "#0f8578" : "var(--text-secondary)",
                   }}>
                   {s}
                 </button>
@@ -275,7 +275,7 @@ export default function EditCustomerModal({
             Cancel
           </button>
           <button onClick={handleSave} disabled={!data.name.trim() || !dirty}
-            className="px-4 py-2 rounded-lg text-sm font-medium bg-indigo-600 hover:bg-indigo-700 text-white transition-colors disabled:opacity-40">
+            className="px-4 py-2 rounded-lg text-sm font-medium bg-[#0f8578] hover:bg-[#0c6b60] text-white transition-colors disabled:opacity-40">
             Save Changes
           </button>
         </div>

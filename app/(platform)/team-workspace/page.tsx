@@ -27,7 +27,7 @@ export default function TeamWorkspaceDashboard() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard label="Upcoming Meetings" value={String(meetings.length)} hint="This week" icon={CalendarDays} accent={ACCENT} />
         <StatCard label="Open Action Items" value={String(actionItems.length)} hint="Assigned across teams" icon={ListChecks} accent="#f59e0b" />
-        <StatCard label="Announcements" value={String(announcements.length)} hint="Recent" icon={Megaphone} accent="#6366f1" />
+        <StatCard label="Announcements" value={String(announcements.length)} hint="Recent" icon={Megaphone} accent="#239c8d" />
         <StatCard label="Active Channels" value={String(channels.length)} hint="Team spaces" icon={MessagesSquare} accent="#0ea5e9" />
       </div>
 
@@ -48,7 +48,7 @@ export default function TeamWorkspaceDashboard() {
         </Panel>
 
         {/* Recent Announcements */}
-        <Panel title="Recent Announcements" icon={Megaphone} accent="#6366f1" href="/team-workspace/announcements">
+        <Panel title="Recent Announcements" icon={Megaphone} accent="#239c8d" href="/team-workspace/announcements">
           <ul className="space-y-2.5">
             {announcements.map(a => (
               <li key={a.id} className="min-w-0">

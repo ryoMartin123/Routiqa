@@ -59,9 +59,9 @@ const HISTORY_CATS: { key: HistoryCategory; label: string }[] = [
   { key: "agreements", label: "Agreements" }, { key: "system", label: "System" },
 ];
 export const CATEGORY_COLOR: Record<HistoryCategory, string> = {
-  jobs: "#6366f1", communication: "#0ea5e9", notes: "#f59e0b", billing: "#8b5cf6", files: "#14b8a6", agreements: "#10b981", system: "#6b7280",
+  jobs: "#239c8d", communication: "#0ea5e9", notes: "#f59e0b", billing: "#8b5cf6", files: "#14b8a6", agreements: "#10b981", system: "#6b7280",
 };
-const ALL_COLOR = "#6366f1";
+const ALL_COLOR = "#239c8d";
 
 export function categoryOf(t: EventType): HistoryCategory {
   switch (t) {
@@ -217,8 +217,8 @@ export default function HistoryFeed({ events, onTab, mapTab = t => t }: {
                   <button onClick={() => setCats(new Set())}
                     className="w-full flex items-center gap-2.5 px-1.5 py-1.5 rounded-lg text-left transition-colors hover:bg-[var(--bg-surface-2)]">
                     <span className="w-5 h-5 rounded flex items-center justify-center shrink-0"
-                      style={{ border: `1.5px solid ${cats.size === 0 ? "#c9c0b2" : "var(--border)"}`, backgroundColor: cats.size === 0 ? "#E5E0DB" : "transparent" }}>
-                      {cats.size === 0 && <Check className="w-3 h-3" style={{ color: "#5c5545" }} />}
+                      style={{ border: `1.5px solid ${cats.size === 0 ? "var(--copper-soft-border)" : "var(--border)"}`, backgroundColor: cats.size === 0 ? "var(--copper-soft-bg)" : "transparent" }}>
+                      {cats.size === 0 && <Check className="w-3 h-3" style={{ color: "var(--copper-text)" }} />}
                     </span>
                     <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: ALL_COLOR }} />
                     <span className="text-sm flex-1 min-w-0 truncate" style={{ color: "var(--text-primary)" }}>All</span>
@@ -230,8 +230,8 @@ export default function HistoryFeed({ events, onTab, mapTab = t => t }: {
                       <button key={c.key} onClick={() => toggleCat(c.key)}
                         className="w-full flex items-center gap-2.5 px-1.5 py-1.5 rounded-lg text-left transition-colors hover:bg-[var(--bg-surface-2)]">
                         <span className="w-5 h-5 rounded flex items-center justify-center shrink-0"
-                          style={{ border: `1.5px solid ${on ? "#c9c0b2" : "var(--border)"}`, backgroundColor: on ? "#E5E0DB" : "transparent" }}>
-                          {on && <Check className="w-3 h-3" style={{ color: "#5c5545" }} />}
+                          style={{ border: `1.5px solid ${on ? "var(--copper-soft-border)" : "var(--border)"}`, backgroundColor: on ? "var(--copper-soft-bg)" : "transparent" }}>
+                          {on && <Check className="w-3 h-3" style={{ color: "var(--copper-text)" }} />}
                         </span>
                         <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: CATEGORY_COLOR[c.key] }} />
                         <span className="text-sm flex-1 min-w-0 truncate" style={{ color: "var(--text-primary)" }}>{c.label}</span>
@@ -319,7 +319,7 @@ export default function HistoryFeed({ events, onTab, mapTab = t => t }: {
 
                         <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                           <span className="inline-flex items-center gap-1.5">
-                            <span className="w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold text-white shrink-0" style={{ backgroundColor: event.createdBy === "—" ? "#9ca3af" : "#6366f1" }}>{eventInitials(event.createdBy)}</span>
+                            <span className="w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold text-white shrink-0" style={{ backgroundColor: event.createdBy === "—" ? "#9ca3af" : "#239c8d" }}>{eventInitials(event.createdBy)}</span>
                             <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>{event.createdBy === "—" ? "System" : event.createdBy}</span>
                           </span>
                         </div>

@@ -53,7 +53,7 @@ export interface IndustryTemplate {
 // ─── General Service ──────────────────────────────────────
 const GENERAL_DATA: TemplateData = {
   pipelineStages: [
-    { name: "New Lead", color: "#6366f1", category: "open" },
+    { name: "New Lead", color: "#239c8d", category: "open" },
     { name: "Contacted", color: "#f59e0b", category: "open" },
     { name: "Estimate Sent", color: "#8b5cf6", category: "open" },
     { name: "Follow-Up", color: "#0891b2", category: "open" },
@@ -68,14 +68,14 @@ const GENERAL_DATA: TemplateData = {
   ],
   jobStatuses: [
     { name: "New", color: "#6b7280", category: "open" },
-    { name: "Scheduled", color: "#6366f1", category: "scheduled" },
+    { name: "Scheduled", color: "#239c8d", category: "scheduled" },
     { name: "In Progress", color: "#0891b2", category: "active" },
     { name: "Completed", color: "#10b981", category: "completed" },
     { name: "Invoiced", color: "#8b5cf6", category: "completed" },
     { name: "Canceled", color: "#ef4444", category: "canceled" },
   ],
   photoCategories: [
-    { name: "Before", color: "#6366f1", appliesTo: ["Job"] },
+    { name: "Before", color: "#239c8d", appliesTo: ["Job"] },
     { name: "After", color: "#10b981", appliesTo: ["Job"] },
     { name: "Completion", color: "#10b981", appliesTo: ["Job"] },
   ],
@@ -84,7 +84,7 @@ const GENERAL_DATA: TemplateData = {
 // ─── HVAC ─────────────────────────────────────────────────
 const HVAC_DATA: TemplateData = {
   pipelineStages: [
-    { name: "New Lead", color: "#6366f1", category: "open" },
+    { name: "New Lead", color: "#239c8d", category: "open" },
     { name: "Contacted", color: "#f59e0b", category: "open" },
     { name: "Appointment Scheduled", color: "#3b82f6", category: "open" },
     { name: "Estimate Sent", color: "#8b5cf6", category: "open" },
@@ -103,7 +103,7 @@ const HVAC_DATA: TemplateData = {
   ],
   jobStatuses: [
     { name: "New", color: "#6b7280", category: "open" },
-    { name: "Scheduled", color: "#6366f1", category: "scheduled" },
+    { name: "Scheduled", color: "#239c8d", category: "scheduled" },
     { name: "Dispatched", color: "#3b82f6", category: "scheduled" },
     { name: "In Progress", color: "#0891b2", category: "active" },
     { name: "Waiting on Parts", color: "#f59e0b", category: "waiting" },
@@ -113,7 +113,7 @@ const HVAC_DATA: TemplateData = {
   ],
   photoCategories: [
     { name: "Outdoor Unit", color: "#3b82f6", appliesTo: ["Equipment", "Job"] },
-    { name: "Indoor Unit", color: "#6366f1", appliesTo: ["Equipment", "Job"] },
+    { name: "Indoor Unit", color: "#239c8d", appliesTo: ["Equipment", "Job"] },
     { name: "Data Plate", color: "#0891b2", appliesTo: ["Equipment"] },
     { name: "Thermostat", color: "#8b5cf6", appliesTo: ["Job"] },
     { name: "Ductwork", color: "#f59e0b", appliesTo: ["Job"] },
@@ -279,7 +279,7 @@ export function applyTemplate(key: string, mode: ApplyMode): ApplyResult {
   {
     // Default color per category (editable afterward in Settings → Job Types).
     const TYPE_CAT_COLOR: Record<JobTypeCategory, string> = {
-      service: "#ef4444", maintenance: "#6366f1", install: "#10b981", sales: "#8b5cf6",
+      service: "#ef4444", maintenance: "#239c8d", install: "#10b981", sales: "#8b5cf6",
       warranty: "#f59e0b", emergency: "#dc2626", project: "#0891b2",
     };
     const existing = getJobTypes();

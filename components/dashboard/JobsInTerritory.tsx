@@ -24,7 +24,7 @@ export default function JobsInTerritory() {
       style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
       <div className="flex items-center gap-2 px-5 py-4 shrink-0"
         style={{ borderBottom: "1px solid var(--border)" }}>
-        <Briefcase className="w-4 h-4" style={{ color: "#4f46e5" }} />
+        <Briefcase className="w-4 h-4" style={{ color: "#0f8578" }} />
         <div>
           <h2 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Jobs in Territory</h2>
           {area && <p className="text-[10px]" style={{ color: "var(--text-muted)" }}>{area.name} · Today</p>}

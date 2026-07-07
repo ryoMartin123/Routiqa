@@ -23,7 +23,7 @@ function Toggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void 
   return (
     <button onClick={() => onChange(!on)} role="switch" aria-checked={on}
       className="relative w-8 h-4 rounded-full transition-colors shrink-0"
-      style={{ backgroundColor: on ? "#4f46e5" : "var(--bg-input)", border: "1px solid var(--border)" }}>
+      style={{ backgroundColor: on ? "#0f8578" : "var(--bg-input)", border: "1px solid var(--border)" }}>
       <span className="absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white shadow transition-transform"
         style={{ transform: on ? "translateX(16px)" : "translateX(0)" }} />
     </button>
@@ -103,8 +103,8 @@ function TasksTab() {
 
   function Form() {
     return (
-      <div className="rounded-xl p-4 space-y-3" style={{ backgroundColor: "var(--bg-surface)", border: "2px solid #c7d2fe", boxShadow: "var(--shadow-card)" }}>
-        <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: "#4f46e5" }}>{editingId ? "Edit Task Type" : "New Task Type"}</p>
+      <div className="rounded-xl p-4 space-y-3" style={{ backgroundColor: "var(--bg-surface)", border: "2px solid #b9dfd8", boxShadow: "var(--shadow-card)" }}>
+        <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: "#0f8578" }}>{editingId ? "Edit Task Type" : "New Task Type"}</p>
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="block text-xs font-medium mb-1" style={{ color: "var(--text-secondary)" }}>Name *</label>
@@ -136,7 +136,7 @@ function TasksTab() {
           </label>
           <div className="flex gap-2">
             <button onClick={cancel} className="px-3 py-1.5 rounded-lg text-sm" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>Cancel</button>
-            <button onClick={commit} disabled={!form.name.trim()} className="px-4 py-1.5 rounded-lg text-sm font-medium text-white disabled:opacity-40" style={{ backgroundColor: "#4f46e5" }}>{editingId ? "Update" : "Add Type"}</button>
+            <button onClick={commit} disabled={!form.name.trim()} className="px-4 py-1.5 rounded-lg text-sm font-medium text-white disabled:opacity-40" style={{ backgroundColor: "#0f8578" }}>{editingId ? "Update" : "Add Type"}</button>
           </div>
         </div>
       </div>
@@ -168,7 +168,7 @@ function TasksTab() {
         <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)" }}>
           <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Task Types
             <span className="ml-2 text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>{s.types.length}</span></p>
-          {!showAdd && <button onClick={startAdd} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-white" style={{ backgroundColor: "#4f46e5" }}><Plus className="w-3.5 h-3.5" /> Add Type</button>}
+          {!showAdd && <button onClick={startAdd} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-white" style={{ backgroundColor: "#0f8578" }}><Plus className="w-3.5 h-3.5" /> Add Type</button>}
         </div>
         <div className="grid px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider"
           style={{ gridTemplateColumns: "auto 2fr 1.4fr 0.8fr auto", gap: "0.75rem", color: "var(--text-muted)", borderBottom: "1px solid var(--border)" }}>
@@ -227,7 +227,7 @@ function TasksTab() {
               return (
                 <button key={opt.key} onClick={() => setField("defaultAssignee", opt.key)}
                   className="flex-1 py-2 rounded-lg text-sm font-medium transition-all"
-                  style={{ border: `1.5px solid ${active ? "#4f46e5" : "var(--border)"}`, backgroundColor: active ? "#e0e7ff" : "var(--bg-surface-2)", color: active ? "#4f46e5" : "var(--text-secondary)" }}>
+                  style={{ border: `1.5px solid ${active ? "#0f8578" : "var(--border)"}`, backgroundColor: active ? "#d3ebe6" : "var(--bg-surface-2)", color: active ? "#0f8578" : "var(--text-secondary)" }}>
                   {opt.label}
                 </button>
               );
@@ -365,7 +365,7 @@ export default function TasksSettingsSection() {
               className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-medium transition-colors"
               style={{
                 backgroundColor: active ? "var(--bg-surface)" : "transparent",
-                color: active ? "#4f46e5" : "var(--text-secondary)",
+                color: active ? "#0f8578" : "var(--text-secondary)",
                 boxShadow: active ? "var(--shadow-card)" : "none",
               }}>
               <t.icon className="w-3.5 h-3.5" /> {t.label}

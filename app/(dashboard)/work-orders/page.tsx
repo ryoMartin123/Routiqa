@@ -67,7 +67,7 @@ export default function WorkOrdersPage() {
   // Summary metrics — respect the active context
   const woMissingPhotos = (woId: string) => getFiles({ workOrderId: woId }).every(f => f.fileType !== "image");
   const summaryCards: SummaryCard[] = [
-    { icon: ClipboardList, label: "Open Work Orders",      value: String(contextFiltered.filter(({ wo }) => wo.status !== "completed").length),                            sub: "Pending + in progress", iconColor: "#4f46e5" },
+    { icon: ClipboardList, label: "Open Work Orders",      value: String(contextFiltered.filter(({ wo }) => wo.status !== "completed").length),                            sub: "Pending + in progress", iconColor: "#0f8578" },
     { icon: CalendarClock, label: "Assigned Today",        value: String(contextFiltered.filter(({ job }) => job!.scheduledDate === TODAY).length),                         sub: "Scheduled today",       iconColor: "#0891b2" },
     { icon: ImageOff,      label: "Missing Required Photos",value: String(contextFiltered.filter(({ wo }) => wo.status !== "pending" && woMissingPhotos(wo.id)).length),     sub: "Active without photos", iconColor: "#f59e0b" },
     { icon: CheckCircle2,  label: "Ready for Review",      value: String(contextFiltered.filter(({ wo }) => wo.status === "completed").length),                             sub: "Awaiting sign-off",     iconColor: "#10b981" },
@@ -83,7 +83,7 @@ export default function WorkOrdersPage() {
         <ModuleViewToggle view={moduleView} onChange={setModuleView} />
         <div className="flex-1 flex justify-end">
           <button onClick={() => setWizardOpen(true)}
-            className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-3 py-2 rounded-lg transition-colors">
+            className="flex items-center gap-1.5 bg-[#0f8578] hover:bg-[#0c6b60] text-white text-sm font-medium px-3 py-2 rounded-lg transition-colors">
             <Plus className="w-4 h-4" /> New Work Order
           </button>
         </div>
@@ -172,7 +172,7 @@ export default function WorkOrdersPage() {
                 {/* Assigned */}
                 {job && (
                   <div className="flex items-center gap-1.5">
-                    <div className="w-5 h-5 rounded-full bg-[#e5e0db] flex items-center justify-center text-[8px] font-bold text-[#5c5545] shrink-0">
+                    <div className="w-5 h-5 rounded-full bg-[var(--copper-soft-bg)] flex items-center justify-center text-[8px] font-bold text-[var(--copper-text)] shrink-0">
                       {job.assignedToInitials}
                     </div>
                     <span className="text-sm truncate" style={{ color: "var(--text-secondary)" }}>{job.assignedTo}</span>

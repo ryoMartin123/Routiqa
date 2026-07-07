@@ -42,7 +42,7 @@ function useGreeting() {
 // ─── Context badge ────────────────────────────────────────
 const CTX_COLORS: Record<ContextLevel, { bg: string; color: string }> = {
   org:          { bg: "#ede9fe", color: "#5b21b6" },
-  company:      { bg: "#e0e7ff", color: "#3730a3" },
+  company:      { bg: "#d3ebe6", color: "#0a5c53" },
   location:     { bg: "#dbeafe", color: "#1e40af" },
   service_area: { bg: "#d1fae5", color: "#065f46" },
 };
@@ -391,7 +391,7 @@ export default function DashboardPage() {
   return (
     <div className="p-6 space-y-4 transition-colors duration-300"
       style={customizing
-        ? { backgroundColor: "rgba(79,70,229,0.018)" }
+        ? { backgroundColor: "rgba(15,133,120,0.018)" }
         : {}}>
 
       {/* ── Page header ────────────────────────────────── */}

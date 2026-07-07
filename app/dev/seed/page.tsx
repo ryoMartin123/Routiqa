@@ -170,7 +170,7 @@ export default function DevSeedPage() {
           {status === "skipped" && `Already seeded (${total} sample records present).`}
         </p>
         {status === "idle" && (
-          <button onClick={() => seed(false)} className="mt-4 px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium">
+          <button onClick={() => seed(false)} className="mt-4 px-4 py-2 rounded-lg bg-[#0f8578] text-white text-sm font-medium">
             Seed sample data
           </button>
         )}

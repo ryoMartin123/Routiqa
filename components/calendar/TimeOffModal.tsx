@@ -53,7 +53,7 @@ export default function TimeOffModal({ technicians, defaultDate, onClose, onSave
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: "1px solid var(--border)" }}>
           <div className="flex items-center gap-2">
-            <CalendarClock className="w-4 h-4" style={{ color: "#4f46e5" }} />
+            <CalendarClock className="w-4 h-4" style={{ color: "#0f8578" }} />
             <p className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>Add Time Off</p>
           </div>
           <button onClick={onClose} style={{ color: "var(--text-muted)" }}><X className="w-4 h-4" /></button>
@@ -82,7 +82,7 @@ export default function TimeOffModal({ technicians, defaultDate, onClose, onSave
               </Field>
 
               <label className="flex items-center gap-2 cursor-pointer select-none">
-                <input type="checkbox" checked={allDay} onChange={e => setAllDay(e.target.checked)} className="accent-indigo-600" />
+                <input type="checkbox" checked={allDay} onChange={e => setAllDay(e.target.checked)} className="accent-[#0f8578]" />
                 <span className="text-sm" style={{ color: "var(--text-secondary)" }}>All day</span>
               </label>
 
@@ -112,7 +112,7 @@ export default function TimeOffModal({ technicians, defaultDate, onClose, onSave
         <div className="px-6 py-4 flex justify-end gap-2" style={{ borderTop: "1px solid var(--border)" }}>
           <button onClick={onClose} className="px-3 py-2 rounded-lg text-sm" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>Cancel</button>
           <button onClick={save} disabled={!canSave}
-            className="px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-40" style={{ backgroundColor: "#4f46e5" }}>
+            className="px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-40" style={{ backgroundColor: "#0f8578" }}>
             Add Time Off
           </button>
         </div>

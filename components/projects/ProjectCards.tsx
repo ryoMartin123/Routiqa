@@ -83,7 +83,7 @@ function Card({ project: p, stagesByKey, onOpen }: { project: Project; stagesByK
             <span>{completed}/{total} {unit}</span><span className="font-semibold" style={{ color: pct === 100 ? "#10b981" : "var(--text-secondary)" }}>{pct}%</span>
           </div>
           <div className="h-1.5 rounded-full" style={{ backgroundColor: "var(--bg-input)" }}>
-            <div className="h-1.5 rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: pct === 100 ? "#10b981" : stage?.color ?? "#6366f1" }} />
+            <div className="h-1.5 rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: pct === 100 ? "#10b981" : stage?.color ?? "#239c8d" }} />
           </div>
         </div>
 
@@ -112,7 +112,7 @@ function Card({ project: p, stagesByKey, onOpen }: { project: Project; stagesByK
         <div className="flex items-center justify-between mt-3 pt-3" style={{ borderTop: "1px solid var(--border)" }}>
           <div className="flex -space-x-1.5">
             {team.slice(0, 3).map((n, i) => (
-              <span key={n} title={n} className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-bold text-white" style={{ backgroundColor: ["#6366f1", "#0ea5e9", "#10b981"][i % 3], boxShadow: "0 0 0 2px var(--bg-surface)" }}>{initials(n)}</span>
+              <span key={n} title={n} className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-bold text-white" style={{ backgroundColor: ["#239c8d", "#0ea5e9", "#10b981"][i % 3], boxShadow: "0 0 0 2px var(--bg-surface)" }}>{initials(n)}</span>
             ))}
             {team.length > 3 && <span className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-bold" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)", boxShadow: "0 0 0 2px var(--bg-surface)" }}>+{team.length - 3}</span>}
             {team.length === 0 && <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>Unassigned</span>}

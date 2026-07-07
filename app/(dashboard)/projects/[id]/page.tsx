@@ -42,8 +42,8 @@ function jobHrefFromProject(jobId: string, projectId: string, projectName: strin
 // Materials & Vendors (tinted circular + chip, no heavy fill).
 function MiniAction({ onClick, children }: { onClick: () => void; children: React.ReactNode }) {
   return (
-    <button onClick={onClick} className="group flex items-center gap-1.5 text-xs font-medium transition-colors" style={{ color: "#4f46e5" }}>
-      <span className="w-4 h-4 rounded-full flex items-center justify-center transition-all group-hover:brightness-95" style={{ backgroundColor: "#4f46e51a" }}><Plus className="w-3 h-3" /></span>
+    <button onClick={onClick} className="group flex items-center gap-1.5 text-xs font-medium transition-colors" style={{ color: "#0f8578" }}>
+      <span className="w-4 h-4 rounded-full flex items-center justify-center transition-all group-hover:brightness-95" style={{ backgroundColor: "#0f85781a" }}><Plus className="w-3 h-3" /></span>
       {children}
     </button>
   );
@@ -81,7 +81,7 @@ function WorkflowSummary({ projectId, onOpenMap }: { projectId: string; onOpenMa
           <div className="flex items-center gap-2 mt-2">
             <SegmentedProgress className="flex-1" segments={Array.from({ length: prog.total }, (_, i) => ({
               filled: i < prog.done,
-              color: allDone ? "#10b981" : "#4f46e5",
+              color: allDone ? "#10b981" : "#0f8578",
               current: !allDone && i === prog.done,
             }))} />
             <span className="text-[10px] shrink-0" style={{ color: "var(--text-muted)" }}>{prog.done}/{prog.total} · {prog.pct}%</span>

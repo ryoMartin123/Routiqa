@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 
 export function activityMeta(type: string): { icon: React.ElementType; color: string } {
-  if (type.startsWith("job") || type.startsWith("work_order")) return { icon: Briefcase, color: "#6366f1" };
+  if (type.startsWith("job") || type.startsWith("work_order")) return { icon: Briefcase, color: "#239c8d" };
   if (type.startsWith("lead")) return { icon: UserPlus, color: "#f59e0b" };
   if (type.startsWith("quote")) return { icon: FileText, color: "#8b5cf6" };
   if (type.startsWith("invoice") || type.startsWith("payment")) return { icon: Receipt, color: "#10b981" };
@@ -18,7 +18,7 @@ export function activityMeta(type: string): { icon: React.ElementType; color: st
   if (type.startsWith("sms")) return { icon: MessageSquare, color: "#3b82f6" };
   if (type.startsWith("call")) return { icon: Phone, color: "#10b981" };
   if (type.startsWith("task")) return { icon: CheckSquare, color: "#f59e0b" };
-  return { icon: Users, color: "#6366f1" };
+  return { icon: Users, color: "#239c8d" };
 }
 
 export const activityLabel = (type: string) =>

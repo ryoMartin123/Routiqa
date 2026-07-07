@@ -50,7 +50,7 @@ function Toggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void 
   return (
     <button onClick={() => onChange(!on)} role="switch" aria-checked={on}
       className="relative w-8 h-4 rounded-full transition-colors shrink-0"
-      style={{ backgroundColor: on ? "#4f46e5" : "var(--bg-input)", border: "1px solid var(--border)" }}>
+      style={{ backgroundColor: on ? "#0f8578" : "var(--bg-input)", border: "1px solid var(--border)" }}>
       <span className="absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white shadow transition-transform"
         style={{ transform: on ? "translateX(16px)" : "translateX(0)" }} />
     </button>
@@ -121,8 +121,8 @@ function SimpleCrud<T extends { id: string; active: boolean; order: number }>({
   function Form() {
     if (!draft) return null;
     return (
-      <div className="rounded-xl p-4 space-y-3" style={{ backgroundColor: "var(--bg-surface)", border: "2px solid #c7d2fe", boxShadow: "var(--shadow-card)" }}>
-        <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: "#4f46e5" }}>{adding ? `New ${title}` : `Edit ${title}`}</p>
+      <div className="rounded-xl p-4 space-y-3" style={{ backgroundColor: "var(--bg-surface)", border: "2px solid #b9dfd8", boxShadow: "var(--shadow-card)" }}>
+        <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: "#0f8578" }}>{adding ? `New ${title}` : `Edit ${title}`}</p>
         <div className="grid grid-cols-2 gap-3">
           {fields.map(f => (
             <div key={String(f.key)} className={f.full || f.type === "textarea" ? "col-span-2" : ""}>
@@ -144,7 +144,7 @@ function SimpleCrud<T extends { id: string; active: boolean; order: number }>({
         </div>
         <div className="flex items-center justify-end gap-2 pt-1">
           <button onClick={cancel} className="px-3 py-1.5 rounded-lg text-sm cursor-pointer" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>Cancel</button>
-          <button onClick={commit} className="px-4 py-1.5 rounded-lg text-sm font-medium text-white cursor-pointer" style={{ backgroundColor: "#4f46e5" }}>{adding ? "Add" : "Update"}</button>
+          <button onClick={commit} className="px-4 py-1.5 rounded-lg text-sm font-medium text-white cursor-pointer" style={{ backgroundColor: "#0f8578" }}>{adding ? "Add" : "Update"}</button>
         </div>
       </div>
     );
@@ -159,7 +159,7 @@ function SimpleCrud<T extends { id: string; active: boolean; order: number }>({
             <span className="ml-2 text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>{items.length}</span></p>
           <div className="flex items-center gap-2">
             {items.length > 0 && <SearchInput value={query} onChange={setQuery} />}
-            {!adding && <button onClick={startAdd} title={`Add ${title}`} aria-label={`Add ${title}`} className="flex items-center justify-center p-1.5 rounded-lg text-white cursor-pointer transition hover:brightness-110" style={{ backgroundColor: "#4f46e5" }}><Plus className="w-4 h-4" /></button>}
+            {!adding && <button onClick={startAdd} title={`Add ${title}`} aria-label={`Add ${title}`} className="flex items-center justify-center p-1.5 rounded-lg text-white cursor-pointer transition hover:brightness-110" style={{ backgroundColor: "#0f8578" }}><Plus className="w-4 h-4" /></button>}
           </div>
         </div>
         {items.length === 0 ? (
@@ -190,7 +190,7 @@ function SimpleCrud<T extends { id: string; active: boolean; order: number }>({
 // ═══ Agreement (plan) templates + numbering ═══════════════
 const TMPL_STATUS: Record<string, { bg: string; color: string }> = {
   active:   { bg: "#d1fae5", color: "#065f46" },
-  draft:    { bg: "#e0e7ff", color: "#3730a3" },
+  draft:    { bg: "#d3ebe6", color: "#0a5c53" },
   archived: { bg: "var(--bg-input)", color: "var(--text-muted)" },
 };
 
@@ -230,7 +230,7 @@ function TemplatesTab({ register }: { register: Saver }) {
             <span className="ml-2 text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>{items.length}</span></p>
           <div className="flex items-center gap-2">
             {items.length > 0 && <SearchInput value={query} onChange={setQuery} />}
-            <button onClick={startAdd} title="Add Template" aria-label="Add Template" className="flex items-center justify-center p-1.5 rounded-lg text-white cursor-pointer transition hover:brightness-110" style={{ backgroundColor: "#4f46e5" }}><Plus className="w-4 h-4" /></button>
+            <button onClick={startAdd} title="Add Template" aria-label="Add Template" className="flex items-center justify-center p-1.5 rounded-lg text-white cursor-pointer transition hover:brightness-110" style={{ backgroundColor: "#0f8578" }}><Plus className="w-4 h-4" /></button>
           </div>
         </div>
         <div className="grid px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider"
@@ -259,7 +259,7 @@ function TemplatesTab({ register }: { register: Saver }) {
 
       {/* Numbering */}
       <div className="rounded-xl p-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
-        <div className="flex items-center gap-2 mb-3"><Hash className="w-3.5 h-3.5" style={{ color: "#4f46e5" }} /><p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Agreement Numbering</p></div>
+        <div className="flex items-center gap-2 mb-3"><Hash className="w-3.5 h-3.5" style={{ color: "#0f8578" }} /><p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Agreement Numbering</p></div>
         <div className="grid grid-cols-3 gap-3">
           <div><label className="block text-xs font-medium mb-1" style={{ color: "var(--text-secondary)" }}>Prefix</label>
             <input value={numbering.prefix} onChange={e => { setNumbering(n => ({ ...n, prefix: e.target.value })); mark(); }} className="w-full rounded-lg px-3 py-2 text-sm outline-none" style={inputStyle} /></div>
@@ -307,7 +307,7 @@ function SchedulesList({ register }: { register: Saver }) {
             <span className="ml-2 text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>{items.length}</span></p>
           <div className="flex items-center gap-2">
             {items.length > 0 && <SearchInput value={query} onChange={setQuery} />}
-            <button onClick={startAdd} title="Add Schedule Template" aria-label="Add Schedule Template" className="flex items-center justify-center p-1.5 rounded-lg text-white cursor-pointer transition hover:brightness-110" style={{ backgroundColor: "#4f46e5" }}><Plus className="w-4 h-4" /></button>
+            <button onClick={startAdd} title="Add Schedule Template" aria-label="Add Schedule Template" className="flex items-center justify-center p-1.5 rounded-lg text-white cursor-pointer transition hover:brightness-110" style={{ backgroundColor: "#0f8578" }}><Plus className="w-4 h-4" /></button>
           </div>
         </div>
         <div className="grid px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider"
@@ -368,7 +368,7 @@ function ScopesList({ register }: { register: Saver }) {
             <span className="ml-2 text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>{items.length}</span></p>
           <div className="flex items-center gap-2">
             {items.length > 0 && <SearchInput value={query} onChange={setQuery} />}
-            <button onClick={startAdd} title="Add Scope Template" aria-label="Add Scope Template" className="flex items-center justify-center p-1.5 rounded-lg text-white cursor-pointer transition hover:brightness-110" style={{ backgroundColor: "#4f46e5" }}><Plus className="w-4 h-4" /></button>
+            <button onClick={startAdd} title="Add Scope Template" aria-label="Add Scope Template" className="flex items-center justify-center p-1.5 rounded-lg text-white cursor-pointer transition hover:brightness-110" style={{ backgroundColor: "#0f8578" }}><Plus className="w-4 h-4" /></button>
           </div>
         </div>
         <div className="grid px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider"
@@ -631,7 +631,7 @@ export default function AgreementsSettingsSection({ activeModule, onOpen, onBack
                 className="flex items-start gap-3 p-4 rounded-xl text-left w-full transition-all group hover:shadow-md cursor-pointer"
                 style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: "var(--bg-surface-2)" }}>
-                  <Icon className="w-4 h-4" style={{ color: "#4f46e5" }} />
+                  <Icon className="w-4 h-4" style={{ color: "#0f8578" }} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{m.label}</p>

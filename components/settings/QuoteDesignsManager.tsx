@@ -72,7 +72,7 @@ function DesignCard({ d, active, onUse, onPreview }: { d: QuoteDesign; active: b
         <div className="flex items-center gap-2 flex-wrap">
           <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{d.name}</p>
           {active && <span className="flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: "#d1fae5", color: "#065f46" }}><Check className="w-3 h-3" /> Active</span>}
-          {!active && d.isDefault && <span className="flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: "#e0e7ff", color: "#3730a3" }}><Star className="w-2.5 h-2.5" /> Default</span>}
+          {!active && d.isDefault && <span className="flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: "#d3ebe6", color: "#0a5c53" }}><Star className="w-2.5 h-2.5" /> Default</span>}
         </div>
         <div className="flex items-center gap-1.5 mt-2 flex-wrap">
           <Badge>{designFamilyLabel(d)}</Badge>

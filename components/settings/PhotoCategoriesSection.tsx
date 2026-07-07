@@ -13,7 +13,7 @@ function Toggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void 
   return (
     <button onClick={() => onChange(!on)} role="switch" aria-checked={on}
       className="relative w-8 h-4 rounded-full transition-colors shrink-0"
-      style={{ backgroundColor: on ? "#4f46e5" : "var(--bg-input)", border: "1px solid var(--border)" }}>
+      style={{ backgroundColor: on ? "#0f8578" : "var(--bg-input)", border: "1px solid var(--border)" }}>
       <span className="absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white shadow transition-transform"
         style={{ transform: on ? "translateX(16px)" : "translateX(0)" }} />
     </button>
@@ -74,8 +74,8 @@ export default function PhotoCategoriesSection() {
 
   function Form() {
     return (
-      <div className="rounded-xl p-4 space-y-3" style={{ backgroundColor: "var(--bg-surface)", border: "2px solid #c7d2fe", boxShadow: "var(--shadow-card)" }}>
-        <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: "#4f46e5" }}>{editingId ? "Edit Category" : "New Category"}</p>
+      <div className="rounded-xl p-4 space-y-3" style={{ backgroundColor: "var(--bg-surface)", border: "2px solid #b9dfd8", boxShadow: "var(--shadow-card)" }}>
+        <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: "#0f8578" }}>{editingId ? "Edit Category" : "New Category"}</p>
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="block text-xs font-medium mb-1" style={{ color: "var(--text-secondary)" }}>Name *</label>
@@ -110,7 +110,7 @@ export default function PhotoCategoriesSection() {
               return (
                 <button key={a} onClick={() => toggleApplies(a)}
                   className="text-xs px-2.5 py-1 rounded-lg transition-colors"
-                  style={{ backgroundColor: on ? "#4f46e5" : "var(--bg-surface-2)", color: on ? "#fff" : "var(--text-secondary)", border: `1px solid ${on ? "#4f46e5" : "var(--border-subtle)"}` }}>
+                  style={{ backgroundColor: on ? "#0f8578" : "var(--bg-surface-2)", color: on ? "#fff" : "var(--text-secondary)", border: `1px solid ${on ? "#0f8578" : "var(--border-subtle)"}` }}>
                   {a}
                 </button>
               );
@@ -124,7 +124,7 @@ export default function PhotoCategoriesSection() {
           </div>
           <div className="flex gap-2">
             <button onClick={cancel} className="px-3 py-1.5 rounded-lg text-sm" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>Cancel</button>
-            <button onClick={commit} disabled={!form.name.trim()} className="px-4 py-1.5 rounded-lg text-sm font-medium text-white disabled:opacity-40" style={{ backgroundColor: "#4f46e5" }}>{editingId ? "Update" : "Add Category"}</button>
+            <button onClick={commit} disabled={!form.name.trim()} className="px-4 py-1.5 rounded-lg text-sm font-medium text-white disabled:opacity-40" style={{ backgroundColor: "#0f8578" }}>{editingId ? "Update" : "Add Category"}</button>
           </div>
         </div>
       </div>
@@ -154,7 +154,7 @@ export default function PhotoCategoriesSection() {
         <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)" }}>
           <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Photo Categories
             <span className="ml-2 text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>{cats.length}</span></p>
-          {!showAdd && <button onClick={startAdd} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-white" style={{ backgroundColor: "#4f46e5" }}><Plus className="w-3.5 h-3.5" /> Add Category</button>}
+          {!showAdd && <button onClick={startAdd} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-white" style={{ backgroundColor: "#0f8578" }}><Plus className="w-3.5 h-3.5" /> Add Category</button>}
         </div>
         <div className="grid px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider"
           style={{ gridTemplateColumns: "auto 1.6fr 2.2fr 0.8fr 0.8fr auto", gap: "0.75rem", color: "var(--text-muted)", borderBottom: "1px solid var(--border)" }}>

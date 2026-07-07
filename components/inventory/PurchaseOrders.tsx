@@ -87,7 +87,7 @@ export default function PurchaseOrders() {
       {view === "overview" && (
         <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))" }}>
           <StatCard label="Open POs" value={String(getOpenPurchaseOrders().length)} hint="Active orders" icon={ShoppingCart} accent="#0ea5e9" />
-          <StatCard label="Awaiting Approval" value={String(pos.filter(p => p.status === "pending_approval").length)} hint="Placeholder" icon={Clock} accent="#6366f1" />
+          <StatCard label="Awaiting Approval" value={String(pos.filter(p => p.status === "pending_approval").length)} hint="Placeholder" icon={Clock} accent="#239c8d" />
           <StatCard label="Partially Received" value={String(getPartiallyReceivedPOs().length)} hint="In progress" icon={PackageCheck} accent={ACCENT} />
           <StatCard label="Overdue Deliveries" value={String(getOverduePOs().length)} hint="Past expected" icon={AlertTriangle} accent="#ef4444" />
         </div>

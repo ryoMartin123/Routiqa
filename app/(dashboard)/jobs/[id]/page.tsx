@@ -3,6 +3,7 @@
 import React, { use, useState, Suspense } from "react";
 import Link from "next/link";
 import RowArrow from "@/components/shared/RowArrow";
+import { pingSaved } from "@/components/shared/SavedPill";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, ArrowUpRight, CheckCircle, Circle, ChevronRight, Phone, MapPin, User, Clock, Calendar, DollarSign, Briefcase, AlertTriangle, ListChecks, Plus, Trash2, Ban, RotateCcw, Info, Repeat, Users, Check, Receipt, CircleDollarSign, Wallet } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -10,6 +11,7 @@ import { getJob, updateJob, deleteJob, getWorkOrder, getWorkOrderById, getWorkOr
 import { getAppointmentsForJob, VISIT_TYPE_CONFIG, type AppointmentStatus } from "@/lib/appointments/data";
 import { useDataVersion } from "@/lib/sync/useDataVersion";
 import ReturnVisitModal from "@/components/jobs/ReturnVisitModal";
+import MultiDayBookModal from "@/components/calendar/MultiDayBookModal";
 import { canAddVisit } from "@/lib/jobs/serviceCall";
 import WorkOrderWizard from "@/components/jobs/WorkOrderWizard";
 import JobPartsCard from "@/components/jobs/JobPartsCard";
@@ -68,8 +70,8 @@ function VisitsTab({ jobId, onSchedule }: { jobId: string; onSchedule: () => voi
     <div className="space-y-3">
       <div className="flex items-center justify-end gap-3">
         {canVisit && (
-          <button onClick={onSchedule} className="group inline-flex items-center gap-1.5 text-xs font-medium shrink-0 transition-colors" style={{ color: "#4f46e5" }}>
-            <span className="w-4 h-4 rounded-full flex items-center justify-center transition-all group-hover:brightness-95" style={{ backgroundColor: "#4f46e51a" }}><Repeat className="w-3 h-3" /></span>
+          <button onClick={onSchedule} className="group inline-flex items-center gap-1.5 text-xs font-medium shrink-0 transition-colors" style={{ color: "#0f8578" }}>
+            <span className="w-4 h-4 rounded-full flex items-center justify-center transition-all group-hover:brightness-95" style={{ backgroundColor: "#0f85781a" }}><Repeat className="w-3 h-3" /></span>
             Schedule return visit
           </button>
         )}
@@ -107,7 +109,7 @@ function VisitsTab({ jobId, onSchedule }: { jobId: string; onSchedule: () => voi
   );
 }
 
-const NOTE_COLORS: Record<JobNoteType, string> = { note: "#6366f1", call: "#10b981", email: "#3b82f6", visit: "#f59e0b" };
+const NOTE_COLORS: Record<JobNoteType, string> = { note: "#239c8d", call: "#10b981", email: "#3b82f6", visit: "#f59e0b" };
 
 // ─── Overview tab ─────────────────────────────────────────
 // Same shape as the Agreement / Customer overview tabs: a row of compact summary
@@ -345,8 +347,8 @@ function WorkOrderTab({ jobId }: { jobId: string }) {
       {wizard && <WorkOrderWizard preset={{ jobId }} onClose={() => setWizard(false)} onCreated={() => { setWizard(false); setWoVersion(v => v + 1); }} />}
 
       <div className="flex items-center justify-end gap-3">
-        <button onClick={() => setWizard(true)} className="group inline-flex items-center gap-1.5 text-xs font-medium shrink-0 transition-colors" style={{ color: "#4f46e5" }}>
-          <span className="w-4 h-4 rounded-full flex items-center justify-center transition-all group-hover:brightness-95" style={{ backgroundColor: "#4f46e51a" }}><Plus className="w-3 h-3" /></span>
+        <button onClick={() => setWizard(true)} className="group inline-flex items-center gap-1.5 text-xs font-medium shrink-0 transition-colors" style={{ color: "#0f8578" }}>
+          <span className="w-4 h-4 rounded-full flex items-center justify-center transition-all group-hover:brightness-95" style={{ backgroundColor: "#0f85781a" }}><Plus className="w-3 h-3" /></span>
           New work order
         </button>
       </div>
@@ -394,7 +396,6 @@ function StubContent({ label }: { label: string }) {
 // Collect a down payment up front — a job-level deposit invoice not tied to any
 // captured work. Once paid, the final ledger invoice credits it automatically.
 function JobDepositControl({ jobId }: { jobId: string }) {
-  const router = useRouter();
   const rev = useDataVersion();
   const { fieldVisible } = usePermissions();
   const [amt, setAmt] = useState("");
@@ -407,7 +408,7 @@ function JobDepositControl({ jobId }: { jobId: string }) {
     const n = parseFloat(amt);
     if (!n || n <= 0) return;
     const inv = createDepositInvoice(jobId, n);
-    if (inv) router.push(`/invoices/${inv.id}`);
+    if (inv) { pingSaved(`Deposit invoice created — ${fmt(n)}`); setAmt(""); }
   }
 
   return (
@@ -494,8 +495,8 @@ function JobLedgerCard({ jobId }: { jobId: string }) {
                 <div key={l.id} className="flex items-center gap-2.5 px-4 py-2" style={{ borderTop: (i || multiWo) ? "1px solid var(--border-subtle)" : "1px solid var(--border)" }}>
                   <button onClick={() => toggle(l.id)} aria-label={sel ? "Exclude" : "Include"}
                     className="w-5 h-5 rounded flex items-center justify-center shrink-0 transition-colors"
-                    style={{ border: `1.5px solid ${sel ? "#c9c0b2" : "var(--border)"}`, backgroundColor: sel ? "#E5E0DB" : "transparent" }}>
-                    {sel && <Check className="w-3 h-3" style={{ color: "#5c5545" }} />}
+                    style={{ border: `1.5px solid ${sel ? "var(--copper-soft-border)" : "var(--border)"}`, backgroundColor: sel ? "var(--copper-soft-bg)" : "transparent" }}>
+                    {sel && <Check className="w-3 h-3" style={{ color: "var(--copper-text)" }} />}
                   </button>
                   <span className="text-sm truncate flex-1 min-w-0" style={{ color: "var(--text-primary)" }}>{l.description}</span>
                   <span className="text-xs tabular-nums shrink-0" style={{ color: "var(--text-muted)" }}>{l.qty} × {fmt(l.unitPrice)}</span>
@@ -625,7 +626,7 @@ function JobFinancialsTab({ jobId }: { jobId: string }) {
           const s = QUOTE_STATUS_STYLE[q.status];
           return (
             <Link key={q.id} href={`/quotes/${q.id}`}
-              className="group flex items-center gap-4 px-4 py-3 hover:bg-[var(--bg-surface-2)] transition-colors"
+              className="relative group flex items-center gap-4 px-4 py-3 hover:bg-[var(--bg-surface-2)] transition-colors"
               style={{ borderBottom: i < quotes.length - 1 ? "1px solid var(--border)" : "none", textDecoration: "none" }}>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-mono font-medium" style={{ color: "var(--text-primary)" }}>{q.quoteNumber}</p>
@@ -647,7 +648,7 @@ function JobFinancialsTab({ jobId }: { jobId: string }) {
           const s = INVOICE_STATUS_STYLE[inv.status];
           return (
             <Link key={inv.id} href={`/invoices/${inv.id}`}
-              className="group flex items-center gap-4 px-4 py-3 hover:bg-[var(--bg-surface-2)] transition-colors"
+              className="relative group flex items-center gap-4 px-4 py-3 hover:bg-[var(--bg-surface-2)] transition-colors"
               style={{ borderBottom: i < invoices.length - 1 ? "1px solid var(--border)" : "none", textDecoration: "none" }}>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-mono font-medium flex items-center gap-1.5" style={{ color: "var(--text-primary)" }}>
@@ -801,6 +802,7 @@ function JobDetailContent({ params }: { params: Promise<{ id: string }> }) {
   const [job, setJob] = useState(() => getJob(id));
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [returnOpen, setReturnOpen] = useState(false);
+  const [multiDayOpen, setMultiDayOpen] = useState(false);
   const refresh = () => setJob(getJob(id));
 
   // Status is driven elsewhere: scheduling on the dispatch board, and the field
@@ -862,6 +864,8 @@ function JobDetailContent({ params }: { params: Promise<{ id: string }> }) {
             <ActionsMenu actions={[
               canVisit &&
                 { label: "Schedule return visit", icon: Repeat, onClick: () => setReturnOpen(true) },
+              canVisit &&
+                { label: "Book multi-day visits", icon: Calendar, onClick: () => setMultiDayOpen(true) },
               job.status !== "canceled" && !["completed", "invoiced", "closed", "no_show"].includes(job.status) &&
                 { label: "Reschedule", icon: Calendar, onClick: rescheduleJob },
               job.status === "canceled"
@@ -928,6 +932,7 @@ function JobDetailContent({ params }: { params: Promise<{ id: string }> }) {
       )}
 
       {returnOpen && <ReturnVisitModal job={job} onClose={() => setReturnOpen(false)} onScheduled={() => { refresh(); setTab("Visits"); }} />}
+      {multiDayOpen && <MultiDayBookModal jobId={id} onClose={() => setMultiDayOpen(false)} onBooked={() => { refresh(); setTab("Visits"); }} />}
     </div>
   );
 }

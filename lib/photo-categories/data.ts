@@ -22,13 +22,13 @@ export const APPLIES_TO_OPTIONS: AppliesTo[] =
   ["Customer", "Property", "Lead", "Job", "Project", "Work Order", "Agreement", "Equipment"];
 
 export const PHOTO_CAT_COLORS = [
-  "#6366f1", "#3b82f6", "#0891b2", "#8b5cf6",
+  "#239c8d", "#3b82f6", "#0891b2", "#8b5cf6",
   "#f59e0b", "#ec4899", "#10b981", "#ef4444", "#6b7280",
 ];
 
 // ─── Default general categories ───────────────────────────
 const DEFAULTS: PhotoCategory[] = [
-  { id: "pc-1",  name: "Before",            key: "before",            description: "Condition before work begins",  color: "#6366f1", appliesTo: ["Job", "Work Order"],            requiredByDefault: true,  active: true, order: 1 },
+  { id: "pc-1",  name: "Before",            key: "before",            description: "Condition before work begins",  color: "#239c8d", appliesTo: ["Job", "Work Order"],            requiredByDefault: true,  active: true, order: 1 },
   { id: "pc-2",  name: "During",            key: "during",            description: "Work in progress",              color: "#3b82f6", appliesTo: ["Job", "Work Order"],            requiredByDefault: false, active: true, order: 2 },
   { id: "pc-3",  name: "After",             key: "after",             description: "Condition after work",           color: "#10b981", appliesTo: ["Job", "Work Order"],            requiredByDefault: true,  active: true, order: 3 },
   { id: "pc-4",  name: "Issue Found",       key: "issue_found",       description: "Problems discovered on site",    color: "#ef4444", appliesTo: ["Job", "Work Order"],            requiredByDefault: false, active: true, order: 4 },

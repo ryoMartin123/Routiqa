@@ -24,7 +24,7 @@ import {
   type DocStatus, type AssignmentStatus, type ProjectVendorStatus,
 } from "@/lib/inventory/data";
 
-const ACCENT = "#4f46e5"; // CRM indigo
+const ACCENT = "#0f8578"; // CRM indigo
 const money = (n?: number) => (n != null ? `$${n.toLocaleString()}` : "—");
 const inp = "w-full rounded-lg px-3 py-2 text-sm outline-none";
 const inpStyle: React.CSSProperties = { border: "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)", color: "var(--text-primary)" };

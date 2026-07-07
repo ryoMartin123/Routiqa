@@ -102,7 +102,7 @@ export default function BusinessStructureManager() {
       {/* Overview — KPI cards (kept off the main Structure view) */}
       {view === "overview" && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 shrink-0">
-          <StatCard label="Companies" value={String(activeCompanies)} hint="Active" icon={Building2} accent="#6366f1" />
+          <StatCard label="Companies" value={String(activeCompanies)} hint="Active" icon={Building2} accent="#239c8d" />
           <StatCard label="Locations" value={String(activeLocations)} hint="Active" icon={MapPin} accent="#0ea5e9" />
           <StatCard label="Service Areas" value={String(activeAreas)} hint="Active" icon={Map} accent="#0d9488" />
           <StatCard label="Users Assigned" value={String(assignedUserCount())} hint="Across structure" icon={Users} accent="#f59e0b" />
@@ -133,7 +133,7 @@ export default function BusinessStructureManager() {
                 return (
                   <div key={co.id}>
                     <TreeRow
-                      depth={1} icon={Building2} name={co.name} accent="#6366f1"
+                      depth={1} icon={Building2} name={co.name} accent="#239c8d"
                       active={co.status === "active"}
                       hasChildren={coLocs.length > 0}
                       expanded={expanded.has(coKey)}

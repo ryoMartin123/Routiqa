@@ -91,7 +91,7 @@ export default function ScopeSwitcherModal({ sectionLayers, onClose }: { section
         </div>
 
         <div className="px-6 py-4 flex justify-end" style={{ borderTop: "1px solid var(--border)" }}>
-          <button onClick={onClose} className="px-4 py-2 rounded-lg text-sm font-medium bg-indigo-600 hover:bg-indigo-700 text-white transition-colors">Done</button>
+          <button onClick={onClose} className="px-4 py-2 rounded-lg text-sm font-medium bg-[#0f8578] hover:bg-[#0c6b60] text-white transition-colors">Done</button>
         </div>
       </div>
     </div>

@@ -350,7 +350,7 @@ export default function DocumentEditor({ scope, accountName, authorName = "Ryo M
         <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Untitled document"
           className="flex-1 min-w-0 bg-transparent text-sm font-semibold outline-none" style={{ color: "var(--text-primary)" }} autoFocus />
         <button onClick={save} disabled={!hasContent}
-          className="px-4 py-1.5 rounded-lg text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 transition-colors">
+          className="px-4 py-1.5 rounded-lg text-sm font-medium text-white bg-[#0f8578] hover:bg-[#0c6b60] disabled:opacity-40 transition-colors">
           Save as file
         </button>
       </header>

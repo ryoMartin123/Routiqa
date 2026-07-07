@@ -8,7 +8,7 @@ import { ChevronRight, MapPin } from "lucide-react";
 import type { Job, JobStatus } from "@/lib/jobs/data";
 import { STATUS_META } from "@/lib/mobile/data";
 
-export const ACCENT = "#4f46e5";
+export const ACCENT = "#0f8578";
 export const prettyType = (t: string) => t.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
 export const areaOf = (address?: string) => address?.split(",")[1]?.trim() || "";
 

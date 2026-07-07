@@ -24,7 +24,7 @@ const FILTERS: { key: StatusFilter; label: string }[] = [
   { key: "overdue", label: "Overdue" }, { key: "completed", label: "Completed" },
 ];
 
-export default function RecordTasks({ type, id, accent = "#4f46e5" }: { type: LinkType; id: string; accent?: string }) {
+export default function RecordTasks({ type, id, accent = "#0f8578" }: { type: LinkType; id: string; accent?: string }) {
   const [tick, setTick] = useState(0);
   const [creating, setCreating] = useState(false);
   const [completingId, setCompletingId] = useState<string | null>(null);
@@ -76,7 +76,7 @@ export default function RecordTasks({ type, id, accent = "#4f46e5" }: { type: Li
             return (
               <button key={f.key} onClick={() => setFilter(f.key)}
                 className="px-3 py-1.5 text-xs font-medium transition-colors"
-                style={{ backgroundColor: active ? "#4f46e5" : "var(--bg-surface)", color: active ? "#fff" : "var(--text-secondary)" }}>
+                style={{ backgroundColor: active ? "#0f8578" : "var(--bg-surface)", color: active ? "#fff" : "var(--text-secondary)" }}>
                 {f.label}<span className="ml-1.5 opacity-60">{counts[f.key]}</span>
               </button>
             );

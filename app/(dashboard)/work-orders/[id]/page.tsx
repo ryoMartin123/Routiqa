@@ -98,7 +98,7 @@ export default function WorkOrderDetailPage(props: { params: Promise<{ id: strin
   // Project / Agreement activity tabs (created → visits → completion → job status).
   const fmtDT = (iso: string) => new Date(iso).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
   const activity: ActivityEntry[] = [
-    { icon: ClipboardList, color: "#4f46e5", label: "Created", title: wo.title, meta: job ? job.title : undefined, user: job?.assignedTo },
+    { icon: ClipboardList, color: "#0f8578", label: "Created", title: wo.title, meta: job ? job.title : undefined, user: job?.assignedTo },
     ...visits.map(v => {
       const as = APPT_STATUS[v.status];
       const vt = v.visitType ? VISIT_TYPE_CONFIG[v.visitType] : undefined;
@@ -146,7 +146,7 @@ export default function WorkOrderDetailPage(props: { params: Promise<{ id: strin
           </div>
           <div className="flex items-center gap-2 shrink-0">
             {wo.status === "pending" && (
-              <button onClick={() => setStatus("in_progress")} className="inline-flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-lg text-white" style={{ backgroundColor: "#4f46e5" }}>
+              <button onClick={() => setStatus("in_progress")} className="inline-flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-lg text-white" style={{ backgroundColor: "#0f8578" }}>
                 <Play className="w-4 h-4" /> Start work
               </button>
             )}
@@ -354,8 +354,8 @@ function MiniKpi({ icon: Icon, label, value }: { icon: IconType; label: string; 
 // project detail page (tinted circular Plus + chip, no heavy fill).
 function MiniAction({ onClick, children }: { onClick: () => void; children: React.ReactNode }) {
   return (
-    <button onClick={onClick} className="group flex items-center gap-1.5 text-xs font-medium transition-colors" style={{ color: "#4f46e5" }}>
-      <span className="w-4 h-4 rounded-full flex items-center justify-center transition-all group-hover:brightness-95" style={{ backgroundColor: "#4f46e51a" }}><Plus className="w-3 h-3" /></span>
+    <button onClick={onClick} className="group flex items-center gap-1.5 text-xs font-medium transition-colors" style={{ color: "#0f8578" }}>
+      <span className="w-4 h-4 rounded-full flex items-center justify-center transition-all group-hover:brightness-95" style={{ backgroundColor: "#0f85781a" }}><Plus className="w-3 h-3" /></span>
       {children}
     </button>
   );
@@ -518,9 +518,9 @@ function ChecklistStep({ item, onToggle, onPatch }: {
                   <button key={o} onClick={() => { const next = on ? arrVal.filter(x => x !== o) : [...arrVal, o]; answer(next, next.length > 0); }}
                     className="px-2.5 py-1 rounded-lg text-xs font-medium transition-all"
                     style={{
-                      border: `1.5px solid ${on ? "#c9c0b2" : "var(--border)"}`,
-                      backgroundColor: on ? "#E5E0DB" : "var(--bg-surface-2)",
-                      color: on ? "#5c5545" : "var(--text-secondary)",
+                      border: `1.5px solid ${on ? "var(--copper-soft-border)" : "var(--border)"}`,
+                      backgroundColor: on ? "var(--copper-soft-bg)" : "var(--bg-surface-2)",
+                      color: on ? "var(--copper-text)" : "var(--text-secondary)",
                     }}>{o}</button>
                 );
               })}

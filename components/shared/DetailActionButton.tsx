@@ -7,7 +7,7 @@
 
 import { Plus } from "lucide-react";
 
-const ACCENT = "#4f46e5";
+const ACCENT = "#0f8578";
 
 export default function DetailActionButton({ onClick, disabled, icon: Icon = Plus, active = false, children }: {
   onClick?: () => void;

@@ -1,7 +1,8 @@
 @import "tailwindcss";
 
 @theme {
-  --font-family-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  /* Tailwind default sans → Barlow (preflight picks this up app-wide) */
+  --font-sans: var(--font-barlow), ui-sans-serif, system-ui, sans-serif;
 
   /* Container corner radii — dialed down a notch from Tailwind's defaults for a
      tighter, more professional B2B feel. Cascades to every rounded-lg/xl/2xl/3xl
@@ -26,6 +27,17 @@ label[for] {
 
 /* ─── Light theme (default) ─────────────────────────────── */
 :root {
+  /* ── Copper — the warm secondary accent (chips, avatars, people) ── */
+  --copper:             #c9703a;
+  --copper-soft-bg:     #f5e0d0;
+  --copper-soft-border: #d99e73;
+  --copper-text:        #8a4622;
+  --copper-deep:        #b0602c;
+
+  /* Brand type — Barlow for body/UI, Barlow Semi Condensed for display */
+  --font-family-sans: var(--font-barlow), ui-sans-serif, system-ui, sans-serif;
+  --font-family-display: var(--font-barlow-semi), var(--font-barlow), ui-sans-serif, sans-serif;
+
   --bg-page:          #f9fafb;
   --bg-surface:       #ffffff;
   --bg-surface-2:     #f3f4f6;
@@ -54,12 +66,12 @@ label[for] {
   --bubble-in-text:   #111827;
 
   /* ── Soft accent surfaces (customize mode, highlighted panels) ── */
-  --accent-soft-bg:      #eef2ff;   /* indigo-50 */
-  --accent-soft-border:  #c7d2fe;   /* indigo-200 */
-  --accent-soft-2-bg:    #e0e7ff;   /* indigo-100 — buttons/chips */
-  --accent-text:         #4f46e5;   /* indigo-600 */
-  --accent-text-strong:  #3730a3;   /* indigo-800 */
-  --accent-icon:         #6366f1;   /* indigo-500 */
+  --accent-soft-bg:      #e8f4f1;   /* [#e8f4f1] */
+  --accent-soft-border:  #b9dfd8;   /* [#b9dfd8] */
+  --accent-soft-2-bg:    #d3ebe6;   /* [#d3ebe6] — buttons/chips */
+  --accent-text:         #0f8578;   /* [#0f8578] */
+  --accent-text-strong:  #0a5c53;   /* [#0a5c53] */
+  --accent-icon:         #239c8d;   /* [#239c8d] */
   --skeleton-sheen:      rgba(255,255,255,0.6);  /* shimmer highlight on skeletons */
 
   /* ── Soft warning surfaces (urgent panels, overdue) ── */
@@ -75,7 +87,7 @@ label[for] {
     0 4px 16px -4px rgba(0, 0, 0, 0.10),
     0 1px 3px 0 rgba(0, 0, 0, 0.05),
     0 0 0 1px rgba(0, 0, 0, 0.02),
-    0 0 22px -8px rgba(99, 102, 241, 0.14);
+    0 0 22px -8px rgba(35, 156, 141, 0.14);
 }
 
 /* ─── Dark theme ─────────────────────────────────────────── */
@@ -114,18 +126,26 @@ label[for] {
   --topbar-border:    #262626;
 
   /* ── Messaging ── */
-  --bubble-out-bg:    #4338ca;   /* subdued indigo */
+  --bubble-out-bg:    #0c6b60;   /* subdued indigo */
   --bubble-out-text:  #f1f1f1;
   --bubble-in-bg:     #292929;
   --bubble-in-text:   #e4e4e4;
 
-  /* ── Soft accent surfaces — muted indigo, easy on the eyes ── */
-  --accent-soft-bg:      #20203a;   /* deep indigo-tinted charcoal */
-  --accent-soft-border:  #383663;   /* low-contrast indigo edge */
-  --accent-soft-2-bg:    #2c2a4d;   /* slightly lifted indigo */
-  --accent-text:         #a5b4fc;   /* indigo-300 — legible, not glaring */
-  --accent-text-strong:  #c7d2fe;   /* indigo-200 — headings */
-  --accent-icon:         #8b8fd9;   /* desaturated indigo */
+  /* ── Warm secondary — dark mode keeps the SWISS COFFEE palette (user
+     preference); light mode is copper. Same variables, different worlds. ── */
+  --copper:             #7a6f5c;
+  --copper-soft-bg:     #e5e0db;
+  --copper-soft-border: #c9c0b2;
+  --copper-text:        #5c5545;
+  --copper-deep:        #7a6f5c;
+
+  /* ── Soft accent surfaces — muted teal, easy on the eyes ── */
+  --accent-soft-bg:      #18302c;   /* deep teal-tinted charcoal */
+  --accent-soft-border:  #2e5049;   /* low-contrast teal edge */
+  --accent-soft-2-bg:    #204039;   /* slightly lifted teal */
+  --accent-text:         #8ed0c6;   /* [#8ed0c6] — legible, not glaring */
+  --accent-text-strong:  #b9dfd8;   /* [#b9dfd8] — headings */
+  --accent-icon:         #5aa79b;   /* desaturated teal */
   --skeleton-sheen:      rgba(255,255,255,0.05); /* subtle shimmer on dark skeletons */
 
   /* ── Soft warning surfaces — cooler, softer amber ── */
@@ -142,7 +162,7 @@ label[for] {
     0 6px 20px -4px rgba(0, 0, 0, 0.6),
     0 2px 6px 0 rgba(0, 0, 0, 0.45),
     0 0 0 1px rgba(255, 255, 255, 0.045),
-    0 0 26px -6px rgba(99, 102, 241, 0.22);
+    0 0 26px -6px rgba(35, 156, 141, 0.22);
 }
 
 /* In dark mode, the soft accent/warning surfaces are already muted —
@@ -298,7 +318,7 @@ body {
   background: linear-gradient(180deg, var(--accent-soft-bg) 0%, var(--accent-soft-2-bg) 100%);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.6),   /* top sheen — the gloss */
-    0 1px 2px rgba(79, 70, 229, 0.15);        /* soft lift */
+    0 1px 2px rgba(15, 133, 120, 0.15);        /* soft lift */
 }
 .glossy-pill[data-active="true"]:hover {
   color: var(--accent-text-strong);
@@ -348,11 +368,11 @@ body {
 
 /* Drop placeholder — ghost of where item will land */
 .react-grid-item.react-grid-placeholder {
-  background: rgba(79, 70, 229, 0.08) !important;
-  border: 2px dashed #6366f1 !important;
+  background: rgba(15, 133, 120, 0.08) !important;
+  border: 2px dashed #239c8d !important;
   border-radius: 12px !important;
   opacity: 1 !important;
-  box-shadow: inset 0 0 0 4px rgba(79,70,229,0.06) !important;
+  box-shadow: inset 0 0 0 4px rgba(15,133,120,0.06) !important;
 }
 
 /* Item transitions — smooth repositioning only in customize mode; off while
@@ -390,8 +410,8 @@ body {
   bottom: 5px !important;
   width: 12px !important;
   height: 12px !important;
-  border-right: 2.5px solid #4f46e5 !important;
-  border-bottom: 2.5px solid #4f46e5 !important;
+  border-right: 2.5px solid #0f8578 !important;
+  border-bottom: 2.5px solid #0f8578 !important;
   border-radius: 0 0 3px 0 !important;
 }
 /* Only show resize handles when the grid container is in edit mode */
@@ -408,22 +428,22 @@ body {
    drawer chrome and the comment-mode banner. */
 @keyframes dash-widget-edit-in {
   from { outline-color: transparent; }
-  to   { outline-color: rgba(99, 102, 241, 0.35); }
+  to   { outline-color: rgba(35, 156, 141, 0.35); }
 }
 @keyframes dash-handle-in {
   from { opacity: 0; transform: translateY(-6px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 .dashboard-widget-editing {
-  outline: 2px dashed rgba(99, 102, 241, 0.35);
+  outline: 2px dashed rgba(35, 156, 141, 0.35);
   outline-offset: 0;
   border-radius: 12px;
   transition: outline-color 0.15s ease, box-shadow 0.15s ease;
   animation: dash-widget-edit-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 .dashboard-widget-editing:hover {
-  outline-color: rgba(99, 102, 241, 0.65);
-  box-shadow: 0 0 0 3px rgba(99,102,241,0.08);
+  outline-color: rgba(35, 156, 141, 0.65);
+  box-shadow: 0 0 0 3px rgba(35,156,141,0.08);
 }
 /* The drag-handle bar floats over each widget's top edge — slide+fade it in
    so the header isn't abruptly covered. */
@@ -479,7 +499,7 @@ body {
   border-radius: 6px;
   box-shadow:
     inset 0 0 0 2px var(--accent-soft-border),
-    inset 0 0 36px rgba(99, 102, 241, 0.07);
+    inset 0 0 36px rgba(35, 156, 141, 0.07);
   animation: dash-frame-in 0.25s ease both;
 }
 
@@ -790,7 +810,7 @@ body[data-comment-mode="1"] [data-comment-ui] {
 .rte p  { margin: 0.35em 0; }
 .rte ul { list-style: disc;    padding-left: 1.4em; margin: 0.35em 0; }
 .rte ol { list-style: decimal; padding-left: 1.4em; margin: 0.35em 0; }
-.rte a  { color: var(--accent-text, #818cf8); text-decoration: underline; }
+.rte a  { color: var(--accent-text, #4db3a5); text-decoration: underline; }
 .rte hr { border: none; border-top: 1px solid var(--border); margin: 0.8em 0; }
 /* Same typographic rendering on the customer-facing white sheet (dark ink). */
 .rte-doc h1 { font-size: 1.6rem;  font-weight: 800; margin: 0.4em 0 0.25em; line-height: 1.2; }
@@ -799,7 +819,7 @@ body[data-comment-mode="1"] [data-comment-ui] {
 .rte-doc p  { margin: 0.4em 0; line-height: 1.7; }
 .rte-doc ul { list-style: disc;    padding-left: 1.5em; margin: 0.4em 0; }
 .rte-doc ol { list-style: decimal; padding-left: 1.5em; margin: 0.4em 0; }
-.rte-doc a  { color: #4f46e5; text-decoration: underline; }
+.rte-doc a  { color: #0f8578; text-decoration: underline; }
 .rte-doc hr { border: none; border-top: 1px solid #e5e7eb; margin: 1em 0; }
 
 /* Rich-text inline images — cap to column width, draggable to reposition. */
@@ -828,8 +848,8 @@ body[data-comment-mode="1"] [data-comment-ui] {
   width: 58px; height: 58px;
   margin-left: -29px; margin-top: -29px;
   border-radius: 9999px;
-  border: 4px solid var(--pulse-color, #4f46e5);
-  background: color-mix(in srgb, var(--pulse-color, #4f46e5) 20%, transparent);
+  border: 4px solid var(--pulse-color, #0f8578);
+  background: color-mix(in srgb, var(--pulse-color, #0f8578) 20%, transparent);
   box-sizing: border-box;
   pointer-events: none;
   animation: mapPulse 1.4s cubic-bezier(0.3, 0, 0.25, 1) infinite;
@@ -838,7 +858,7 @@ body[data-comment-mode="1"] [data-comment-ui] {
   content: "";
   position: absolute; inset: -4px;
   border-radius: 9999px;
-  border: 4px solid var(--pulse-color, #4f46e5);
+  border: 4px solid var(--pulse-color, #0f8578);
   animation: mapPulse 1.4s cubic-bezier(0.3, 0, 0.25, 1) infinite;
   animation-delay: 0.55s;
 }
@@ -993,7 +1013,7 @@ button[aria-expanded="true"]:hover .lucide-circle-plus {
 .site-hero-bg {
   background-color: var(--bg-page);
   background-image:
-    radial-gradient(60% 50% at 50% -8%, rgba(79, 70, 229, 0.22) 0%, rgba(79, 70, 229, 0) 60%),
+    radial-gradient(60% 50% at 50% -8%, rgba(15, 133, 120, 0.22) 0%, rgba(15, 133, 120, 0) 60%),
     linear-gradient(to right, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
   background-size: 100% 100%, 48px 48px, 48px 48px;
@@ -1010,7 +1030,7 @@ button[aria-expanded="true"]:hover .lucide-circle-plus {
 
 /* Indigo gradient text for headline emphasis (kept subtle, not rainbow). */
 .site-gradient-text {
-  background: linear-gradient(180deg, #ffffff 0%, #c7d2fe 100%);
+  background: linear-gradient(180deg, #ffffff 0%, #b9dfd8 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -1100,7 +1120,7 @@ button[aria-expanded="true"]:hover .lucide-circle-plus {
 /* Soft glow behind the hero stage. */
 .site-stage-glow {
   background:
-    radial-gradient(55% 60% at 50% 42%, rgba(79, 70, 229, 0.34) 0%, rgba(79, 70, 229, 0) 70%);
+    radial-gradient(55% 60% at 50% 42%, rgba(15, 133, 120, 0.34) 0%, rgba(15, 133, 120, 0) 70%);
   filter: blur(6px);
 }
 
@@ -1120,8 +1140,8 @@ button[aria-expanded="true"]:hover .lucide-circle-plus {
 
 /* Soft expanding ring on the active app node. */
 @keyframes siteNodePulse {
-  0% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.38); }
-  70%, 100% { box-shadow: 0 0 0 14px rgba(99, 102, 241, 0); }
+  0% { box-shadow: 0 0 0 0 rgba(35, 156, 141, 0.38); }
+  70%, 100% { box-shadow: 0 0 0 14px rgba(35, 156, 141, 0); }
 }
 .site-node-pulse { animation: siteNodePulse 2.2s ease-out infinite; }
 
@@ -1201,15 +1221,15 @@ button[aria-expanded="true"]:hover .lucide-circle-plus {
    on-brand feedback as the 4-dot ActionsMenu active state. Works on filled
    (indigo) and outline plus buttons alike. */
 .plus-glow {
-  box-shadow: 0 0 14px -3px rgba(79, 70, 229, 0.45);
+  box-shadow: 0 0 14px -3px rgba(15, 133, 120, 0.45);
   transition: box-shadow 0.2s ease, transform 0.08s ease;
 }
-.plus-glow:hover { box-shadow: 0 0 18px -3px rgba(79, 70, 229, 0.6); }
+.plus-glow:hover { box-shadow: 0 0 18px -3px rgba(15, 133, 120, 0.6); }
 .plus-glow:active { transform: scale(0.94); }
 .plus-glow[aria-expanded="true"],
 .plus-glow[data-open="true"] {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.35), 0 0 18px -3px rgba(79, 70, 229, 0.55);
+  box-shadow: 0 0 0 3px rgba(15, 133, 120, 0.35), 0 0 18px -3px rgba(15, 133, 120, 0.55);
 }
 /* The "+" glyph rotates into an ✕ while the menu/modal is open — STATE-driven
    (aria-expanded / data-open), so it holds until the surface fully closes rather

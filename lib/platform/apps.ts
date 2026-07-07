@@ -68,7 +68,7 @@ export const PLATFORM_APPS: PlatformApp[] = [
     icon: Headset,
     href: "/dashboard",
     routePrefix: "", // CRM lives at the root
-    accent: "#6366f1",
+    accent: "#239c8d",
   },
   {
     id: "marketing",
@@ -118,7 +118,7 @@ export const PLATFORM_APPS: PlatformApp[] = [
     icon: Calculator,
     href: "/accounting",
     routePrefix: "/accounting",
-    accent: "#10b981",
+    accent: "#4f46e5",
   },
   {
     id: "documents",

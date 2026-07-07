@@ -66,7 +66,7 @@ export default function AgreementBuilderShell({ mode, agreementId, initialTempla
         <div className="flex items-center gap-2 shrink-0">
           {isEdit ? (
             <button onClick={() => persist(false)} disabled={!d.completeness.basic}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-40 cursor-pointer transition hover:brightness-110 disabled:cursor-not-allowed disabled:hover:brightness-100" style={{ backgroundColor: "#4f46e5" }}>
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-40 cursor-pointer transition hover:brightness-110 disabled:cursor-not-allowed disabled:hover:brightness-100" style={{ backgroundColor: "#0f8578" }}>
               <Check className="w-4 h-4" /> Save Changes
             </button>
           ) : (
@@ -76,7 +76,7 @@ export default function AgreementBuilderShell({ mode, agreementId, initialTempla
                 Save Draft
               </button>
               <button onClick={() => persist(true)} disabled={!canActivate}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-40 cursor-pointer transition hover:brightness-110 disabled:cursor-not-allowed disabled:hover:brightness-100" style={{ backgroundColor: "#4f46e5" }}>
+                className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-40 cursor-pointer transition hover:brightness-110 disabled:cursor-not-allowed disabled:hover:brightness-100" style={{ backgroundColor: "#0f8578" }}>
                 <Send className="w-4 h-4" /> Activate
               </button>
             </>
@@ -124,7 +124,7 @@ export default function AgreementBuilderShell({ mode, agreementId, initialTempla
             </button>
             {idx < SECTIONS.length - 1 && (
               <button onClick={() => setActive(SECTIONS[idx + 1].key)}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-white cursor-pointer transition hover:brightness-110" style={{ backgroundColor: "#4f46e5" }}>
+                className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-white cursor-pointer transition hover:brightness-110" style={{ backgroundColor: "#0f8578" }}>
                 Next <ChevronRight className="w-4 h-4" />
               </button>
             )}

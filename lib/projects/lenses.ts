@@ -67,7 +67,7 @@ export const HEALTH_META: Record<ProjectHealth, { label: string; bg: string; col
   at_risk:   { label: "At Risk",   bg: "#fef3c7", color: "#92400e" },
   overdue:   { label: "Overdue",   bg: "#fee2e2", color: "#991b1b" },
   blocked:   { label: "Blocked",   bg: "#fee2e2", color: "#991b1b" },
-  completed: { label: "Completed", bg: "#e0e7ff", color: "#3730a3" },
+  completed: { label: "Completed", bg: "#d3ebe6", color: "#0a5c53" },
 };
 export function projectHealth(project: Project, opts: { done?: boolean; blocked?: boolean } = {}): ProjectHealth {
   if (opts.done) return "completed";

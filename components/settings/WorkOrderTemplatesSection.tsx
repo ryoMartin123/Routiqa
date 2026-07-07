@@ -24,20 +24,17 @@ import {
   type ChecklistItem, type ChecklistItemType,
   type RequiredPhoto, type WOInstructions,
 } from "@/lib/work-order-templates/data";
-import {
-  getJobTypes, saveJobTypes, WORK_ORDER_POLICY_LABELS,
-  type JobTypeDef, type WorkOrderPolicy,
-} from "@/lib/job-config/data";
+import { getJobTypes } from "@/lib/job-config/data";
 import UiSelect from "@/components/ui/Select";
 import NumberStepper from "@/components/ui/NumberStepper";
 import ActionsMenu from "@/components/shared/ActionsMenu";
 import { pingSaved } from "@/components/shared/SavedPill";
 
-const ACCENT = "#4f46e5";
+const ACCENT = "#0f8578";
 // Soft "required" accent — Swiss Coffee cream + a muted warm taupe (easier on the
 // eyes than bright red).
-const REQ_BG = "#E5E0DB";
-const REQ_TEXT = "#7a6f5c";
+const REQ_BG = "var(--copper-soft-bg)";
+const REQ_TEXT = "var(--copper-deep)";
 const PRIORITIES = Object.keys(WO_PRIORITY_LABELS) as WOPriority[];
 const CHECK_TYPES = Object.keys(CHECKLIST_TYPE_LABELS) as ChecklistItemType[];
 const clamp = (n: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, n));
@@ -61,8 +58,6 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 // A selected node = one of: the scope node, a checklist step, or a photo rule.
 type Sel = { kind: "scope" } | { kind: "step"; id: string } | { kind: "photo"; id: string } | null;
-
-const WO_POLICIES = Object.keys(WORK_ORDER_POLICY_LABELS) as WorkOrderPolicy[];
 
 export default function WorkOrderTemplatesSection() {
   const jobTypes = getJobTypes();
@@ -602,7 +597,7 @@ function PhotoLinkPicker({ photos, selectedIds, onToggle }: { photos: RequiredPh
                   const on = selectedIds.includes(p.id);
                   return (
                     <button key={p.id} onClick={() => onToggle(p.id)} className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-left transition-colors hover:bg-[var(--bg-surface-2)]">
-                      <span className="w-5 h-5 rounded flex items-center justify-center shrink-0" style={{ border: `1.5px solid ${on ? "#c9c0b2" : "var(--border)"}`, backgroundColor: on ? "#E5E0DB" : "transparent" }}>{on && <Check className="w-3 h-3" style={{ color: "#5c5545" }} />}</span>
+                      <span className="w-5 h-5 rounded flex items-center justify-center shrink-0" style={{ border: `1.5px solid ${on ? "var(--copper-soft-border)" : "var(--border)"}`, backgroundColor: on ? "var(--copper-soft-bg)" : "transparent" }}>{on && <Check className="w-3 h-3" style={{ color: "var(--copper-text)" }} />}</span>
                       <span className="text-sm flex-1 min-w-0 truncate" style={{ color: "var(--text-primary)" }}>{p.category}</span>
                       {p.notes && <span className="text-[11px] truncate max-w-[40%]" style={{ color: "var(--text-muted)" }}>{p.notes}</span>}
                     </button>
@@ -633,15 +628,6 @@ function Inspector({ sel, tpl, jobTypes, steps, photos, instructions, onClose, p
   const photo = sel.kind === "photo" ? photos.find(p => p.id === sel.id) : undefined;
   const title = sel.kind === "scope" ? "Scope & defaults" : sel.kind === "step" ? "Edit step" : "Photo rule";
 
-  // Auto-create policy lives on the JOB TYPE (same field the Job Types settings
-  // used to edit) — shown here for the type this template is linked to.
-  const [, forcePolicy] = useState(0);
-  const linkedPolicy = getJobTypes().find(j => j.key === tpl.jobTypeKey)?.workOrderPolicy ?? "optional";
-  function setLinkedPolicy(v: WorkOrderPolicy) {
-    saveJobTypes(getJobTypes().map(t => t.key === tpl.jobTypeKey ? { ...t, workOrderPolicy: v } : t));
-    forcePolicy(x => x + 1); pingSaved();
-  }
-
   return (
     <>
       <div className="flex items-center justify-between px-4 py-3 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
@@ -660,19 +646,6 @@ function Inspector({ sel, tpl, jobTypes, steps, photos, instructions, onClose, p
               <Field label="Duration (min)"><NumberStepper size="sm" min={0} step={15} value={String(tpl.duration)} onChange={v => patchTpl({ duration: parseInt(v, 10) || 0 })} /></Field>
             </div>
             <Field label="Linked job type"><UiSelect size="sm" value={tpl.jobTypeKey} onChange={v => patchTpl({ jobTypeKey: v })} options={[{ value: "", label: "None" }, ...jobTypes.map(j => ({ value: j.key, label: j.name }))]} /></Field>
-            <Field label="Auto-create">
-              {tpl.jobTypeKey ? (
-                <>
-                  <UiSelect size="sm" value={linkedPolicy} onChange={v => setLinkedPolicy(v as WorkOrderPolicy)}
-                    options={WO_POLICIES.map(pk => ({ value: pk, label: WORK_ORDER_POLICY_LABELS[pk] }))} />
-                  <p className="text-[11px] mt-1" style={{ color: "var(--text-muted)" }}>
-                    What happens when a {jobTypes.find(j => j.key === tpl.jobTypeKey)?.name ?? "linked-type"} job is booked. Applies to the job type, not just this template.
-                  </p>
-                </>
-              ) : (
-                <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>Link a job type to control whether its work order auto-creates.</p>
-              )}
-            </Field>
             <Seg value={tpl.active} on="Active" off="Inactive" onChange={v => patchTpl({ active: v })} />
             <div className="pt-1" style={{ borderTop: "1px solid var(--border)" }} />
             {INSTRUCTION_FIELDS.map(f => (

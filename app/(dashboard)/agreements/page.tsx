@@ -43,7 +43,7 @@ type SortField = "customer" | "type" | "status" | "renewalDate" | "annualValue" 
 // ─── Templates view ───────────────────────────────────────
 const TMPL_STATUS: Record<string, { label: string; bg: string; color: string }> = {
   active:   { label: "Active",   bg: "#d1fae5", color: "#065f46" },
-  draft:    { label: "Draft",    bg: "#e0e7ff", color: "#3730a3" },
+  draft:    { label: "Draft",    bg: "#d3ebe6", color: "#0a5c53" },
   archived: { label: "Archived", bg: "var(--bg-input)", color: "var(--text-muted)" },
 };
 
@@ -97,7 +97,7 @@ function TemplatesTable() {
             <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{t.priceLabel}</span>
             <span
               className="text-sm font-semibold"
-              style={{ color: t.activeCount > 0 ? "#4f46e5" : "var(--text-muted)" }}
+              style={{ color: t.activeCount > 0 ? "#0f8578" : "var(--text-muted)" }}
             >
               {t.activeCount}
             </span>
@@ -158,8 +158,8 @@ export default function AgreementsPage() {
   function SortIcon({ field }: { field: SortField }) {
     if (sortField !== field) return <ChevronDown className="w-3 h-3 opacity-30" />;
     return sortDir === "asc"
-      ? <ChevronUp className="w-3 h-3" style={{ color: "#4f46e5" }} />
-      : <ChevronDown className="w-3 h-3" style={{ color: "#4f46e5" }} />;
+      ? <ChevronUp className="w-3 h-3" style={{ color: "#0f8578" }} />
+      : <ChevronDown className="w-3 h-3" style={{ color: "#0f8578" }} />;
   }
 
   const totalAnnualRevenue = AGREEMENT_STATS.annualRevenue;
@@ -178,7 +178,7 @@ export default function AgreementsPage() {
         <ModuleViewToggle view={moduleView} onChange={setModuleView} withCards overviewFirst />
         <div className="flex-1 flex items-center justify-end gap-2">
           <button onClick={() => router.push("/agreements/new")}
-            className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-3 py-2 rounded-lg transition-colors">
+            className="flex items-center gap-1.5 bg-[#0f8578] hover:bg-[#0c6b60] text-white text-sm font-medium px-3 py-2 rounded-lg transition-colors">
             <Plus className="w-4 h-4" />
             New Agreement
           </button>
@@ -188,7 +188,7 @@ export default function AgreementsPage() {
       {moduleView === "overview" && (
         <ModuleSummaryCards
           cards={[
-            { icon: FileText,      label: "Active Agreements",     value: String(AGREEMENT_STATS.active),          sub: "Running or visits due", iconColor: "#4f46e5" },
+            { icon: FileText,      label: "Active Agreements",     value: String(AGREEMENT_STATS.active),          sub: "Running or visits due", iconColor: "#0f8578" },
             { icon: CalendarCheck, label: "Visits Due This Month", value: String(AGREEMENT_STATS.visitsDueMonth),  sub: "June 2026",             iconColor: "#10b981" },
             { icon: RefreshCw,     label: "Renewals Due Soon",     value: String(AGREEMENT_STATS.renewalsDueSoon), sub: "Within 60 days",        iconColor: "#f59e0b" },
             { icon: DollarSign,    label: "Agreement Revenue",     value: revenueDisplay,                          sub: `${AGREEMENTS.length} agreements`, iconColor: "#10b981" },
@@ -280,7 +280,7 @@ export default function AgreementsPage() {
                     "flex items-center gap-1 text-left",
                     field ? "cursor-pointer hover:opacity-80" : "cursor-default"
                   )}
-                  style={{ color: sortField === field ? "#4f46e5" : "var(--text-muted)" }}
+                  style={{ color: sortField === field ? "#0f8578" : "var(--text-muted)" }}
                 >
                   {label}
                   {field && <SortIcon field={field as SortField} />}
@@ -445,7 +445,7 @@ function AgreementCard({ a }: { a: CustomerAgreement }) {
         </span>
         <div className="flex items-center gap-1.5 shrink-0 min-w-0">
           <span className="text-[10px] truncate" style={{ color: "var(--text-secondary)" }}>{a.assignedTo}</span>
-          <ArrowRight className="w-3.5 h-3.5 shrink-0 transition-transform group-hover:-rotate-45" style={{ color: "#4f46e5" }} />
+          <ArrowRight className="w-3.5 h-3.5 shrink-0 transition-transform group-hover:-rotate-45" style={{ color: "#0f8578" }} />
         </div>
       </div>
     </Link>

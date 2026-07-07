@@ -45,7 +45,7 @@ export interface Campaign {
 
 // ─── Type display config ──────────────────────────────────
 export const CAMPAIGN_TYPE_CONFIG: Record<CampaignType, { label: string; channel: CampaignChannel; color: string }> = {
-  email:               { label: "Email Blast",         channel: "email", color: "#4f46e5" },
+  email:               { label: "Email Blast",         channel: "email", color: "#0f8578" },
   sms:                 { label: "SMS Blast",           channel: "sms",   color: "#0891b2" },
   review_request:      { label: "Review Request",      channel: "email", color: "#f59e0b" },
   estimate_followup:   { label: "Estimate Follow-Up",  channel: "email", color: "#7c3aed" },
@@ -56,7 +56,7 @@ export const CAMPAIGN_TYPE_CONFIG: Record<CampaignType, { label: string; channel
 
 export const CAMPAIGN_STATUS_CONFIG: Record<CampaignStatus, { label: string; bg: string; color: string }> = {
   draft:     { label: "Draft",     bg: "var(--bg-input)", color: "var(--text-muted)" },
-  scheduled: { label: "Scheduled", bg: "#e0e7ff",         color: "#3730a3" },
+  scheduled: { label: "Scheduled", bg: "#d3ebe6",         color: "#0a5c53" },
   active:    { label: "Active",    bg: "#d1fae5",         color: "#065f46" },
   sent:      { label: "Sent",      bg: "#ecfdf5",         color: "#059669" },
   paused:    { label: "Paused",    bg: "#fef3c7",         color: "#92400e" },

@@ -60,7 +60,7 @@ export default function VisitScheduleTemplateEditorModal({ template, isNew, onCa
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
           <div className="flex items-center gap-2">
-            <CalendarClock className="w-4 h-4" style={{ color: "#4f46e5" }} />
+            <CalendarClock className="w-4 h-4" style={{ color: "#0f8578" }} />
             <p className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>{isNew ? "New Visit Schedule" : "Edit Visit Schedule"}</p>
           </div>
           <button onClick={onCancel} style={{ color: "var(--text-muted)" }}><X className="w-4 h-4" /></button>
@@ -127,7 +127,7 @@ export default function VisitScheduleTemplateEditorModal({ template, isNew, onCa
                   <Mini label="Dispatch Board (optional)"><UiSelect size="sm" value={v.dispatchBoardId ?? ""} onChange={k => setVisit(v.id, { dispatchBoardId: k })} options={boardOptions} /></Mini>
                 </div>
                 <label className="flex items-center gap-2 text-xs cursor-pointer" style={{ color: "var(--text-secondary)" }}>
-                  <input type="checkbox" checked={v.autoGenerate ?? true} onChange={e => setVisit(v.id, { autoGenerate: e.target.checked })} className="accent-indigo-600" />
+                  <input type="checkbox" checked={v.autoGenerate ?? true} onChange={e => setVisit(v.id, { autoGenerate: e.target.checked })} className="accent-[#0f8578]" />
                   Auto-generate planned visits (otherwise booked on demand)
                 </label>
               </div>
@@ -143,7 +143,7 @@ export default function VisitScheduleTemplateEditorModal({ template, isNew, onCa
           <div className="flex items-center gap-2">
             <button onClick={onCancel} className="px-3 py-2 rounded-lg text-sm" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>Cancel</button>
             <button onClick={save} disabled={!canSave}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-40 transition-colors" style={{ backgroundColor: "#4f46e5" }}>
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-40 transition-colors" style={{ backgroundColor: "#0f8578" }}>
               <Check className="w-4 h-4" /> {isNew ? "Add Schedule" : "Save Schedule"}
             </button>
           </div>

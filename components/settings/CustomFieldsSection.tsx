@@ -33,7 +33,7 @@ function Toggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void 
     <button
       onClick={() => onChange(!on)}
       className="relative w-8 h-4 rounded-full transition-colors shrink-0"
-      style={{ backgroundColor: on ? "#4f46e5" : "var(--bg-input)", border: "1px solid var(--border)" }}
+      style={{ backgroundColor: on ? "#0f8578" : "var(--bg-input)", border: "1px solid var(--border)" }}
       role="switch" aria-checked={on}
     >
       <span className="absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white shadow transition-transform"
@@ -188,7 +188,7 @@ export default function CustomFieldsSection() {
             <button key={rt} onClick={() => { setActiveType(rt); closeForm(); }}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors shrink-0"
               style={{
-                backgroundColor: active ? "#4f46e5" : "var(--bg-surface-2)",
+                backgroundColor: active ? "#0f8578" : "var(--bg-surface-2)",
                 color:            active ? "#fff"    : "var(--text-secondary)",
                 border:           active ? "none"    : "1px solid var(--border)",
               }}>
@@ -207,9 +207,9 @@ export default function CustomFieldsSection() {
       {/* Add/Edit form */}
       {showForm && (
         <div className="rounded-xl p-5 space-y-4"
-          style={{ backgroundColor: "var(--bg-surface)", border: "2px solid #c7d2fe", boxShadow: "var(--shadow-card)" }}>
+          style={{ backgroundColor: "var(--bg-surface)", border: "2px solid #b9dfd8", boxShadow: "var(--shadow-card)" }}>
           <div className="flex items-center justify-between">
-            <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: "#4f46e5" }}>
+            <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: "#0f8578" }}>
               {editingId ? "Edit Field" : "New Field"} — {RECORD_TYPE_LABELS[activeType]}
             </p>
             <button onClick={closeForm} className="p-1 rounded-lg" style={{ color: "var(--text-muted)" }}>
@@ -277,7 +277,7 @@ export default function CustomFieldsSection() {
               <div className="flex flex-wrap gap-1.5 mb-2">
                 {(form.options ?? []).map(opt => (
                   <span key={opt} className="flex items-center gap-1 px-2 py-1 rounded-full text-xs"
-                    style={{ backgroundColor: "#e0e7ff", color: "#3730a3" }}>
+                    style={{ backgroundColor: "#d3ebe6", color: "#0a5c53" }}>
                     {opt}
                     <button onClick={() => removeOption(opt)}>
                       <X className="w-3 h-3" />
@@ -296,7 +296,7 @@ export default function CustomFieldsSection() {
                 />
                 <button onClick={addOption}
                   className="px-3 py-1.5 rounded-lg text-xs font-medium"
-                  style={{ backgroundColor: "#e0e7ff", color: "#4f46e5" }}>
+                  style={{ backgroundColor: "#d3ebe6", color: "#0f8578" }}>
                   Add
                 </button>
               </div>
@@ -324,7 +324,7 @@ export default function CustomFieldsSection() {
             </button>
             <button onClick={handleSaveField} disabled={!form.label.trim() || !form.key.trim()}
               className="px-4 py-1.5 rounded-lg text-sm font-medium text-white transition-colors disabled:opacity-40"
-              style={{ backgroundColor: "#4f46e5" }}>
+              style={{ backgroundColor: "#0f8578" }}>
               {editingId ? "Update Field" : "Add Field"}
             </button>
           </div>
@@ -350,7 +350,7 @@ export default function CustomFieldsSection() {
           {!showForm && (
             <button onClick={openAdd}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-white transition-colors"
-              style={{ backgroundColor: "#4f46e5" }}>
+              style={{ backgroundColor: "#0f8578" }}>
               <Plus className="w-3.5 h-3.5" /> Add Field
             </button>
           )}

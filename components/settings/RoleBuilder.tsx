@@ -152,7 +152,7 @@ export default function RoleBuilder({ initial, isNew, onSaved }: {
         </button>
         <button onClick={goNext}
           className="flex items-center gap-1.5 text-sm font-medium px-4 py-2 rounded-lg text-white transition-colors"
-          style={{ backgroundColor: "#4f46e5" }}>
+          style={{ backgroundColor: "#0f8578" }}>
           {isLastStep ? <><Check className="w-4 h-4" /> Finish</> : <>Next <ArrowRight className="w-4 h-4" /></>}
         </button>
       </div>
@@ -173,7 +173,7 @@ function Stepper({ steps, current, onStep }: { steps: { key: Tab; label: string 
             <button onClick={() => onStep(s.key)} className="flex items-center gap-2 shrink-0">
               <span className="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold transition-colors"
                 style={{
-                  backgroundColor: done || active ? "#4f46e5" : "var(--bg-input)",
+                  backgroundColor: done || active ? "#0f8578" : "var(--bg-input)",
                   color: done || active ? "#fff" : "var(--text-muted)",
                   boxShadow: active ? "0 0 0 3px var(--accent-soft-bg)" : "none",
                 }}>
@@ -184,7 +184,7 @@ function Stepper({ steps, current, onStep }: { steps: { key: Tab; label: string 
               </span>
             </button>
             {i < steps.length - 1 && (
-              <span className="flex-1 h-px" style={{ minWidth: 16, backgroundColor: i < currentIndex ? "#4f46e5" : "var(--border)" }} />
+              <span className="flex-1 h-px" style={{ minWidth: 16, backgroundColor: i < currentIndex ? "#0f8578" : "var(--border)" }} />
             )}
           </Fragment>
         );
@@ -286,8 +286,8 @@ function BasicsTab({ draft, setDraft, isNew, startId, applyStart }: {
                       backgroundColor: isPreview ? "var(--accent-soft-bg)" : "transparent",
                     }}>
                     <span className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
-                      style={{ backgroundColor: isPreview ? "#e0e7ff" : "var(--bg-input)" }}>
-                      <Icon className="w-3.5 h-3.5" style={{ color: isPreview ? "#4f46e5" : "var(--text-muted)" }} />
+                      style={{ backgroundColor: isPreview ? "#d3ebe6" : "var(--bg-input)" }}>
+                      <Icon className="w-3.5 h-3.5" style={{ color: isPreview ? "#0f8578" : "var(--text-muted)" }} />
                     </span>
                     <span className="flex-1 min-w-0">
                       <span className="text-sm font-medium block truncate" style={{ color: isPreview ? "var(--accent-text)" : "var(--text-primary)" }}>{option.label}</span>
@@ -346,8 +346,8 @@ function StartDetail({ option, role, chosen, onUse }: {
       {/* Header */}
       <div className="px-4 py-3.5 flex items-start justify-between gap-3" style={{ borderBottom: "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)" }}>
         <div className="flex items-start gap-2.5 min-w-0">
-          <span className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: "#e0e7ff" }}>
-            <Icon className="w-4 h-4" style={{ color: "#4f46e5" }} />
+          <span className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: "#d3ebe6" }}>
+            <Icon className="w-4 h-4" style={{ color: "#0f8578" }} />
           </span>
           <div className="min-w-0">
             <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{option.label}</p>
@@ -358,7 +358,7 @@ function StartDetail({ option, role, chosen, onUse }: {
           className="shrink-0 flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-lg transition-colors disabled:cursor-default"
           style={chosen
             ? { backgroundColor: "#d1fae5", color: "#065f46" }
-            : { backgroundColor: "#4f46e5", color: "#fff" }}>
+            : { backgroundColor: "#0f8578", color: "#fff" }}>
           {chosen ? <><Check className="w-3.5 h-3.5" /> Selected</> : "Use this start"}
         </button>
       </div>

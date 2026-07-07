@@ -107,7 +107,7 @@ export default function AgreementSummaryCard({ agreement }: { agreement: Custome
         {/* Actions */}
         <div className="flex items-center gap-2 pt-1">
           <button onClick={scheduleNext}
-            className="flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 transition-colors">
+            className="flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-lg text-white bg-[#0f8578] hover:bg-[#0c6b60] transition-colors">
             <Calendar className="w-3.5 h-3.5" /> Schedule next visit
           </button>
           <Link href={`/agreements/${agreement.id}?tab=Renewal`}

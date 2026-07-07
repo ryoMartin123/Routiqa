@@ -157,7 +157,7 @@ export default function OfferLibrarySection() {
             const on = view === k;
             return (
               <button key={k} onClick={() => setView(k)} className="flex items-center gap-1.5 px-3 py-1.5 text-sm capitalize transition-colors"
-                style={{ backgroundColor: on ? "#4f46e5" : "var(--bg-surface)", color: on ? "#fff" : "var(--text-secondary)" }}>
+                style={{ backgroundColor: on ? "#0f8578" : "var(--bg-surface)", color: on ? "#fff" : "var(--text-secondary)" }}>
                 <Icon className="w-3.5 h-3.5" /> {k}
               </button>
             );
@@ -695,7 +695,7 @@ function PricingTab({ g, patch, updateOption }: { g: OfferGroup; patch: (p: Part
               <span className="flex-1 text-sm truncate" style={{ color: "var(--text-primary)" }}>{o.title}</span>
               <span className="text-sm font-semibold" style={{ color: "var(--text-secondary)" }}>{fmtMoney(o.price)}{o.monthlyPrice ? ` · ${fmtMoney(o.monthlyPrice)}/mo` : ""}</span>
               <label className="flex items-center gap-1.5 text-xs cursor-pointer" style={{ color: "var(--text-muted)" }}>
-                <input type="checkbox" checked={o.taxable ?? false} onChange={e => updateOption(o.id, { taxable: e.target.checked })} className="accent-indigo-600 w-3.5 h-3.5" /> Taxable
+                <input type="checkbox" checked={o.taxable ?? false} onChange={e => updateOption(o.id, { taxable: e.target.checked })} className="accent-[#0f8578] w-3.5 h-3.5" /> Taxable
               </label>
             </div>
           ))}
@@ -732,7 +732,7 @@ function DisplayTab({ g, patch }: { g: OfferGroup; patch: (p: Partial<OfferGroup
           {TOGGLES.map(tog => (
             <label key={tog.key} className="flex items-center justify-between py-1.5 cursor-pointer">
               <span className="text-sm" style={{ color: "var(--text-primary)" }}>{tog.label}</span>
-              <input type="checkbox" checked={t[tog.key]} onChange={e => setT({ [tog.key]: e.target.checked })} className="accent-indigo-600 w-4 h-4" />
+              <input type="checkbox" checked={t[tog.key]} onChange={e => setT({ [tog.key]: e.target.checked })} className="accent-[#0f8578] w-4 h-4" />
             </label>
           ))}
         </div>
@@ -807,7 +807,7 @@ function ActivityTab({ g }: { g: OfferGroup }) {
 export function OfferGroupPreview({ group }: { group: OfferGroup }) {
   const t = group.toggles;
   const opts = [...group.options].sort((a, b) => a.order - b.order);
-  const accent = "#4f46e5";
+  const accent = "#0f8578";
   const showTotal = group.priceDisplay !== "hidden" && group.priceDisplay !== "monthly_only" && t.showPrice;
   const showMonthly = t.showMonthly && (group.priceDisplay === "monthly_only" || group.priceDisplay === "total_and_monthly" || group.priceDisplay === "as_low_as");
   const asLowAs = group.priceDisplay === "as_low_as";

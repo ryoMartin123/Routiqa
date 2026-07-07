@@ -39,9 +39,9 @@ export default function QuotePreview({ data }: { data: QuotePreviewData }) {
         </div>
       )}
       {/* Letterhead */}
-      <div className="flex items-start justify-between px-8 py-6" style={{ borderBottom: "2px solid #4f46e5" }}>
+      <div className="flex items-start justify-between px-8 py-6" style={{ borderBottom: "2px solid #0f8578" }}>
         <div>
-          <p className="text-lg font-bold" style={{ color: "#4f46e5" }}>Northstar Services</p>
+          <p className="text-lg font-bold" style={{ color: "#0f8578" }}>Northstar Services</p>
           <p className="text-xs" style={{ color: "#6b7280" }}>{data.locationName ?? "Augusta Branch"}</p>
         </div>
         <div className="text-right">
@@ -96,7 +96,7 @@ export default function QuotePreview({ data }: { data: QuotePreviewData }) {
             <div className="flex justify-between text-sm"><span style={{ color: "#6b7280" }}>Tax</span><span style={{ color: "#111827" }}>{fmt(data.tax)}</span></div>
             <div className="flex justify-between pt-1.5" style={{ borderTop: "1px solid #e5e7eb" }}>
               <span className="text-sm font-semibold" style={{ color: "#111827" }}>Total</span>
-              <span className="text-lg font-bold" style={{ color: "#4f46e5" }}>{fmt(data.total)}</span>
+              <span className="text-lg font-bold" style={{ color: "#0f8578" }}>{fmt(data.total)}</span>
             </div>
           </div>
         </div>

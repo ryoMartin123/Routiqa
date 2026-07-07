@@ -186,7 +186,7 @@ export default function QuickQuotePage({ params }: { params: Promise<{ id: strin
   );
 
   const statusStyle = QUOTE_STATUS_STYLE[quote.status as QuoteStatus];
-  const accent = branding.accentColor || "#4f46e5";
+  const accent = branding.accentColor || "#0f8578";
   const showCost = itemDefaults.showCostField;
 
   return (
@@ -307,8 +307,8 @@ export default function QuickQuotePage({ params }: { params: Promise<{ id: strin
                         <input type="number" min={0} value={it.quantity} onChange={e => setItem(it.id, { quantity: e.target.value })} className="w-16 rounded-lg px-2 py-1 text-xs outline-none" style={inputStyle} /></div>
                       <div className="flex items-center gap-1"><span className="text-[10px]" style={{ color: "var(--text-muted)" }}>$ Unit</span>
                         <input type="number" min={0} step="0.01" value={it.unitPrice} onChange={e => setItem(it.id, { unitPrice: e.target.value })} className="w-24 rounded-lg px-2 py-1 text-xs outline-none" style={inputStyle} /></div>
-                      <label className="flex items-center gap-1 text-[11px] cursor-pointer" style={{ color: "var(--text-secondary)" }}><input type="checkbox" checked={it.taxable} onChange={e => setItem(it.id, { taxable: e.target.checked })} className="accent-indigo-600" /> Taxable</label>
-                      <label className="flex items-center gap-1 text-[11px] cursor-pointer" style={{ color: "var(--text-secondary)" }}><input type="checkbox" checked={it.optional} onChange={e => setItem(it.id, { optional: e.target.checked })} className="accent-indigo-600" /> Optional</label>
+                      <label className="flex items-center gap-1 text-[11px] cursor-pointer" style={{ color: "var(--text-secondary)" }}><input type="checkbox" checked={it.taxable} onChange={e => setItem(it.id, { taxable: e.target.checked })} className="accent-[#0f8578]" /> Taxable</label>
+                      <label className="flex items-center gap-1 text-[11px] cursor-pointer" style={{ color: "var(--text-secondary)" }}><input type="checkbox" checked={it.optional} onChange={e => setItem(it.id, { optional: e.target.checked })} className="accent-[#0f8578]" /> Optional</label>
                       <span className="ml-auto text-sm font-semibold" style={{ color: it.optional ? "var(--text-muted)" : "var(--text-primary)" }}>{fmt((parseFloat(it.quantity) || 0) * (parseFloat(it.unitPrice) || 0))}</span>
                     </div>
                   </div>

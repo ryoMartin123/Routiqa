@@ -19,7 +19,7 @@ import { getStaffedUsers } from "@/lib/users/data";
 // ── Channels ──
 export type InboxChannel = "sms" | "email" | "call" | "voicemail" | "automated" | "internal";
 export const CHANNEL_META: Record<InboxChannel, { label: string; icon: LucideIcon; color: string }> = {
-  sms:       { label: "SMS",       icon: MessageSquare, color: "#4f46e5" },
+  sms:       { label: "SMS",       icon: MessageSquare, color: "#0f8578" },
   email:     { label: "Email",     icon: Mail,          color: "#0891b2" },
   call:      { label: "Call",      icon: Phone,         color: "#059669" },
   voicemail: { label: "Voicemail", icon: Voicemail,     color: "#a855f7" },
@@ -44,7 +44,7 @@ export const STATUS_META: Record<ConvStatus, { label: string; color: string }> =
 // ── Linked CRM records ──
 export type LinkedType = "job" | "estimate" | "invoice" | "maintenance" | "agreement";
 export const LINKED_META: Record<LinkedType, { label: string; color: string }> = {
-  job:         { label: "Job",         color: "#4f46e5" },
+  job:         { label: "Job",         color: "#0f8578" },
   estimate:    { label: "Estimate",    color: "#8b5cf6" },
   invoice:     { label: "Invoice",     color: "#0891b2" },
   maintenance: { label: "Maintenance", color: "#16a34a" },

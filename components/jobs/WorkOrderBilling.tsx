@@ -22,7 +22,7 @@ import { usePermissions } from "@/components/providers/PermissionProvider";
 
 type Kind = "part" | "labor" | "fee";
 const KIND_META: Record<Kind, { label: string; icon: React.ElementType; color: string }> = {
-  part:  { label: "Part",  icon: Package,         color: "#4f46e5" },
+  part:  { label: "Part",  icon: Package,         color: "#0f8578" },
   labor: { label: "Labor", icon: Wrench,          color: "#0891b2" },
   fee:   { label: "Fee",   icon: BadgeDollarSign, color: "#f59e0b" },
 };
@@ -116,8 +116,8 @@ export default function WorkOrderBilling({ workOrderId }: { workOrderId: string 
           ? <span className="w-5 h-5 shrink-0" />
           : <button onClick={() => toggleSelect(l.id)} aria-label={sel ? "Exclude from invoice" : "Include in invoice"} title={sel ? "Included — click to exclude" : "Excluded — click to include"}
               className="w-5 h-5 rounded flex items-center justify-center shrink-0 transition-colors"
-              style={{ border: `1.5px solid ${sel ? "#c9c0b2" : "var(--border)"}`, backgroundColor: sel ? "#E5E0DB" : "transparent" }}>
-              {sel && <Check className="w-3 h-3" style={{ color: "#5c5545" }} />}
+              style={{ border: `1.5px solid ${sel ? "var(--copper-soft-border)" : "var(--border)"}`, backgroundColor: sel ? "var(--copper-soft-bg)" : "transparent" }}>
+              {sel && <Check className="w-3 h-3" style={{ color: "var(--copper-text)" }} />}
             </button>)}
         <m.icon className="w-3.5 h-3.5 shrink-0" style={{ color: m.color }} />
         <span className="text-sm truncate flex-1 min-w-0" style={{ color: "var(--text-primary)" }}>{l.description}</span>

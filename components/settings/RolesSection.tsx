@@ -126,7 +126,7 @@ export default function RolesSection() {
       {/* Overview — KPI cards (kept off the main Roles view) */}
       {view === "overview" && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <StatCard label="Total Roles" value={String(roles.length)} hint="System + custom" icon={Shield} accent="#6366f1" />
+          <StatCard label="Total Roles" value={String(roles.length)} hint="System + custom" icon={Shield} accent="#239c8d" />
           <StatCard label="Custom Roles" value={String(customCount)} hint="Created by your org" icon={ShieldCheck} accent="#0ea5e9" />
           <StatCard label="Users Assigned" value={String(activeUsers)} hint="Active accounts" icon={Users} accent="#22c55e" />
           <StatCard label="Sensitive Access" value={String(sensitiveRoles)} hint="Roles with sensitive/admin perms" icon={AlertTriangle} accent="#f59e0b" />

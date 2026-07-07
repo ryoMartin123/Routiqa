@@ -33,7 +33,7 @@ export default function InvoicesDue() {
       <div className="flex items-center justify-between px-5 py-4 shrink-0"
         style={{ borderBottom: "1px solid var(--border)" }}>
         <div className="flex items-center gap-2">
-          <Receipt className="w-4 h-4" style={{ color: "#4f46e5" }} />
+          <Receipt className="w-4 h-4" style={{ color: "#0f8578" }} />
           <h2 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Invoices Due</h2>
           {totalOutstanding > 0 && (
             <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
@@ -42,7 +42,7 @@ export default function InvoicesDue() {
             </span>
           )}
         </div>
-        <Link href="/invoices" className="flex items-center gap-1 text-xs font-medium text-indigo-600 hover:text-indigo-700">
+        <Link href="/invoices" className="flex items-center gap-1 text-xs font-medium text-[#0f8578] hover:text-[#0c6b60]">
           View all <ExternalLink className="w-3 h-3" />
         </Link>
       </div>

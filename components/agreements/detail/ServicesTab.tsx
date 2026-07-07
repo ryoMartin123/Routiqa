@@ -17,7 +17,7 @@ const GROUP_ORDER: { key: ServiceScopeType; color: string }[] = [
   { key: "covered_item", color: "#0891b2" },
   { key: "discounted", color: "#f59e0b" },
   { key: "optional_addon", color: "#f59e0b" },
-  { key: "allowance", color: "#6366f1" },
+  { key: "allowance", color: "#239c8d" },
   { key: "excluded", color: "#9ca3af" },
 ];
 

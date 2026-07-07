@@ -22,7 +22,7 @@ export default function TermsSection({ d }: { d: UseAgreementDraft }) {
           </div>
         } />
 
-      <button onClick={() => d.addBlankTerm()} className="text-xs font-medium mb-3" style={{ color: "#4f46e5" }}>+ Add a custom term</button>
+      <button onClick={() => d.addBlankTerm()} className="text-xs font-medium mb-3" style={{ color: "#0f8578" }}>+ Add a custom term</button>
 
       {d.terms.length === 0 ? (
         <Empty>No terms yet. Add reusable blocks like payment, cancellation, and warranty terms.</Empty>

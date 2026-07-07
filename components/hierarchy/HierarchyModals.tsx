@@ -27,7 +27,7 @@ const INDUSTRIES = [
 ];
 
 const INDUSTRY_COLORS: Record<string, string> = {
-  hvac: "#6366f1", roofing: "#0891b2", plumbing: "#0d9488", electrical: "#d97706",
+  hvac: "#239c8d", roofing: "#0891b2", plumbing: "#0d9488", electrical: "#d97706",
   restoration: "#dc2626", property_maintenance: "#059669", consulting: "#7c3aed", other: "#6b7280",
 };
 
@@ -43,8 +43,8 @@ function ModalShell({ icon: Icon, title, subtitle, onClose, children }: {
         style={{ backgroundColor: "var(--bg-surface)", boxShadow: "0 16px 48px rgba(0,0,0,0.24)" }}>
         <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: "1px solid var(--border)" }}>
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: "#e0e7ff" }}>
-              <Icon className="w-4 h-4" style={{ color: "#4f46e5" }} />
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: "#d3ebe6" }}>
+              <Icon className="w-4 h-4" style={{ color: "#0f8578" }} />
             </div>
             <div>
               <p className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>{title}</p>
@@ -92,9 +92,9 @@ function StatusToggle({ value, onChange, activeDisabled }: {
           <button key={s} disabled={disabled} onClick={() => onChange(s)}
             className="flex-1 py-2 rounded-lg text-sm font-medium capitalize transition-all disabled:opacity-40 disabled:cursor-not-allowed"
             style={{
-              border: `1.5px solid ${value === s ? "#4f46e5" : "var(--border)"}`,
-              backgroundColor: value === s ? "#e0e7ff" : "var(--bg-surface-2)",
-              color: value === s ? "#4f46e5" : "var(--text-secondary)",
+              border: `1.5px solid ${value === s ? "#0f8578" : "var(--border)"}`,
+              backgroundColor: value === s ? "#d3ebe6" : "var(--bg-surface-2)",
+              color: value === s ? "#0f8578" : "var(--text-secondary)",
             }}>
             {s}
           </button>
@@ -111,7 +111,7 @@ function FooterButtons({ onCancel, onSave, disabled, label }: {
     <div className="px-6 py-4 flex justify-end gap-2" style={{ borderTop: "1px solid var(--border)" }}>
       <button onClick={onCancel} className="px-3 py-2 rounded-lg text-sm" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>Cancel</button>
       <button onClick={onSave} disabled={disabled}
-        className="px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-40" style={{ backgroundColor: "#4f46e5" }}>
+        className="px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-40" style={{ backgroundColor: "#0f8578" }}>
         {label}
       </button>
     </div>
@@ -133,7 +133,7 @@ function GrowthSuccess({ name, leveledUp, onClose }: { name: string; leveledUp: 
         </div>
       )}
       <button onClick={onClose}
-        className="mt-1 px-4 py-2 rounded-lg text-sm font-medium text-white" style={{ backgroundColor: "#4f46e5" }}>
+        className="mt-1 px-4 py-2 rounded-lg text-sm font-medium text-white" style={{ backgroundColor: "#0f8578" }}>
         Done
       </button>
     </div>
@@ -197,7 +197,7 @@ export function AddLocationModal({ open, onClose, defaultCompanyId }: {
           <div className="px-6 py-4 flex justify-end gap-2" style={{ borderTop: "1px solid var(--border)" }}>
             <button onClick={reset} className="px-3 py-2 rounded-lg text-sm" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>Cancel</button>
             <button onClick={handleSave} disabled={!canSave}
-              className="px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-40" style={{ backgroundColor: "#4f46e5" }}>
+              className="px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-40" style={{ backgroundColor: "#0f8578" }}>
               Add Location
             </button>
           </div>
@@ -250,7 +250,7 @@ export function AddCompanyModal({ open, onClose }: { open: boolean; onClose: () 
           <div className="px-6 py-4 flex justify-end gap-2" style={{ borderTop: "1px solid var(--border)" }}>
             <button onClick={reset} className="px-3 py-2 rounded-lg text-sm" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>Cancel</button>
             <button onClick={handleSave} disabled={!canSave}
-              className="px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-40" style={{ backgroundColor: "#4f46e5" }}>
+              className="px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-40" style={{ backgroundColor: "#0f8578" }}>
               Add Company
             </button>
           </div>
@@ -318,7 +318,7 @@ export function EditCompanyModal({ company, open, onClose }: { company: Company;
         <div className="flex gap-2">
           <button onClick={onClose} className="px-3 py-2 rounded-lg text-sm" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>Cancel</button>
           <button onClick={handleSave} disabled={!canSave}
-            className="px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-40" style={{ backgroundColor: "#4f46e5" }}>
+            className="px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-40" style={{ backgroundColor: "#0f8578" }}>
             Save Changes
           </button>
         </div>
@@ -476,7 +476,7 @@ export function AddServiceAreaModal({ open, onClose, defaultLocationId }: {
             </div>
           </div>
           <div className="px-6 py-4 flex justify-end" style={{ borderTop: "1px solid var(--border)" }}>
-            <button onClick={onClose} className="px-4 py-2 rounded-lg text-sm font-medium text-white" style={{ backgroundColor: "#4f46e5" }}>Got it</button>
+            <button onClick={onClose} className="px-4 py-2 rounded-lg text-sm font-medium text-white" style={{ backgroundColor: "#0f8578" }}>Got it</button>
           </div>
         </>
       ) : (

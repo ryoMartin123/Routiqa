@@ -287,12 +287,12 @@ export default function Sidebar() {
       <div className={cn("py-3", collapsed ? "px-2 flex justify-center" : "px-3")} style={{ borderTop: "1px solid var(--sidebar-border)" }}>
         {collapsed ? (
           <div title={`${userName} · ${userRole}`}
-            className="w-8 h-8 rounded-full bg-[#e5e0db] flex items-center justify-center text-[#5c5545] text-xs font-semibold shrink-0">
+            className="w-8 h-8 rounded-full bg-[var(--copper-soft-bg)] flex items-center justify-center text-[var(--copper-text)] text-xs font-semibold shrink-0">
             {userInitials}
           </div>
         ) : (
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-full bg-[#e5e0db] flex items-center justify-center text-[#5c5545] text-xs font-semibold shrink-0">
+            <div className="w-8 h-8 rounded-full bg-[var(--copper-soft-bg)] flex items-center justify-center text-[var(--copper-text)] text-xs font-semibold shrink-0">
               {userInitials}
             </div>
             <div className="min-w-0">

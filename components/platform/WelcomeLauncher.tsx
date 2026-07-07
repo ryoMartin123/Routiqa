@@ -32,7 +32,7 @@ export default function WelcomeLauncher() {
       className="min-h-screen w-full flex flex-col items-center justify-center px-6 py-16"
       style={{
         background:
-          "radial-gradient(1200px 600px at 50% -10%, rgba(99,102,241,0.18), transparent 60%), var(--bg-page)",
+          "radial-gradient(1200px 600px at 50% -10%, rgba(35,156,141,0.18), transparent 60%), var(--bg-page)",
       }}
     >
       <div className="w-full max-w-4xl">

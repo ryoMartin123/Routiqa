@@ -137,7 +137,7 @@ function Composer({ users, placeholder, autoFocus, onSubmit }: {
               <button key={u.id} onClick={() => pick(u)} onMouseEnter={() => setIdx(i)}
                 className="w-full flex items-center gap-2 px-3 py-1.5 text-left transition-colors"
                 style={{ backgroundColor: i === idx ? "var(--bg-surface-2)" : "transparent" }}>
-                <span className="w-5 h-5 rounded-full bg-[#e5e0db] flex items-center justify-center text-[8px] font-bold text-[#5c5545] shrink-0">{u.initials}</span>
+                <span className="w-5 h-5 rounded-full bg-[var(--copper-soft-bg)] flex items-center justify-center text-[8px] font-bold text-[var(--copper-text)] shrink-0">{u.initials}</span>
                 <span className="text-sm truncate" style={{ color: "var(--text-primary)" }}>{u.name}</span>
               </button>
             ))}
@@ -163,7 +163,7 @@ function Composer({ users, placeholder, autoFocus, onSubmit }: {
 function CommentRow({ c, users, reply }: { c: Comment; users: MentionUser[]; reply?: boolean }) {
   return (
     <div className={`flex items-start gap-2.5 ${reply ? "pl-3" : ""}`}>
-      <span className="w-6 h-6 rounded-full bg-[#e5e0db] flex items-center justify-center text-[9px] font-bold text-[#5c5545] shrink-0 mt-0.5">{c.authorInitials}</span>
+      <span className="w-6 h-6 rounded-full bg-[var(--copper-soft-bg)] flex items-center justify-center text-[9px] font-bold text-[var(--copper-text)] shrink-0 mt-0.5">{c.authorInitials}</span>
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline gap-2">
           <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{c.authorName}</span>

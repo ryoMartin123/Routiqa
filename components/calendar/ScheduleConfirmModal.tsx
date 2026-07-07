@@ -58,7 +58,7 @@ export default function ScheduleConfirmModal({
         style={{ backgroundColor: "var(--bg-surface)", boxShadow: "0 16px 48px rgba(0,0,0,0.24)" }}>
         <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: "1px solid var(--border)" }}>
           <div className="flex items-center gap-2">
-            <CalendarClock className="w-4 h-4" style={{ color: "#4f46e5" }} />
+            <CalendarClock className="w-4 h-4" style={{ color: "#0f8578" }} />
             <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Schedule Job</p>
           </div>
           <button onClick={onClose} style={{ color: "var(--text-muted)" }}><X className="w-4 h-4" /></button>
@@ -75,7 +75,7 @@ export default function ScheduleConfirmModal({
           {suggestions.length > 0 && (
             <div>
               <div className="flex items-center gap-1.5 mb-1.5">
-                <Sparkles className="w-3.5 h-3.5" style={{ color: "#4f46e5" }} />
+                <Sparkles className="w-3.5 h-3.5" style={{ color: "#0f8578" }} />
                 <label className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>Suggested</label>
               </div>
               <div className="flex flex-col gap-1.5">
@@ -84,13 +84,13 @@ export default function ScheduleConfirmModal({
                   return (
                     <button key={s.name} onClick={() => set("tech", s.name)}
                       className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-left transition-colors"
-                      style={{ border: `1px solid ${on ? "#a5b4fc" : "var(--border)"}`, backgroundColor: on ? "var(--accent-soft-bg)" : "var(--bg-surface-2)" }}>
+                      style={{ border: `1px solid ${on ? "#8ed0c6" : "var(--border)"}`, backgroundColor: on ? "var(--accent-soft-bg)" : "var(--bg-surface-2)" }}>
                       <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: s.available && s.onDuty ? "#16a34a" : "#9ca3af" }} />
                       <span className="text-sm font-medium flex-1 truncate" style={{ color: "var(--text-primary)" }}>{s.name}</span>
                       <span className="inline-flex items-center gap-1 text-[11px] shrink-0" style={{ color: on ? "var(--accent-text)" : "var(--text-muted)" }}>
                         {s.onDuty && s.available && <Navigation className="w-3 h-3" />}{s.reason}
                       </span>
-                      {on && <Check className="w-3.5 h-3.5 shrink-0" style={{ color: "#4f46e5" }} />}
+                      {on && <Check className="w-3.5 h-3.5 shrink-0" style={{ color: "#0f8578" }} />}
                     </button>
                   );
                 })}
@@ -108,7 +108,7 @@ export default function ScheduleConfirmModal({
               <DatePicker value={d.date} onChange={v => set("date", v)} clearable={false} min={minBookableYMD(dayEnd)} />
             </Field>
             <Field label="Time">
-              <TimePicker value={d.time} onChange={v => set("time", v)} minTime={minTimeFor(d.date)} />
+              <TimePicker value={d.time} onChange={v => set("time", v)} minTime={minTimeFor(d.date)} minuteStep={increment} />
             </Field>
           </div>
 
@@ -139,7 +139,7 @@ export default function ScheduleConfirmModal({
         <div className="px-5 py-4 flex justify-end gap-2" style={{ borderTop: "1px solid var(--border)" }}>
           <button onClick={onClose} className="px-3 py-1.5 rounded-lg text-sm" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>Cancel</button>
           <button onClick={() => onConfirm(d)} disabled={!d.date || !d.time || isPast || outsideHours || conflict}
-            className="px-4 py-1.5 rounded-lg text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 transition-colors">
+            className="px-4 py-1.5 rounded-lg text-sm font-medium text-white bg-[#0f8578] hover:bg-[#0c6b60] disabled:opacity-40 transition-colors">
             Confirm &amp; Schedule
           </button>
         </div>

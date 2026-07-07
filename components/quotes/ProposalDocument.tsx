@@ -20,7 +20,7 @@ const LINE = "#e5e7eb";
 const SOFT = "#f9fafb";
 
 export default function ProposalDocument({ data, shadow = true, design = DEFAULT_DESIGN }: { data: ProposalDocData; shadow?: boolean; design?: ProposalDesign }) {
-  const accent = data.branding.accentColor || "#4f46e5";
+  const accent = data.branding.accentColor || "#0f8578";
   const ds = design.style;
   const showStrip = ds.header === "band";
   // Internal-only sections (e.g. the pricing worksheet) never appear on the

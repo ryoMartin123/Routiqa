@@ -27,7 +27,7 @@ const dotColor = (active: boolean) => (active ? ACTIVE : "var(--text-muted)");
 
 const TYPE_META: Record<NodeType, { label: string; icon: typeof Building2; accent: string }> = {
   org:         { label: "Organization", icon: Globe,     accent: "#a855f7" },
-  company:     { label: "Company",      icon: Building2,  accent: "#6366f1" },
+  company:     { label: "Company",      icon: Building2,  accent: "#239c8d" },
   location:    { label: "Location",     icon: MapPin,     accent: "#0ea5e9" },
   serviceArea: { label: "Service Area", icon: Map,        accent: "#0d9488" },
 };
@@ -74,7 +74,7 @@ function Avatars({ users }: { users: AppUser[] }) {
         {shown.map((u) => (
           <span key={u.id} title={u.fullName}
             className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-semibold"
-            style={{ backgroundColor: "#e0e7ff", color: "#4f46e5", boxShadow: "0 0 0 2px var(--bg-surface)" }}>
+            style={{ backgroundColor: "#d3ebe6", color: "#0f8578", boxShadow: "0 0 0 2px var(--bg-surface)" }}>
             {u.initials}
           </span>
         ))}

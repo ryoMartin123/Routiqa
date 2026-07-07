@@ -111,7 +111,7 @@ function InvoiceLineItems({ invoice }: { invoice: InvoiceRecord }) {
 // inline link with an arrow that nudges on hover. Color encodes the record type
 // (same palette as the Invoices list). The relation phrase says how the invoice
 // relates to the record ("Billed from", "Part of", "Created from").
-const LINK_COLOR: Record<string, string> = { job: "#3730a3", work_order: "#0891b2", project: "#5b21b6", quote: "#6d28d9", agreement: "#059669", customer: "#3730a3" };
+const LINK_COLOR: Record<string, string> = { job: "#0a5c53", work_order: "#0891b2", project: "#5b21b6", quote: "#6d28d9", agreement: "#059669", customer: "#0a5c53" };
 function LinkedRow({ href, label, type, relation }: { href: string; label: string; type: string; relation: string }) {
   const color = LINK_COLOR[type] ?? "var(--text-secondary)";
   return (
@@ -194,7 +194,7 @@ function OverviewTab({ id }: { id: string }) {
             <DLabel>Customer</DLabel>
             {customer ? (
               <div className="flex items-center gap-3 mt-3">
-                <div className="w-8 h-8 rounded-full bg-[#e5e0db] flex items-center justify-center text-[#5c5545] text-[10px] font-bold shrink-0">{customer.initials}</div>
+                <div className="w-8 h-8 rounded-full bg-[var(--copper-soft-bg)] flex items-center justify-center text-[var(--copper-text)] text-[10px] font-bold shrink-0">{customer.initials}</div>
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{customer.name}</p>
                   {customer.phone && <p className="text-xs mt-0.5 inline-flex items-center gap-1" style={{ color: "var(--text-muted)" }}><Phone className="w-3 h-3" /> {customer.phone}</p>}
@@ -208,7 +208,7 @@ function OverviewTab({ id }: { id: string }) {
               </div>
             ) : (
               <div className="flex items-center gap-3 mt-3">
-                <div className="w-8 h-8 rounded-full bg-[#e5e0db] flex items-center justify-center text-[10px] font-bold text-[#5c5545] shrink-0">{invoice.customerInitials}</div>
+                <div className="w-8 h-8 rounded-full bg-[var(--copper-soft-bg)] flex items-center justify-center text-[10px] font-bold text-[var(--copper-text)] shrink-0">{invoice.customerInitials}</div>
                 <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{invoice.customerName}</p>
               </div>
             )}
@@ -420,7 +420,7 @@ function InvoiceNotesTab({ invoice, onSaved }: { invoice: InvoiceRecord; onSaved
       <div className="flex justify-end">
         <button onClick={save} disabled={!dirty && !saved}
           className="px-4 py-2 rounded-lg text-sm font-medium text-white transition-colors disabled:opacity-40"
-          style={{ backgroundColor: saved ? "#10b981" : "#4f46e5" }}>{saved ? "Saved ✓" : "Save Notes"}</button>
+          style={{ backgroundColor: saved ? "#10b981" : "#0f8578" }}>{saved ? "Saved ✓" : "Save Notes"}</button>
       </div>
     </div>
   );
@@ -430,7 +430,7 @@ function InvoiceNotesTab({ invoice, onSaved }: { invoice: InvoiceRecord; onSaved
 function InvoiceActivityTab({ invoice }: { invoice: InvoiceRecord }) {
   const events: { label: string; detail?: string; at?: string; color: string }[] = [];
   events.push({ label: "Invoice created", detail: invoice.invoiceNumber, at: invoice.createdAt, color: "#6b7280" });
-  if (invoice.status !== "draft") events.push({ label: "Marked sent", detail: `Due ${invoice.dueDate}`, color: "#4f46e5" });
+  if (invoice.status !== "draft") events.push({ label: "Marked sent", detail: `Due ${invoice.dueDate}`, color: "#0f8578" });
   (invoice.payments ?? []).forEach(p => events.push({ label: "Payment recorded", detail: fmt(p.amount), at: p.at, color: "#16a34a" }));
   if (invoice.status === "paid" && invoice.paidAt) events.push({ label: "Paid in full", at: invoice.paidAt, color: "#16a34a" });
   if (invoice.status === "void") events.push({ label: "Invoice voided", color: "#dc2626" });

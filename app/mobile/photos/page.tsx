@@ -9,7 +9,7 @@ import PhotoCapture from "@/components/mobile/PhotoCapture";
 import { getCurrentTech, getCurrentJob, getMyJobs } from "@/lib/mobile/data";
 import { getFiles } from "@/lib/files/data";
 
-const PHASE_COLOR: Record<string, string> = { before: "#6366f1", during: "#3b82f6", after: "#10b981" };
+const PHASE_COLOR: Record<string, string> = { before: "#239c8d", during: "#3b82f6", after: "#10b981" };
 
 export default function MobilePhotosPage() {
   const router = useRouter();

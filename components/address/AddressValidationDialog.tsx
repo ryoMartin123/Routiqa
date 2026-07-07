@@ -68,7 +68,7 @@ export function AddressValidationDialog({
         <button
           onClick={onUseSuggested}
           className="flex items-center gap-1.5 flex-1 justify-center py-1.5 rounded-lg text-xs font-medium transition-colors"
-          style={{ backgroundColor: "#4f46e5", color: "#fff" }}
+          style={{ backgroundColor: "#0f8578", color: "#fff" }}
         >
           <CheckCircle className="w-3.5 h-3.5" />
           Use Suggested

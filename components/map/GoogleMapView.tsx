@@ -16,7 +16,7 @@ import {
 } from "@/lib/dispatch-map/data";
 import { TRACK_STATE_META } from "@/lib/tech-tracking/data";
 
-const ACCENT = "#4f46e5"; // CRM indigo
+const ACCENT = "#0f8578"; // CRM indigo
 const svgUrl = (svg: string) => `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
 
 // Teardrop job pin — colored by status, white core, optional selection ring.

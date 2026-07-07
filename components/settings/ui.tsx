@@ -11,7 +11,7 @@ export function Toggle({ on, onChange }: { on: boolean; onChange: (v: boolean) =
   return (
     <button onClick={() => onChange(!on)} role="switch" aria-checked={on} type="button"
       className="relative w-9 h-5 rounded-full transition-colors shrink-0"
-      style={{ backgroundColor: on ? "#4f46e5" : "var(--bg-input)", border: "1px solid var(--border)" }}>
+      style={{ backgroundColor: on ? "#0f8578" : "var(--bg-input)", border: "1px solid var(--border)" }}>
       <span className="absolute top-0.5 left-0.5 w-3.5 h-3.5 rounded-full bg-white shadow transition-transform"
         style={{ transform: on ? "translateX(16px)" : "translateX(0)" }} />
     </button>
@@ -27,7 +27,7 @@ export function SettingsCard({ icon: Icon, title, subtitle, action, children }: 
         <div className="flex items-start gap-3">
           {Icon && (
             <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: "var(--bg-surface-2)" }}>
-              <Icon className="w-4 h-4" style={{ color: "#4f46e5" }} />
+              <Icon className="w-4 h-4" style={{ color: "#0f8578" }} />
             </div>
           )}
           <div>

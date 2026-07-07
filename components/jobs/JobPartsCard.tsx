@@ -84,7 +84,7 @@ export default function JobPartsCard({ jobId }: { jobId: string }) {
           <input value={eta} onChange={e => setEta(e.target.value)} onKeyDown={e => e.key === "Enter" && add()} placeholder="ETA"
             className="w-16 rounded-md px-2 py-1.5 text-xs outline-none" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface)", color: "var(--text-primary)" }} />
           <button onClick={add} disabled={!desc.trim()} title="Add part"
-            className="p-1.5 rounded-md shrink-0 text-white disabled:opacity-40" style={{ backgroundColor: "#4f46e5" }}>
+            className="p-1.5 rounded-md shrink-0 text-white disabled:opacity-40" style={{ backgroundColor: "#0f8578" }}>
             <Plus className="w-3.5 h-3.5" />
           </button>
         </div>

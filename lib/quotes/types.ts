@@ -174,7 +174,7 @@ export interface Invoice {
 
 export const QUOTE_STATUS_STYLE: Record<QuoteStatus, { label: string; bg: string; color: string }> = {
   draft:     { label: "Draft",     bg: "var(--bg-input)", color: "var(--text-muted)" },
-  sent:      { label: "Sent",      bg: "#e0e7ff",         color: "#3730a3" },
+  sent:      { label: "Sent",      bg: "#d3ebe6",         color: "#0a5c53" },
   viewed:    { label: "Viewed",    bg: "#dbeafe",         color: "#1e40af" },
   approved:  { label: "Approved",  bg: "#d1fae5",         color: "#065f46" },
   rejected:  { label: "Rejected",  bg: "#fee2e2",         color: "#991b1b" },
@@ -184,7 +184,7 @@ export const QUOTE_STATUS_STYLE: Record<QuoteStatus, { label: string; bg: string
 
 export const INVOICE_STATUS_STYLE: Record<InvoiceStatus, { label: string; bg: string; color: string }> = {
   draft:          { label: "Draft",          bg: "var(--bg-input)", color: "var(--text-muted)" },
-  sent:           { label: "Sent",           bg: "#e0e7ff",         color: "#3730a3" },
+  sent:           { label: "Sent",           bg: "#d3ebe6",         color: "#0a5c53" },
   viewed:         { label: "Viewed",         bg: "#dbeafe",         color: "#1e40af" },
   partially_paid: { label: "Partially Paid", bg: "#fef3c7",         color: "#92400e" },
   paid:           { label: "Paid",           bg: "#d1fae5",         color: "#065f46" },

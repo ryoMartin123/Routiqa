@@ -98,10 +98,10 @@ export default function DatePicker({ value, onChange, placeholder = "Select date
       <button type="button" onClick={() => setOpen(o => !o)}
         className={`w-full flex items-center justify-between gap-2 rounded-lg outline-none transition-colors ${pad}`}
         style={{
-          border: `1px solid ${open ? "#a5b4fc" : "var(--border)"}`,
+          border: `1px solid ${open ? "#8ed0c6" : "var(--border)"}`,
           backgroundColor: "var(--bg-surface)",
           color: sel ? "var(--text-primary)" : "var(--text-muted)",
-          boxShadow: open ? "0 0 0 3px rgba(99,102,241,0.12)" : "none",
+          boxShadow: open ? "0 0 0 3px rgba(35,156,141,0.12)" : "none",
         }}>
         <span className="truncate text-left">{sel ? sel.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : placeholder}</span>
         <CalendarIcon className="w-3.5 h-3.5 shrink-0" style={{ color: "var(--text-muted)" }} />
@@ -134,7 +134,7 @@ export default function DatePicker({ value, onChange, placeholder = "Select date
                 <button key={i} type="button" disabled={disabled} onClick={() => choose(d)}
                   className={`h-8 rounded-lg text-xs flex items-center justify-center transition-colors disabled:opacity-30 disabled:cursor-not-allowed ${isSel ? "" : "hover:bg-[var(--bg-surface-2)]"}`}
                   style={{
-                    backgroundColor: isSel ? "#4f46e5" : undefined,
+                    backgroundColor: isSel ? "#0f8578" : undefined,
                     color: isSel ? "#fff" : inMonth ? "var(--text-primary)" : "var(--text-muted)",
                     fontWeight: isSel || isToday ? 600 : 400,
                     border: isToday && !isSel ? "1px solid var(--accent-soft-border)" : "1px solid transparent",

@@ -16,7 +16,7 @@ export default function AccountingDashboard() {
         <StatCard label="Outstanding A/R" value="$48,250" hint="12 open invoices" icon={Receipt} accent="#10b981" />
         <StatCard label="Collected (MTD)" value="$112,400" hint="+8% vs last month" icon={CreditCard} accent="#0ea5e9" />
         <StatCard label="Expenses (MTD)" value="$34,900" hint="Across 3 locations" icon={Wallet} accent="#f59e0b" />
-        <StatCard label="Net (MTD)" value="$77,500" hint="Cash basis" icon={BarChart3} accent="#6366f1" />
+        <StatCard label="Net (MTD)" value="$77,500" hint="Cash basis" icon={BarChart3} accent="#239c8d" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

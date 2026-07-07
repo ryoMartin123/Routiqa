@@ -72,7 +72,7 @@ export default function NotificationsBell({ events }: { events: ActivityEvent[] 
         <div className="relative">
         <div className="flex items-center justify-between px-4 pt-3 pb-2" style={{ backgroundColor: "color-mix(in srgb, var(--bg-surface) 38%, transparent)" }}>
           <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>Notifications</p>
-          {unread > 0 && <button onClick={() => setOpen(false)} className="text-[11px] font-semibold" style={{ color: "#4f46e5" }}>Mark all read</button>}
+          {unread > 0 && <button onClick={() => setOpen(false)} className="text-[11px] font-semibold" style={{ color: "#0f8578" }}>Mark all read</button>}
         </div>
         <div className="max-h-[60vh] overflow-y-auto pb-1">
           {items.length === 0 ? (

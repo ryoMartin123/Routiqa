@@ -17,7 +17,7 @@ const sortStages = (s: PipelineStage[]) => [...s].sort((a, b) => a.order - b.ord
 const CATEGORIES = Object.keys(STAGE_CATEGORY_LABELS) as StageCategory[];
 
 const CATEGORY_BADGE: Record<StageCategory, { bg: string; color: string }> = {
-  open: { bg: "#e0e7ff", color: "#3730a3" },
+  open: { bg: "#d3ebe6", color: "#0a5c53" },
   won:  { bg: "#d1fae5", color: "#065f46" },
   lost: { bg: "#fee2e2", color: "#991b1b" },
 };
@@ -29,7 +29,7 @@ function Toggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void 
   return (
     <button onClick={() => onChange(!on)} role="switch" aria-checked={on}
       className="relative w-8 h-4 rounded-full transition-colors shrink-0"
-      style={{ backgroundColor: on ? "#4f46e5" : "var(--bg-input)", border: "1px solid var(--border)" }}>
+      style={{ backgroundColor: on ? "#0f8578" : "var(--bg-input)", border: "1px solid var(--border)" }}>
       <span className="absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white shadow transition-transform"
         style={{ transform: on ? "translateX(16px)" : "translateX(0)" }} />
     </button>
@@ -129,8 +129,8 @@ export default function PipelinesSection() {
   function FormCard() {
     return (
       <div className="rounded-xl p-4 space-y-3"
-        style={{ backgroundColor: "var(--bg-surface)", border: "2px solid #c7d2fe", boxShadow: "var(--shadow-card)" }}>
-        <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: "#4f46e5" }}>
+        style={{ backgroundColor: "var(--bg-surface)", border: "2px solid #b9dfd8", boxShadow: "var(--shadow-card)" }}>
+        <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: "#0f8578" }}>
           {editingId ? "Edit Stage" : "New Stage"}
         </p>
         <div className="grid grid-cols-2 gap-3">
@@ -178,7 +178,7 @@ export default function PipelinesSection() {
             </button>
             <button onClick={commitForm} disabled={!form.name.trim()}
               className="px-4 py-1.5 rounded-lg text-sm font-medium text-white disabled:opacity-40"
-              style={{ backgroundColor: "#4f46e5" }}>
+              style={{ backgroundColor: "#0f8578" }}>
               {editingId ? "Update Stage" : "Add Stage"}
             </button>
           </div>
@@ -223,8 +223,8 @@ export default function PipelinesSection() {
           </p>
           {!showAdd && (
             <button onClick={startAdd} title="Add stage"
-              className="flex items-center justify-center w-7 h-7 rounded-lg text-white transition-colors hover:bg-indigo-700"
-              style={{ backgroundColor: "#4f46e5" }}>
+              className="flex items-center justify-center w-7 h-7 rounded-lg text-white transition-colors hover:bg-[#0c6b60]"
+              style={{ backgroundColor: "#0f8578" }}>
               <Plus className="w-4 h-4" />
             </button>
           )}

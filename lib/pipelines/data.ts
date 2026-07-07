@@ -24,13 +24,13 @@ export const STAGE_CATEGORY_LABELS: Record<StageCategory, string> = {
 
 // Preset colors for the stage color picker
 export const STAGE_COLORS = [
-  "#6366f1", "#3b82f6", "#0891b2", "#8b5cf6",
+  "#239c8d", "#3b82f6", "#0891b2", "#8b5cf6",
   "#f59e0b", "#ec4899", "#10b981", "#ef4444", "#6b7280",
 ];
 
 // ─── Default stages (General Service template) ────────────
 export const DEFAULT_STAGES: PipelineStage[] = [
-  { id: "ps-1", name: "New Lead",              key: "new_lead",              order: 1, color: "#6366f1", category: "open", active: true },
+  { id: "ps-1", name: "New Lead",              key: "new_lead",              order: 1, color: "#239c8d", category: "open", active: true },
   { id: "ps-2", name: "Contacted",            key: "contacted",             order: 2, color: "#f59e0b", category: "open", active: true },
   { id: "ps-3", name: "Appointment Scheduled", key: "appointment_scheduled", order: 3, color: "#3b82f6", category: "open", active: true },
   { id: "ps-4", name: "Estimate Needed",      key: "estimate_needed",       order: 4, color: "#ec4899", category: "open", active: true },

@@ -20,7 +20,7 @@ const WHITE: RGB = [255, 255, 255];
 
 function hexToRgb(hex: string): RGB {
   const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex.trim());
-  return m ? [parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16)] : [79, 70, 229];
+  return m ? [parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16)] : [15, 133, 120];
 }
 
 // RTE HTML → plain lines, bullets prefixed with "• ".
@@ -85,7 +85,7 @@ export async function downloadCustomProposalPdf(data: CustomDocData, design: Pro
   const pageH = doc.internal.pageSize.getHeight();
   const M = 48;
   const contentW = pageW - M * 2;
-  const accent = hexToRgb(data.branding.accentColor || "#4f46e5");
+  const accent = hexToRgb(data.branding.accentColor || "#0f8578");
   const bottom = pageH - 54;
   let y = 56;
 

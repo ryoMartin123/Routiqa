@@ -120,13 +120,13 @@ export default function VisitsTab({ agreement, onRefresh }: { agreement: Custome
                 <span className="text-sm truncate" style={{ color: "var(--text-secondary)" }}>{v.tech}</span>
                 <div className="flex items-center gap-1.5">
                   {v.jobId ? (
-                    <Link href={`/jobs/${v.jobId}`} className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-lg transition-colors text-indigo-600 cursor-pointer" style={{ border: "1px solid #c7d2fe" }}>
+                    <Link href={`/jobs/${v.jobId}`} className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-lg transition-colors text-[#0f8578] cursor-pointer" style={{ border: "1px solid #b9dfd8" }}>
                       Open job <ChevronRight className="w-3 h-3" />
                     </Link>
                   ) : v.status === "completed" || isSkipped ? (
                     <span className="text-xs" style={{ color: "var(--text-muted)" }}>—</span>
                   ) : (
-                    <button onClick={() => scheduleVisit(v.id)} className="text-xs px-2 py-1 rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 cursor-pointer transition-colors">
+                    <button onClick={() => scheduleVisit(v.id)} className="text-xs px-2 py-1 rounded-lg text-white bg-[#0f8578] hover:bg-[#0c6b60] cursor-pointer transition-colors">
                       {v.status === "missed" ? "Reschedule" : "Schedule"}
                     </button>
                   )}

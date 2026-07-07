@@ -643,13 +643,13 @@ export default function CalendarPage() {
                         onClick={() => { selectBoard(o.value); setBoardMenuOpen(false); }}
                         className="w-full flex items-center justify-between gap-2 px-2.5 py-2 rounded-lg text-left transition-colors hover:bg-[var(--bg-surface-2)]">
                         <span className="min-w-0">
-                          <span className="block text-sm truncate" style={{ color: sel ? "#4f46e5" : "var(--text-secondary)", fontWeight: sel ? 600 : 400 }}>{o.label}</span>
+                          <span className="block text-sm truncate" style={{ color: sel ? "#0f8578" : "var(--text-secondary)", fontWeight: sel ? 600 : 400 }}>{o.label}</span>
                           <span className="flex items-center gap-1 text-[10px] mt-0.5 truncate" style={{ color: "var(--text-muted)" }}>
                             <ScopeIcon className="w-2.5 h-2.5 shrink-0" />
                             <span className="truncate">{o.sub}</span>
                           </span>
                         </span>
-                        {sel && <Check className="w-3.5 h-3.5 shrink-0" style={{ color: "#4f46e5" }} />}
+                        {sel && <Check className="w-3.5 h-3.5 shrink-0" style={{ color: "#0f8578" }} />}
                       </button>
                     );
                   })}
@@ -675,7 +675,7 @@ export default function CalendarPage() {
             return (
               <button key={v.key} onClick={() => setView(v.key)}
                 className="flex items-center gap-1.5 px-3 py-1.5 text-sm transition-colors"
-                style={{ backgroundColor: active ? "#4f46e5" : "var(--bg-surface)", color: active ? "#fff" : "var(--text-secondary)" }}>
+                style={{ backgroundColor: active ? "#0f8578" : "var(--bg-surface)", color: active ? "#fff" : "var(--text-secondary)" }}>
                 <v.icon className="w-3.5 h-3.5" /> {v.label}
               </button>
             );
@@ -686,11 +686,11 @@ export default function CalendarPage() {
           <div className="relative">
             <div className="flex items-center rounded-lg overflow-hidden" style={{ border: "1px solid var(--border)" }}>
               <button onClick={() => { setMapDateMode("today"); setMapCustomOpen(false); }} className="px-3 py-1.5 text-sm transition-colors"
-                style={{ backgroundColor: mapDateMode === "today" ? "#4f46e5" : "var(--bg-surface)", color: mapDateMode === "today" ? "#fff" : "var(--text-secondary)" }}>
+                style={{ backgroundColor: mapDateMode === "today" ? "#0f8578" : "var(--bg-surface)", color: mapDateMode === "today" ? "#fff" : "var(--text-secondary)" }}>
                 Today
               </button>
               <button onClick={() => { setMapDateMode("custom"); setMapCustomOpen(o => !o); }} className="flex items-center gap-1.5 px-3 py-1.5 text-sm transition-colors"
-                style={{ backgroundColor: mapDateMode === "custom" ? "#4f46e5" : "var(--bg-surface)", color: mapDateMode === "custom" ? "#fff" : "var(--text-secondary)", borderLeft: "1px solid var(--border)" }}>
+                style={{ backgroundColor: mapDateMode === "custom" ? "#0f8578" : "var(--bg-surface)", color: mapDateMode === "custom" ? "#fff" : "var(--text-secondary)", borderLeft: "1px solid var(--border)" }}>
                 <CalendarDays className="w-3.5 h-3.5" /> Custom <ChevronDown className="w-3.5 h-3.5" />
               </button>
             </div>
@@ -706,13 +706,13 @@ export default function CalendarPage() {
                 <p className="text-[10px] font-semibold uppercase tracking-wider mt-3 mb-2" style={{ color: "var(--text-muted)" }}>Time range <span className="font-normal normal-case">· board hours only</span></p>
                 <div className="grid grid-cols-2 gap-2">
                   <div><label className="block text-[10px] mb-1" style={{ color: "var(--text-secondary)" }}>From</label>
-                    <TimePicker size="sm" value={mapFromTime} onChange={setMapFromTime} placeholder="Any" startHour={Math.floor(hourly.startHour)} endHour={Math.ceil(hourly.endHour)} /></div>
+                    <TimePicker size="sm" value={mapFromTime} onChange={setMapFromTime} placeholder="Any" minuteStep={hourly.increment} startHour={Math.floor(hourly.startHour)} endHour={Math.ceil(hourly.endHour)} /></div>
                   <div><label className="block text-[10px] mb-1" style={{ color: "var(--text-secondary)" }}>To</label>
-                    <TimePicker size="sm" value={mapToTime} onChange={setMapToTime} placeholder="Any" startHour={Math.floor(hourly.startHour)} endHour={Math.ceil(hourly.endHour)} /></div>
+                    <TimePicker size="sm" value={mapToTime} onChange={setMapToTime} placeholder="Any" minuteStep={hourly.increment} startHour={Math.floor(hourly.startHour)} endHour={Math.ceil(hourly.endHour)} /></div>
                 </div>
                 <div className="flex items-center justify-between mt-3">
                   <button onClick={() => { setMapFromTime(""); setMapToTime(""); }} className="text-[11px]" style={{ color: "var(--text-muted)" }}>Clear times</button>
-                  <button onClick={() => setMapCustomOpen(false)} className="text-xs font-medium text-white px-3 py-1.5 rounded-lg" style={{ backgroundColor: "#4f46e5" }}>Apply</button>
+                  <button onClick={() => setMapCustomOpen(false)} className="text-xs font-medium text-white px-3 py-1.5 rounded-lg" style={{ backgroundColor: "#0f8578" }}>Apply</button>
                 </div>
               </div>
             )}
@@ -725,7 +725,7 @@ export default function CalendarPage() {
           <div className="relative">
             <button onClick={() => !noTechs && setCreateMenuOpen(o => !o)} disabled={noTechs}
               title={noTechs ? "Add technicians in Settings → Users & Roles first" : "Add to board"}
-              className="plus-glow flex items-center justify-center w-8 h-8 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none"
+              className="plus-glow flex items-center justify-center w-8 h-8 rounded-lg bg-[#0f8578] hover:bg-[#0c6b60] text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none"
               aria-haspopup="menu" aria-expanded={createMenuOpen}
               data-open={createMenuOpen || showJobWizard || showReturnVisit || showVisitScheduler || timeOffOpen}>
               <Plus className="w-4 h-4" />
@@ -780,7 +780,7 @@ export default function CalendarPage() {
                           const active = dispatchMode === m.key;
                           return (
                             <button key={m.key} onClick={() => setMode(m.key)} className="flex-1 px-3 py-1.5 text-xs font-medium transition-colors"
-                              style={{ backgroundColor: active ? "#4f46e5" : "var(--bg-surface)", color: active ? "#fff" : "var(--text-muted)" }}>
+                              style={{ backgroundColor: active ? "#0f8578" : "var(--bg-surface)", color: active ? "#fff" : "var(--text-muted)" }}>
                               {m.label}
                             </button>
                           );
@@ -1238,7 +1238,7 @@ function DispatchBoard({ focus, mode, items, roster, availability, dayStart, day
               {/* People wear the swiss-coffee circle (same as contact avatars);
                   the unassigned lane keeps its warning tile — it's a state, not a person. */}
               <div className={`w-7 h-7 ${isUnassigned ? "rounded-lg" : "rounded-full"} flex items-center justify-center text-[9px] font-bold shrink-0`}
-                style={{ backgroundColor: isUnassigned ? "var(--warning-soft-border)" : "#e5e0db", color: isUnassigned ? "var(--warning-text)" : "#5c5545" }}>{tech.initials}</div>
+                style={{ backgroundColor: isUnassigned ? "var(--warning-soft-border)" : "var(--copper-soft-bg)", color: isUnassigned ? "var(--warning-text)" : "var(--copper-text)" }}>{tech.initials}</div>
               <div className="min-w-0">
                 <p className="text-xs font-semibold truncate" style={{ color: isUnassigned ? "var(--warning-text)" : "var(--text-primary)" }}>{isUnassigned ? "Unassigned" : tech.name}</p>
                 {isUnassigned ? (
@@ -1481,7 +1481,7 @@ function UnscheduledQueue({ items, views, tab, setTab, search, setSearch, onSele
                   return (
                     <button key={o.key} onClick={() => setLayout(o.key)} title={o.key === "cards" ? "Card view" : "List view"}
                       className="px-2 py-1.5 transition-colors"
-                      style={{ backgroundColor: active ? "#4f46e5" : "var(--bg-surface)", color: active ? "#fff" : "var(--text-muted)" }}>
+                      style={{ backgroundColor: active ? "#0f8578" : "var(--bg-surface)", color: active ? "#fff" : "var(--text-muted)" }}>
                       <o.icon className="w-3.5 h-3.5" />
                     </button>
                   );

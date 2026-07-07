@@ -14,7 +14,7 @@ import MapBuilder from "@/components/settings/MapBuilder";
 import { DEFAULT_MAP_TEMPLATES, MAP_TEMPLATES_KEY, newMapTemplateId, type MapTemplate } from "@/lib/projects/map-templates";
 import { DEFAULT_PROJECT_TYPES } from "@/lib/projects/settings";
 
-const ACCENT = "#4f46e5";
+const ACCENT = "#0f8578";
 const clone = (t: MapTemplate): MapTemplate => JSON.parse(JSON.stringify(t));
 const isBuiltIn = (id: string) => DEFAULT_MAP_TEMPLATES.some(t => t.id === id);
 const typeLabel = (key: string) => DEFAULT_PROJECT_TYPES.find(t => t.key === key)?.label ?? key;

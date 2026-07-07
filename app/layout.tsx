@@ -1,14 +1,23 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
+import { Barlow, Barlow_Semi_Condensed } from "next/font/google";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import JobsHydrator from "@/components/providers/JobsHydrator";
 import TechLocationsHydrator from "@/components/providers/TechLocationsHydrator";
 import PlusClickEnhancer from "@/components/shared/PlusClickEnhancer";
 import "./globals.css";
 
-const inter = Inter({
+// Brand type: Barlow for body/UI/buttons (400–600), Barlow Semi Condensed
+// (600/700) for headlines, card titles, and big numbers — applied via
+// --font-family-display in globals.css.
+const barlow = Barlow({
   subsets: ["latin"],
-  variable: "--font-inter",
+  weight: ["400", "500", "600"],
+  variable: "--font-barlow",
+});
+const barlowSemi = Barlow_Semi_Condensed({
+  subsets: ["latin"],
+  weight: ["600", "700"],
+  variable: "--font-barlow-semi",
 });
 
 export const metadata: Metadata = {
@@ -36,8 +45,9 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  // Font variables live on <html> — the :root font stacks reference them.
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" className={`${barlow.variable} ${barlowSemi.variable}`} suppressHydrationWarning>
       <head>
         {/* Apply saved theme before hydration to prevent flash */}
         <script
@@ -58,7 +68,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className={`${inter.variable} antialiased`} suppressHydrationWarning>
+      <body className="antialiased" suppressHydrationWarning>
         <ThemeProvider>{children}</ThemeProvider>
         <JobsHydrator />
         <TechLocationsHydrator />

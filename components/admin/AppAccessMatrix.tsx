@@ -250,12 +250,12 @@ function ByUser({ users, userRoles, userScope, access, hasOverride, onUser }: {
                 {/* User */}
                 <div className="flex items-center gap-3 min-w-0 pr-2">
                   <span className="w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-bold text-white shrink-0"
-                    style={{ backgroundColor: u.isOrgOwner ? "#4f46e5" : "#6b7280" }}>{u.initials}</span>
+                    style={{ backgroundColor: u.isOrgOwner ? "#0f8578" : "#6b7280" }}>{u.initials}</span>
                   <div className="min-w-0">
                     <div className="flex items-center gap-1.5">
                       <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{u.fullName}</p>
                       {u.id === "user_marcus" && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full shrink-0" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>YOU</span>}
-                      {u.isOrgOwner && <ShieldCheck className="w-3.5 h-3.5 shrink-0" style={{ color: "#4f46e5" }} />}
+                      {u.isOrgOwner && <ShieldCheck className="w-3.5 h-3.5 shrink-0" style={{ color: "#0f8578" }} />}
                     </div>
                     <p className="text-[11px] truncate" style={{ color: "var(--text-muted)" }}>{u.email}</p>
                   </div>
@@ -400,7 +400,7 @@ function ByApp({ apps, roles, users }: { apps: PlatformAppId[]; roles: RoleDefin
                   {appUsers.slice(0, 8).map((u) => (
                     <span key={u.id} title={u.fullName}
                       className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-semibold"
-                      style={{ backgroundColor: "#e0e7ff", color: "#4f46e5", boxShadow: "0 0 0 2px var(--bg-surface)" }}>{u.initials}</span>
+                      style={{ backgroundColor: "#d3ebe6", color: "#0f8578", boxShadow: "0 0 0 2px var(--bg-surface)" }}>{u.initials}</span>
                   ))}
                 </div>
                 <span className="text-xs flex items-center gap-1" style={{ color: "var(--text-secondary)" }}>

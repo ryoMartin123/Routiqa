@@ -35,7 +35,7 @@ function money(n?: number): string {
 function SectionTitle({ icon: Icon, children }: { icon: typeof Star; children: React.ReactNode }) {
   return (
     <div className="flex items-center gap-2 mb-2">
-      <Icon className="w-3.5 h-3.5" style={{ color: "#4f46e5" }} />
+      <Icon className="w-3.5 h-3.5" style={{ color: "#0f8578" }} />
       <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>{children}</p>
     </div>
   );

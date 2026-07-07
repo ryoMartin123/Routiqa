@@ -31,7 +31,7 @@ export function Toggle({ on, onChange }: { on: boolean; onChange: (v: boolean) =
   return (
     <button type="button" onClick={() => onChange(!on)} role="switch" aria-checked={on}
       className="relative w-8 h-4 rounded-full transition-colors shrink-0"
-      style={{ backgroundColor: on ? "#4f46e5" : "var(--bg-input)", border: "1px solid var(--border)" }}>
+      style={{ backgroundColor: on ? "#0f8578" : "var(--bg-input)", border: "1px solid var(--border)" }}>
       <span className="absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white shadow transition-transform"
         style={{ transform: on ? "translateX(16px)" : "translateX(0)" }} />
     </button>
@@ -65,7 +65,7 @@ export function SectionHead({ title, subtitle, action }: { title: string; subtit
 
 export function AddButton({ onClick, label }: { onClick: () => void; label: string }) {
   return (
-    <button onClick={onClick} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-white shrink-0" style={{ backgroundColor: "#4f46e5" }}>
+    <button onClick={onClick} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-white shrink-0" style={{ backgroundColor: "#0f8578" }}>
       <Plus className="w-4 h-4" /> {label}
     </button>
   );
@@ -126,7 +126,7 @@ export function RuleCard({ selected, title, desc, onClick }: { selected: boolean
       }}>
       <div className="flex items-center gap-2">
         <span className="w-3.5 h-3.5 rounded-full shrink-0 flex items-center justify-center"
-          style={{ border: `1px solid ${selected ? "#4f46e5" : "var(--border)"}`, backgroundColor: selected ? "#4f46e5" : "transparent" }}>
+          style={{ border: `1px solid ${selected ? "#0f8578" : "var(--border)"}`, backgroundColor: selected ? "#0f8578" : "transparent" }}>
           {selected && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
         </span>
         <span className="text-sm font-medium" style={{ color: selected ? "var(--accent-text-strong)" : "var(--text-primary)" }}>{title}</span>

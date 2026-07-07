@@ -84,7 +84,7 @@ export default function SalesbookLibrarySection({ activeModule, onOpen, onBack }
       <div className="space-y-5">
         <div>
           <h2 className="text-lg font-semibold flex items-center gap-2" style={{ color: "var(--text-primary)" }}>
-            <BookOpen className="w-5 h-5" style={{ color: "#4f46e5" }} /> Proposal Library
+            <BookOpen className="w-5 h-5" style={{ color: "#0f8578" }} /> Proposal Library
           </h2>
           <p className="text-sm mt-0.5" style={{ color: "var(--text-secondary)" }}>
             The single place for reusable proposal setup — templates, designs, content, branding, and defaults. Pick one to manage it.
@@ -99,7 +99,7 @@ export default function SalesbookLibrarySection({ activeModule, onOpen, onBack }
                 className="flex items-start gap-3 p-4 rounded-xl text-left w-full transition-all group hover:shadow-md cursor-pointer"
                 style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: "var(--bg-surface-2)" }}>
-                  <Icon className="w-4 h-4" style={{ color: "#4f46e5" }} />
+                  <Icon className="w-4 h-4" style={{ color: "#0f8578" }} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5">
@@ -156,7 +156,7 @@ export default function SalesbookLibrarySection({ activeModule, onOpen, onBack }
           {/* Proposal Branding now lives inside Defaults (its standalone card was removed). */}
           <div>
             <h3 className="text-sm font-semibold mb-4 pt-5 flex items-center gap-2" style={{ color: "var(--text-primary)", borderTop: "1px solid var(--border)" }}>
-              <Palette className="w-4 h-4" style={{ color: "#4f46e5" }} /> Proposal Branding
+              <Palette className="w-4 h-4" style={{ color: "#0f8578" }} /> Proposal Branding
             </h3>
             <ProposalBrandingSection />
           </div>
@@ -482,7 +482,7 @@ function CheckRow({ label, checked, onChange }: { label: string; checked: boolea
   return (
     <label className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg cursor-pointer" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}>
       <span className="text-sm" style={{ color: "var(--text-secondary)" }}>{label}</span>
-      <input type="checkbox" checked={checked} onChange={e => onChange(e.target.checked)} className="accent-indigo-600 w-4 h-4" />
+      <input type="checkbox" checked={checked} onChange={e => onChange(e.target.checked)} className="accent-[#0f8578] w-4 h-4" />
     </label>
   );
 }

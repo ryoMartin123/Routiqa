@@ -44,7 +44,7 @@ interface Ctx {
 export default function ProposalFamilyDocument({
   data, family = DEFAULT_FAMILY, variant, shadow = true,
 }: { data: ProposalDocData; family?: TemplateFamily; variant?: VariantSkin; shadow?: boolean }) {
-  const accent = data.branding.accentColor || "#4f46e5";
+  const accent = data.branding.accentColor || "#0f8578";
   const skin = variant ?? VARIANTS[family.defaultVariant];
 
   const visibleSections = data.sections.filter(s => s.visible && !INTERNAL_SECTION_KEYS.includes(s.key as SectionKey));

@@ -59,14 +59,14 @@ export default function ViewAsMenu() {
               <button key={u.id} onClick={() => { setActingUserId(u.id); setOpen(false); }}
                 className="w-full flex items-center gap-2.5 px-3 py-2 text-left transition-colors hover:bg-[var(--bg-surface-2)]">
                 <div className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0"
-                  style={{ backgroundColor: u.isOrgOwner ? "#4f46e5" : "#6b7280" }}>{u.initials}</div>
+                  style={{ backgroundColor: u.isOrgOwner ? "#0f8578" : "#6b7280" }}>{u.initials}</div>
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>
                     {u.fullName}{u.id === realUser.id && " (you)"}
                   </p>
                   <p className="text-[11px] truncate" style={{ color: "var(--text-muted)" }}>{roleSummary(u)}</p>
                 </div>
-                {active && <Check className="w-4 h-4 shrink-0" style={{ color: "#4f46e5" }} />}
+                {active && <Check className="w-4 h-4 shrink-0" style={{ color: "#0f8578" }} />}
               </button>
             );
           })}

@@ -51,7 +51,7 @@ type SortField = "recent" | "invoiceNumber" | "customerName" | "status" | "total
 
 const LINKED_TYPE_STYLE: Record<string, { bg: string; color: string }> = {
   quote:      { bg: "#f5f3ff", color: "#6d28d9" },
-  job:        { bg: "#e0e7ff", color: "#3730a3" },
+  job:        { bg: "#d3ebe6", color: "#0a5c53" },
   project:    { bg: "#ede9fe", color: "#5b21b6" },
   agreement:  { bg: "#ecfdf5", color: "#059669" },
   work_order: { bg: "#ecfeff", color: "#0891b2" },
@@ -116,8 +116,8 @@ export default function InvoicesPage() {
   function SortIcon({ field }: { field: SortField }) {
     if (sortField !== field) return <ChevronDown className="w-3 h-3 opacity-30" />;
     return sortDir === "asc"
-      ? <ChevronUp className="w-3 h-3" style={{ color: "#4f46e5" }} />
-      : <ChevronDown className="w-3 h-3" style={{ color: "#4f46e5" }} />;
+      ? <ChevronUp className="w-3 h-3" style={{ color: "#0f8578" }} />
+      : <ChevronDown className="w-3 h-3" style={{ color: "#0f8578" }} />;
   }
 
   const tabCount = (key: "all" | InvoiceStatus) =>
@@ -132,7 +132,7 @@ export default function InvoicesPage() {
   const dueThisWeek  = contextFiltered.filter(i => i.balanceDue > 0 && daysUntil(i.dueDate) >= 0 && daysUntil(i.dueDate) <= 7);
   const paidThisMonth = contextFiltered.filter(i => i.status === "paid" && isThisMonth(i.paidAt));
   const summaryCards: SummaryCard[] = [
-    { icon: DollarSign,    label: "Outstanding Balance", value: fmt(totalOutstanding),                                              sub: `${contextFiltered.filter(i => i.balanceDue > 0).length} open invoices`, iconColor: "#4f46e5" },
+    { icon: DollarSign,    label: "Outstanding Balance", value: fmt(totalOutstanding),                                              sub: `${contextFiltered.filter(i => i.balanceDue > 0).length} open invoices`, iconColor: "#0f8578" },
     { icon: AlertTriangle, label: "Past Due",            value: fmt(pastDueTotal),                                                  sub: `${contextFiltered.filter(i => i.status === "past_due").length} invoices`, iconColor: "#dc2626" },
     { icon: CalendarClock, label: "Due This Week",       value: fmt(dueThisWeek.reduce((s, i) => s + i.balanceDue, 0)),              sub: `${dueThisWeek.length} invoices`, iconColor: "#f59e0b" },
     { icon: CheckCircle2,  label: "Paid This Month",     value: fmt(paidThisMonth.reduce((s, i) => s + i.total, 0)),                 sub: `${paidThisMonth.length} payments`, iconColor: "#10b981" },
@@ -147,7 +147,7 @@ export default function InvoicesPage() {
         </div>
         <ModuleViewToggle view={moduleView} onChange={setModuleView} withCards overviewFirst />
         <div className="flex-1 flex justify-end">
-          <button onClick={() => setShowCreate(true)} className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-3 py-2 rounded-lg transition-colors">
+          <button onClick={() => setShowCreate(true)} className="flex items-center gap-1.5 bg-[#0f8578] hover:bg-[#0c6b60] text-white text-sm font-medium px-3 py-2 rounded-lg transition-colors">
             <Plus className="w-4 h-4" /> New Invoice
           </button>
         </div>
@@ -206,7 +206,7 @@ export default function InvoicesPage() {
           ] as const).map(({ label, field }) => (
             <button key={label} onClick={() => field && handleSort(field as SortField)}
               className={cn("flex items-center gap-1 text-left", field ? "cursor-pointer hover:opacity-80" : "cursor-default")}
-              style={{ color: sortField === field ? "#4f46e5" : "var(--text-muted)" }}>
+              style={{ color: sortField === field ? "#0f8578" : "var(--text-muted)" }}>
               {label}{field && <SortIcon field={field as SortField} />}
             </button>
           ))}

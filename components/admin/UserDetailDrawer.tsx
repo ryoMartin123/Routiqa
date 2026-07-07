@@ -211,11 +211,11 @@ export default function UserDetailDrawer({
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">
               <span className="w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
-                style={{ backgroundColor: isOwner ? "#4f46e5" : "#6b7280" }}>{user?.initials ?? "—"}</span>
+                style={{ backgroundColor: isOwner ? "#0f8578" : "#6b7280" }}>{user?.initials ?? "—"}</span>
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5">
                   <p className="text-base font-semibold truncate" style={{ color: "var(--text-primary)" }}>{isNew ? "Invite User" : user!.fullName}</p>
-                  {isOwner && <ShieldCheck className="w-4 h-4 shrink-0" style={{ color: "#4f46e5" }} />}
+                  {isOwner && <ShieldCheck className="w-4 h-4 shrink-0" style={{ color: "#0f8578" }} />}
                 </div>
                 <p className="text-xs truncate" style={{ color: "var(--text-muted)" }}>{isNew ? "Send an invite and grant access" : user!.email}</p>
               </div>
@@ -253,7 +253,7 @@ export default function UserDetailDrawer({
             <div className="space-y-4">
               {isOwner ? (
                 <div className="rounded-lg px-3 py-3 text-xs flex items-center gap-2" style={{ backgroundColor: "var(--bg-surface-2)", color: "var(--text-secondary)" }}>
-                  <ShieldCheck className="w-4 h-4 shrink-0" style={{ color: "#4f46e5" }} />
+                  <ShieldCheck className="w-4 h-4 shrink-0" style={{ color: "#0f8578" }} />
                   Organization Owner — full access to everything across the platform. This can&apos;t be changed.
                 </div>
               ) : editable ? (
@@ -403,7 +403,7 @@ function ProfileTab({ editable, isOwner, isNew, status, fullName, setFullName, e
       )}
       {isOwner && (
         <p className="text-[11px] flex items-center gap-1.5" style={{ color: "var(--text-muted)" }}>
-          <ShieldCheck className="w-3.5 h-3.5" style={{ color: "#4f46e5" }} /> The organization owner account can&apos;t be deactivated or removed.
+          <ShieldCheck className="w-3.5 h-3.5" style={{ color: "#0f8578" }} /> The organization owner account can&apos;t be deactivated or removed.
         </p>
       )}
     </div>

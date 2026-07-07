@@ -20,7 +20,7 @@ import { saveReport } from "@/lib/analytics/store";
 import type { ReportConfig, Grouping, VizType } from "@/lib/analytics/types";
 import ChartView from "./ChartView";
 
-const ACCENT = "#4f46e5";
+const ACCENT = "#0f8578";
 
 export default function AnalyticsBuilder({ initial, onSaved }: { initial: ReportConfig; onSaved?: (cfg: ReportConfig) => void }) {
   const [cfg, setCfg] = useState<ReportConfig>(initial);

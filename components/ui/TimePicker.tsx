@@ -132,9 +132,9 @@ export default function TimePicker({ value, onChange, placeholder = "Select time
       <div
         className={`w-full flex items-center justify-between gap-2 rounded-lg transition-colors cursor-text ${pad}`}
         style={{
-          border: `1px solid ${open ? "#a5b4fc" : "var(--border)"}`,
+          border: `1px solid ${open ? "#8ed0c6" : "var(--border)"}`,
           backgroundColor: "var(--bg-surface)",
-          boxShadow: open ? "0 0 0 3px rgba(99,102,241,0.12)" : "none",
+          boxShadow: open ? "0 0 0 3px rgba(35,156,141,0.12)" : "none",
         }}>
         <input
           ref={inputRef}
@@ -163,7 +163,7 @@ export default function TimePicker({ value, onChange, placeholder = "Select time
             else { setOpen(true); setQuery(null); inputRef.current?.focus(); requestAnimationFrame(() => inputRef.current?.select()); }
           }}
           className="shrink-0 flex items-center cursor-pointer transition-colors"
-          style={{ color: open ? "#6366f1" : "var(--text-muted)" }}>
+          style={{ color: open ? "#239c8d" : "var(--text-muted)" }}>
           <Clock className="w-3.5 h-3.5" />
         </button>
       </div>
@@ -181,9 +181,9 @@ export default function TimePicker({ value, onChange, placeholder = "Select time
                 // onMouseDown so the click registers before the input's onBlur fires.
                 onMouseDown={e => { e.preventDefault(); select(o); }}
                 className={`w-full flex items-center justify-between gap-2 px-2.5 py-2 rounded-lg text-left text-sm transition-colors ${isSel ? "" : "hover:bg-[var(--bg-surface-2)]"}`}
-                style={{ backgroundColor: isSel ? "var(--bg-surface-2)" : undefined, color: isSel ? "#4f46e5" : "var(--text-secondary)", fontWeight: isSel ? 600 : 400 }}>
+                style={{ backgroundColor: isSel ? "var(--bg-surface-2)" : undefined, color: isSel ? "#0f8578" : "var(--text-secondary)", fontWeight: isSel ? 600 : 400 }}>
                 <span>{fmt12(o)}</span>
-                {isSel && <Check className="w-3.5 h-3.5 shrink-0" style={{ color: "#4f46e5" }} />}
+                {isSel && <Check className="w-3.5 h-3.5 shrink-0" style={{ color: "#0f8578" }} />}
               </button>
             );
           })}

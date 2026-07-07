@@ -9,12 +9,14 @@
 import { getProject, type ProjectType } from "./data";
 import { templateForType, templateById, type MapTemplate, type MirrorSource } from "./map-templates";
 import { getJobsForProject, getWorkOrder, createJob } from "@/lib/jobs/data";
+import { getAppointmentsForJob, getAppointmentsForWorkOrder } from "@/lib/appointments/data";
+import { createTask } from "@/lib/tasks/data";
 import {
   materialRequestsForProject, posForProject, assignmentsForProject, getSubcontractor,
   poReceivingState, subCompliance, createMaterialRequest, createPurchaseOrder, createAssignment,
   getVendors, getSubcontractors,
 } from "@/lib/inventory/data";
-import { getQuotesForProject, getInvoicesForProject } from "@/lib/quotes/data";
+import { getQuotesForProject, getInvoicesForProject, getInvoice, createInvoice, fmt as fmtMoney } from "@/lib/quotes/data";
 
 export type MapNodeType =
   | "phase" | "milestone" | "job" | "task" | "work_order"
@@ -31,7 +33,7 @@ export type MapNodeStatus = "not_started" | "ready" | "in_progress" | "waiting" 
 export const NODE_STATUS_META: Record<MapNodeStatus, { label: string; color: string }> = {
   not_started: { label: "Not Started", color: "#9ca3af" },
   ready:       { label: "Ready",       color: "#0ea5e9" },
-  in_progress: { label: "In Progress", color: "#6366f1" },
+  in_progress: { label: "In Progress", color: "#239c8d" },
   waiting:     { label: "Waiting",     color: "#f59e0b" },
   blocked:     { label: "Blocked",     color: "#ef4444" },
   completed:   { label: "Completed",   color: "#10b981" },
@@ -58,6 +60,9 @@ export interface ProjectMapNode {
   linkedId?: string;
   dependencies: string[];   // node ids
   blockedReason?: string;
+  expectedDate?: string;    // yyyy-mm-dd — when a waiting/blocked step should resolve
+  percent?: number;         // billing nodes: % of contract this stage bills
+  deposit?: boolean;
   order: number;
   notes?: string;
 }
@@ -71,6 +76,26 @@ export const SOURCE_TAB: Record<MirrorSource, string> = {
   quote: "Estimates", job: "Jobs", work_order: "Jobs", material_request: "Materials & Vendors",
   purchase_order: "Materials & Vendors", equipment_received: "Materials & Vendors", subcontractor: "Materials & Vendors", invoice: "Invoices",
 };
+
+// ─── Per-node meta (persisted) ────────────────────────────
+// Expected dates on waiting/blocked steps + the follow-up-task guard, keyed by
+// node id. Small and additive — the map itself stays derived from live records.
+const META_KEY = "crm-map-node-meta";
+interface NodeMeta { expectedDate?: string; followUpTaskId?: string; invoiceId?: string }
+function metaStore(): Record<string, NodeMeta> {
+  if (typeof window === "undefined") return {};
+  try { return JSON.parse(localStorage.getItem(META_KEY) || "{}"); } catch { return {}; }
+}
+function saveMeta(all: Record<string, NodeMeta>): void {
+  try { localStorage.setItem(META_KEY, JSON.stringify(all)); } catch { /* ignore */ }
+}
+export function setMapNodeExpected(nodeId: string, date: string): void {
+  const all = metaStore();
+  const cur = all[nodeId] ?? {};
+  // Changing the date re-arms the follow-up (a new promise deserves a new nudge).
+  all[nodeId] = { ...cur, expectedDate: date || undefined, followUpTaskId: date === cur.expectedDate ? cur.followUpTaskId : undefined };
+  saveMeta(all);
+}
 
 // ─── Manual completion store (per node id) ────────────────
 const _manualDone = new Set<string>();
@@ -167,6 +192,14 @@ function buildProjectMap(projectId: string): ProjectMapNode[] {
     let link: MirrorResult = { status: null };
     if (t.manual) {
       baseStatus = (_manualDone.has(id) || t.key === "created") ? "completed" : null;
+    } else if (t.type === "billing" && t.percent != null) {
+      const invId = metaStore()[id]?.invoiceId;
+      const inv = invId ? getInvoice(invId) : undefined;
+      if (inv) {
+        const sent = ["sent", "viewed", "partially_paid", "paid", "past_due"].includes(inv.status);
+        baseStatus = sent ? "completed" : "in_progress";
+        link = { status: baseStatus, linkedApp: "Accounting", linkedLabel: inv.invoiceNumber, linkedId: inv.id };
+      }
     } else if (t.mirror) {
       link = resolveMirror(t.mirror, projectId);
       baseStatus = link.status;
@@ -206,7 +239,8 @@ function buildProjectMap(projectId: string): ProjectMapNode[] {
       id: b.id, projectId, key: b.t.key, title: b.t.title, type: b.t.type, group: b.t.group,
       status, assignedTo: b.t.assignedTo, manual: !!b.t.manual, mirror: b.t.mirror, createable: !!b.t.createable,
       linkedApp: b.link.linkedApp, linkedLabel: b.link.linkedLabel, linkedId: b.link.linkedId,
-      dependencies: deps, blockedReason, order: i, notes: b.t.notes,
+      dependencies: deps, blockedReason, expectedDate: metaStore()[b.id]?.expectedDate,
+      percent: b.t.percent, deposit: b.t.deposit, order: i, notes: b.t.notes,
     };
   });
 }
@@ -280,4 +314,101 @@ export function createForNode(projectId: string, src: MirrorSource): boolean {
     default:
       return false;
   }
+}
+
+// ─── Day progress for multi-day steps ─────────────────────
+// A job/work-order node whose linked record has 2+ dated visits is a multi-day
+// step ("Install — Day 3 of 6"). Day = how far the calendar has advanced
+// through the booked days, clamped so a finished visit always counts.
+export interface NodeDayProgress {
+  day: number;
+  total: number;
+  visits: { date: string; done: boolean; today: boolean }[];
+}
+export function nodeDayProgress(node: ProjectMapNode): NodeDayProgress | null {
+  if (!node.linkedId || (node.mirror !== "job" && node.mirror !== "work_order")) return null;
+  const appts = node.mirror === "work_order"
+    ? getAppointmentsForWorkOrder(node.linkedId)
+    : getAppointmentsForJob(node.linkedId);
+  const dated = appts
+    .filter(a => a.scheduledDate && a.status !== "canceled")
+    .sort((a, b) => a.scheduledDate.localeCompare(b.scheduledDate));
+  if (dated.length < 2) return null;
+  const today = new Date().toISOString().slice(0, 10);
+  const visits = dated.map(a => ({
+    date: a.scheduledDate,
+    done: a.status === "completed",
+    today: a.scheduledDate === today,
+  }));
+  const reached = visits.filter(v => v.done || v.date <= today).length;
+  return { day: Math.min(Math.max(reached, 1), visits.length), total: visits.length, visits };
+}
+
+// ─── Dated waits → follow-up tasks ────────────────────────
+// Called from the Map UI (client, post-render): any waiting/blocked step whose
+// expected date has passed gets ONE follow-up task, assigned to the step's
+// owner. Re-armed if the expected date is changed.
+export function sweepDatedWaits(projectId: string): void {
+  if (typeof window === "undefined") return;
+  const today = new Date().toISOString().slice(0, 10);
+  const all = metaStore();
+  let dirty = false;
+  for (const node of getProjectMap(projectId)) {
+    const meta = all[node.id];
+    if (!meta?.expectedDate || meta.followUpTaskId) continue;
+    if (!(node.status === "waiting" || node.status === "blocked")) continue;
+    if (meta.expectedDate >= today) continue;
+    const p = getProject(projectId);
+    const task = createTask({
+      title: `Follow up: ${node.title}`,
+      type: "follow_up",
+      dueDate: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+      assignedTo: node.assignedTo,
+      notes: `Expected by ${meta.expectedDate} and still ${NODE_STATUS_META[node.status].label.toLowerCase()} — give it a push. (Auto-created from the project map.)`,
+      companyId: p?.companyId ?? "co_hvac",
+      locationId: p?.locationId ?? "loc_augusta",
+      projectId,
+    });
+    all[node.id] = { ...meta, followUpTaskId: task.id };
+    dirty = true;
+  }
+  if (dirty) saveMeta(all);
+}
+
+// ─── Staged billing nodes ─────────────────────────────────
+// A billing node with `percent` bills that share of the project contract
+// (estimatedValue). Creating it raises a real invoice and remembers the link
+// in node meta, so THIS stage tracks THIS invoice — three billing nodes,
+// three invoices, no crosstalk.
+export function billingNodeAmount(node: ProjectMapNode): number | null {
+  if (node.percent == null) return null;
+  const p = getProject(node.projectId);
+  const contract = parseFloat(String(p?.estimatedValue ?? "").replace(/[^0-9.]/g, "")) || 0;
+  return contract > 0 ? Math.round(contract * node.percent) / 100 : null;
+}
+export function billingNodeAmountLabel(node: ProjectMapNode): string {
+  const amt = billingNodeAmount(node);
+  return amt != null ? fmtMoney(amt) : "set the project value to compute";
+}
+export function createBillingInvoiceForNode(node: ProjectMapNode): boolean {
+  const p = getProject(node.projectId);
+  if (!p || node.percent == null) return false;
+  const amount = billingNodeAmount(node) ?? 0;
+  const due = new Date(); due.setDate(due.getDate() + 14);
+  const inv = createInvoice({
+    customerId: p.accountId, customerName: p.customerName, customerInitials: p.customerInitials, locationName: p.locationName,
+    title: `${p.name} — ${node.title}`,
+    dueDate: due.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+    lineItems: [{
+      id: `li-map-${Date.now()}`, description: `${node.title} — ${node.percent}% of contract`,
+      quantity: 1, unitPrice: amount, total: amount,
+    }],
+    companyId: p.companyId, locationId: p.locationId, projectId: p.id,
+    linkedLabel: p.name, linkedType: "project", linkedId: p.id,
+    isDeposit: node.deposit,
+  });
+  const all = metaStore();
+  all[node.id] = { ...(all[node.id] ?? {}), invoiceId: inv.id };
+  saveMeta(all);
+  return true;
 }

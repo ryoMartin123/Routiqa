@@ -177,9 +177,9 @@ export default function NewCustomerModal({ open, onClose, onCreated, forceStatus
                 <button key={t.key} onClick={() => setAccountType(t.key)} title={t.desc}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
                   style={{
-                    border: `1.5px solid ${accountType === t.key ? "#c9c0b2" : "var(--border)"}`,
-                    backgroundColor: accountType === t.key ? "#E5E0DB" : "var(--bg-surface-2)",
-                    color: accountType === t.key ? "#5c5545" : "var(--text-secondary)",
+                    border: `1.5px solid ${accountType === t.key ? "var(--copper-soft-border)" : "var(--border)"}`,
+                    backgroundColor: accountType === t.key ? "var(--copper-soft-bg)" : "var(--bg-surface-2)",
+                    color: accountType === t.key ? "var(--copper-text)" : "var(--text-secondary)",
                   }}>
                   <t.icon className="w-3.5 h-3.5" />{t.label}
                 </button>
@@ -217,7 +217,7 @@ export default function NewCustomerModal({ open, onClose, onCreated, forceStatus
         <div className="px-6 py-4 flex gap-2 shrink-0" style={{ borderTop: "1px solid var(--border)" }}>
           {forceStatus ? (
             <button onClick={() => handleSave(forceStatus)} disabled={!canSave}
-              className="flex-1 py-2 rounded-lg text-sm font-medium bg-indigo-600 hover:bg-indigo-700 text-white transition-colors disabled:opacity-40">
+              className="flex-1 py-2 rounded-lg text-sm font-medium bg-[#0f8578] hover:bg-[#0c6b60] text-white transition-colors disabled:opacity-40">
               Create Account
             </button>
           ) : (
@@ -228,7 +228,7 @@ export default function NewCustomerModal({ open, onClose, onCreated, forceStatus
                 Save as Prospect
               </button>
               <button onClick={() => handleSave("Customer")} disabled={!canSave}
-                className="flex-1 py-2 rounded-lg text-sm font-medium bg-indigo-600 hover:bg-indigo-700 text-white transition-colors disabled:opacity-40">
+                className="flex-1 py-2 rounded-lg text-sm font-medium bg-[#0f8578] hover:bg-[#0c6b60] text-white transition-colors disabled:opacity-40">
                 Save as Customer
               </button>
             </>

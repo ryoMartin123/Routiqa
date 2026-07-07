@@ -52,7 +52,7 @@ export const PROJECT_STATUS_CONFIG: Record<ProjectStatus, { label: string; bg: s
   draft:     { label: "Draft",     bg: "var(--bg-input)", color: "var(--text-muted)"  },
   active:    { label: "Active",    bg: "#d1fae5",         color: "#065f46"            },
   on_hold:   { label: "On Hold",   bg: "#fef3c7",         color: "#92400e"            },
-  completed: { label: "Completed", bg: "#e0e7ff",         color: "#3730a3"            },
+  completed: { label: "Completed", bg: "#d3ebe6",         color: "#0a5c53"            },
   canceled:  { label: "Canceled",  bg: "#fee2e2",         color: "#991b1b"            },
 };
 

@@ -114,7 +114,7 @@ export default function ItemsPage() {
             <Layers className="w-4 h-4" /> Starter Catalog
           </button>
           <button onClick={() => setDrawer({ open: true })}
-            className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-3 py-2 rounded-lg transition-colors">
+            className="flex items-center gap-1.5 bg-[#0f8578] hover:bg-[#0c6b60] text-white text-sm font-medium px-3 py-2 rounded-lg transition-colors">
             <Plus className="w-4 h-4" /> Add Item
           </button>
         </div>
@@ -144,9 +144,9 @@ export default function ItemsPage() {
           <div className="relative" ref={filtersRef}>
             <button onClick={() => setFiltersOpen(o => !o)}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors"
-              style={{ border: "1px solid var(--border)", color: activeFilterCount > 0 ? "#4f46e5" : "var(--text-secondary)", backgroundColor: "var(--bg-surface)" }}>
+              style={{ border: "1px solid var(--border)", color: activeFilterCount > 0 ? "#0f8578" : "var(--text-secondary)", backgroundColor: "var(--bg-surface)" }}>
               <SlidersHorizontal className="w-3.5 h-3.5" /> Filter
-              {activeFilterCount > 0 && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: "#e0e7ff", color: "#4f46e5" }}>{activeFilterCount}</span>}
+              {activeFilterCount > 0 && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: "#d3ebe6", color: "#0f8578" }}>{activeFilterCount}</span>}
             </button>
             {filtersOpen && (
               <div className="absolute right-0 top-full mt-1 w-64 rounded-xl p-3 z-20 space-y-3" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "0 8px 24px rgba(0,0,0,0.16)" }}>
@@ -161,7 +161,7 @@ export default function ItemsPage() {
                     options={[{ value: "all", label: "All Categories" }, ...categories.map(c => ({ value: c, label: c }))]} />
                 </div>
                 {activeFilterCount > 0 && (
-                  <button onClick={() => { setTypeFilter("all"); setCatFilter("all"); }} className="text-xs font-medium" style={{ color: "#4f46e5" }}>Clear filters</button>
+                  <button onClick={() => { setTypeFilter("all"); setCatFilter("all"); }} className="text-xs font-medium" style={{ color: "#0f8578" }}>Clear filters</button>
                 )}
               </div>
             )}

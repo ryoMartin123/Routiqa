@@ -27,6 +27,8 @@ export interface TemplateNode {
   deps: string[];             // dependency node keys
   gate?: string;              // reason shown when blocked by an unmet dependency
   notes?: string;
+  percent?: number;           // billing nodes: % of the project contract this invoice bills
+  deposit?: boolean;          // billing nodes: tag the invoice as a deposit
   // ── Builder v2 capabilities (all optional) ──
   durationDays?: number;            // expected duration / SLA in business days
   checklist?: NodeChecklistItem[];  // sub-items for a manual node
@@ -87,7 +89,10 @@ const HVAC_REPLACEMENT: MapTemplate = {
     { key: "install",  title: "Install Work Order",      type: "work_order",       group: "Install",    assignedTo: "DeAndre Smith", mirror: "work_order", deps: ["schedule"] },
     { key: "startup",  title: "Startup Checklist",       type: "task",             group: "Install",    assignedTo: "DeAndre Smith", manual: true, deps: ["install"], notes: "Inspection can't be scheduled until startup is complete." },
     { key: "photos",   title: "Final Photos Uploaded",   type: "document",         group: "Closeout",   assignedTo: "DeAndre Smith", manual: true, deps: ["install"], gate: "Final photos required", notes: "Closeout needs final photos." },
-    { key: "invoice",  title: "Invoice Sent",            type: "billing",          group: "Closeout",   assignedTo: "Nicole Adams",  mirror: "invoice", createable: true, deps: ["install"], gate: "Install work order must be complete" },
+    // Staged billing: deposit on approval → progress at install → balance at closeout.
+    { key: "dep_inv",  title: "Deposit Invoice",         type: "billing",          group: "Materials",  assignedTo: "Nicole Adams",  deps: ["quote"], percent: 20, deposit: true, notes: "Collect before ordering equipment." },
+    { key: "prog_inv", title: "Progress Invoice",        type: "billing",          group: "Install",    assignedTo: "Nicole Adams",  deps: ["install"], percent: 40, gate: "Install work order must be complete" },
+    { key: "invoice",  title: "Final Invoice",           type: "billing",          group: "Closeout",   assignedTo: "Nicole Adams",  deps: ["startup", "photos"], percent: 40 },
     { key: "closed",   title: "Project Closed",          type: "milestone",        group: "Closeout",   assignedTo: "Ryo Martin",    manual: true, deps: ["invoice", "photos"] },
   ],
 };

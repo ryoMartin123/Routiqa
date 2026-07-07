@@ -53,17 +53,17 @@ function typeDot(type: CustomerType) {
   return type === "Commercial" ? "#f59e0b" : "#6b7280";
 }
 function statusDot(status: CustomerStatus) {
-  return status === "Customer" ? "#10b981" : "#6366f1";
+  return status === "Customer" ? "#10b981" : "#239c8d";
 }
 function jobStatusStyle(s: JobStatus) {
   if (s === "Completed")   return { bg: "#d1fae5", color: "#065f46" };
-  if (s === "Scheduled")   return { bg: "#e0e7ff", color: "#3730a3" };
+  if (s === "Scheduled")   return { bg: "#d3ebe6", color: "#0a5c53" };
   if (s === "In Progress") return { bg: "#fef3c7", color: "#92400e" };
   return { bg: "var(--bg-input)", color: "var(--text-muted)" };
 }
 function leadStatusStyle(s: LeadStatus) {
   if (s === "Won")       return { bg: "#d1fae5", color: "#065f46" };
-  if (s === "Quoted")    return { bg: "#e0e7ff", color: "#3730a3" };
+  if (s === "Quoted")    return { bg: "#d3ebe6", color: "#0a5c53" };
   if (s === "Contacted") return { bg: "#fef3c7", color: "#92400e" };
   if (s === "Lost")      return { bg: "#fee2e2", color: "#991b1b" };
   return { bg: "var(--bg-input)", color: "var(--text-muted)" };
@@ -315,7 +315,7 @@ function OverviewTab({ id, onTab }: { id: string; onTab: (tab: string) => void }
             {activeAgreements.length > 0 && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>{activeAgreements.length}</span>}
           </div>
           <button onClick={() => onTab("Agreements")}
-            className="group inline-flex items-center gap-1 text-xs font-medium text-indigo-600 hover:text-indigo-700 hover:underline">
+            className="group inline-flex items-center gap-1 text-xs font-medium text-[#0f8578] hover:text-[#0c6b60] hover:underline">
             View all
             <ArrowUpRight className="w-3 h-3 shrink-0 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
           </button>
@@ -324,7 +324,7 @@ function OverviewTab({ id, onTab }: { id: string; onTab: (tab: string) => void }
           {activeAgreements.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center">
               <p className="text-sm" style={{ color: "var(--text-muted)" }}>No active agreements</p>
-              <button onClick={() => onTab("Agreements")} className="mt-1.5 text-xs font-medium text-indigo-600 hover:text-indigo-700">Create an agreement →</button>
+              <button onClick={() => onTab("Agreements")} className="mt-1.5 text-xs font-medium text-[#0f8578] hover:text-[#0c6b60]">Create an agreement →</button>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
@@ -382,7 +382,7 @@ function AddContactForm({
 }) {
   return (
     <div className="rounded-2xl p-4 space-y-3" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "0 16px 48px rgba(0,0,0,0.24)" }}>
-      <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: "#4f46e5" }}>{isEditing ? "Edit Contact" : "New Contact"}</p>
+      <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: "#0f8578" }}>{isEditing ? "Edit Contact" : "New Contact"}</p>
 
       <div className="grid grid-cols-2 gap-3">
         <div>
@@ -426,9 +426,9 @@ function AddContactForm({
             <button key={m} onClick={() => onChange("preferredContact", m)}
               className="flex-1 py-1.5 rounded-lg text-xs font-medium capitalize transition-all"
               style={{
-                border: `1.5px solid ${form.preferredContact === m ? "#4f46e5" : "var(--border)"}`,
-                backgroundColor: form.preferredContact === m ? "#e0e7ff" : "transparent",
-                color: form.preferredContact === m ? "#4f46e5" : "var(--text-secondary)",
+                border: `1.5px solid ${form.preferredContact === m ? "#0f8578" : "var(--border)"}`,
+                backgroundColor: form.preferredContact === m ? "#d3ebe6" : "transparent",
+                color: form.preferredContact === m ? "#0f8578" : "var(--text-secondary)",
               }}>
               {m}
             </button>
@@ -447,7 +447,7 @@ function AddContactForm({
       <div className="flex items-center justify-between pt-1">
         <label className="flex items-center gap-2 cursor-pointer">
           <input type="checkbox" checked={form.isPrimary} onChange={e => onChange("isPrimary", e.target.checked)}
-            className="w-3.5 h-3.5 accent-indigo-600" />
+            className="w-3.5 h-3.5 accent-[#0f8578]" />
           <span className="text-sm" style={{ color: "var(--text-secondary)" }}>Mark as primary contact</span>
         </label>
         <div className="flex gap-2">
@@ -457,7 +457,7 @@ function AddContactForm({
             Cancel
           </button>
           <button onClick={onSave} disabled={!form.name.trim()}
-            className="px-3 py-1.5 rounded-lg text-sm font-medium bg-indigo-600 hover:bg-indigo-700 text-white disabled:opacity-40 transition-colors">
+            className="px-3 py-1.5 rounded-lg text-sm font-medium bg-[#0f8578] hover:bg-[#0c6b60] text-white disabled:opacity-40 transition-colors">
             {isEditing ? "Save Changes" : "Save Contact"}
           </button>
         </div>
@@ -576,12 +576,12 @@ function ContactsTab({ id }: { id: string }) {
                   <div className="flex items-center gap-2.5 min-w-0">
                     {/* People wear the swiss-coffee circle (matches dispatch techs) */}
                     <div className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0"
-                      style={{ backgroundColor: "#e5e0db", color: "#5c5545" }}>
+                      style={{ backgroundColor: "var(--copper-soft-bg)", color: "var(--copper-text)" }}>
                       {c.name.split(" ").map(w => w[0] ?? "").join("").slice(0, 2).toUpperCase()}
                     </div>
                     <div className="min-w-0">
                       <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{c.name}</p>
-                      {c.isPrimary && <p className="text-[10px] font-semibold" style={{ color: "#4f46e5" }}>Primary</p>}
+                      {c.isPrimary && <p className="text-[10px] font-semibold" style={{ color: "#0f8578" }}>Primary</p>}
                     </div>
                   </div>
                   <span className="text-sm truncate" style={{ color: "var(--text-secondary)" }}>{c.role ?? "Contact"}</span>
@@ -598,8 +598,8 @@ function ContactsTab({ id }: { id: string }) {
                       </button>
                     )}
                     <button onClick={() => startEdit(c)} title="Edit contact"
-                      className="p-1.5 rounded-lg shrink-0 transition-colors hover:border-indigo-300"
-                      style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface)", color: "#4f46e5" }}>
+                      className="p-1.5 rounded-lg shrink-0 transition-colors hover:border-[#8ed0c6]"
+                      style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface)", color: "#0f8578" }}>
                       <Pencil className="w-3.5 h-3.5" />
                     </button>
                   </div>
@@ -640,7 +640,7 @@ function AddPropertyForm({
 }) {
   return (
     <div className="rounded-2xl p-4 space-y-3" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "0 16px 48px rgba(0,0,0,0.24)" }}>
-      <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: "#4f46e5" }}>{isEditing ? "Edit Property" : "New Property"}</p>
+      <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: "#0f8578" }}>{isEditing ? "Edit Property" : "New Property"}</p>
 
       <div className="grid grid-cols-2 gap-3">
         <div>
@@ -681,7 +681,7 @@ function AddPropertyForm({
       <div className="flex items-center justify-between pt-1">
         <label className="flex items-center gap-2 cursor-pointer">
           <input type="checkbox" checked={form.isPrimary} onChange={e => onChange("isPrimary", e.target.checked)}
-            className="w-3.5 h-3.5 accent-indigo-600" />
+            className="w-3.5 h-3.5 accent-[#0f8578]" />
           <span className="text-sm" style={{ color: "var(--text-secondary)" }}>Primary property</span>
         </label>
         <div className="flex gap-2">
@@ -693,7 +693,7 @@ function AddPropertyForm({
           <button onClick={onSave}
             disabled={!form.parsedAddress.addressLine1.trim() || form.parsedAddress.validationStatus === "unvalidated"}
             title={form.parsedAddress.validationStatus === "unvalidated" ? "Confirm the address before saving" : undefined}
-            className="px-3 py-1.5 rounded-lg text-sm font-medium bg-indigo-600 hover:bg-indigo-700 text-white disabled:opacity-40 transition-colors">
+            className="px-3 py-1.5 rounded-lg text-sm font-medium bg-[#0f8578] hover:bg-[#0c6b60] text-white disabled:opacity-40 transition-colors">
             {isEditing ? "Save Changes" : "Save Property"}
           </button>
         </div>
@@ -837,11 +837,11 @@ function PropertiesTab({ id }: { id: string }) {
                     style={{ gridTemplateColumns: COLS, gap: "0.75rem", borderBottom: i < properties.length - 1 ? "1px solid var(--border)" : "none" }}>
                     <div className="flex items-center gap-2.5 min-w-0">
                       <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: "var(--bg-input)" }}>
-                        <Home className="w-3.5 h-3.5" style={{ color: p.isPrimary ? "#4f46e5" : "var(--text-muted)" }} />
+                        <Home className="w-3.5 h-3.5" style={{ color: p.isPrimary ? "#0f8578" : "var(--text-muted)" }} />
                       </div>
                       <div className="min-w-0">
                         <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{p.label ?? p.address}</p>
-                        {p.isPrimary && <p className="text-[10px] font-semibold" style={{ color: "#4f46e5" }}>Primary</p>}
+                        {p.isPrimary && <p className="text-[10px] font-semibold" style={{ color: "#0f8578" }}>Primary</p>}
                       </div>
                     </div>
                     <div className="min-w-0">
@@ -853,8 +853,8 @@ function PropertiesTab({ id }: { id: string }) {
                     {/* Edit — revealed on hover, same affordance as Contacts */}
                     <div className="flex justify-end opacity-0 group-hover:opacity-100 transition-opacity">
                       <button onClick={() => startEdit(p)} title="Edit property"
-                        className="p-1.5 rounded-lg shrink-0 transition-colors hover:border-indigo-300"
-                        style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface)", color: "#4f46e5" }}>
+                        className="p-1.5 rounded-lg shrink-0 transition-colors hover:border-[#8ed0c6]"
+                        style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface)", color: "#0f8578" }}>
                         <Pencil className="w-3.5 h-3.5" />
                       </button>
                     </div>
@@ -967,7 +967,7 @@ function AgreementsTab({ id }: { id: string }) {
       </div>
       {agreements.length === 0 ? (
         <StubContent label="No agreements yet">
-          <button onClick={() => router.push(newHref)} className="mt-2 text-xs font-medium text-indigo-600 hover:text-indigo-700">Set up an agreement →</button>
+          <button onClick={() => router.push(newHref)} className="mt-2 text-xs font-medium text-[#0f8578] hover:text-[#0c6b60]">Set up an agreement →</button>
         </StubContent>
       ) : (
         <div className="space-y-4 max-w-2xl">
@@ -1112,7 +1112,7 @@ function BillingSection({
 
 // Linked-record accent per type — same palette as the Invoices/Tasks lists.
 const BILLING_LINK_COLOR: Record<string, string> = {
-  quote: "#6d28d9", job: "#3730a3", project: "#5b21b6", agreement: "#059669", lead: "#92400e", work_order: "#0891b2",
+  quote: "#6d28d9", job: "#0a5c53", project: "#5b21b6", agreement: "#059669", lead: "#92400e", work_order: "#0891b2",
 };
 // Where a billing row's "Linked To" navigates (work-order-labeled invoices go
 // to the work order itself).
@@ -1240,7 +1240,7 @@ function StubTab({ label, link }: { label: string; link?: string }) {
     <div className="rounded-xl p-10 text-center" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
       <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{label}</p>
       <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>Coming in Phase 1</p>
-      {link && <Link href={link} className="mt-2 block text-xs font-medium text-indigo-600 hover:text-indigo-700">Open {label} module →</Link>}
+      {link && <Link href={link} className="mt-2 block text-xs font-medium text-[#0f8578] hover:text-[#0c6b60]">Open {label} module →</Link>}
     </div>
   );
 }
@@ -1487,7 +1487,7 @@ function SectionCard({
         {/* Animated arrow = "this navigates" — same cue as linked-record links */}
         {action && (
           <button onClick={action.onClick}
-            className="group inline-flex items-center gap-1 text-xs font-medium text-indigo-600 hover:text-indigo-700 hover:underline">
+            className="group inline-flex items-center gap-1 text-xs font-medium text-[#0f8578] hover:text-[#0c6b60] hover:underline">
             {action.label}
             <ArrowUpRight className="w-3 h-3 shrink-0 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
           </button>

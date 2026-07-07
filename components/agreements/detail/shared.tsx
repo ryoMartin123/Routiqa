@@ -28,7 +28,7 @@ export const VISIT_DISPLAY: Record<VisitDisplay, { color: string; icon: typeof C
   Upcoming:  { color: "#6b7280", icon: Clock },
   Due:       { color: "#f59e0b", icon: CalendarClock },
   Overdue:   { color: "#ef4444", icon: AlertCircle },
-  Scheduled: { color: "#6366f1", icon: Circle },
+  Scheduled: { color: "#239c8d", icon: Circle },
   Completed: { color: "#10b981", icon: CheckCircle },
   Skipped:   { color: "#9ca3af", icon: MinusCircle },
 };

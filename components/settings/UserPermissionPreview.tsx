@@ -63,7 +63,7 @@ function mergeRoles(defs: RoleDefinition[], isOwner: boolean): Merged {
 const LEVEL_STYLE: Record<ModuleLevel, { bg: string; color: string }> = {
   none:        { bg: "var(--bg-input)", color: "var(--text-muted)" },
   view:        { bg: "var(--bg-input)", color: "var(--text-secondary)" },
-  create_edit: { bg: "#e0e7ff", color: "#4338ca" },
+  create_edit: { bg: "#d3ebe6", color: "#0c6b60" },
   manage:      { bg: "#d1fae5", color: "#065f46" },
   custom:      { bg: "#fef3c7", color: "#92400e" },
 };

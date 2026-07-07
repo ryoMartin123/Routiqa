@@ -95,7 +95,7 @@ export default function WorkOrderWizard({ preset, onClose, onCreated }: {
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
           <div className="flex items-center gap-2">
-            <ClipboardList className="w-4 h-4" style={{ color: "#4f46e5" }} />
+            <ClipboardList className="w-4 h-4" style={{ color: "#0f8578" }} />
             <p className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>New Work Order</p>
           </div>
           <button onClick={onClose} style={{ color: "var(--text-muted)" }}><X className="w-4 h-4" /></button>
@@ -148,7 +148,7 @@ export default function WorkOrderWizard({ preset, onClose, onCreated }: {
                     return (
                       <button key={t.id} onClick={() => { setTemplateId(t.id); setTouchedTemplate(true); }}
                         className="text-left rounded-xl p-3 transition-all"
-                        style={{ border: `2px solid ${active ? "#4f46e5" : "var(--border)"}`, backgroundColor: active ? "var(--accent-soft-bg)" : "var(--bg-surface-2)" }}>
+                        style={{ border: `2px solid ${active ? "#0f8578" : "var(--border)"}`, backgroundColor: active ? "var(--accent-soft-bg)" : "var(--bg-surface-2)" }}>
                         <div className="flex items-center justify-between gap-1">
                           <p className="text-sm font-semibold truncate" style={{ color: "var(--text-primary)" }}>{t.name}</p>
                           {isSuggested && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full shrink-0" style={{ backgroundColor: "var(--accent-soft-2-bg)", color: "var(--accent-text)" }}>SUGGESTED</span>}
@@ -160,7 +160,7 @@ export default function WorkOrderWizard({ preset, onClose, onCreated }: {
                   {/* Blank / custom — for one-off jobs with no matching template */}
                   <button onClick={() => { setTemplateId(BLANK); setTouchedTemplate(true); }}
                     className="text-left rounded-xl p-3 transition-all"
-                    style={{ border: `2px solid ${isBlank ? "#4f46e5" : "var(--border)"}`, backgroundColor: isBlank ? "var(--accent-soft-bg)" : "var(--bg-surface-2)" }}>
+                    style={{ border: `2px solid ${isBlank ? "#0f8578" : "var(--border)"}`, backgroundColor: isBlank ? "var(--accent-soft-bg)" : "var(--bg-surface-2)" }}>
                     <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Blank / Custom</p>
                     <p className="text-[11px] mt-0.5 leading-snug" style={{ color: "var(--text-muted)" }}>Build a checklist by hand for a one-off or custom job.</p>
                   </button>
@@ -225,7 +225,7 @@ export default function WorkOrderWizard({ preset, onClose, onCreated }: {
                         placeholder="Add a checklist step…" className="flex-1 rounded-lg px-2.5 py-1.5 text-xs outline-none"
                         style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface)", color: "var(--text-primary)" }} />
                       <button onClick={addCustomItem} disabled={!newItem.trim()}
-                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-white disabled:opacity-40" style={{ backgroundColor: "#4f46e5" }}>
+                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-white disabled:opacity-40" style={{ backgroundColor: "#0f8578" }}>
                         <Plus className="w-3.5 h-3.5" /> Add
                       </button>
                     </div>
@@ -240,7 +240,7 @@ export default function WorkOrderWizard({ preset, onClose, onCreated }: {
         <div className="px-6 py-4 flex justify-end gap-2 shrink-0" style={{ borderTop: "1px solid var(--border)" }}>
           <button onClick={onClose} className="px-3 py-2 rounded-lg text-sm" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>Cancel</button>
           <button onClick={handleCreate} disabled={!canCreate}
-            className="px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-40" style={{ backgroundColor: "#4f46e5" }}>
+            className="px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-40" style={{ backgroundColor: "#0f8578" }}>
             Create Work Order
           </button>
         </div>

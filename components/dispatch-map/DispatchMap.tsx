@@ -26,7 +26,7 @@ import {
   type MapJob, type MapTech, type AiSuggestion, type JobMarkerKind,
 } from "@/lib/dispatch-map/data";
 
-const ACCENT = "#4f46e5"; // CRM indigo
+const ACCENT = "#0f8578"; // CRM indigo
 const AMBER = "#f59e0b";
 
 const GoogleMapView = dynamic(() => import("@/components/map/GoogleMapView"), {

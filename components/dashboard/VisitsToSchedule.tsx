@@ -55,7 +55,7 @@ export default function VisitsToSchedule() {
               <p className="text-xs mt-0.5 truncate" style={{ color: "var(--text-muted)" }}>{visit.label} · {visit.scheduled}</p>
             </div>
             <button onClick={() => schedule(agreement.id, visit.id)}
-              className="shrink-0 inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 transition-colors">
+              className="shrink-0 inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-lg text-white bg-[#0f8578] hover:bg-[#0c6b60] transition-colors">
               Schedule <ChevronRight className="w-3 h-3" />
             </button>
           </div>

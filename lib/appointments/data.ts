@@ -24,7 +24,7 @@ export type VisitType =
   | "startup" | "delivery" | "follow_up";
 
 export const VISIT_TYPE_CONFIG: Record<VisitType, { label: string; short: string; color: string }> = {
-  service:     { label: "Service Visit",     short: "Service",     color: "#4f46e5" },
+  service:     { label: "Service Visit",     short: "Service",     color: "#0f8578" },
   maintenance: { label: "Maintenance Visit", short: "Maintenance", color: "#059669" },
   diagnostic:  { label: "Diagnostic Visit",  short: "Diagnostic",  color: "#0891b2" },
   estimate:    { label: "Estimate Visit",    short: "Estimate",    color: "#7c3aed" },
@@ -53,6 +53,7 @@ export interface Appointment {
   scheduledTime: string;      // HH:MM
   durationMinutes: number;
   status: AppointmentStatus;
+  handoffNote?: string;       // end-of-day crew note — shown on the NEXT day's visit
   createdAt: string;
 }
 

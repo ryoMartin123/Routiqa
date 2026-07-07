@@ -50,8 +50,8 @@ export default function RoleDrawer({ role, canManage, onClose, onSaved, onEditFu
         <div className="px-5 py-4 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-start gap-2.5 min-w-0">
-              <span className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: "#e0e7ff" }}>
-                <Shield className="w-4 h-4" style={{ color: "#4f46e5" }} />
+              <span className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: "#d3ebe6" }}>
+                <Shield className="w-4 h-4" style={{ color: "#0f8578" }} />
               </span>
               <div className="min-w-0">
                 <p className="text-base font-semibold truncate" style={{ color: "var(--text-primary)" }}>{role.label}</p>
@@ -118,7 +118,7 @@ export default function RoleDrawer({ role, canManage, onClose, onSaved, onEditFu
                 </div>
               ) : assigned.map((u) => (
                 <div key={u.id} className="flex items-center gap-2.5 px-3 py-2 rounded-lg" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}>
-                  <span className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-semibold shrink-0" style={{ backgroundColor: "#e0e7ff", color: "#4f46e5" }}>{u.initials}</span>
+                  <span className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-semibold shrink-0" style={{ backgroundColor: "#d3ebe6", color: "#0f8578" }}>{u.initials}</span>
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{u.fullName}</p>
                     <p className="text-[11px] truncate" style={{ color: "var(--text-muted)" }}>{u.email}</p>
@@ -139,7 +139,7 @@ export default function RoleDrawer({ role, canManage, onClose, onSaved, onEditFu
             <button onClick={() => setDraft(JSON.parse(JSON.stringify(role)))} disabled={!dirty}
               className="text-sm font-medium px-3 py-2 rounded-lg disabled:opacity-40" style={{ color: "var(--text-secondary)" }}>Discard</button>
             <button onClick={save} disabled={!dirty}
-              className="text-sm font-medium px-4 py-2 rounded-lg text-white transition-colors disabled:opacity-40" style={{ backgroundColor: "#4f46e5" }}>Save changes</button>
+              className="text-sm font-medium px-4 py-2 rounded-lg text-white transition-colors disabled:opacity-40" style={{ backgroundColor: "#0f8578" }}>Save changes</button>
           </div>
         )}
       </div>

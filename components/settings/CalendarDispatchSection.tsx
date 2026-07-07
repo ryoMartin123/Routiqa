@@ -34,7 +34,7 @@ const DUE_OPTIONS = [
   { value: "30", label: "Due this month" },
 ];
 
-const LAYER_SWATCHES = ["#4f46e5", "#0891b2", "#059669", "#f59e0b", "#7c3aed"];
+const LAYER_SWATCHES = ["#0f8578", "#0891b2", "#059669", "#f59e0b", "#7c3aed"];
 
 // Default-view picker options (icon cards).
 const VIEW_OPTIONS: { value: CalendarViewMode; label: string; icon: typeof Clock; hint: string }[] = [
@@ -65,7 +65,7 @@ function Toggle({ on, onChange, disabled }: { on: boolean; onChange: (v: boolean
   return (
     <button onClick={() => !disabled && onChange(!on)} role="switch" aria-checked={on} disabled={disabled}
       className="relative w-8 h-4 rounded-full transition-colors shrink-0 disabled:opacity-50"
-      style={{ backgroundColor: on ? "#4f46e5" : "var(--bg-input)", border: "1px solid var(--border)" }}>
+      style={{ backgroundColor: on ? "#0f8578" : "var(--bg-input)", border: "1px solid var(--border)" }}>
       <span className="absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white shadow transition-transform"
         style={{ transform: on ? "translateX(16px)" : "translateX(0)" }} />
     </button>
@@ -80,7 +80,7 @@ function SettingsCard({ icon: Icon, title, subtitle, children, action }: {
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-start gap-3">
           <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: "var(--bg-surface-2)" }}>
-            <Icon className="w-4 h-4" style={{ color: "#4f46e5" }} />
+            <Icon className="w-4 h-4" style={{ color: "#0f8578" }} />
           </div>
           <div>
             <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{title}</p>
@@ -108,7 +108,7 @@ function Segmented<T extends string>({ value, options, onChange, disabled }: {
         return (
           <button key={o.value} onClick={() => !disabled && onChange(o.value)} disabled={disabled}
             className="px-3 py-1.5 text-xs font-medium transition-colors"
-            style={{ backgroundColor: active ? "#4f46e5" : "var(--bg-surface)", color: active ? "#fff" : "var(--text-secondary)" }}>
+            style={{ backgroundColor: active ? "#0f8578" : "var(--bg-surface)", color: active ? "#fff" : "var(--text-secondary)" }}>
             {o.label}
           </button>
         );
@@ -126,7 +126,7 @@ function ChipMulti({ all, selected, onToggle, labels }: { all: string[]; selecte
           <button key={opt} onClick={() => onToggle(opt)}
             className="px-2.5 py-1 rounded-full text-xs font-medium transition-colors"
             style={on
-              ? { backgroundColor: "#e0e7ff", color: "#3730a3", border: "1px solid #c7d2fe" }
+              ? { backgroundColor: "#d3ebe6", color: "#0a5c53", border: "1px solid #b9dfd8" }
               : { backgroundColor: "var(--bg-surface-2)", color: "var(--text-muted)", border: "1px solid var(--border)" }}>
             {on && <Check className="w-3 h-3 inline mr-1 -mt-0.5" />}{labels?.[opt] ?? opt}
           </button>
@@ -143,7 +143,7 @@ function PersonRow({ name, checked, onToggle }: { name: string; checked: boolean
       className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors hover:bg-[var(--bg-surface-2)]"
       style={{ color: "var(--text-primary)" }}>
       <span className="w-4 h-4 rounded flex items-center justify-center shrink-0"
-        style={{ border: `1.5px solid ${checked ? "#4f46e5" : "var(--border)"}`, backgroundColor: checked ? "#4f46e5" : "transparent" }}>
+        style={{ border: `1.5px solid ${checked ? "#0f8578" : "var(--border)"}`, backgroundColor: checked ? "#0f8578" : "transparent" }}>
         {checked && <Check className="w-3 h-3 text-white" />}
       </span>
       <span className="truncate">{name}</span>
@@ -222,7 +222,7 @@ function PeoplePicker({ title, allNames, suggested, selected, onToggle, emptyLab
             </div>
             <div className="px-5 py-3 flex items-center justify-between shrink-0" style={{ borderTop: "1px solid var(--border)" }}>
               <span className="text-xs" style={{ color: "var(--text-muted)" }}>{selected.length} selected</span>
-              <button onClick={() => setOpen(false)} className="px-4 py-1.5 rounded-lg text-sm font-medium text-white" style={{ backgroundColor: "#4f46e5" }}>Done</button>
+              <button onClick={() => setOpen(false)} className="px-4 py-1.5 rounded-lg text-sm font-medium text-white" style={{ backgroundColor: "#0f8578" }}>Done</button>
             </div>
           </div>
         </div>
@@ -290,7 +290,7 @@ function TagPicker({ title, all, selected, onToggle, emptyLabel, searchPlacehold
             </div>
             <div className="px-5 py-3 flex items-center justify-between shrink-0" style={{ borderTop: "1px solid var(--border)" }}>
               <span className="text-xs" style={{ color: "var(--text-muted)" }}>{selected.length} selected</span>
-              <button onClick={() => setOpen(false)} className="px-4 py-1.5 rounded-lg text-sm font-medium text-white" style={{ backgroundColor: "#4f46e5" }}>Done</button>
+              <button onClick={() => setOpen(false)} className="px-4 py-1.5 rounded-lg text-sm font-medium text-white" style={{ backgroundColor: "#0f8578" }}>Done</button>
             </div>
           </div>
         </div>
@@ -325,7 +325,7 @@ function MultiSelect({ options, selected, onToggle, placeholder }: {
     <div className="relative" ref={ref}>
       <button type="button" onClick={() => setOpen(o => !o)}
         className="w-full min-h-[38px] rounded-lg px-2.5 py-1.5 flex flex-wrap items-center gap-1.5 text-left transition-colors"
-        style={{ border: `1px solid ${open ? "#a5b4fc" : "var(--border)"}`, backgroundColor: "var(--bg-surface)", boxShadow: open ? "0 0 0 3px rgba(99,102,241,0.12)" : "none" }}>
+        style={{ border: `1px solid ${open ? "#8ed0c6" : "var(--border)"}`, backgroundColor: "var(--bg-surface)", boxShadow: open ? "0 0 0 3px rgba(35,156,141,0.12)" : "none" }}>
         {selOpts.length === 0
           ? <span className="text-sm" style={{ color: "var(--text-muted)" }}>{placeholder}</span>
           : selOpts.map(o => (
@@ -429,7 +429,7 @@ export default function CalendarDispatchSection({ activeModule, onOpen, onBack }
                 className="flex items-start gap-3 p-4 rounded-xl text-left w-full transition-all group hover:shadow-md cursor-pointer"
                 style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: "var(--bg-surface-2)" }}>
-                  <Icon className="w-4 h-4" style={{ color: "#4f46e5" }} />
+                  <Icon className="w-4 h-4" style={{ color: "#0f8578" }} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{c.label}</p>
@@ -742,7 +742,7 @@ export default function CalendarDispatchSection({ activeModule, onOpen, onBack }
             <div className="flex items-center gap-2">
               {level !== "org" && <OverrideToggle on={isOverridden("blocks")} onChange={v => setOverride("blocks", v)} />}
               {isOverridden("blocks") && (
-                <button onClick={addBlock} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-white" style={{ backgroundColor: "#4f46e5" }}>
+                <button onClick={addBlock} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-white" style={{ backgroundColor: "#0f8578" }}>
                   <Plus className="w-3.5 h-3.5" /> Add Block
                 </button>
               )}
@@ -754,7 +754,7 @@ export default function CalendarDispatchSection({ activeModule, onOpen, onBack }
             <div className="space-y-2">
               {sortedBlocks.map((b, i) => (
                 editingBlock === b.id ? (
-                  <div key={b.id} className="rounded-xl p-4 space-y-3" style={{ border: "2px solid #c7d2fe", backgroundColor: "var(--bg-surface)" }}>
+                  <div key={b.id} className="rounded-xl p-4 space-y-3" style={{ border: "2px solid #b9dfd8", backgroundColor: "var(--bg-surface)" }}>
                     <div className="grid grid-cols-3 gap-3">
                       <div className="col-span-3">
                         <FieldLabel>Block Name</FieldLabel>
@@ -771,7 +771,7 @@ export default function CalendarDispatchSection({ activeModule, onOpen, onBack }
                       </div>
                     </div>
                     <div className="flex justify-end">
-                      <button onClick={() => setEditingBlock(null)} className="px-4 py-1.5 rounded-lg text-sm font-medium text-white" style={{ backgroundColor: "#4f46e5" }}>Done</button>
+                      <button onClick={() => setEditingBlock(null)} className="px-4 py-1.5 rounded-lg text-sm font-medium text-white" style={{ backgroundColor: "#0f8578" }}>Done</button>
                     </div>
                   </div>
                 ) : (
@@ -802,7 +802,7 @@ export default function CalendarDispatchSection({ activeModule, onOpen, onBack }
         <SettingsCard icon={Users} title="Dispatch Boards / Teams" subtitle="Group dispatchers, technicians, and job types into a board. Assign members by user or by role."
           action={
             <button onClick={addBoard} disabled={!scopeReady} title={scopeReady ? "Add board" : "Select a company / branch first"}
-              className="flex items-center justify-center w-8 h-8 rounded-lg text-white transition-colors hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed" style={{ backgroundColor: "#4f46e5" }}>
+              className="flex items-center justify-center w-8 h-8 rounded-lg text-white transition-colors hover:bg-[#0c6b60] disabled:opacity-40 disabled:cursor-not-allowed" style={{ backgroundColor: "#0f8578" }}>
               <Plus className="w-4 h-4" />
             </button>
           }>
@@ -877,7 +877,7 @@ export default function CalendarDispatchSection({ activeModule, onOpen, onBack }
       {curTab === "queue" && (
         <SettingsCard icon={Inbox} title="Unscheduled Queue Views" subtitle="The core categories (Jobs, Agreements, Tasks, Quotes, Projects) are locked and always shown. Add your own views on top — each view is a filter."
           action={
-            <button onClick={addQueueView} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-white" style={{ backgroundColor: "#4f46e5" }}>
+            <button onClick={addQueueView} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-white" style={{ backgroundColor: "#0f8578" }}>
               <Plus className="w-3.5 h-3.5" /> Add View
             </button>
           }>
@@ -938,12 +938,12 @@ function BoardRow({ board, onEdit, onRemove, onSetDefault }: {
     ...(board.roleKeys ?? []).map(k => `${getRoleLabel(k)} (role)`),
   ];
   return (
-    <div className="rounded-xl p-4" style={{ border: board.isDefault ? "1px solid #c7d2fe" : "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)" }}>
+    <div className="rounded-xl p-4" style={{ border: board.isDefault ? "1px solid #b9dfd8" : "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)" }}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{board.name}</p>
-            {board.isDefault && <span className="flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: "#e0e7ff", color: "#3730a3" }}><Star className="w-2.5 h-2.5" /> Default</span>}
+            {board.isDefault && <span className="flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: "#d3ebe6", color: "#0a5c53" }}><Star className="w-2.5 h-2.5" /> Default</span>}
           </div>
           <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs" style={{ color: "var(--text-secondary)" }}>
             <span><span style={{ color: "var(--text-muted)" }}>Dispatchers:</span> {board.dispatchers.length ? board.dispatchers.join(", ") : "—"}</span>
@@ -987,7 +987,7 @@ function BoardEditor({ board, onPatch, onToggleMember, onDone }: {
     onPatch({ boardType: t, jobTypes });
   }
   return (
-    <div className="rounded-xl p-4 space-y-4" style={{ border: "2px solid #c7d2fe", backgroundColor: "var(--bg-surface)" }}>
+    <div className="rounded-xl p-4 space-y-4" style={{ border: "2px solid #b9dfd8", backgroundColor: "var(--bg-surface)" }}>
       <div>
         <FieldLabel>Board Name</FieldLabel>
         <input value={board.name} onChange={e => onPatch({ name: e.target.value })}
@@ -1022,14 +1022,14 @@ function BoardEditor({ board, onPatch, onToggleMember, onDone }: {
         <p className="text-[11px] mt-1.5" style={{ color: "var(--text-muted)" }}>The board claims queue items and jobs matching any of these types. Leave empty to rely on the branch&apos;s default board.</p>
       </div>
       <div className="flex justify-end pt-1">
-        <button onClick={onDone} className="px-4 py-1.5 rounded-lg text-sm font-medium text-white" style={{ backgroundColor: "#4f46e5" }}>Done</button>
+        <button onClick={onDone} className="px-4 py-1.5 rounded-lg text-sm font-medium text-white" style={{ backgroundColor: "#0f8578" }}>Done</button>
       </div>
     </div>
   );
 }
 
 // ─── Queue view row + editor ──────────────────────────────
-const QV_SWATCHES = ["#4f46e5", "#dc2626", "#059669", "#f59e0b", "#0891b2", "#7c3aed"];
+const QV_SWATCHES = ["#0f8578", "#dc2626", "#059669", "#f59e0b", "#0891b2", "#7c3aed"];
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 const PRIORITY_LABELS: Record<string, string> = { urgent: "Urgent", high: "High", normal: "Normal", low: "Low" };
 
@@ -1066,7 +1066,7 @@ function QueueViewCard({ view, first, last, expanded, onToggleExpand, onMove, on
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{view.name}</p>
-            {locked && <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: "#e0e7ff", color: "#3730a3" }}><Lock className="w-2.5 h-2.5" /> Core</span>}
+            {locked && <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: "#d3ebe6", color: "#0a5c53" }}><Lock className="w-2.5 h-2.5" /> Core</span>}
             {!locked && !view.defaultVisible && <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>Hidden</span>}
           </div>
           <p className="text-xs truncate" style={{ color: "var(--text-muted)" }}>

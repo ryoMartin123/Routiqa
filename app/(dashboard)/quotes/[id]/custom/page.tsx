@@ -997,7 +997,7 @@ function BlockSettings({ sel, ctx }: { sel: QuoteBlock; ctx: SettingsCtx }) {
     <Field label="Image"><OptionImageInput value={sel.images?.[0]?.src} onChange={src => setImages(src ? [{ id: sel.images?.[0]?.id ?? imageId(), src, caption: sel.images?.[0]?.caption, alt: sel.images?.[0]?.alt }] : [])} accent={accent} /></Field>
     <Field label="Caption"><input value={sel.images?.[0]?.caption ?? ""} onChange={e => setImages([{ id: sel.images?.[0]?.id ?? imageId(), src: sel.images?.[0]?.src ?? "", caption: e.target.value, alt: sel.images?.[0]?.alt }])} placeholder="Optional caption" className="w-full rounded-lg px-3 py-2 text-sm outline-none focus:ring-2" style={inputStyle} /></Field>
     <Field label="Alt text" hint="accessibility"><input value={sel.images?.[0]?.alt ?? ""} onChange={e => setImages([{ id: sel.images?.[0]?.id ?? imageId(), src: sel.images?.[0]?.src ?? "", caption: sel.images?.[0]?.caption, alt: e.target.value }])} className="w-full rounded-lg px-3 py-2 text-sm outline-none focus:ring-2" style={inputStyle} /></Field>
-    <Field label={`Width (${s.width ?? 100}%)`}><input type="range" min={25} max={100} step={5} value={s.width ?? 100} onChange={e => ctx.setBlockSettings(sel.id, { width: Number(e.target.value) })} className="w-full accent-indigo-600" /></Field>
+    <Field label={`Width (${s.width ?? 100}%)`}><input type="range" min={25} max={100} step={5} value={s.width ?? 100} onChange={e => ctx.setBlockSettings(sel.id, { width: Number(e.target.value) })} className="w-full accent-[#0f8578]" /></Field>
     <Field label="Alignment"><AlignPicker value={s.align ?? "center"} onChange={a => ctx.setBlockSettings(sel.id, { align: a })} accent={accent} /></Field>
   </>);
 
@@ -1027,8 +1027,8 @@ function BlockSettings({ sel, ctx }: { sel: QuoteBlock; ctx: SettingsCtx }) {
   if (sel.type === "line_items") return <LineItemsEditor ctx={ctx} />;
 
   if (sel.type === "price_summary") return (<>
-    <label className="flex items-center gap-2 text-sm cursor-pointer" style={{ color: "var(--text-secondary)" }}><input type="checkbox" checked={s.itemized ?? true} onChange={e => ctx.setBlockSettings(sel.id, { itemized: e.target.checked })} className="accent-indigo-600" /> Itemized (list each line)</label>
-    <label className="flex items-center gap-2 text-sm cursor-pointer" style={{ color: "var(--text-secondary)" }}><input type="checkbox" checked={s.showMonthly ?? false} onChange={e => ctx.setBlockSettings(sel.id, { showMonthly: e.target.checked })} className="accent-indigo-600" /> Show monthly financing estimate</label>
+    <label className="flex items-center gap-2 text-sm cursor-pointer" style={{ color: "var(--text-secondary)" }}><input type="checkbox" checked={s.itemized ?? true} onChange={e => ctx.setBlockSettings(sel.id, { itemized: e.target.checked })} className="accent-[#0f8578]" /> Itemized (list each line)</label>
+    <label className="flex items-center gap-2 text-sm cursor-pointer" style={{ color: "var(--text-secondary)" }}><input type="checkbox" checked={s.showMonthly ?? false} onChange={e => ctx.setBlockSettings(sel.id, { showMonthly: e.target.checked })} className="accent-[#0f8578]" /> Show monthly financing estimate</label>
     <div className="rounded-lg p-3" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}><div className="flex items-center justify-between"><span className="text-xs" style={{ color: "var(--text-muted)" }}>Customer total</span><span className="text-base font-bold tabular-nums" style={{ color: "var(--text-primary)" }}>{fmt(ctx.totals.total)}</span></div></div>
     <ReadOnlyNote>The total comes from the Line Items section. Edit a Line Items section to change it.</ReadOnlyNote>
   </>);
@@ -1061,8 +1061,8 @@ function LineItemsEditor({ ctx }: { ctx: SettingsCtx }) {
             <button onClick={() => ctx.removeItem(it.id)} className="ml-auto p-1 rounded-lg" style={{ color: "var(--text-muted)" }}><Trash2 className="w-3.5 h-3.5" /></button>
           </div>
           <div className="flex items-center gap-3">
-            <label className="flex items-center gap-1 text-[11px] cursor-pointer" style={{ color: "var(--text-secondary)" }}><input type="checkbox" checked={it.taxable} onChange={e => ctx.setItem(it.id, { taxable: e.target.checked })} className="accent-indigo-600" /> Taxable</label>
-            <label className="flex items-center gap-1 text-[11px] cursor-pointer" style={{ color: "var(--text-secondary)" }}><input type="checkbox" checked={it.optional} onChange={e => ctx.setItem(it.id, { optional: e.target.checked })} className="accent-indigo-600" /> Optional</label>
+            <label className="flex items-center gap-1 text-[11px] cursor-pointer" style={{ color: "var(--text-secondary)" }}><input type="checkbox" checked={it.taxable} onChange={e => ctx.setItem(it.id, { taxable: e.target.checked })} className="accent-[#0f8578]" /> Taxable</label>
+            <label className="flex items-center gap-1 text-[11px] cursor-pointer" style={{ color: "var(--text-secondary)" }}><input type="checkbox" checked={it.optional} onChange={e => ctx.setItem(it.id, { optional: e.target.checked })} className="accent-[#0f8578]" /> Optional</label>
           </div>
         </div>
       ))}

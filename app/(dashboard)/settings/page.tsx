@@ -200,7 +200,7 @@ function SettingCard({ item, onClick }: { item: SettingItem; onClick: () => void
       style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
       <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-colors"
         style={{ backgroundColor: "var(--bg-surface-2)" }}>
-        <Icon className="w-4 h-4" style={{ color: "#4f46e5" }} />
+        <Icon className="w-4 h-4" style={{ color: "#0f8578" }} />
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{item.label}</p>
@@ -261,7 +261,7 @@ function CategoryHome({ category, onSelect, onBack }: {
       <div className="flex items-start gap-3">
         <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
           style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}>
-          <CatIcon className="w-5 h-5" style={{ color: "#4f46e5" }} />
+          <CatIcon className="w-5 h-5" style={{ color: "#0f8578" }} />
         </div>
         <div>
           <h1 className="text-xl font-semibold" style={{ color: "var(--text-primary)" }}>{cat.label}</h1>

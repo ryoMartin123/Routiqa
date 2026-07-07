@@ -38,9 +38,9 @@ export default function InvoicePreview({ data }: { data: InvoicePreviewData }) {
       )}
 
       {/* Letterhead */}
-      <div className="flex items-start justify-between px-8 py-6" style={{ borderBottom: "2px solid #4f46e5" }}>
+      <div className="flex items-start justify-between px-8 py-6" style={{ borderBottom: "2px solid #0f8578" }}>
         <div>
-          <p className="text-lg font-bold" style={{ color: "#4f46e5" }}>Northstar Services</p>
+          <p className="text-lg font-bold" style={{ color: "#0f8578" }}>Northstar Services</p>
           <p className="text-xs" style={{ color: "#6b7280" }}>{data.locationName ?? "Augusta Branch"}</p>
         </div>
         <div className="text-right">
@@ -99,9 +99,9 @@ export default function InvoicePreview({ data }: { data: InvoicePreviewData }) {
             {data.paidAt && (
               <div className="flex justify-between text-sm"><span style={{ color: "#6b7280" }}>Paid {data.paidAt}</span><span style={{ color: "#059669" }}>–{fmt(data.total - data.balanceDue)}</span></div>
             )}
-            <div className="flex justify-between pt-1.5" style={{ borderTop: "2px solid #4f46e5" }}>
+            <div className="flex justify-between pt-1.5" style={{ borderTop: "2px solid #0f8578" }}>
               <span className="text-sm font-bold" style={{ color: "#111827" }}>Balance Due</span>
-              <span className="text-lg font-bold" style={{ color: data.balanceDue > 0 ? "#4f46e5" : "#059669" }}>
+              <span className="text-lg font-bold" style={{ color: data.balanceDue > 0 ? "#0f8578" : "#059669" }}>
                 {data.balanceDue > 0 ? fmt(data.balanceDue) : "Paid in Full"}
               </span>
             </div>

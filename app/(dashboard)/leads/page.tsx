@@ -119,7 +119,7 @@ function PipelineCard({ lead }: { lead: Lead }) {
       {/* Assigned + date */}
       <div className="flex items-center justify-between pt-2" style={{ borderTop: "1px solid var(--border)" }}>
         <div className="flex items-center gap-1.5 min-w-0">
-          <div className="w-5 h-5 rounded-full bg-[#e5e0db] flex items-center justify-center text-[8px] font-bold text-[#5c5545] shrink-0" title={lead.assignedTo}>
+          <div className="w-5 h-5 rounded-full bg-[var(--copper-soft-bg)] flex items-center justify-center text-[8px] font-bold text-[var(--copper-text)] shrink-0" title={lead.assignedTo}>
             {lead.assignedToInitials}
           </div>
           <span className="text-[10px] truncate" style={{ color: "var(--text-secondary)" }}>{lead.assignedTo}</span>
@@ -360,7 +360,7 @@ export default function LeadsPage() {
   // Summary metrics — based on context (respect the selector, not the board filters)
   const openCtx = contextFiltered.filter(l => resolve(l.stage).category === "open");
   const summaryCards: SummaryCard[] = [
-    { icon: TrendingUp,    label: "Open Leads",     value: String(openCtx.length),                                              sub: "Active pipeline",   iconColor: "#4f46e5" },
+    { icon: TrendingUp,    label: "Open Leads",     value: String(openCtx.length),                                              sub: "Active pipeline",   iconColor: "#0f8578" },
     { icon: DollarSign,    label: "Pipeline Value", value: fmtMoney(openCtx.reduce((s, l) => s + parseLeadValue(l), 0)),        sub: `${openCtx.length} open leads`, iconColor: "#10b981" },
     { icon: CalendarClock, label: "Follow-Ups Due", value: String(openCtx.filter(leadFollowUpDue).length),                     sub: "Need attention",    iconColor: "#f59e0b" },
     { icon: Trophy,        label: "Won This Month", value: String(contextFiltered.filter(l => resolve(l.stage).category === "won").length), sub: "Closed won", iconColor: "#059669" },
@@ -376,8 +376,8 @@ export default function LeadsPage() {
   function SortIcon({ field }: { field: SortField }) {
     if (sortField !== field) return <ChevronDown className="w-3 h-3 opacity-30" />;
     return sortDir === "asc"
-      ? <ChevronUp className="w-3 h-3" style={{ color: "#4f46e5" }} />
-      : <ChevronDown className="w-3 h-3" style={{ color: "#4f46e5" }} />;
+      ? <ChevronUp className="w-3 h-3" style={{ color: "#0f8578" }} />
+      : <ChevronDown className="w-3 h-3" style={{ color: "#0f8578" }} />;
   }
 
   return (
@@ -398,7 +398,7 @@ export default function LeadsPage() {
             return (
               <button key={v.key} onClick={() => setView(v.key)}
                 className="flex items-center gap-1.5 px-3 py-1.5 text-sm transition-colors"
-                style={{ backgroundColor: active ? "#4f46e5" : "var(--bg-surface)", color: active ? "#fff" : "var(--text-secondary)" }}>
+                style={{ backgroundColor: active ? "#0f8578" : "var(--bg-surface)", color: active ? "#fff" : "var(--text-secondary)" }}>
                 <v.icon className="w-3.5 h-3.5" /> {v.label}
               </button>
             );
@@ -445,7 +445,7 @@ export default function LeadsPage() {
             );
           })()}
           <button onClick={() => setWizardOpen(true)}
-            className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-3 py-2 rounded-lg transition-colors">
+            className="flex items-center gap-1.5 bg-[#0f8578] hover:bg-[#0c6b60] text-white text-sm font-medium px-3 py-2 rounded-lg transition-colors">
             <Plus className="w-4 h-4" /> New Lead
           </button>
         </div>
@@ -576,7 +576,7 @@ export default function LeadsPage() {
             ] as const).map(({ label, field }) => (
               <button key={label} onClick={() => field && handleSort(field as SortField)}
                 className={cn("flex items-center gap-1 text-left", field ? "cursor-pointer hover:opacity-80" : "cursor-default")}
-                style={{ color: sortField === field ? "#4f46e5" : "var(--text-muted)" }}>
+                style={{ color: sortField === field ? "#0f8578" : "var(--text-muted)" }}>
                 {label}{field && <SortIcon field={field as SortField} />}
               </button>
             ))}
@@ -625,7 +625,7 @@ export default function LeadsPage() {
 
                   {/* Assigned */}
                   <div className="flex items-center gap-1.5">
-                    <div className="w-5 h-5 rounded-full bg-[#e5e0db] flex items-center justify-center text-[8px] font-bold text-[#5c5545] shrink-0">
+                    <div className="w-5 h-5 rounded-full bg-[var(--copper-soft-bg)] flex items-center justify-center text-[8px] font-bold text-[var(--copper-text)] shrink-0">
                       {lead.assignedToInitials}
                     </div>
                     <span className="text-sm truncate" style={{ color: "var(--text-secondary)" }}>{lead.assignedTo}</span>
@@ -744,7 +744,7 @@ function OverviewView({ contextLeads, resolve, openStages, summaryCards }: {
           </div>
           <div className="grid grid-cols-3 gap-2">
             {[
-              { label: "Open", val: open, color: "#6366f1" },
+              { label: "Open", val: open, color: "#239c8d" },
               { label: "Won", val: won, color: "#22c55e" },
               { label: "Lost", val: lost, color: "#ef4444" },
             ].map(s => (
@@ -759,7 +759,7 @@ function OverviewView({ contextLeads, resolve, openStages, summaryCards }: {
         <OverviewCard title="Leads by Source">
           {bySource.length === 0
             ? <p className="text-xs" style={{ color: "var(--text-muted)" }}>No leads</p>
-            : bySource.map(s => <BarRow key={s.label} label={s.label} count={s.count} pct={s.count / maxSource} color="#6366f1" />)}
+            : bySource.map(s => <BarRow key={s.label} label={s.label} count={s.count} pct={s.count / maxSource} color="#239c8d" />)}
         </OverviewCard>
 
         <OverviewCard title="Top Reps">
@@ -822,7 +822,7 @@ function LeadsCalendar({ leads, resolve, focus }: { leads: Lead[]; resolve: (key
                 }}>
                 <span className="text-[11px] mb-1 inline-flex items-center justify-center w-5 h-5 rounded-full self-start"
                   style={isToday
-                    ? { backgroundColor: "#4f46e5", color: "#fff", fontWeight: 700 }
+                    ? { backgroundColor: "#0f8578", color: "#fff", fontWeight: 700 }
                     : { color: inMonth ? "var(--text-secondary)" : "var(--text-muted)", fontWeight: 500 }}
                   title={isToday ? "Today" : undefined}>{day.getDate()}</span>
                 <div className="flex flex-col gap-1 overflow-hidden">

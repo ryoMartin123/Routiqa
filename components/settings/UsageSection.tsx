@@ -18,7 +18,7 @@ const METRIC_ICONS: Record<UsageMetricKey, React.ElementType> = {
 function meterColor(pct: number): string {
   if (pct >= 90) return "#dc2626";
   if (pct >= 75) return "#f59e0b";
-  return "#4f46e5";
+  return "#0f8578";
 }
 
 function MetricRow({ m, last }: { m: MetricUsage; last: boolean }) {

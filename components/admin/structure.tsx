@@ -61,9 +61,9 @@ export function AppearanceSection() {
             return (
               <button key={key} onClick={() => setTheme(key)}
                 className="flex-1 flex flex-col items-center gap-3 py-5 rounded-xl transition-all"
-                style={{ border: `2px solid ${active ? "#4f46e5" : "var(--border)"}`, backgroundColor: "var(--bg-surface-2)" }}>
-                <Icon className="w-5 h-5" style={{ color: active ? "#4f46e5" : "var(--text-muted)" }} />
-                <span className="text-sm font-medium" style={{ color: active ? "#4f46e5" : "var(--text-secondary)" }}>{label}</span>
+                style={{ border: `2px solid ${active ? "#0f8578" : "var(--border)"}`, backgroundColor: "var(--bg-surface-2)" }}>
+                <Icon className="w-5 h-5" style={{ color: active ? "#0f8578" : "var(--text-muted)" }} />
+                <span className="text-sm font-medium" style={{ color: active ? "#0f8578" : "var(--text-secondary)" }}>{label}</span>
               </button>
             );
           })}
@@ -94,7 +94,7 @@ function Toggle({ enabled, onChange, disabled }: { enabled: boolean; onChange: (
       onClick={() => { if (!disabled) onChange(!enabled); }}
       disabled={disabled}
       className="relative w-10 h-5 rounded-full transition-colors shrink-0"
-      style={{ backgroundColor: enabled ? "#4f46e5" : "var(--bg-input)", border: "1px solid var(--border)", opacity: disabled ? 0.55 : 1, cursor: disabled ? "not-allowed" : "pointer" }}
+      style={{ backgroundColor: enabled ? "#0f8578" : "var(--bg-input)", border: "1px solid var(--border)", opacity: disabled ? 0.55 : 1, cursor: disabled ? "not-allowed" : "pointer" }}
       role="switch"
       aria-checked={enabled}
     >
@@ -182,17 +182,17 @@ export function BusinessStructureSection() {
                 title={locked ? lock! : undefined}
                 className="flex flex-col text-left p-4 rounded-xl transition-all"
                 style={{
-                  border: `2px solid ${active ? "#4f46e5" : "var(--border)"}`,
+                  border: `2px solid ${active ? "#0f8578" : "var(--border)"}`,
                   backgroundColor: active ? "#f5f3ff" : "var(--bg-surface-2)",
                   opacity: locked ? 0.6 : 1,
                   cursor: locked ? "not-allowed" : "pointer",
                 }}>
                 <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-sm font-semibold" style={{ color: active ? "#4f46e5" : "var(--text-primary)" }}>
+                  <span className="text-sm font-semibold" style={{ color: active ? "#0f8578" : "var(--text-primary)" }}>
                     {mode.label}
                   </span>
                   {active && (
-                    <span className="w-4 h-4 rounded-full bg-[#e5e0db] flex items-center justify-center">
+                    <span className="w-4 h-4 rounded-full bg-[var(--copper-soft-bg)] flex items-center justify-center">
                       <Check className="w-2.5 h-2.5 text-white" />
                     </span>
                   )}
@@ -342,7 +342,7 @@ export function CompaniesSection() {
   const { allCompanies, allLocations } = useHierarchy();
   const [addOpen, setAddOpen] = useState(false);
   const [editing, setEditing] = useState<Company | null>(null);
-  const industryColors: Record<string, string> = { hvac: "#6366f1", roofing: "#0891b2", plumbing: "#0d9488", electrical: "#d97706", restoration: "#dc2626", property_maintenance: "#059669", consulting: "#7c3aed" };
+  const industryColors: Record<string, string> = { hvac: "#239c8d", roofing: "#0891b2", plumbing: "#0d9488", electrical: "#d97706", restoration: "#dc2626", property_maintenance: "#059669", consulting: "#7c3aed" };
   return (
     <div className="space-y-4">
       <AddCompanyModal open={addOpen} onClose={() => setAddOpen(false)} />
@@ -351,7 +351,7 @@ export function CompaniesSection() {
         title="Companies"
         subtitle="Business units and brands within your organization."
         action={
-          <button onClick={() => setAddOpen(true)} className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-3 py-2 rounded-lg transition-colors">
+          <button onClick={() => setAddOpen(true)} className="flex items-center gap-1.5 bg-[#0f8578] hover:bg-[#0c6b60] text-white text-sm font-medium px-3 py-2 rounded-lg transition-colors">
             <Plus className="w-4 h-4" /> Add Company
           </button>
         }
@@ -407,7 +407,7 @@ export function LocationsSection() {
         title="Locations"
         subtitle="Branch offices and operating units under each company."
         action={
-          <button onClick={() => setAddOpen(true)} className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-3 py-2 rounded-lg transition-colors">
+          <button onClick={() => setAddOpen(true)} className="flex items-center gap-1.5 bg-[#0f8578] hover:bg-[#0c6b60] text-white text-sm font-medium px-3 py-2 rounded-lg transition-colors">
             <Plus className="w-4 h-4" /> Add Location
           </button>
         }
@@ -423,8 +423,8 @@ export function LocationsSection() {
                 <Card key={loc.id}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center shrink-0">
-                        <MapPin className="w-4 h-4 text-indigo-600" />
+                      <div className="w-8 h-8 rounded-lg bg-[#d3ebe6] flex items-center justify-center shrink-0">
+                        <MapPin className="w-4 h-4 text-[#0f8578]" />
                       </div>
                       <div>
                         <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{loc.name}</p>
@@ -467,7 +467,7 @@ export function ServiceAreasSection() {
         title="Service Areas"
         subtitle="Territories and markets served under each location."
         action={
-          <button onClick={() => setAddOpen(true)} className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-3 py-2 rounded-lg transition-colors">
+          <button onClick={() => setAddOpen(true)} className="flex items-center gap-1.5 bg-[#0f8578] hover:bg-[#0c6b60] text-white text-sm font-medium px-3 py-2 rounded-lg transition-colors">
             <Plus className="w-4 h-4" /> Add Service Area
           </button>
         }
@@ -487,8 +487,8 @@ export function ServiceAreasSection() {
                 <Card key={sa.id}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="w-7 h-7 rounded-lg bg-indigo-50 flex items-center justify-center shrink-0">
-                        <Map className="w-3.5 h-3.5 text-indigo-500" />
+                      <div className="w-7 h-7 rounded-lg bg-[#e8f4f1] flex items-center justify-center shrink-0">
+                        <Map className="w-3.5 h-3.5 text-[#239c8d]" />
                       </div>
                       <div>
                         <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{sa.name}</p>

@@ -50,7 +50,7 @@ export default function RenewalTab({ agreement, onRenew, onCancel }: {
         <SectionLabel>Actions</SectionLabel>
         <div className="space-y-2 mt-3">
           <button onClick={onRenew}
-            className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium text-white cursor-pointer transition hover:brightness-110" style={{ backgroundColor: "#4f46e5" }}>
+            className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium text-white cursor-pointer transition hover:brightness-110" style={{ backgroundColor: "#0f8578" }}>
             <RefreshCw className="w-3.5 h-3.5" /> Renew for another {termMonths === 12 ? "year" : `${termMonths} months`}
           </button>
           {[

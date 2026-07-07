@@ -87,7 +87,7 @@ export function fileLinkKind(f: PhotoFile): FileLinkKind {
 // Badge label + accent color per link kind.
 export const LINK_BADGE: Record<FileLinkKind, { label: string; color: string }> = {
   work_order: { label: "Work Order Photo",   color: "#0891b2" },
-  job:        { label: "Job Photo",          color: "#4f46e5" },
+  job:        { label: "Job Photo",          color: "#0f8578" },
   project:    { label: "Project File",       color: "#7c3aed" },
   agreement:  { label: "Agreement Document", color: "#059669" },
   quote:      { label: "Quote Attachment",   color: "#d97706" },

@@ -533,7 +533,7 @@ function SectionRow({ s, index, total, accent, onUpdate, onMove, onDuplicate, on
             placeholder={getSectionBlock(s.key)?.defaultBody || "Default wording copied into the quote…"}
             className="w-full rounded-lg px-2.5 py-2 text-xs outline-none resize-none" style={inputStyle} />
           <label className="flex items-center gap-2 text-xs cursor-pointer" style={{ color: "var(--text-secondary)" }}>
-            <input type="checkbox" checked={s.required} onChange={e => onUpdate({ required: e.target.checked })} className="accent-indigo-600 w-3.5 h-3.5" />
+            <input type="checkbox" checked={s.required} onChange={e => onUpdate({ required: e.target.checked })} className="accent-[#0f8578] w-3.5 h-3.5" />
             Mark as required (cannot be removed from quotes)
           </label>
         </div>
@@ -898,7 +898,7 @@ function Toggle({ label, checked, onChange }: { label: string; checked: boolean;
   return (
     <label className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg cursor-pointer" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}>
       <span className="text-sm" style={{ color: "var(--text-secondary)" }}>{label}</span>
-      <input type="checkbox" checked={checked} onChange={e => onChange(e.target.checked)} className="accent-indigo-600 w-4 h-4" />
+      <input type="checkbox" checked={checked} onChange={e => onChange(e.target.checked)} className="accent-[#0f8578] w-4 h-4" />
     </label>
   );
 }

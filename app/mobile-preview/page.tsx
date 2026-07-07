@@ -8,7 +8,7 @@
 import { useEffect, useRef, useState } from "react";
 import { RotateCw, ExternalLink, Home, Briefcase, Map, MessageSquare, Menu } from "lucide-react";
 
-const ACCENT = "#4f46e5";
+const ACCENT = "#0f8578";
 
 const DEVICES = [
   { id: "ip15", name: "iPhone 15", w: 393, h: 852 },

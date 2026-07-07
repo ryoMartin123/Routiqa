@@ -31,8 +31,8 @@ interface Notif {
 }
 
 const KIND_META: Record<NotifKind, { icon: typeof Bell; color: string; bg: string }> = {
-  mention:      { icon: AtSign,      color: "#4f46e5", bg: "#e0e7ff" },
-  assigned:     { icon: ListChecks,  color: "#4f46e5", bg: "#e0e7ff" },
+  mention:      { icon: AtSign,      color: "#0f8578", bg: "#d3ebe6" },
+  assigned:     { icon: ListChecks,  color: "#0f8578", bg: "#d3ebe6" },
   overdue_task: { icon: CheckSquare, color: "#dc2626", bg: "#fee2e2" },
   due_task:     { icon: Clock,       color: "#92400e", bg: "#fef3c7" },
   invoice:      { icon: FileText,    color: "#b45309", bg: "#fef3c7" },

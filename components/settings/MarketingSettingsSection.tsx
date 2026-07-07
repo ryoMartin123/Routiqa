@@ -54,7 +54,7 @@ export default function MarketingSettingsSection() {
           return (
             <button key={t.key} onClick={() => setTab(t.key)}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
-              style={{ backgroundColor: active ? "#4f46e5" : "var(--bg-surface)", color: active ? "#fff" : "var(--text-secondary)", border: `1px solid ${active ? "#4f46e5" : "var(--border)"}` }}>
+              style={{ backgroundColor: active ? "#0f8578" : "var(--bg-surface)", color: active ? "#fff" : "var(--text-secondary)", border: `1px solid ${active ? "#0f8578" : "var(--border)"}` }}>
               <t.icon className="w-3.5 h-3.5" /> {t.label}
             </button>
           );
@@ -136,7 +136,7 @@ export default function MarketingSettingsSection() {
         <SettingsCard icon={FileText} title="Templates" subtitle="Reusable email & SMS content with merge tags like {{first_name}}."
           action={
             <button onClick={() => { const t = createTemplate({ name: "New Template", type: "email", subject: "", body: "" }); setTplVer(v => v + 1); setEditing(t.id); }}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-white" style={{ backgroundColor: "#4f46e5" }}>
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-white" style={{ backgroundColor: "#0f8578" }}>
               <Plus className="w-3.5 h-3.5" /> New Template
             </button>
           }>
@@ -189,7 +189,7 @@ function TemplateEditor({ template: t, onDone, onChange }: { template: Marketing
   }
 
   return (
-    <div className="rounded-xl p-4 space-y-3" style={{ border: "2px solid #c7d2fe", backgroundColor: "var(--bg-surface)" }}>
+    <div className="rounded-xl p-4 space-y-3" style={{ border: "2px solid #b9dfd8", backgroundColor: "var(--bg-surface)" }}>
       <div className="grid grid-cols-2 gap-3">
         <div>
           <FieldLabel>Template Name</FieldLabel>
@@ -213,7 +213,7 @@ function TemplateEditor({ template: t, onDone, onChange }: { template: Marketing
           placeholder="Use merge tags like {{first_name}}, {{company}}…" />
       </div>
       <div className="flex justify-end">
-        <button onClick={done} className="px-4 py-1.5 rounded-lg text-sm font-medium text-white" style={{ backgroundColor: "#4f46e5" }}>Done</button>
+        <button onClick={done} className="px-4 py-1.5 rounded-lg text-sm font-medium text-white" style={{ backgroundColor: "#0f8578" }}>Done</button>
       </div>
     </div>
   );

@@ -135,7 +135,7 @@ export interface UnscheduledItem {
 // ─── Priority config ──────────────────────────────────────
 export const PRIORITY_CONFIG: Record<ItemPriority, { label: string; bg: string; color: string }> = {
   low:    { label: "Low",    bg: "var(--bg-input)", color: "var(--text-muted)" },
-  normal: { label: "Normal", bg: "#e0e7ff",         color: "#3730a3" },
+  normal: { label: "Normal", bg: "#d3ebe6",         color: "#0a5c53" },
   high:   { label: "High",   bg: "#ffedd5",         color: "#9a3412" },
   urgent: { label: "Urgent", bg: "#fee2e2",         color: "#991b1b" },
 };
@@ -165,7 +165,7 @@ export const SERVICE_BLOCKS: ServiceBlock[] = [
 
 // ─── Layer display config ─────────────────────────────────
 export const LAYER_CONFIG: Record<CalendarItemType, { label: string; color: string }> = {
-  job:                { label: "Jobs",              color: "#4f46e5" },
+  job:                { label: "Jobs",              color: "#0f8578" },
   sales_appointment:  { label: "Sales Appointments",color: "#0891b2" },
   agreement_visit:    { label: "Agreement Visits",  color: "#059669" },
   task:               { label: "Tasks / Follow-Ups",color: "#f59e0b" },

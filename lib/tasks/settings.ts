@@ -26,13 +26,13 @@ export interface TaskSettings {
 }
 
 export const TASK_TYPE_COLORS = [
-  "#4f46e5", "#0891b2", "#2563eb", "#9333ea", "#7c3aed",
+  "#0f8578", "#0891b2", "#2563eb", "#9333ea", "#7c3aed",
   "#d97706", "#059669", "#dc2626", "#db2777", "#6b7280",
 ];
 
 // Default colors for the built-in keys.
 const BUILTIN_COLOR: Record<BuiltInTaskType, string> = {
-  follow_up:      "#4f46e5",
+  follow_up:      "#0f8578",
   call:           "#0891b2",
   schedule:       "#2563eb",
   send_estimate:  "#9333ea",

@@ -24,7 +24,7 @@ const STATUS_TABS: { key: "all" | TaskStatus; label: string }[] = [
 ];
 
 const LINKED_TYPE_STYLE: Record<string, { bg: string; color: string }> = {
-  customer: { bg: "#e0e7ff", color: "#3730a3" },
+  customer: { bg: "#d3ebe6", color: "#0a5c53" },
   lead:     { bg: "#fef3c7", color: "#92400e" },
   job:      { bg: "#dbeafe", color: "#1e40af" },
   project:  { bg: "#ede9fe", color: "#5b21b6" },
@@ -126,7 +126,7 @@ export default function TasksPage() {
             return (
               <button key={t.key} onClick={() => setView(t.key)}
                 className="flex items-center gap-1.5 px-3 py-1.5 text-sm transition-colors"
-                style={{ backgroundColor: active ? "#4f46e5" : "var(--bg-surface)", color: active ? "#fff" : "var(--text-secondary)" }}>
+                style={{ backgroundColor: active ? "#0f8578" : "var(--bg-surface)", color: active ? "#fff" : "var(--text-secondary)" }}>
                 <t.icon className="w-3.5 h-3.5" /> {t.label}
               </button>
             );
@@ -136,7 +136,7 @@ export default function TasksPage() {
         <div className="flex-1 flex justify-end">
           {view === "tasks" && (
             <button onClick={openNew}
-              className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-3 py-2 rounded-lg transition-colors">
+              className="flex items-center gap-1.5 bg-[#0f8578] hover:bg-[#0c6b60] text-white text-sm font-medium px-3 py-2 rounded-lg transition-colors">
               <Plus className="w-4 h-4" /> New Task
             </button>
           )}
@@ -267,7 +267,7 @@ export default function TasksPage() {
 
                 {/* Assigned */}
                 <div className="flex items-center gap-1.5 min-w-0">
-                  <div className="w-5 h-5 rounded-full bg-[#e5e0db] flex items-center justify-center text-[8px] font-bold text-[#5c5545] shrink-0">
+                  <div className="w-5 h-5 rounded-full bg-[var(--copper-soft-bg)] flex items-center justify-center text-[8px] font-bold text-[var(--copper-text)] shrink-0">
                     {task.assignedToInitials}
                   </div>
                   <span className="text-sm truncate" style={{ color: "var(--text-secondary)" }}>
@@ -371,7 +371,7 @@ function TasksOverview({ tasks }: { tasks: Task[] }) {
       <div>
         <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: "var(--text-muted)" }}>Tasks</p>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <Stat icon={ListChecks}   label="Open"       value={open}      color="#4f46e5" />
+          <Stat icon={ListChecks}   label="Open"       value={open}      color="#0f8578" />
           <Stat icon={AlertTriangle} label="Overdue"   value={overdue}   color="#dc2626" />
           <Stat icon={CheckCircle2} label="Completed"  value={completed} color="#10b981" />
           <Stat icon={CheckSquare}  label="Total"      value={tasks.length} color="#6b7280" />
@@ -381,7 +381,7 @@ function TasksOverview({ tasks }: { tasks: Task[] }) {
       <div>
         <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: "var(--text-muted)" }}>Comments</p>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <Stat icon={MessageSquare} label="Open threads" value={openThreads} color="#4f46e5" />
+          <Stat icon={MessageSquare} label="Open threads" value={openThreads} color="#0f8578" />
           <Stat icon={CheckCircle2}  label="Resolved"     value={resolved}    color="#10b981" />
           <Stat icon={MessageSquare} label="Replies"      value={replies}     color="#0891b2" />
           <Stat icon={MessageSquare} label="Total"        value={threads.length} color="#6b7280" />
@@ -571,7 +571,7 @@ function CommentsTab() {
                 className="w-full rounded-lg px-3 py-2 text-sm outline-none resize-none thin-scroll-y"
                 style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface)", color: "var(--text-primary)" }} />
               <div className="flex gap-2 mt-2">
-                <button onClick={() => saveEdit(t.root.id)} disabled={!editValue.trim()} className="px-2.5 py-1 rounded-lg text-xs font-medium text-white disabled:opacity-40" style={{ backgroundColor: "#4f46e5" }}>Save</button>
+                <button onClick={() => saveEdit(t.root.id)} disabled={!editValue.trim()} className="px-2.5 py-1 rounded-lg text-xs font-medium text-white disabled:opacity-40" style={{ backgroundColor: "#0f8578" }}>Save</button>
                 <button onClick={() => setEditingId(null)} className="px-2.5 py-1 rounded-lg text-xs font-medium" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>Cancel</button>
               </div>
             </div>
@@ -583,7 +583,7 @@ function CommentsTab() {
             style={{ gridTemplateColumns: COMMENT_COLS, gap: "0.75rem", borderBottom: last ? "none" : "1px solid var(--border)", opacity: t.root.resolved ? 0.65 : 1 }}>
             {/* Comment */}
             <div className="flex items-center gap-2.5 min-w-0">
-              <span className="w-6 h-6 rounded-full bg-[#e5e0db] flex items-center justify-center text-[8px] font-bold text-[#5c5545] shrink-0">{t.root.authorInitials}</span>
+              <span className="w-6 h-6 rounded-full bg-[var(--copper-soft-bg)] flex items-center justify-center text-[8px] font-bold text-[var(--copper-text)] shrink-0">{t.root.authorInitials}</span>
               <div className="min-w-0">
                 <p className="text-sm truncate" style={{ color: "var(--text-primary)" }}>{t.root.body}</p>
                 <p className="text-[10px] truncate" style={{ color: "var(--text-muted)" }}>{t.root.authorName}</p>
@@ -597,7 +597,7 @@ function CommentsTab() {
                 style={t.root.resolved ? { backgroundColor: "#d1fae5", color: "#065f46" } : { backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>
                 {t.root.resolved ? "Resolved" : "Ongoing"}
               </span>
-              {hasTask && <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: "#e0e7ff", color: "#3730a3" }}>Task</span>}
+              {hasTask && <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: "#d3ebe6", color: "#0a5c53" }}>Task</span>}
             </div>
             {/* Replies */}
             <span className="text-xs" style={{ color: "var(--text-muted)" }}>{t.replies.length || "—"}</span>

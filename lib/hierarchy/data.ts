@@ -23,7 +23,7 @@ export const organization: Organization = {
 };
 
 export const companies: Company[] = [
-  { id: "co_hvac", organizationId: ORG_ID, name: "Northstar HVAC", industry: "hvac", primaryColor: "#4f46e5", status: "active" },
+  { id: "co_hvac", organizationId: ORG_ID, name: "Northstar HVAC", industry: "hvac", primaryColor: "#0f8578", status: "active" },
   { id: "co_roofing", organizationId: ORG_ID, name: "Northstar Roofing", industry: "roofing", primaryColor: "#0891b2", status: "active" },
 ];
 

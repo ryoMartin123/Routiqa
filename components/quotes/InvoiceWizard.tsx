@@ -214,7 +214,7 @@ export default function InvoiceWizard({ preset, editInvoice, onClose, onCreated 
                 <div key={label} className="flex items-center gap-1 flex-1 last:flex-none">
                   <div className="flex items-center gap-1.5">
                     <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0"
-                      style={{ backgroundColor: done || current ? "#4f46e5" : "var(--bg-input)", color: done || current ? "#fff" : "var(--text-muted)" }}>
+                      style={{ backgroundColor: done || current ? "#0f8578" : "var(--bg-input)", color: done || current ? "#fff" : "var(--text-muted)" }}>
                       {done ? <Check className="w-3 h-3" /> : n}
                     </span>
                     <span className="text-[11px] font-medium whitespace-nowrap" style={{ color: current ? "var(--text-primary)" : "var(--text-muted)" }}>{label}</span>
@@ -263,7 +263,7 @@ export default function InvoiceWizard({ preset, editInvoice, onClose, onCreated 
                 <div className="flex items-center justify-between mb-2">
                   <label className="text-xs font-semibold uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>Line Items</label>
                   <div className="flex items-center gap-3">
-                    <button onClick={() => setShowCatalog(true)} className="flex items-center gap-1 text-xs font-medium" style={{ color: "#4f46e5" }}><Package className="w-3 h-3" /> Add from Catalog</button>
+                    <button onClick={() => setShowCatalog(true)} className="flex items-center gap-1 text-xs font-medium" style={{ color: "#0f8578" }}><Package className="w-3 h-3" /> Add from Catalog</button>
                     {itemDefaults.allowCustomQuoteLines && (
                       <button onClick={addItem} className="flex items-center gap-1 text-xs font-medium" style={{ color: "var(--text-secondary)" }}><Plus className="w-3 h-3" /> Add custom line</button>
                     )}
@@ -299,7 +299,7 @@ export default function InvoiceWizard({ preset, editInvoice, onClose, onCreated 
                               className="w-24 rounded-lg px-2 py-1 text-xs outline-none" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface)", color: "var(--text-primary)" }} />
                           </div>
                           <label className="flex items-center gap-1 text-[11px] cursor-pointer" style={{ color: "var(--text-secondary)" }}>
-                            <input type="checkbox" checked={it.taxable} onChange={ev => setItem(it.id, { taxable: ev.target.checked })} className="accent-indigo-600" /> Taxable
+                            <input type="checkbox" checked={it.taxable} onChange={ev => setItem(it.id, { taxable: ev.target.checked })} className="accent-[#0f8578]" /> Taxable
                           </label>
                           <div className="ml-auto flex items-center gap-3">
                             {showCost && it.unitCost != null && (
@@ -354,7 +354,7 @@ export default function InvoiceWizard({ preset, editInvoice, onClose, onCreated 
               <InvoicePreview data={previewData} />
               {editInvoice ? (
                 <button onClick={() => save(false)}
-                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-medium text-white" style={{ backgroundColor: "#4f46e5" }}>
+                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-medium text-white" style={{ backgroundColor: "#0f8578" }}>
                   <Check className="w-4 h-4" /> Save Changes
                 </button>
               ) : (
@@ -365,7 +365,7 @@ export default function InvoiceWizard({ preset, editInvoice, onClose, onCreated 
                     <FileText className="w-4 h-4" /> Save as Draft
                   </button>
                   <button onClick={() => save(true)}
-                    className="flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-medium text-white" style={{ backgroundColor: "#4f46e5" }}>
+                    className="flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-medium text-white" style={{ backgroundColor: "#0f8578" }}>
                     <Send className="w-4 h-4" /> Create &amp; Send
                   </button>
                 </div>
@@ -382,7 +382,7 @@ export default function InvoiceWizard({ preset, editInvoice, onClose, onCreated 
           </button>
           {step < 3 && (
             <button onClick={() => canNext && setStep(s => s + 1)} disabled={!canNext}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-40" style={{ backgroundColor: "#4f46e5" }}>
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-40" style={{ backgroundColor: "#0f8578" }}>
               Next <ChevronRight className="w-4 h-4" />
             </button>
           )}

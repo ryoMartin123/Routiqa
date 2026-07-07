@@ -81,7 +81,7 @@ export interface Channel {
 export type PostType = "message" | "announcement" | "decision" | "question" | "sop";
 export const POST_TYPE_STYLE: Record<PostType, { label: string; color: string; bg: string }> = {
   message:      { label: "Message",            color: "#6b7280", bg: "var(--bg-input)" },
-  announcement: { label: "Announcement",       color: "#6366f1", bg: "#6366f114" },
+  announcement: { label: "Announcement",       color: "#239c8d", bg: "#239c8d14" },
   decision:     { label: "Decision",           color: "#10b981", bg: "#10b98114" },
   question:     { label: "Question",            color: "#f59e0b", bg: "#f59e0b14" },
   sop:          { label: "SOP / Doc Update",    color: "#0ea5e9", bg: "#0ea5e914" },
@@ -163,7 +163,7 @@ export const MEETING_STATUS_STYLE: Record<MeetingStatus, { label: string; dot: s
 const mem = (name: string, role: ChannelRole = "member"): ChannelMember => ({ name, role });
 
 let _channels: Channel[] = [
-  { id: "ch-company", name: "Company-wide", description: "Company announcements and general updates.", type: "company", visibility: "everyone", membersCount: 24, unreadCount: 3, lastActivity: "2h ago", pinned: true, status: "active", accent: "#6366f1", managers: ["Ryo Martin"],
+  { id: "ch-company", name: "Company-wide", description: "Company announcements and general updates.", type: "company", visibility: "everyone", membersCount: 24, unreadCount: 3, lastActivity: "2h ago", pinned: true, status: "active", accent: "#239c8d", managers: ["Ryo Martin"],
     members: [mem("Ryo Martin", "admin"), mem("Dana Whitfield", "admin"), mem("Tucker Hayes"), mem("Kylie Brooks"), mem("Chandler Reyes")] },
   { id: "ch-service", name: "Service Team", description: "Service calls, technician updates, and field issues.", type: "team", visibility: "roles", membersCount: 5, unreadCount: 1, lastActivity: "20m ago", pinned: true, status: "active", accent: "#0ea5e9", managers: ["Dispatch"], companyId: "co_hvac", locationId: "loc_augusta",
     members: [mem("Kylie Brooks", "admin"), mem("Tucker Hayes"), mem("Chandler Reyes"), mem("Marcus Chen")] },
@@ -272,7 +272,7 @@ export interface CreateChannelInput {
 }
 export function createChannel(input: CreateChannelInput): Channel {
   const accentByType: Partial<Record<ChannelType, string>> = {
-    company: "#6366f1", team: "#2563eb", project: "#2563eb", training: "#f59e0b",
+    company: "#239c8d", team: "#2563eb", project: "#2563eb", training: "#f59e0b",
     safety: "#ef4444", inventory: "#f97316", department: "#a855f7", custom: "#2563eb",
   };
   const c: Channel = {

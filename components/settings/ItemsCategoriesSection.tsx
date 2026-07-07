@@ -58,7 +58,7 @@ export default function ItemsCategoriesSection() {
       {/* Industry starter catalog */}
       <SettingsCard icon={Layers} title="Industry Starter Catalog" subtitle="Preload a starter catalog for your industry, then edit freely."
         action={
-          <button onClick={() => setCatalogOpen(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-white" style={{ backgroundColor: "#4f46e5" }}>
+          <button onClick={() => setCatalogOpen(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-white" style={{ backgroundColor: "#0f8578" }}>
             <Layers className="w-3.5 h-3.5" /> Browse Catalogs
           </button>
         }>
@@ -81,7 +81,7 @@ export default function ItemsCategoriesSection() {
       {/* Categories */}
       <SettingsCard icon={Tag} title="Item Categories" subtitle="Customizable categories for organizing the catalog."
         action={!adding && (
-          <button onClick={() => setAdding(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-white" style={{ backgroundColor: "#4f46e5" }}>
+          <button onClick={() => setAdding(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-white" style={{ backgroundColor: "#0f8578" }}>
             <Plus className="w-3.5 h-3.5" /> Add Category
           </button>
         )}>
@@ -89,7 +89,7 @@ export default function ItemsCategoriesSection() {
           <div className="flex items-center gap-2 mb-3">
             <input autoFocus value={draftName} onChange={e => setDraftName(e.target.value)} onKeyDown={e => { if (e.key === "Enter") commitAdd(); if (e.key === "Escape") { setAdding(false); setDraftName(""); } }}
               placeholder="Category name" className={inputCls} style={inputStyle} />
-            <button onClick={commitAdd} className="p-2 rounded-lg text-white shrink-0" style={{ backgroundColor: "#4f46e5" }}><Check className="w-4 h-4" /></button>
+            <button onClick={commitAdd} className="p-2 rounded-lg text-white shrink-0" style={{ backgroundColor: "#0f8578" }}><Check className="w-4 h-4" /></button>
             <button onClick={() => { setAdding(false); setDraftName(""); }} className="p-2 rounded-lg shrink-0" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}><X className="w-4 h-4" /></button>
           </div>
         )}

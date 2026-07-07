@@ -85,7 +85,7 @@ export default function LeadEditModal({ lead, onClose, onSaved }: {
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
           <div className="flex items-center gap-2 min-w-0">
-            <Pencil className="w-4 h-4 shrink-0" style={{ color: "#4f46e5" }} />
+            <Pencil className="w-4 h-4 shrink-0" style={{ color: "#0f8578" }} />
             <div className="min-w-0">
               <p className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>Edit Lead</p>
               <p className="text-[11px] truncate" style={{ color: "var(--text-muted)" }}>{lead.customerName}</p>
@@ -161,7 +161,7 @@ export default function LeadEditModal({ lead, onClose, onSaved }: {
         <div className="px-6 py-4 flex justify-end gap-2 shrink-0" style={{ borderTop: "1px solid var(--border)" }}>
           <button onClick={onClose} className="px-3 py-2 rounded-lg text-sm" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>Cancel</button>
           <button onClick={handleSave} disabled={!canSave}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-40" style={{ backgroundColor: "#4f46e5" }}>
+            className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-40" style={{ backgroundColor: "#0f8578" }}>
             <Check className="w-3.5 h-3.5" /> Save Changes
           </button>
         </div>

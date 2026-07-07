@@ -41,7 +41,7 @@ export default function FilesPage() {
   }).length;
 
   const summaryCards: SummaryCard[] = [
-    { icon: Images,      label: "Total Files",          value: String(files.length),                                              sub: "Across all records",   iconColor: "#4f46e5" },
+    { icon: Images,      label: "Total Files",          value: String(files.length),                                              sub: "Across all records",   iconColor: "#0f8578" },
     { icon: UploadCloud, label: "Uploaded This Month",  value: String(files.filter(f => isThisMonth(f.uploadedAt)).length),       sub: NOW.toLocaleDateString("en-US", { month: "short", year: "numeric" }), iconColor: "#10b981" },
     { icon: ImageOff,    label: "Missing Required Photos", value: String(woMissing),                                              sub: "Active work orders",   iconColor: "#f59e0b" },
     { icon: FileText,    label: "Documents",            value: String(files.filter(f => f.fileType === "pdf" || f.fileType === "document").length), sub: "PDFs & documents", iconColor: "#0891b2" },
@@ -56,7 +56,7 @@ export default function FilesPage() {
         <ModuleViewToggle view={moduleView} onChange={setModuleView} listLabel="Library" />
         <div className="flex-1 flex justify-end">
           <button onClick={() => setUploadSignal(n => n + 1)}
-            className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-3 py-2 rounded-lg transition-colors">
+            className="flex items-center gap-1.5 bg-[#0f8578] hover:bg-[#0c6b60] text-white text-sm font-medium px-3 py-2 rounded-lg transition-colors">
             <Upload className="w-4 h-4" /> Upload
           </button>
         </div>

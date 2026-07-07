@@ -33,10 +33,10 @@ const EVENT_TYPE_LABELS: Record<string, string> = {
 
 const EVENT_COLORS: Record<string, string> = {
   job_completed:    "#10b981",
-  job_created:      "#6366f1",
-  job_scheduled:    "#6366f1",
+  job_created:      "#239c8d",
+  job_scheduled:    "#239c8d",
   lead_created:     "#f59e0b",
-  quote_sent:       "#8b5cf6",
+  quote_sent:       "#c9703a",
   quote_accepted:   "#10b981",
   payment_received: "#10b981",
   note_added:       "#6b7280",
@@ -55,7 +55,7 @@ export default function RecentActivity() {
       <div className="flex items-center justify-between px-5 py-4 shrink-0"
         style={{ borderBottom: "1px solid var(--border)" }}>
         <h2 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Recent Activity</h2>
-        <Link href="/customers" className="flex items-center gap-1 text-xs font-medium text-indigo-600 hover:text-indigo-700">
+        <Link href="/customers" className="flex items-center gap-1 text-xs font-medium text-[#0f8578] hover:text-[#0c6b60]">
           View all <ExternalLink className="w-3 h-3" />
         </Link>
       </div>

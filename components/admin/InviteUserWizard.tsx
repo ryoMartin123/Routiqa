@@ -160,7 +160,7 @@ export default function InviteUserWizard({ onClose, onCreated }: {
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: "#e0e7ff" }}>
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: "#d3ebe6" }}>
               <UserIcon className="w-4 h-4" style={{ color: "#a855f7" }} />
             </div>
             <div>

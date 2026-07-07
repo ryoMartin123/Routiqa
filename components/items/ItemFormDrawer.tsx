@@ -14,7 +14,7 @@ function Toggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void 
   return (
     <button onClick={() => onChange(!on)} role="switch" aria-checked={on} type="button"
       className="relative w-9 h-5 rounded-full transition-colors shrink-0"
-      style={{ backgroundColor: on ? "#4f46e5" : "var(--bg-input)", border: "1px solid var(--border)" }}>
+      style={{ backgroundColor: on ? "#0f8578" : "var(--bg-input)", border: "1px solid var(--border)" }}>
       <span className="absolute top-0.5 left-0.5 w-3.5 h-3.5 rounded-full bg-white shadow transition-transform"
         style={{ transform: on ? "translateX(16px)" : "translateX(0)" }} />
     </button>
@@ -115,7 +115,7 @@ export default function ItemFormDrawer({ item, onClose, onSaved }: {
                 <input autoFocus value={newCat} onChange={e => setNewCat(e.target.value)}
                   onKeyDown={e => { if (e.key === "Enter") commitNewCategory(); }}
                   placeholder="New category name" className={inputCls} style={inputStyle} />
-                <button onClick={commitNewCategory} className="px-3 py-2 rounded-lg text-xs font-medium text-white shrink-0" style={{ backgroundColor: "#4f46e5" }}>Add</button>
+                <button onClick={commitNewCategory} className="px-3 py-2 rounded-lg text-xs font-medium text-white shrink-0" style={{ backgroundColor: "#0f8578" }}>Add</button>
                 <button onClick={() => { setAddingCat(false); setNewCat(""); }} className="px-2 py-2 rounded-lg text-xs shrink-0" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>Cancel</button>
               </div>
             ) : (
@@ -164,7 +164,7 @@ export default function ItemFormDrawer({ item, onClose, onSaved }: {
         <div className="px-5 py-4 flex justify-end gap-2 shrink-0" style={{ borderTop: "1px solid var(--border)" }}>
           <button onClick={onClose} className="px-3 py-2 rounded-lg text-sm" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>Cancel</button>
           <button onClick={handleSave} disabled={!canSave}
-            className="px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-40" style={{ backgroundColor: "#4f46e5" }}>
+            className="px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-40" style={{ backgroundColor: "#0f8578" }}>
             {editing ? "Save Changes" : "Create Item"}
           </button>
         </div>

@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import MobileHeader from "@/components/mobile/MobileHeader";
 import { Section, Card, DetailRow, StatusChip, EmptyState, prettyType, ACCENT } from "@/components/mobile/ui";
-import { getJob, getWorkOrder, updateWorkOrderById, type JobStatus, type WorkOrderLineItem } from "@/lib/jobs/data";
+import { getJob, getWorkOrder, updateWorkOrderById, type JobStatus, type WorkOrderLineItem, type ChecklistItem } from "@/lib/jobs/data";
 import { getAllItems, getItem, type Item } from "@/lib/items/data";
 import { ITEM_TYPE_CONFIG } from "@/lib/items/types";
 import { consumeFromTruck, returnToTruck, findStockItem } from "@/lib/inventory/data";
@@ -31,6 +31,7 @@ import BottomSheet from "@/components/mobile/BottomSheet";
 import { primaryAction, secondaryActions, setMyJobStatus, getMobileCaps, getCurrentTech } from "@/lib/mobile/data";
 import { getJobMaterials, addJobMaterial, removeJobMaterial } from "@/lib/mobile/materials";
 import { getAllInvoices, recordPayment, createInvoiceFromWorkOrder, type InvoiceRecord } from "@/lib/quotes/data";
+import { getAppointmentsForJob, updateAppointment } from "@/lib/appointments/data";
 
 const PRIMARY_ICON: Partial<Record<JobStatus, React.ElementType>> = {
   en_route: Flag, in_progress: CheckCircle2, waiting_on_parts: Play, waiting_on_customer: Play,
@@ -123,6 +124,32 @@ export default function JobDetailPage() {
     setTick(t => t + 1);
     if (inv) setPaySheet(inv);   // straight to Collect payment
   };
+  // ── Multi-day context: which day of the run is this, and what did the
+  //    previous day's crew leave behind? ──
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const dayVisits = useMemo(() =>
+    getAppointmentsForJob(id).filter(a => a.scheduledDate && a.status !== "canceled")
+      .sort((a, b) => a.scheduledDate.localeCompare(b.scheduledDate)),
+    [id, tick]);
+  const todayISO = new Date().toISOString().slice(0, 10);
+  const multiDay = dayVisits.length >= 2;
+  // Today's visit, else the next upcoming, else the last one.
+  const dayIdx = (() => {
+    const t = dayVisits.findIndex(v => v.scheduledDate === todayISO);
+    if (t >= 0) return t;
+    const up = dayVisits.findIndex(v => v.scheduledDate > todayISO);
+    return up >= 0 ? up : dayVisits.length - 1;
+  })();
+  const currentVisit = multiDay ? dayVisits[dayIdx] : undefined;
+  const handoffFrom = multiDay
+    ? [...dayVisits.slice(0, dayIdx)].reverse().find(v => v.handoffNote?.trim())
+    : undefined;
+
+  const woDone = (wo?.checklist ?? []).filter(c => c.isComplete).length;
+  const patchWoItem = (ciId: string, patch: Partial<ChecklistItem>) => {
+    if (wo) updateWorkOrderById(wo.id, { checklist: wo.checklist.map(c => c.id === ciId ? { ...c, ...patch } : c) });
+    setTick(t => t + 1);
+  };
   const saveSignature = (name: string, dataUrl: string) => {
     if (wo) updateWorkOrderById(wo.id, { signatureName: name, signatureDataUrl: dataUrl, signedAt: new Date().toISOString() });
     setTick(t => t + 1);
@@ -156,8 +183,35 @@ export default function JobDetailPage() {
             <DetailRow icon={Clock} label="Window" value={`${job.scheduledDate}${job.scheduledTime ? ` · ${job.scheduledTime}` : ""} (${job.durationMinutes} min)`} />
             <DetailRow icon={MapPin} label="Address" value={<a href={mapsHref} target="_blank" rel="noreferrer" style={{ color: ACCENT }}>{job.propertyAddress || "No address on file"}</a>} />
             <DetailRow icon={User} label="Assigned to" value={job.assignedTo} />
+            {multiDay && <DetailRow icon={Flag} label="Multi-day job" value={`Day ${dayIdx + 1} of ${dayVisits.length}`} />}
           </Card>
         </Section>
+
+        {/* Crew handoff — yesterday's note in, today's note out */}
+        {multiDay && (
+          <Section title="Crew handoff">
+            <Card className="p-4 space-y-3">
+              {handoffFrom && (
+                <div>
+                  <p className="text-[11px] uppercase tracking-wider mb-1" style={{ color: "var(--text-muted)" }}>
+                    From Day {dayVisits.indexOf(handoffFrom) + 1} · {new Date(`${handoffFrom.scheduledDate}T12:00:00`).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
+                  </p>
+                  <p className="text-sm" style={{ color: "var(--text-primary)" }}>{handoffFrom.handoffNote}</p>
+                </div>
+              )}
+              {currentVisit && (
+                <div>
+                  <p className="text-[11px] uppercase tracking-wider mb-1" style={{ color: "var(--text-muted)" }}>End of Day {dayIdx + 1} — for the next crew</p>
+                  <textarea defaultValue={currentVisit.handoffNote ?? ""} rows={2}
+                    onBlur={e => { updateAppointment(currentVisit.id, { handoffNote: e.target.value }); setTick(t => t + 1); }}
+                    placeholder="Where you left off, what to start on…"
+                    className="w-full rounded-xl px-3 py-2.5 text-sm outline-none resize-none"
+                    style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-input)", color: "var(--text-primary)" }} />
+                </div>
+              )}
+            </Card>
+          </Section>
+        )}
 
         {/* Notes — internal customer notes only for roles the CRM grants the mask */}
         {(job.description || (caps.internalNotes && customer?.notes)) && (
@@ -194,25 +248,39 @@ export default function JobDetailPage() {
                   // eslint-disable-next-line @next/next/no-img-element
                   ? <img src={p.previewUrl} alt="" className="w-full h-full object-cover" />
                   : <Camera className="w-5 h-5" style={{ color: "var(--text-muted)" }} />}
-                {p.phase && <span className="absolute top-1 left-1 text-[9px] font-semibold px-1.5 py-0.5 rounded-full text-white capitalize" style={{ backgroundColor: p.phase === "before" ? "#6366f1" : p.phase === "during" ? "#3b82f6" : "#10b981" }}>{p.phase}</span>}
+                {p.phase && <span className="absolute top-1 left-1 text-[9px] font-semibold px-1.5 py-0.5 rounded-full text-white capitalize" style={{ backgroundColor: p.phase === "before" ? "#239c8d" : p.phase === "during" ? "#3b82f6" : "#10b981" }}>{p.phase}</span>}
               </div>
             ))}
           </div>
         </Section>
 
-        {/* Checklist / job tasks */}
-        <Section title="Checklist & tasks">
-          {tasks.length === 0 ? (
+        {/* Work order checklist (typed steps) + job tasks */}
+        <Section title="Checklist & tasks"
+          action={wo && wo.checklist.length > 0 ? <span className="text-xs" style={{ color: "var(--text-muted)" }}>{woDone}/{wo.checklist.length}</span> : undefined}>
+          {(!wo || wo.checklist.length === 0) && tasks.length === 0 ? (
             <Card className="px-4 py-5"><p className="text-sm text-center" style={{ color: "var(--text-muted)" }}>No checklist items for this job.</p></Card>
           ) : (
-            <Card>
-              {tasks.map((t, i) => (
-                <div key={t.id} className="flex items-center gap-3 px-4 py-3" style={{ borderTop: i ? "1px solid var(--border)" : "none" }}>
-                  <ClipboardCheck className="w-4 h-4 shrink-0" style={{ color: t.status === "completed" ? "#16a34a" : "var(--text-muted)" }} />
-                  <span className="text-sm flex-1" style={{ color: "var(--text-primary)", textDecoration: t.status === "completed" ? "line-through" : "none" }}>{t.title}</span>
-                </div>
-              ))}
-            </Card>
+            <>
+              {wo && wo.checklist.length > 0 && (
+                <Card className={tasks.length > 0 ? "mb-2.5" : undefined}>
+                  {[...wo.checklist].sort((a, b) => a.sortOrder - b.sortOrder).map((c, i) => (
+                    <WoStep key={c.id} item={c} first={i === 0}
+                      onToggle={() => patchWoItem(c.id, { isComplete: !c.isComplete })}
+                      onPatch={patch => patchWoItem(c.id, patch)} />
+                  ))}
+                </Card>
+              )}
+              {tasks.length > 0 && (
+                <Card>
+                  {tasks.map((t, i) => (
+                    <div key={t.id} className="flex items-center gap-3 px-4 py-3" style={{ borderTop: i ? "1px solid var(--border)" : "none" }}>
+                      <ClipboardCheck className="w-4 h-4 shrink-0" style={{ color: t.status === "completed" ? "#16a34a" : "var(--text-muted)" }} />
+                      <span className="text-sm flex-1" style={{ color: "var(--text-primary)", textDecoration: t.status === "completed" ? "line-through" : "none" }}>{t.title}</span>
+                    </div>
+                  ))}
+                </Card>
+              )}
+            </>
           )}
         </Section>
 
@@ -575,7 +643,7 @@ function ContactBtn({ icon: Icon, label, href, to }: { icon: React.ElementType; 
 // Contextual quick actions for this job (separate from the status CTA).
 function QuickSheet({ open, onClose, onPhoto, onTask }: { open: boolean; onClose: () => void; onPhoto: () => void; onTask: () => void }) {
   const ACTIONS = [
-    { icon: StickyNote, label: "Add note", color: "#4f46e5", onClick: onClose },
+    { icon: StickyNote, label: "Add note", color: "#0f8578", onClick: onClose },
     { icon: Camera, label: "Take photo", color: "#0891b2", onClick: onPhoto },
     { icon: Package, label: "Add material", color: "#f59e0b", onClick: onClose },
     { icon: CheckSquare, label: "Create task", color: "#16a34a", onClick: onTask },
@@ -599,6 +667,104 @@ function QuickSheet({ open, onClose, onPhoto, onTask }: { open: boolean; onClose
             </button>
           ))}
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Typed work-order checklist step (mobile) ─────────────
+// Same semantics as the desktop WO detail: answering a typed step sets its
+// value AND completes it; clearing un-completes. Untyped check-off and photo
+// steps are whole-row tap targets. Choice steps use touch chips, not dropdowns.
+const stepInput = "w-full rounded-xl px-3 py-2.5 text-sm outline-none";
+const stepInputStyle: React.CSSProperties = { border: "1px solid var(--border)", backgroundColor: "var(--bg-input)", color: "var(--text-primary)" };
+
+function WoStep({ item, first, onToggle, onPatch }: {
+  item: ChecklistItem;
+  first: boolean;
+  onToggle: () => void;
+  onPatch: (p: Partial<ChecklistItem>) => void;
+}) {
+  const t = item.type;
+  const answer = (value: string | string[], done: boolean) => onPatch({ value, isComplete: done });
+  const strVal = typeof item.value === "string" ? item.value : "";
+  const arrVal = Array.isArray(item.value) ? item.value : [];
+  const tappable = !t || t === "photo";
+  const border = first ? "none" : "1px solid var(--border)";
+
+  const icon = item.isComplete
+    ? <CheckCircle2 className="w-5 h-5 shrink-0" style={{ color: "#16a34a" }} />
+    : <Circle className="w-5 h-5 shrink-0" style={{ color: "var(--text-muted)" }} />;
+  const label = (
+    <span className="text-sm flex-1 min-w-0" style={{ color: "var(--text-primary)", textDecoration: tappable && item.isComplete ? "line-through" : "none" }}>
+      {item.label}
+      {item.required && <span className="ml-1.5 text-[10px] font-semibold" style={{ color: "#dc2626" }}>Required</span>}
+      {t === "photo" && <span className="ml-1.5 text-[10px]" style={{ color: "var(--text-muted)" }}>attach in Photos</span>}
+    </span>
+  );
+
+  if (tappable) {
+    return (
+      <button onClick={onToggle} className="w-full flex items-center gap-3 px-4 py-3.5 text-left active:bg-[var(--bg-surface-2)]" style={{ borderTop: border }}>
+        {icon}{label}
+      </button>
+    );
+  }
+
+  const chip = (label: string, on: boolean, onTap: () => void) => (
+    <button key={label} onClick={onTap}
+      className="px-3 py-2 rounded-xl text-sm font-medium active:scale-[0.97] transition-transform"
+      style={{
+        border: `1.5px solid ${on ? "var(--copper-soft-border)" : "var(--border)"}`,
+        backgroundColor: on ? "var(--copper-soft-bg)" : "var(--bg-surface-2)",
+        color: on ? "var(--copper-text)" : "var(--text-secondary)",
+      }}>{label}</button>
+  );
+
+  return (
+    <div className="px-4 py-3.5" style={{ borderTop: border }}>
+      <div className="flex items-center gap-3">{icon}{label}</div>
+      <div className="mt-2.5 pl-8">
+        {t === "short_text" && (
+          <input value={strVal} onChange={e => answer(e.target.value, e.target.value.trim() !== "")}
+            placeholder="Enter…" className={stepInput} style={stepInputStyle} />
+        )}
+        {t === "long_text" && (
+          <textarea value={strVal} onChange={e => answer(e.target.value, e.target.value.trim() !== "")}
+            placeholder="Enter…" rows={2} className={`${stepInput} resize-none`} style={stepInputStyle} />
+        )}
+        {t === "number" && (
+          <div className="flex items-center gap-2">
+            <input type="number" inputMode="decimal" value={strVal}
+              onChange={e => answer(e.target.value, e.target.value.trim() !== "")}
+              placeholder="0" className="w-32 rounded-xl px-3 py-2.5 text-sm outline-none" style={stepInputStyle} />
+            {item.unit && <span className="text-sm" style={{ color: "var(--text-muted)" }}>{item.unit}</span>}
+          </div>
+        )}
+        {t === "dropdown" && (
+          <div className="flex flex-wrap gap-2">
+            {(item.options ?? []).filter(o => o.trim()).map(o =>
+              chip(o, strVal === o, () => { const next = strVal === o ? "" : o; answer(next, next !== ""); }))}
+          </div>
+        )}
+        {t === "multi_select" && (
+          <div className="flex flex-wrap gap-2">
+            {(item.options ?? []).filter(o => o.trim()).map(o =>
+              chip(o, arrVal.includes(o), () => {
+                const next = arrVal.includes(o) ? arrVal.filter(x => x !== o) : [...arrVal, o];
+                answer(next, next.length > 0);
+              }))}
+          </div>
+        )}
+        {t === "datetime" && (
+          <input type="datetime-local" value={strVal} onChange={e => answer(e.target.value, e.target.value !== "")}
+            className="rounded-xl px-3 py-2.5 text-sm outline-none" style={stepInputStyle} />
+        )}
+        {t === "signature" && (
+          <input value={strVal} onChange={e => answer(e.target.value, e.target.value.trim() !== "")}
+            placeholder="Type full name to sign"
+            className={`${stepInput} italic`} style={{ ...stepInputStyle, fontFamily: "Georgia, serif" }} />
+        )}
       </div>
     </div>
   );

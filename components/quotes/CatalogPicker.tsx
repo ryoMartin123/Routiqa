@@ -31,7 +31,7 @@ export default function CatalogPicker({ items, showCost, onAdd, onClose }: {
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
           <div className="flex items-center gap-2">
-            <Package className="w-4 h-4" style={{ color: "#4f46e5" }} />
+            <Package className="w-4 h-4" style={{ color: "#0f8578" }} />
             <p className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>Add from Catalog</p>
           </div>
           <button onClick={onClose} style={{ color: "var(--text-muted)" }}><X className="w-4 h-4" /></button>
@@ -67,7 +67,7 @@ export default function CatalogPicker({ items, showCost, onAdd, onClose }: {
                     className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors"
                     style={{ border: `1px solid ${on ? "var(--accent-soft-border)" : "var(--border-subtle)"}`, backgroundColor: on ? "var(--accent-soft-bg)" : "var(--bg-surface)" }}>
                     <span className="w-4 h-4 rounded flex items-center justify-center shrink-0"
-                      style={{ border: `1px solid ${on ? "#4f46e5" : "var(--border)"}`, backgroundColor: on ? "#4f46e5" : "transparent" }}>
+                      style={{ border: `1px solid ${on ? "#0f8578" : "var(--border)"}`, backgroundColor: on ? "#0f8578" : "transparent" }}>
                       {on && <Check className="w-3 h-3 text-white" />}
                     </span>
                     <div className="min-w-0 flex-1">
@@ -94,7 +94,7 @@ export default function CatalogPicker({ items, showCost, onAdd, onClose }: {
           <div className="flex items-center gap-2">
             <button onClick={onClose} className="px-3 py-1.5 rounded-lg text-sm" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>Cancel</button>
             <button onClick={confirm} disabled={selectedCount === 0}
-              className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-sm font-medium text-white disabled:opacity-40" style={{ backgroundColor: "#4f46e5" }}>
+              className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-sm font-medium text-white disabled:opacity-40" style={{ backgroundColor: "#0f8578" }}>
               <Plus className="w-3.5 h-3.5" /> Add {selectedCount > 0 ? selectedCount : ""} {selectedCount === 1 ? "item" : "items"}
             </button>
           </div>

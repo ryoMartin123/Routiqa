@@ -27,13 +27,13 @@ export default function LeadsInTerritory() {
       <div className="flex items-center justify-between px-5 py-4 shrink-0"
         style={{ borderBottom: "1px solid var(--border)" }}>
         <div className="flex items-center gap-2">
-          <Map className="w-4 h-4" style={{ color: "#4f46e5" }} />
+          <Map className="w-4 h-4" style={{ color: "#0f8578" }} />
           <div>
             <h2 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Leads in Territory</h2>
             {area && <p className="text-[10px]" style={{ color: "var(--text-muted)" }}>{area.name}</p>}
           </div>
         </div>
-        <Link href="/leads" className="flex items-center gap-1 text-xs font-medium text-indigo-600 hover:text-indigo-700">
+        <Link href="/leads" className="flex items-center gap-1 text-xs font-medium text-[#0f8578] hover:text-[#0c6b60]">
           View all <ExternalLink className="w-3 h-3" />
         </Link>
       </div>
