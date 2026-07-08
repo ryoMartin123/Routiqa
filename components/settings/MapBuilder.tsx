@@ -32,8 +32,9 @@ const MIRROR_LABEL: Record<MirrorSource, string> = {
   purchase_order: "Purchase Order", equipment_received: "Equipment Received", subcontractor: "Subcontractor", invoice: "Invoice",
 };
 const MIRROR_SOURCES = Object.keys(MIRROR_LABEL) as MirrorSource[];
+// A manual step IS a checklist (a single check-off item = the old "manual
+// checkbox"), so there's no separate manual option — you pick Checklist or a mirror.
 const SOURCE_OPTS = [
-  { value: "manual", label: "Manual checkbox" },
   { value: "checklist", label: "Checklist" },
   ...MIRROR_SOURCES.map(s => ({ value: s, label: `Mirror → ${MIRROR_LABEL[s]}` })),
 ];
@@ -73,10 +74,9 @@ export default function MapBuilder({
     [arr[i], arr[j]] = [arr[j], arr[i]]; return { ...d, nodes: arr };
   });
   const setSource = (key: string, v: string) => {
-    if (v === "manual") { patchNode(key, { manual: true, mirror: undefined, createable: false, checklist: undefined }); return; }
     if (v === "checklist") {
-      // Checklist source = a manual step worked through item by item. Seed one
-      // empty item so the editor is ready; keep existing items if any.
+      // A manual step is a checklist. Seed one item so the editor is ready
+      // (a single check-off item is the old "manual checkbox"); keep any items.
       const node = draft.nodes.find(n => n.key === key);
       patchNode(key, { manual: true, mirror: undefined, createable: false, checklist: node?.checklist?.length ? node.checklist : [{ id: newChecklistItemId(), label: "" }] });
       return;
@@ -410,13 +410,16 @@ function Inspector({ node, draft, onPatch, onSetSource, onToggleDep, onRemove, o
           <button onClick={onClose} aria-label="Close" className="p-1.5 rounded-lg hover:bg-[var(--bg-surface-2)]" style={{ color: "var(--text-muted)" }}><X className="w-4 h-4" /></button>
         </div>
       </div>
-      <fieldset disabled={readOnly} className="flex-1 min-h-0 overflow-y-auto thin-scroll-y p-4 space-y-5 border-0 m-0 min-w-0">
+      {/* Scroll on a DIV, not the fieldset — a <fieldset> doesn't scroll
+          reliably as a flex child. The fieldset stays inside for the readOnly disable. */}
+      <div className="flex-1 min-h-0 overflow-y-auto thin-scroll-y">
+      <fieldset disabled={readOnly} className="p-4 space-y-5 border-0 m-0 min-w-0">
       <Field label="Title"><input value={node.title} onChange={e => onPatch({ title: e.target.value })} className={inputCls} style={inputStyle} /></Field>
       <div className="grid grid-cols-2 gap-2.5">
         <Field label="Lane"><UiSelect size="sm" value={node.group} onChange={v => onPatch({ group: v })} options={draft.groups.map(g => ({ value: g, label: g }))} /></Field>
         <Field label="Type"><UiSelect size="sm" value={node.type} onChange={v => onPatch({ type: v as MapNodeType })} options={NODE_TYPES.map(t => ({ value: t, label: NODE_TYPE_LABEL[t] }))} /></Field>
       </div>
-      <Field label="Source"><UiSelect size="sm" value={node.manual ? (node.checklist?.length ? "checklist" : "manual") : (node.mirror ?? "manual")} onChange={onSetSource} options={SOURCE_OPTS} /></Field>
+      <Field label="Source"><UiSelect size="sm" value={node.manual ? "checklist" : (node.mirror ?? "checklist")} onChange={onSetSource} options={SOURCE_OPTS} /></Field>
       {!node.manual && (
         <label className="flex items-center gap-2 cursor-pointer">
           <Toggle on={!!node.createable} onChange={v => onPatch({ createable: v })} />
@@ -448,6 +451,7 @@ function Inspector({ node, draft, onPatch, onSetSource, onToggleDep, onRemove, o
 
       <Field label="Notes"><textarea value={node.notes ?? ""} onChange={e => onPatch({ notes: e.target.value || undefined })} rows={2} className={inputCls} style={inputStyle} /></Field>
       </fieldset>
+      </div>
     </>
   );
 }
@@ -461,7 +465,8 @@ function ChecklistEditor({ node, onPatch }: { node: TemplateNode; onPatch: (p: P
   const set = (n: typeof items) => onPatch({ checklist: n.length ? n : undefined });
   const patchItem = (id: string, p: Partial<(typeof items)[number]>) => set(items.map(x => x.id === id ? { ...x, ...p } : x));
   return (
-    <Capability icon={ListChecks} title="Checklist" count={items.length}>
+    <Capability icon={ListChecks} title="Checklist" count={items.length}
+      hint="For office / process steps with no record of their own (permits, approvals, QA). For field data — readings, photos, sign-off — point the step at a Work Order instead.">
       <div className="space-y-2.5">
         {items.map(it => {
           const needsOptions = it.type === "dropdown" || it.type === "multi_select";
@@ -541,10 +546,18 @@ function RailGroup({ icon: Icon, title, children }: { icon: typeof Layers; title
     </div>
   );
 }
-function Capability({ icon: Icon, title, count, children }: { icon: typeof Layers; title: string; count: number; children: React.ReactNode }) {
+function Capability({ icon: Icon, title, count, hint, children }: { icon: typeof Layers; title: string; count: number; hint?: string; children: React.ReactNode }) {
   return (
     <div className="rounded-xl p-3" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}>
-      <div className="flex items-center gap-1.5 mb-2"><Icon className="w-3.5 h-3.5" style={{ color: ACCENT }} /><p className="text-xs font-semibold" style={{ color: "var(--text-primary)" }}>{title}</p>{count > 0 && <span className="text-[10px] px-1.5 rounded-full" style={{ backgroundColor: "var(--accent-soft-bg)", color: "var(--accent-text)" }}>{count}</span>}</div>
+      <div className={`relative group flex items-center gap-1.5 mb-2 w-fit ${hint ? "cursor-help" : ""}`}>
+        <Icon className="w-3.5 h-3.5" style={{ color: ACCENT }} />
+        <p className="text-xs font-semibold" style={{ color: "var(--text-primary)" }}>{title}</p>
+        {count > 0 && <span className="text-[10px] tabular-nums" style={{ color: "var(--text-muted)" }}>{count}</span>}
+        {hint && (
+          <span className="pointer-events-none absolute top-full left-0 mt-2 w-64 px-3 py-2 rounded-lg text-[11px] leading-snug text-left opacity-0 group-hover:opacity-100 transition-opacity duration-200 group-hover:delay-500 z-30"
+            style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", color: "var(--text-secondary)", boxShadow: "0 12px 32px -8px rgba(0,0,0,0.4)" }}>{hint}</span>
+        )}
+      </div>
       {children}
     </div>
   );
