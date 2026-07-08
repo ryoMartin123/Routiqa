@@ -410,7 +410,7 @@ function Inspector({ node, draft, onPatch, onSetSource, onToggleDep, onRemove, o
           <button onClick={onClose} aria-label="Close" className="p-1.5 rounded-lg hover:bg-[var(--bg-surface-2)]" style={{ color: "var(--text-muted)" }}><X className="w-4 h-4" /></button>
         </div>
       </div>
-      <fieldset disabled={readOnly} className="flex-1 overflow-y-auto p-4 space-y-5 border-0 m-0 min-w-0">
+      <fieldset disabled={readOnly} className="flex-1 min-h-0 overflow-y-auto thin-scroll-y p-4 space-y-5 border-0 m-0 min-w-0">
       <Field label="Title"><input value={node.title} onChange={e => onPatch({ title: e.target.value })} className={inputCls} style={inputStyle} /></Field>
       <div className="grid grid-cols-2 gap-2.5">
         <Field label="Lane"><UiSelect size="sm" value={node.group} onChange={v => onPatch({ group: v })} options={draft.groups.map(g => ({ value: g, label: g }))} /></Field>
