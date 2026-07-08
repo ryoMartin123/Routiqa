@@ -884,6 +884,21 @@ body[data-comment-mode="1"] [data-comment-ui] {
 }
 @media (prefers-reduced-motion: reduce) { .map-live-halo { animation: none; opacity: 0.28; } }
 
+/* Always-on technician name label — a white pill just below the arrow pin. */
+.map-tech-label {
+  position: absolute;
+  transform: translate(-50%, 22px);
+  padding: 2px 9px;
+  border-radius: 9999px;
+  background: #ffffff;
+  color: #1f2430;
+  font-size: 12px; font-weight: 700; line-height: 1.4;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.22);
+  pointer-events: none;
+  z-index: 1;
+}
+
 /* Selected-technician status card — compact popover anchored above the marker. */
 .map-tech-popover {
   position: absolute;

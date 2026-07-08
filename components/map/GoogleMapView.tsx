@@ -29,17 +29,18 @@ function jobPin(color: string, selected: boolean, hovered = false): google.maps.
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 24 32"><path d="M12 0C5.37 0 0 5.37 0 12c0 8.4 12 20 12 20s12-11.6 12-20C24 5.37 18.63 0 12 0z" fill="${color}" stroke="#ffffff" stroke-width="1.5"/><circle cx="12" cy="12" r="4.4" fill="#ffffff"/>${ring}</svg>`;
   return { url: svgUrl(svg), scaledSize: new google.maps.Size(w, h), anchor: new google.maps.Point(w / 2, h) };
 }
-// Rounded-square tech marker with initials — visually distinct from job pins.
-// Technician marker. Identity (a neutral slate tile + initials) is kept separate
-// from tracking status, which is carried entirely by the ring + corner status dot
-// color (off=gray, clocked-in=blue, live=green, stale=orange, lost=red). Selected
-// adds a soft outer halo ring so the clicked tech stands out.
-function techPin(stateColor: string, initials: string, selected = false): google.maps.Icon {
+// Technician marker: a teal disc with a white heading arrow (rotates to the
+// device heading, points up when unknown). Tracking STATUS is carried entirely
+// by the ring/outline color (off=gray, clocked-in=blue, live=green, stale=orange,
+// lost=red). Selected adds a soft outer halo. Identity is the name label below.
+const TECH_TEAL = "#0f8578";
+function techPin(stateColor: string, heading = 0, selected = false): google.maps.Icon {
   const sel = selected
-    ? `<rect x="1.5" y="1.5" width="33" height="33" rx="12" fill="none" stroke="${stateColor}" stroke-opacity="0.35" stroke-width="3"/>`
+    ? `<circle cx="20" cy="20" r="18" fill="none" stroke="${stateColor}" stroke-opacity="0.35" stroke-width="3"/>`
     : "";
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 36 36">${sel}<rect x="5" y="5" width="26" height="26" rx="8" fill="#334155" stroke="${stateColor}" stroke-width="3"/><text x="18" y="22.5" text-anchor="middle" fill="#ffffff" font-size="11.5" font-weight="700" font-family="system-ui, sans-serif">${initials}</text><circle cx="30.5" cy="5.5" r="4.5" fill="${stateColor}" stroke="#ffffff" stroke-width="1.75"/></svg>`;
-  return { url: svgUrl(svg), scaledSize: new google.maps.Size(36, 36), anchor: new google.maps.Point(18, 18) };
+  const arrow = `<g transform="rotate(${Math.round(heading)} 20 20)"><path d="M20 11.5 L26 27 L20 22.8 L14 27 Z" fill="#ffffff"/></g>`;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40">${sel}<circle cx="20" cy="20" r="13" fill="${TECH_TEAL}" stroke="${stateColor}" stroke-width="3.5"/>${arrow}</svg>`;
+  return { url: svgUrl(svg), scaledSize: new google.maps.Size(40, 40), anchor: new google.maps.Point(20, 20) };
 }
 
 export interface GoogleMapViewProps {
@@ -82,6 +83,7 @@ export default function GoogleMapView({ jobs, techs, route, trail = [], fitTrail
   const trafficRef = useRef<google.maps.TrafficLayer | null>(null);
   const pulseRef = useRef<google.maps.OverlayView | null>(null);
   const techHalosRef = useRef<google.maps.OverlayView[]>([]);
+  const techLabelsRef = useRef<google.maps.OverlayView[]>([]);
   const techPopoverRef = useRef<google.maps.OverlayView | null>(null);
   const didFitRef = useRef(false);
   const lastFlyRef = useRef("");
@@ -97,7 +99,7 @@ export default function GoogleMapView({ jobs, techs, route, trail = [], fitTrail
   // changed, not on every parent re-render (which otherwise flickers the pins
   // and fires redundant Directions requests).
   const jobsSig = useMemo(() => jobs.map(j => `${j.id}:${j.lat.toFixed(5)},${j.lng.toFixed(5)}:${j.kind}`).join("|") + `#${selectedJobId ?? ""}`, [jobs, selectedJobId]);
-  const techsSig = useMemo(() => techs.filter(t => t.current).map(t => `${t.name}:${t.current!.lat.toFixed(5)},${t.current!.lng.toFixed(5)}:${t.trackState ?? "off"}`).join("|") + `#${selectedTechName ?? ""}`, [techs, selectedTechName]);
+  const techsSig = useMemo(() => techs.filter(t => t.current).map(t => `${t.name}:${t.current!.lat.toFixed(5)},${t.current!.lng.toFixed(5)}:${t.trackState ?? "off"}:${Math.round(t.heading ?? -1)}`).join("|") + `#${selectedTechName ?? ""}`, [techs, selectedTechName]);
   // Route path rounded to ~3 decimals (~110m): the live MARKER updates in real
   // time, but the billable Directions road-route only redraws when the tech
   // actually moves a block+, so fast GPS updates don't run up Directions usage.
@@ -170,7 +172,7 @@ export default function GoogleMapView({ jobs, techs, route, trail = [], fitTrail
       const selected = selectedTechName === t.name;
       const m = new google.maps.Marker({
         position: { lat: t.current!.lat, lng: t.current!.lng }, map,
-        icon: techPin(meta.color, t.initials, selected),
+        icon: techPin(meta.color, t.heading, selected),
         title: `${t.name} · ${meta.label}`,
         zIndex: selected ? 700 : state === "live" ? 600 : 500,
       });
@@ -202,6 +204,36 @@ export default function GoogleMapView({ jobs, techs, route, trail = [], fitTrail
     return () => { techHalosRef.current.forEach(o => o.setMap(null)); techHalosRef.current = []; };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- haloSig captures live positions
   }, [haloSig, showTechs, loaded]);
+
+  // Always-on name label under each tech marker (the arrow pins are anonymous
+  // without initials). A white pill, dark text — the selected tech's is tinted.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    techLabelsRef.current.forEach(o => o.setMap(null));
+    techLabelsRef.current = [];
+    if (!showTechs) return;
+    class Label extends google.maps.OverlayView {
+      div?: HTMLDivElement;
+      constructor(private lat: number, private lng: number, private text: string) { super(); }
+      onAdd() {
+        const d = document.createElement("div");
+        d.className = "map-tech-label";
+        d.textContent = this.text;
+        this.div = d;
+        this.getPanes()?.floatPane.appendChild(d);
+      }
+      draw() { const p = this.getProjection()?.fromLatLngToDivPixel(new google.maps.LatLng(this.lat, this.lng)); if (p && this.div) { this.div.style.left = `${p.x}px`; this.div.style.top = `${p.y}px`; } }
+      onRemove() { this.div?.remove(); this.div = undefined; }
+    }
+    // The selected tech shows its full status popover above the marker, so skip
+    // its label to avoid a duplicate name below.
+    techLabelsRef.current = techs.filter(t => t.current && selectedTechName !== t.name).map(t => {
+      const o = new Label(t.current!.lat, t.current!.lng, t.name); o.setMap(map); return o;
+    });
+    return () => { techLabelsRef.current.forEach(o => o.setMap(null)); techLabelsRef.current = []; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- techsSig captures positions/selection
+  }, [techsSig, showTechs, loaded]);
 
   // Selected-tech status card — a compact popover anchored above the marker.
   useEffect(() => {
