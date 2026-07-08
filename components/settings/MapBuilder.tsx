@@ -18,6 +18,7 @@ import {
   type MapTemplate, type TemplateNode, type MirrorSource,
   newMapNodeKey, newChecklistItemId,
 } from "@/lib/projects/map-templates";
+import { CHECKLIST_TYPE_LABELS, type ChecklistItemType } from "@/lib/work-order-templates/data";
 import type { ProjectTypeOption } from "@/lib/projects/settings";
 
 const ACCENT = "#0f8578";
@@ -452,19 +453,52 @@ function Inspector({ node, draft, onPatch, onSetSource, onToggleDep, onRemove, o
 }
 
 // ── Checklist ──
+// Each item is a check-off by default, or a typed field (dropdown, multi-select,
+// number, text, photo, …) — the same set the work-order checklist offers.
+const CHECK_TYPES = Object.keys(CHECKLIST_TYPE_LABELS) as ChecklistItemType[];
 function ChecklistEditor({ node, onPatch }: { node: TemplateNode; onPatch: (p: Partial<TemplateNode>) => void }) {
   const items = node.checklist ?? [];
   const set = (n: typeof items) => onPatch({ checklist: n.length ? n : undefined });
+  const patchItem = (id: string, p: Partial<(typeof items)[number]>) => set(items.map(x => x.id === id ? { ...x, ...p } : x));
   return (
     <Capability icon={ListChecks} title="Checklist" count={items.length}>
-      <div className="space-y-1.5">
-        {items.map(it => (
-          <div key={it.id} className="flex items-center gap-1.5">
-            <input value={it.label} onChange={e => set(items.map(x => x.id === it.id ? { ...x, label: e.target.value } : x))} placeholder="Item" className={`${inputCls} py-1.5 text-xs`} style={inputStyle} />
-            <button onClick={() => set(items.map(x => x.id === it.id ? { ...x, required: !x.required } : x))} title="Required to complete" className="text-[9px] font-bold px-1.5 py-1 rounded shrink-0" style={{ backgroundColor: it.required ? "var(--accent-soft-bg)" : "var(--bg-input)", color: it.required ? "var(--accent-text)" : "var(--text-muted)" }}>REQ</button>
-            <button onClick={() => set(items.filter(x => x.id !== it.id))} className="shrink-0" style={{ color: "#9ca3af" }}><X className="w-3.5 h-3.5" /></button>
-          </div>
-        ))}
+      <div className="space-y-2.5">
+        {items.map(it => {
+          const needsOptions = it.type === "dropdown" || it.type === "multi_select";
+          return (
+            <div key={it.id} className="rounded-lg p-2 space-y-1.5" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)" }}>
+              <div className="flex items-center gap-1.5">
+                <input value={it.label} onChange={e => patchItem(it.id, { label: e.target.value })} placeholder="Item label" className={`${inputCls} py-1.5 text-xs`} style={inputStyle} />
+                <button onClick={() => patchItem(it.id, { required: !it.required })} title="Required to complete" className="text-[9px] font-bold px-1.5 py-1 rounded shrink-0" style={{ backgroundColor: it.required ? "var(--accent-soft-bg)" : "var(--bg-input)", color: it.required ? "var(--accent-text)" : "var(--text-muted)" }}>REQ</button>
+                <button onClick={() => set(items.filter(x => x.id !== it.id))} className="shrink-0" style={{ color: "#9ca3af" }}><X className="w-3.5 h-3.5" /></button>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <UiSelect size="sm" value={it.type ?? ""}
+                  onChange={v => {
+                    const t = (v || undefined) as ChecklistItemType | undefined;
+                    const opts = (t === "dropdown" || t === "multi_select") ? (it.options?.length ? it.options : ["", ""]) : undefined;
+                    patchItem(it.id, { type: t, options: opts, unit: t === "number" ? it.unit : undefined });
+                  }}
+                  options={[{ value: "", label: "Check-off" }, ...CHECK_TYPES.map(t => ({ value: t, label: CHECKLIST_TYPE_LABELS[t] }))]} />
+                {it.type === "number" && (
+                  <input value={it.unit ?? ""} onChange={e => patchItem(it.id, { unit: e.target.value || undefined })} placeholder="unit" className={`${inputCls} py-1.5 text-xs w-20 shrink-0`} style={inputStyle} />
+                )}
+              </div>
+              {needsOptions && (
+                <div className="space-y-1 pl-1">
+                  {(it.options ?? []).map((opt, i) => (
+                    <div key={i} className="flex items-center gap-1.5">
+                      <input value={opt} placeholder={`Option ${i + 1}`} onChange={e => { const next = [...(it.options ?? [])]; next[i] = e.target.value; patchItem(it.id, { options: next }); }} className={`${inputCls} py-1 text-xs`} style={inputStyle} />
+                      <button onClick={() => patchItem(it.id, { options: (it.options ?? []).filter((_, j) => j !== i) })} className="shrink-0" style={{ color: "#9ca3af" }}><X className="w-3 h-3" /></button>
+                    </div>
+                  ))}
+                  <button onClick={() => patchItem(it.id, { options: [...(it.options ?? []), ""] })} className="flex items-center gap-1 text-[11px] font-medium" style={{ color: ACCENT }}><Plus className="w-3 h-3" /> Add option</button>
+                  {(it.options ?? []).filter(o => o.trim()).length === 0 && <p className="text-[10px]" style={{ color: "#b45309" }}>Add at least one option.</p>}
+                </div>
+              )}
+            </div>
+          );
+        })}
         <button onClick={() => set([...items, { id: newChecklistItemId(), label: "" }])} className="flex items-center gap-1 text-xs font-medium" style={{ color: ACCENT }}><Plus className="w-3.5 h-3.5" /> Add item</button>
       </div>
     </Capability>

@@ -18,9 +18,11 @@ import {
   getProjectMap, getProjectMapByGroup, setMapNodeStatus, createForNode, isQuickCreate, SOURCE_TAB,
   NODE_TYPE_LABEL, NODE_STATUS_META, nodeDayProgress, setMapNodeExpected, sweepDatedWaits,
   billingNodeAmount, billingNodeAmountLabel, createBillingInvoiceForNode, nodeDateSpan,
-  getCheckedItems, toggleChecklistItem, checklistProgress,
+  getItemAnswers, setItemAnswer, toggleChecklistItem, checklistProgress,
   type ProjectMapNode, type MapNodeType, type MapNodeStatus,
 } from "@/lib/projects/map";
+import type { NodeChecklistItem } from "@/lib/projects/map-templates";
+import UiSelect from "@/components/ui/Select";
 import DatePicker from "@/components/ui/DatePicker";
 import MultiDayBookModal from "@/components/calendar/MultiDayBookModal";
 import { getAppointmentsForJob, getAppointmentsForWorkOrder, updateAppointment, createAppointment, deleteAppointment } from "@/lib/appointments/data";
@@ -431,7 +433,7 @@ function NodeCard({ node, deps, onClick }: { node: ProjectMapNode; deps: Project
           return (
             <div className="mt-1.5">
               <p className="text-[10px] font-semibold mb-1 flex items-center gap-1" style={{ color: "var(--text-secondary)" }}><ListChecks className="w-3 h-3" /> {cp.done} of {cp.total}</p>
-              <SegmentedProgress segments={node.checklist!.map(it => ({ filled: getCheckedItems(node.id).includes(it.id), color: "#0f8578" }))} />
+              <SegmentedProgress segments={node.checklist!.map(it => ({ filled: cp.doneIds.has(it.id), color: "#0f8578" }))} />
             </div>
           );
         })()}
@@ -575,22 +577,10 @@ function NodeDetail({ node, allNodes, byId, onBack, onSelectNode, onOpenTab, onC
             )}
             {/* Checklist source: the items are the step — work through them here */}
             {isChecklist && node.checklist && (
-              <div className="mt-4 space-y-1.5">
-                {node.checklist.map(item => {
-                  const checked = getCheckedItems(node.id).includes(item.id);
-                  return (
-                    <button key={item.id} onClick={() => { toggleChecklistItem(node.id, item.id); onChanged(); }}
-                      className="flex items-start gap-2 w-full text-left group">
-                      {checked
-                        ? <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0" style={{ color: "#16a34a" }} />
-                        : <Circle className="w-4 h-4 mt-0.5 shrink-0" style={{ color: "var(--text-muted)" }} />}
-                      <span className="text-sm" style={{ color: checked ? "var(--text-muted)" : "var(--text-primary)", textDecoration: checked ? "line-through" : "none" }}>
-                        {item.label || "Untitled item"}
-                        {item.required && <span className="ml-1.5 text-[10px] font-semibold" style={{ color: "#dc2626" }}>Required</span>}
-                      </span>
-                    </button>
-                  );
-                })}
+              <div className="mt-4 space-y-2">
+                {node.checklist.map(item => (
+                  <MapChecklistItem key={item.id} nodeId={node.id} item={item} onChanged={onChanged} />
+                ))}
               </div>
             )}
             <div className="mt-4 space-y-2">
@@ -667,6 +657,84 @@ function WfRow({ node, current, onClick }: { node: ProjectMapNode; current?: boo
     </div>
   );
   return onClick ? <button onClick={onClick} className="w-full text-left hover:opacity-80">{Inner}</button> : Inner;
+}
+
+// ─── Checklist-step item (the typed fill-out on the live step) ──
+// Same behavior as the work-order checklist: answering a typed item stores its
+// value and marks it done; untyped / photo items are tap-to-check.
+function MapChecklistItem({ nodeId, item, onChanged }: { nodeId: string; item: NodeChecklistItem; onChanged: () => void }) {
+  const v = getItemAnswers(nodeId)[item.id];
+  const t = item.type;
+  const strVal = typeof v === "string" ? v : "";
+  const arrVal = Array.isArray(v) ? v : [];
+  const done = Array.isArray(v) ? v.length > 0 : !!(v && String(v).trim());
+  const tappable = !t || t === "photo";
+  const setV = (value: string | string[]) => { setItemAnswer(nodeId, item.id, value); onChanged(); };
+
+  const icon = done
+    ? <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0" style={{ color: "#16a34a" }} />
+    : <Circle className="w-4 h-4 mt-0.5 shrink-0" style={{ color: "var(--text-muted)" }} />;
+  const label = (
+    <span className="text-sm" style={{ color: done ? "var(--text-muted)" : "var(--text-primary)", textDecoration: tappable && done ? "line-through" : "none" }}>
+      {item.label || "Untitled item"}
+      {item.required && <span className="ml-1.5 text-[10px] font-semibold" style={{ color: "#dc2626" }}>Required</span>}
+      {t === "photo" && <span className="ml-1.5 text-[10px]" style={{ color: "var(--text-muted)" }}>attach in Photos &amp; Files</span>}
+    </span>
+  );
+
+  if (tappable) {
+    return (
+      <button onClick={() => { toggleChecklistItem(nodeId, item.id); onChanged(); }} className="flex items-start gap-2 w-full text-left">
+        {icon}{label}
+      </button>
+    );
+  }
+
+  const inputStyle = { border: "1px solid var(--border)", backgroundColor: "var(--bg-input)", color: "var(--text-primary)" } as React.CSSProperties;
+  return (
+    <div className="flex items-start gap-2">
+      {icon}
+      <div className="flex-1 min-w-0">
+        {label}
+        <div className="mt-1">
+          {t === "short_text" && (
+            <input value={strVal} onChange={e => setV(e.target.value)} placeholder="Enter…" className="w-full rounded-lg px-2.5 py-1.5 text-sm outline-none" style={inputStyle} />
+          )}
+          {t === "long_text" && (
+            <textarea value={strVal} onChange={e => setV(e.target.value)} placeholder="Enter…" rows={2} className="w-full rounded-lg px-2.5 py-1.5 text-sm outline-none resize-none" style={inputStyle} />
+          )}
+          {t === "number" && (
+            <div className="flex items-center gap-1.5">
+              <input type="number" value={strVal} onChange={e => setV(e.target.value)} placeholder="0" className="w-28 rounded-lg px-2.5 py-1.5 text-sm outline-none" style={inputStyle} />
+              {item.unit && <span className="text-xs" style={{ color: "var(--text-muted)" }}>{item.unit}</span>}
+            </div>
+          )}
+          {t === "dropdown" && (
+            <UiSelect size="sm" value={strVal} onChange={v2 => setV(v2)}
+              options={[{ value: "", label: "Select…" }, ...(item.options ?? []).filter(o => o.trim()).map(o => ({ value: o, label: o }))]} />
+          )}
+          {t === "multi_select" && (
+            <div className="flex flex-wrap gap-1.5">
+              {(item.options ?? []).filter(o => o.trim()).map(o => {
+                const on = arrVal.includes(o);
+                return (
+                  <button key={o} onClick={() => setV(on ? arrVal.filter(x => x !== o) : [...arrVal, o])}
+                    className="px-2.5 py-1 rounded-lg text-xs font-medium transition-all"
+                    style={{ border: `1.5px solid ${on ? "var(--copper-soft-border)" : "var(--border)"}`, backgroundColor: on ? "var(--copper-soft-bg)" : "var(--bg-surface-2)", color: on ? "var(--copper-text)" : "var(--text-secondary)" }}>{o}</button>
+                );
+              })}
+            </div>
+          )}
+          {t === "datetime" && (
+            <input type="datetime-local" value={strVal} onChange={e => setV(e.target.value)} className="rounded-lg px-2.5 py-1.5 text-sm outline-none" style={inputStyle} />
+          )}
+          {t === "signature" && (
+            <input value={strVal} onChange={e => setV(e.target.value)} placeholder="Type full name to sign" className="w-full rounded-lg px-2.5 py-1.5 text-sm italic outline-none" style={{ ...inputStyle, fontFamily: "Georgia, serif" }} />
+          )}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function Meta({ icon: Icon, label, value }: { icon: typeof User; label: string; value: string }) {

@@ -122,31 +122,56 @@ export function setMapNodeStatus(nodeId: string, status: MapNodeStatus): void {
 }
 
 // ─── Checklist-item state (per node, persisted) ───────────
-// A checklist-source node is worked through item by item; its completion is
-// derived from these checks (all required items done — or all items if none is
-// marked required). Keyed by node id → checked item ids.
+// A checklist-source node is worked through item by item. Each item stores an
+// ANSWER (a check-off sentinel, a text/number value, or a multi-select array);
+// the node completes when every required item — or every item if none is marked
+// required — has a non-empty answer. Keyed by node id → { itemId: answer }.
 const CHECK_KEY = "crm-map-checklist";
-function checkStore(): Record<string, string[]> {
+type ItemAnswers = Record<string, string | string[]>;
+function answerStore(): Record<string, ItemAnswers> {
   if (typeof window === "undefined") return {};
-  try { return JSON.parse(localStorage.getItem(CHECK_KEY) || "{}"); } catch { return {}; }
+  try {
+    const raw = JSON.parse(localStorage.getItem(CHECK_KEY) || "{}") as Record<string, unknown>;
+    const out: Record<string, ItemAnswers> = {};
+    for (const k of Object.keys(raw)) {
+      const v = raw[k];
+      // Migrate the old form (array of checked item ids) → { id: "1" }.
+      out[k] = Array.isArray(v) ? Object.fromEntries((v as string[]).map(id => [id, "1"])) : (v as ItemAnswers);
+    }
+    return out;
+  } catch { return {}; }
 }
-export function getCheckedItems(nodeId: string): string[] { return checkStore()[nodeId] ?? []; }
-export function toggleChecklistItem(nodeId: string, itemId: string): void {
-  const all = checkStore();
-  const cur = new Set(all[nodeId] ?? []);
-  if (cur.has(itemId)) cur.delete(itemId); else cur.add(itemId);
-  all[nodeId] = [...cur];
+function saveAnswers(all: Record<string, ItemAnswers>): void {
   try { localStorage.setItem(CHECK_KEY, JSON.stringify(all)); } catch { /* ignore */ }
 }
-// Progress for a checklist node — done/total (all items) + whether it's complete
-// (every REQUIRED item, or every item if none required, is checked).
-export function checklistProgress(node: ProjectMapNode): { done: number; total: number; complete: boolean } | null {
+const answerDone = (v: string | string[] | undefined): boolean =>
+  v == null ? false : Array.isArray(v) ? v.length > 0 : String(v).trim() !== "";
+
+export function getItemAnswers(nodeId: string): ItemAnswers { return answerStore()[nodeId] ?? {}; }
+// Set a typed item's answer (empty clears it).
+export function setItemAnswer(nodeId: string, itemId: string, value: string | string[]): void {
+  const all = answerStore();
+  const cur = { ...(all[nodeId] ?? {}) };
+  if (answerDone(value)) cur[itemId] = value; else delete cur[itemId];
+  all[nodeId] = cur; saveAnswers(all);
+}
+// Toggle a check-off / photo item (no typed value).
+export function toggleChecklistItem(nodeId: string, itemId: string): void {
+  const all = answerStore();
+  const cur = { ...(all[nodeId] ?? {}) };
+  if (cur[itemId]) delete cur[itemId]; else cur[itemId] = "1";
+  all[nodeId] = cur; saveAnswers(all);
+}
+// Progress for a checklist node — done/total + whether it's complete (every
+// required item, or every item if none required, has an answer).
+export function checklistProgress(node: ProjectMapNode): { done: number; total: number; complete: boolean; doneIds: Set<string> } | null {
   const items = node.checklist;
   if (!items?.length) return null;
-  const checked = new Set(getCheckedItems(node.id));
+  const a = getItemAnswers(node.id);
+  const doneIds = new Set(items.filter(i => answerDone(a[i.id])).map(i => i.id));
   const gate = items.filter(i => i.required);
   const need = gate.length ? gate : items;
-  return { done: items.filter(i => checked.has(i.id)).length, total: items.length, complete: need.every(i => checked.has(i.id)) };
+  return { done: doneIds.size, total: items.length, complete: need.every(i => doneIds.has(i.id)), doneIds };
 }
 
 // ─── Mirror resolution — node status from a real record ───
@@ -297,11 +322,11 @@ function buildProjectMap(projectId: string): ProjectMapNode[] {
     if (t.manual) {
       if (t.checklist && t.checklist.length > 0) {
         // Checklist source: status is derived from the items worked through.
-        const checked = new Set(getCheckedItems(id));
+        const a = getItemAnswers(id);
         const gate = t.checklist.filter(c => c.required);
         const need = gate.length ? gate : t.checklist;
-        const anyDone = t.checklist.some(c => checked.has(c.id));
-        baseStatus = need.every(c => checked.has(c.id)) ? "completed" : anyDone ? "in_progress" : null;
+        const anyDone = t.checklist.some(c => answerDone(a[c.id]));
+        baseStatus = need.every(c => answerDone(a[c.id])) ? "completed" : anyDone ? "in_progress" : null;
       } else {
         baseStatus = (manualDone().has(id) || t.key === "created") ? "completed" : null;
       }

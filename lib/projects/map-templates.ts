@@ -9,6 +9,11 @@
 import { resolveScoped, writeScoped, clearScoped, type ScopeIds } from "@/lib/settings-scope/store";
 import type { MapNodeType } from "./map";
 import type { ProjectType } from "./data";
+// Reuse the work-order checklist's item types so a map-step checklist is just
+// as rich (dropdown, multi-select, number, photo, …). work-order-templates is a
+// leaf module — no import cycle.
+export type { ChecklistItemType } from "@/lib/work-order-templates/data";
+import type { ChecklistItemType } from "@/lib/work-order-templates/data";
 
 // Which real record a mirrored node reflects (and can create).
 export type MirrorSource =
@@ -38,7 +43,16 @@ export interface TemplateNode {
 }
 
 // ─── Node capabilities ────────────────────────────────────
-export interface NodeChecklistItem { id: string; label: string; required?: boolean; }
+// A checklist-step item. `type` undefined = a simple check-off; otherwise it's
+// a typed field the user fills in (same set as the work-order checklist).
+export interface NodeChecklistItem {
+  id: string;
+  label: string;
+  required?: boolean;
+  type?: ChecklistItemType;
+  options?: string[];   // dropdown / multi_select choices
+  unit?: string;        // number unit, e.g. "PSI"
+}
 
 export function newChecklistItemId(): string { return `cl${Date.now().toString(36)}${Math.random().toString(36).slice(2, 4)}`; }
 
