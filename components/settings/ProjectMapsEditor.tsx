@@ -7,7 +7,7 @@
 // there's no page-level Save. Project types are fixed CRM defaults.
 
 import { useEffect, useState } from "react";
-import { Plus, Pencil, Eye, Trash2, Copy, ChevronRight, GitBranch, Layers, Link2, CheckSquare } from "lucide-react";
+import { Plus, Pencil, Eye, Trash2, Copy, ChevronRight, Layers, Link2, CheckSquare } from "lucide-react";
 import { useScopedSetting } from "@/lib/settings-scope/useScopedSetting";
 import { pingSaved } from "@/components/shared/SavedPill";
 import MapBuilder from "@/components/settings/MapBuilder";
@@ -24,14 +24,12 @@ function TemplatePreview({ t }: { t: MapTemplate }) {
   const groups = [...t.groups];
   const extra = t.nodes.some(n => !groups.includes(n.group));
   const lanes = [...groups, ...(extra ? ["Other"] : [])];
-  const count = (g: string) => t.nodes.filter(n => g === "Other" ? !t.groups.includes(n.group) : n.group === g).length;
   return (
     <div className="flex items-center gap-1.5 overflow-x-auto thin-scroll-x pb-0.5">
       {lanes.map((g, i) => (
         <div key={g} className="flex items-center gap-1.5 shrink-0">
-          <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}>
+          <div className="flex items-center px-2.5 py-1.5 rounded-lg" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}>
             <span className="text-[11px] font-medium whitespace-nowrap" style={{ color: "var(--text-secondary)" }}>{g}</span>
-            <span className="text-[10px] font-bold px-1.5 rounded-full tabular-nums" style={{ backgroundColor: "var(--accent-soft-bg)", color: "var(--accent-text)" }}>{count(g)}</span>
           </div>
           {i < lanes.length - 1 && <ChevronRight className="w-3.5 h-3.5 shrink-0" style={{ color: "var(--text-muted)" }} />}
         </div>
@@ -91,17 +89,16 @@ export default function ProjectMapsEditor() {
             <div key={t.id} className="group rounded-2xl overflow-hidden transition-shadow hover:shadow-md" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
               {/* Header */}
               <div className="flex items-start gap-3 p-4">
-                <span className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: "var(--accent-soft-bg)" }}><GitBranch className="w-[18px] h-[18px]" style={{ color: ACCENT }} /></span>
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{t.name}</p>
-                    {builtIn && <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>Built-in</span>}
+                  <div className="flex items-center gap-2 min-w-0">
+                    <p className="text-sm font-semibold truncate" style={{ color: "var(--text-primary)" }}>{t.name}</p>
+                    {/* Project types — revealed on hover, like the WO template job-type chip */}
+                    <span className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                      {t.projectTypes.length
+                        ? t.projectTypes.map(k => <span key={k} className="text-[10px] font-medium px-1.5 py-0.5 rounded" style={{ backgroundColor: "var(--accent-soft-bg)", color: "var(--accent-text)" }}>{typeLabel(k)}</span>)
+                        : <span className="text-[10px] font-medium px-1.5 py-0.5 rounded" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>No project type</span>}
+                    </span>
                   </div>
-                  {t.projectTypes.length ? (
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {t.projectTypes.map(k => <span key={k} className="text-[10px] font-medium px-1.5 py-0.5 rounded" style={{ backgroundColor: "var(--accent-soft-bg)", color: "var(--accent-text)" }}>{typeLabel(k)}</span>)}
-                    </div>
-                  ) : <p className="text-[11px] mt-0.5" style={{ color: "var(--text-muted)" }}>No project type assigned</p>}
                 </div>
                 <div className="flex items-center gap-1 shrink-0 opacity-60 group-hover:opacity-100 transition-opacity">
                   <button onClick={() => startEdit(t)} title={builtIn ? "View" : "Edit"} className="p-1.5 rounded-lg hover:bg-[var(--bg-input)]" style={{ color: "var(--text-muted)" }}>{builtIn ? <Eye className="w-3.5 h-3.5" /> : <Pencil className="w-3.5 h-3.5" />}</button>
