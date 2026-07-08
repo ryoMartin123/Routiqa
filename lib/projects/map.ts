@@ -8,7 +8,7 @@
 
 import { getProject } from "./data";
 import { templateForProject, type MapTemplate, type MirrorSource } from "./map-templates";
-import { getJobsForProject, getWorkOrder, createJob } from "@/lib/jobs/data";
+import { getJobsForProject, getJob, getWorkOrder, getWorkOrderById, createJob } from "@/lib/jobs/data";
 import { getAppointmentsForJob, getAppointmentsForWorkOrder } from "@/lib/appointments/data";
 import { createTask } from "@/lib/tasks/data";
 import {
@@ -81,13 +81,20 @@ export const SOURCE_TAB: Record<MirrorSource, string> = {
 // Expected dates on waiting/blocked steps + the follow-up-task guard, keyed by
 // node id. Small and additive — the map itself stays derived from live records.
 const META_KEY = "crm-map-node-meta";
-interface NodeMeta { expectedDate?: string; followUpTaskId?: string; invoiceId?: string }
+interface NodeMeta { expectedDate?: string; followUpTaskId?: string; invoiceId?: string; recordId?: string }
 function metaStore(): Record<string, NodeMeta> {
   if (typeof window === "undefined") return {};
   try { return JSON.parse(localStorage.getItem(META_KEY) || "{}"); } catch { return {}; }
 }
 function saveMeta(all: Record<string, NodeMeta>): void {
   try { localStorage.setItem(META_KEY, JSON.stringify(all)); } catch { /* ignore */ }
+}
+// Bind a node to a specific record (job/quote/PO/…) so it drives THAT step
+// only. Used by createForNode and by seeds that create records directly.
+export function bindMapNodeRecord(nodeId: string, recordId: string): void {
+  const all = metaStore();
+  all[nodeId] = { ...(all[nodeId] ?? {}), recordId };
+  saveMeta(all);
 }
 export function setMapNodeExpected(nodeId: string, date: string): void {
   const all = metaStore();
@@ -117,35 +124,37 @@ export function setMapNodeStatus(nodeId: string, status: MapNodeStatus): void {
 type BaseStatus = "completed" | "in_progress" | "waiting" | "blocked" | null;
 interface MirrorResult { status: BaseStatus; linkedApp?: LinkedApp; linkedLabel?: string; linkedId?: string }
 
-function resolveMirror(src: MirrorSource, projectId: string): MirrorResult {
+// Resolve a node against the SPECIFIC record bound to it (recordId), not "the
+// first record of this type" — so a project's site-visit job and install job
+// each drive their own node instead of one job completing every job step.
+// equipment_received stays project-wide (any PO fully received is the gate).
+function resolveMirror(src: MirrorSource, projectId: string, recordId?: string): MirrorResult {
   switch (src) {
     case "job": {
-      const j = getJobsForProject(projectId)[0];
+      const j = recordId ? getJob(recordId) : undefined;
       if (!j) return { status: null };
       const done = ["completed", "closed", "invoiced"].includes(j.status);
       return { status: done ? "completed" : "in_progress", linkedApp: "CRM", linkedLabel: j.title, linkedId: j.id };
     }
     case "work_order": {
-      const j = getJobsForProject(projectId)[0];
-      const wo = j ? getWorkOrder(j.id) : undefined;
+      const wo = recordId ? getWorkOrderById(recordId) : undefined;
       if (!wo) return { status: null };
       const open = wo.checklist.some(c => c.required && !c.isComplete);
       return { status: open ? "in_progress" : "completed", linkedApp: "CRM", linkedLabel: wo.title, linkedId: wo.id };
     }
     case "quote": {
-      const qs = getQuotesForProject(projectId);
-      if (qs.length === 0) return { status: null };
-      const approved = qs.some(q => ["approved", "converted"].includes(q.status));
-      return { status: approved ? "completed" : "in_progress", linkedApp: "CRM", linkedLabel: qs[0].quoteNumber, linkedId: qs[0].id };
+      const q = recordId ? getQuotesForProject(projectId).find(x => x.id === recordId) : undefined;
+      if (!q) return { status: null };
+      const approved = ["approved", "converted"].includes(q.status);
+      return { status: approved ? "completed" : "in_progress", linkedApp: "CRM", linkedLabel: q.quoteNumber, linkedId: q.id };
     }
     case "material_request": {
-      const m = materialRequestsForProject(projectId)[0];
+      const m = recordId ? materialRequestsForProject(projectId).find(x => x.id === recordId) : undefined;
       if (!m) return { status: null };
       return { status: m.status === "fulfilled" ? "completed" : "in_progress", linkedApp: "Inventory", linkedLabel: m.number, linkedId: m.id };
     }
     case "purchase_order": {
-      const pos = posForProject(projectId);
-      const p = pos.find(x => x.status !== "draft") ?? pos[0];
+      const p = recordId ? posForProject(projectId).find(x => x.id === recordId) : undefined;
       if (!p) return { status: null };
       return { status: p.status !== "draft" ? "completed" : "in_progress", linkedApp: "Inventory", linkedLabel: p.number, linkedId: p.id };
     }
@@ -156,7 +165,7 @@ function resolveMirror(src: MirrorSource, projectId: string): MirrorResult {
       return { status: full ? "completed" : "waiting", linkedApp: "Inventory", linkedLabel: full ? "Received" : "Awaiting delivery" };
     }
     case "subcontractor": {
-      const a = assignmentsForProject(projectId)[0];
+      const a = recordId ? assignmentsForProject(projectId).find(x => x.id === recordId) : undefined;
       if (!a) return { status: null };
       const sub = a.subcontractorId ? getSubcontractor(a.subcontractorId) : undefined;
       const issue = sub ? subCompliance(sub) === "issue" : false;
@@ -164,12 +173,67 @@ function resolveMirror(src: MirrorSource, projectId: string): MirrorResult {
       return { status, linkedApp: "Inventory", linkedLabel: sub?.companyName ?? "Subcontractor", linkedId: a.id };
     }
     case "invoice": {
-      const inv = getInvoicesForProject(projectId)[0];
+      const inv = recordId ? getInvoicesForProject(projectId).find(x => x.id === recordId) : undefined;
       if (!inv) return { status: null };
       const sent = ["sent", "viewed", "partially_paid", "paid", "past_due"].includes(inv.status);
       return { status: sent ? "completed" : "in_progress", linkedApp: "Accounting", linkedLabel: inv.invoiceNumber, linkedId: inv.id };
     }
   }
+}
+
+// ─── Node → record binding ────────────────────────────────
+// Each mirror node binds to ONE specific record. Explicit bindings (set by
+// createForNode / the seed, stored in meta.recordId) claim first; remaining
+// nodes of a kind consume the project's unclaimed records in template order, so
+// a record can satisfy at most one node. A work_order node watches the work
+// order of the job bound to the nearest preceding job node.
+const POOL_TYPES: MirrorSource[] = ["job", "quote", "material_request", "purchase_order", "subcontractor", "invoice"];
+function bindMirrorNodes(projectId: string, template: MapTemplate): Map<string, string | undefined> {
+  const meta = metaStore();
+  const pools: Partial<Record<MirrorSource, { id: string }[]>> = {
+    job: getJobsForProject(projectId),
+    quote: getQuotesForProject(projectId),
+    material_request: materialRequestsForProject(projectId),
+    purchase_order: posForProject(projectId),
+    subcontractor: assignmentsForProject(projectId),
+    invoice: getInvoicesForProject(projectId),
+  };
+  const claimed: Record<string, Set<string>> = {};
+  for (const t of POOL_TYPES) claimed[t] = new Set();
+  // Billing nodes already own a specific invoice — reserve it so a plain
+  // invoice-mirror node doesn't grab the same one.
+  for (const t of template.nodes) {
+    if (t.type === "billing" && t.percent != null) {
+      const invId = meta[`${projectId}__${t.key}`]?.invoiceId;
+      if (invId) claimed.invoice.add(invId);
+    }
+  }
+
+  const binding = new Map<string, string | undefined>();
+  // Phase 1 — explicit bindings claim their record.
+  for (const t of template.nodes) {
+    const m = t.mirror;
+    if (t.manual || !m || !POOL_TYPES.includes(m)) continue;
+    const rid = meta[`${projectId}__${t.key}`]?.recordId;
+    if (rid && pools[m]?.some(r => r.id === rid) && !claimed[m].has(rid)) {
+      binding.set(t.key, rid); claimed[m].add(rid);
+    }
+  }
+  // Phase 2 — positional fallback + work_order follows the last job.
+  let lastJobId: string | undefined;
+  for (const t of template.nodes) {
+    const m = t.mirror;
+    if (t.manual || !m) continue;
+    if (m === "work_order") { binding.set(t.key, lastJobId ? getWorkOrder(lastJobId)?.id : undefined); continue; }
+    if (!POOL_TYPES.includes(m)) continue;   // equipment_received: project-wide
+    let id = binding.get(t.key);
+    if (!id) {
+      const next = pools[m]?.find(r => !claimed[m].has(r.id));
+      if (next) { id = next.id; claimed[m].add(id); binding.set(t.key, id); }
+    }
+    if (m === "job" && id) lastJobId = id;
+  }
+  return binding;
 }
 
 // ─── Build the project's map (template → nodes → statuses) ──
@@ -194,6 +258,7 @@ function buildProjectMap(projectId: string): ProjectMapNode[] {
   const project = getProject(projectId);
   const template: MapTemplate = templateForProject(project);
   const overdue = !!project?.targetDate && new Date(project.targetDate).getTime() < Date.now();
+  const binding = bindMirrorNodes(projectId, template);
 
   // First pass — base status + links.
   const base = template.nodes.map((t) => {
@@ -211,7 +276,7 @@ function buildProjectMap(projectId: string): ProjectMapNode[] {
         link = { status: baseStatus, linkedApp: "Accounting", linkedLabel: inv.invoiceNumber, linkedId: inv.id };
       }
     } else if (t.mirror) {
-      link = resolveMirror(t.mirror, projectId);
+      link = resolveMirror(t.mirror, projectId, binding.get(t.key));
       baseStatus = link.status;
     }
     return { t, id, baseStatus, link };
@@ -294,35 +359,48 @@ export function mapProgress(projectId: string): { total: number; done: number; p
   return { total, done, pct };
 }
 
-// ─── Create-from-node — quick-create + link the real record ──
-export function createForNode(projectId: string, src: MirrorSource): boolean {
+// ─── Create-from-node — quick-create + BIND the real record ──
+// The created record is bound to the node (meta.recordId) so it drives THIS
+// step and no other — creating a site-visit job never satisfies the install
+// job node. `nodeId` is the full node id (`${projectId}__${key}`); `title`
+// names the record after the step.
+export function createForNode(projectId: string, src: MirrorSource, nodeId?: string, title?: string): boolean {
   const p = getProject(projectId);
   if (!p) return false;
+  let createdId: string | undefined;
   switch (src) {
-    case "job":
-      createJob({ companyId: p.companyId, locationId: p.locationId, serviceAreaId: p.serviceAreaId, accountId: p.accountId,
+    case "job": {
+      const job = createJob({ companyId: p.companyId, locationId: p.locationId, serviceAreaId: p.serviceAreaId, accountId: p.accountId,
         customerName: p.customerName, customerInitials: p.customerInitials, locationName: p.locationName,
-        title: "Install", type: "installation", projectId, propertyAddress: p.propertyAddress,
+        title: title?.trim() || "Install", type: "installation", projectId, propertyAddress: p.propertyAddress,
         assignedTo: p.assignedTo, assignedToInitials: p.assignedToInitials });
-      return true;
-    case "material_request":
-      createMaterialRequest({ projectId, projectName: p.name, requestedBy: p.assignedTo || "—", status: "open", source: "warehouse", items: [] });
-      return true;
+      createdId = job.id;
+      break;
+    }
+    case "material_request": {
+      const mr = createMaterialRequest({ projectId, projectName: p.name, requestedBy: p.assignedTo || "—", status: "open", source: "warehouse", items: [] });
+      createdId = mr.id;
+      break;
+    }
     case "purchase_order": {
       const v = getVendors().find(x => x.type !== "subcontractor") ?? getVendors()[0];
       if (!v) return false;
-      createPurchaseOrder({ vendorId: v.id, vendorName: v.name, status: "draft", projectId, projectName: p.name, createdBy: p.assignedTo || "—", lines: [] });
-      return true;
+      const po = createPurchaseOrder({ vendorId: v.id, vendorName: v.name, status: "draft", projectId, projectName: p.name, createdBy: p.assignedTo || "—", lines: [] });
+      createdId = po.id;
+      break;
     }
     case "subcontractor": {
       const s = getSubcontractors()[0];
       if (!s) return false;
-      createAssignment({ subcontractorId: s.id, projectId, projectName: p.name, scopeOfWork: "—", status: "proposed" });
-      return true;
+      const a = createAssignment({ subcontractorId: s.id, projectId, projectName: p.name, scopeOfWork: "—", status: "proposed" });
+      createdId = a.id;
+      break;
     }
     default:
       return false;
   }
+  if (nodeId && createdId) bindMapNodeRecord(nodeId, createdId);
+  return true;
 }
 
 // ─── Day progress for multi-day steps ─────────────────────
@@ -428,20 +506,32 @@ export function createBillingInvoiceForNode(node: ProjectMapNode): boolean {
 // Steps with no time info return null — the timeline lists them separately
 // rather than inventing dates.
 export interface NodeSpan { start: string; end: string; kind: "visits" | "wait" }
+// Coerce any date string to strict YYYY-MM-DD, or null if unparseable — so the
+// timeline never receives a display-format date (which would make `new Date` an
+// Invalid Date and crash the whole view on toISOString()).
+function toYmd(s?: string): string | null {
+  if (!s) return null;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  const d = new Date(s);
+  return isNaN(d.getTime()) ? null : d.toISOString().slice(0, 10);
+}
 export function nodeDateSpan(node: ProjectMapNode): NodeSpan | null {
   if (node.linkedId && (node.mirror === "job" || node.mirror === "work_order")) {
-    const appts = (node.mirror === "work_order"
+    const dates = (node.mirror === "work_order"
       ? getAppointmentsForWorkOrder(node.linkedId)
       : getAppointmentsForJob(node.linkedId))
-      .filter(a => a.scheduledDate && a.status !== "canceled")
-      .sort((a, b) => a.scheduledDate.localeCompare(b.scheduledDate));
-    if (appts.length > 0) return { start: appts[0].scheduledDate, end: appts[appts.length - 1].scheduledDate, kind: "visits" };
+      .filter(a => a.status !== "canceled")
+      .map(a => toYmd(a.scheduledDate))
+      .filter((d): d is string => !!d)
+      .sort((a, b) => a.localeCompare(b));
+    if (dates.length > 0) return { start: dates[0], end: dates[dates.length - 1], kind: "visits" };
   }
-  if ((node.status === "waiting" || node.status === "blocked") && node.expectedDate) {
+  const expected = toYmd(node.expectedDate);
+  if ((node.status === "waiting" || node.status === "blocked") && expected) {
     const today = new Date().toISOString().slice(0, 10);
     return {
-      start: today < node.expectedDate ? today : node.expectedDate,
-      end: node.expectedDate < today ? today : node.expectedDate,
+      start: today < expected ? today : expected,
+      end: expected < today ? today : expected,
       kind: "wait",
     };
   }

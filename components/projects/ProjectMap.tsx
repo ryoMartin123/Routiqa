@@ -80,7 +80,7 @@ export default function ProjectMap({ projectId, onOpenTab }: { projectId: string
       <NodeDetail node={selected} allNodes={allNodes} byId={byId} onChanged={refresh}
         onBack={() => setSelectedId(null)} onSelectNode={setSelectedId} onOpenTab={onOpenTab}
         onComplete={() => { setMapNodeStatus(selected.id, "completed"); refresh(); }}
-        onCreate={() => { if (selected.mirror) { createForNode(projectId, selected.mirror); refresh(); } }} />
+        onCreate={() => { if (selected.mirror) { createForNode(projectId, selected.mirror, selected.id, selected.title); refresh(); } }} />
     );
   }
 
@@ -167,7 +167,9 @@ export default function ProjectMap({ projectId, onOpenTab }: { projectId: string
 // the source of truth — this edits the same visits it shows.
 const DAY_W = 26;
 const dayMs = 86400000;
-const ymd = (d: Date) => d.toISOString().slice(0, 10);
+const isYmd = (s: string) => /^\d{4}-\d{2}-\d{2}$/.test(s);
+// Non-throwing: an Invalid Date returns "" rather than crashing toISOString().
+const ymd = (d: Date) => (isNaN(d.getTime()) ? "" : d.toISOString().slice(0, 10));
 const addDays = (base: string, n: number) => { const d = new Date(`${base}T12:00:00`); d.setDate(d.getDate() + n); return ymd(d); };
 const diffDays = (a: string, b: string) => Math.round((new Date(`${b}T12:00:00`).getTime() - new Date(`${a}T12:00:00`).getTime()) / dayMs);
 const isWeekend = (d: string) => { const dow = new Date(`${d}T12:00:00`).getDay(); return dow === 0 || dow === 6; };
@@ -190,7 +192,9 @@ function TimelineView({ nodes, onSelect, onChanged }: { nodes: ProjectMapNode[];
 
   const rows = nodes
     .map(n => ({ node: n, span: nodeDateSpan(n) }))
-    .filter((r): r is { node: ProjectMapNode; span: NonNullable<ReturnType<typeof nodeDateSpan>> } => !!r.span);
+    // Drop any span that isn't clean YYYY-MM-DD — one bad date must not crash the view.
+    .filter((r): r is { node: ProjectMapNode; span: NonNullable<ReturnType<typeof nodeDateSpan>> } =>
+      !!r.span && isYmd(r.span.start) && isYmd(r.span.end));
   const undated = nodes.filter(n => !nodeDateSpan(n) && n.status !== "completed" && n.status !== "skipped");
 
   if (rows.length === 0) {

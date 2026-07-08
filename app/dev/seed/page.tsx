@@ -24,7 +24,7 @@ import { getUsers, upsertUser } from "@/lib/users/data";
 import { createProject, getAllProjects } from "@/lib/projects/data";
 import { createJob, createWorkOrder } from "@/lib/jobs/data";
 import { createAppointment, updateAppointment } from "@/lib/appointments/data";
-import { createForNode, setMapNodeExpected } from "@/lib/projects/map";
+import { createForNode, setMapNodeExpected, bindMapNodeRecord } from "@/lib/projects/map";
 import type { SampleType } from "@/lib/sample-data/types";
 
 const PLAN: Array<[SampleType, number]> = [
@@ -193,10 +193,15 @@ function seedShowcaseProject(): void {
     if (v.note) updateAppointment(appt.id, { handoffNote: v.note });
   }
 
+  // Bind the install job/WO to the install-job map node so the 5-day install
+  // drives the "Install Job Scheduled" + "Install Work Order" steps (not the
+  // site-visit node). The HVAC template's install job key is "schedule".
+  bindMapNodeRecord(`${proj.id}__schedule`, job.id);
+
   // Equipment on order → the "received" node goes waiting; give it a date so
   // the dated-wait bar (and the follow-up machinery) has something to chew on.
-  createForNode(proj.id, "material_request");
-  createForNode(proj.id, "purchase_order");
+  createForNode(proj.id, "material_request", `${proj.id}__matreq`);
+  createForNode(proj.id, "purchase_order", `${proj.id}__po`);
   setMapNodeExpected(`${proj.id}__received`, offsetYmd(2));
 }
 
