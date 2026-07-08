@@ -13,7 +13,7 @@ import {
   createProject, PROJECT_TYPE_LABELS,
   type ProjectType, type ProjectPriority,
 } from "@/lib/projects/data";
-import { templateForType } from "@/lib/projects/map-templates";
+import { templateForType, getMapTemplates } from "@/lib/projects/map-templates";
 
 const TYPE_OPTIONS = (Object.entries(PROJECT_TYPE_LABELS) as [ProjectType, string][])
   .map(([value, label]) => ({ value, label }));
@@ -41,7 +41,11 @@ export default function ProjectWizard({ onClose, onCreated }: {
   // Project fields (Step 2)
   const [name, setName]   = useState("");
   const [type, setType]   = useState<ProjectType>("installation");
+  // "" = auto (resolve the map by project type at build time); a specific id pins it.
+  const [mapTemplateId, setMapTemplateId] = useState("");
   const [priority, setPriority] = useState<ProjectPriority>("normal");
+  const mapTemplates = useMemo(() => getMapTemplates(), []);
+  const activeMap = (mapTemplateId ? mapTemplates.find(t => t.id === mapTemplateId) : undefined) ?? templateForType(type);
   const [estVal, setEstVal] = useState("");
   const [tech, setTech]   = useState("");
   const [startDate, setStartDate] = useState("");
@@ -97,6 +101,7 @@ export default function ProjectWizard({ onClose, onCreated }: {
       locationName: target.locationName, propertyAddress: target.propertyAddress,
       name: name.trim(), description: description.trim() || undefined,
       type, priority,
+      mapTemplateId: mapTemplateId || undefined,
       startDate: startDate || undefined, targetDate: targetDate || undefined,
       estimatedValue: estVal.trim() || undefined,
       assignedTo: tech || undefined, assignedToInitials: tech ? initialsOf(tech) : undefined,
@@ -164,7 +169,7 @@ export default function ProjectWizard({ onClose, onCreated }: {
                     <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{target.customerName}</p>
                     <p className="text-[11px] truncate" style={{ color: "var(--text-muted)" }}>{target.locationName || "—"}</p>
                   </div>
-                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0" style={{ backgroundColor: "#d1fae5", color: "#065f46" }}>Selected</span>
+                  <span className="inline-flex items-center gap-1 text-xs font-semibold shrink-0" style={{ color: "#16a34a" }}><span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: "#16a34a" }} />Selected</span>
                 </div>
               )}
             </>
@@ -197,12 +202,20 @@ export default function ProjectWizard({ onClose, onCreated }: {
                 </div>
               </div>
 
-              {/* The type selects the project's Map workflow. */}
-              <div className="rounded-lg px-3 py-2 flex items-start gap-2" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}>
-                <FolderKanban className="w-3.5 h-3.5 mt-0.5 shrink-0" style={{ color: "#0f8578" }} />
-                <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>
-                  Creates the <span style={{ color: "#0f8578", fontWeight: 600 }}>{templateForType(type).name}</span> workflow — milestones, linked records, and a connected project map.
-                </p>
+              {/* Which workflow Map this project runs. Auto follows the project
+                  type; pick a specific one to pin it (e.g. mini-split vs RTU). */}
+              <div>
+                <label className="block text-xs font-medium mb-1" style={{ color: "var(--text-secondary)" }}>Workflow Map</label>
+                <UiSelect value={mapTemplateId} onChange={setMapTemplateId} options={[
+                  { value: "", label: `Auto — by type (${templateForType(type).name})` },
+                  ...mapTemplates.map(t => ({ value: t.id, label: t.name })),
+                ]} />
+                <div className="mt-1.5 rounded-lg px-3 py-2 flex items-start gap-2" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}>
+                  <FolderKanban className="w-3.5 h-3.5 mt-0.5 shrink-0" style={{ color: "#0f8578" }} />
+                  <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>
+                    Runs the <span style={{ color: "#0f8578", fontWeight: 600 }}>{activeMap.name}</span> workflow — {activeMap.nodes.length} steps across {activeMap.groups.length} stages, with linked records and a connected map.
+                  </p>
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">

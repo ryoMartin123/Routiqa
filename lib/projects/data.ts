@@ -32,6 +32,7 @@ export interface Project {
   estimatedValue?: string;
   actualValue?: string;
   jobIds: string[];
+  mapTemplateId?: string;      // pinned workflow map; undefined = resolve by project type
   // Denormalized
   customerName: string;
   customerInitials: string;
@@ -93,6 +94,7 @@ export interface NewProjectInput {
   startDate?: string; targetDate?: string;
   estimatedValue?: string; propertyAddress?: string;
   assignedTo?: string; assignedToInitials?: string;
+  mapTemplateId?: string;
 }
 
 // Create a project (e.g. converted from a quote). Starts as a draft.
@@ -107,6 +109,7 @@ export function createProject(input: NewProjectInput): Project {
     startDate: input.startDate, targetDate: input.targetDate,
     assignedTo: input.assignedTo ?? "", assignedToInitials: input.assignedToInitials ?? "",
     estimatedValue: input.estimatedValue, jobIds: [],
+    mapTemplateId: input.mapTemplateId,
     customerName: input.customerName, customerInitials: input.customerInitials, locationName: input.locationName,
   };
   _extraProjects = [project, ...extraProjects()];

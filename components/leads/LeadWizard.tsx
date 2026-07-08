@@ -112,7 +112,7 @@ export default function LeadWizard({ preset, onClose, onCreated }: {
                       {account.status} · {[account.city, account.state].filter(Boolean).join(", ")}{account.locationName ? ` · ${account.locationName}` : ""}
                     </p>
                   </div>
-                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0" style={{ backgroundColor: "#d1fae5", color: "#065f46" }}>Selected</span>
+                  <span className="inline-flex items-center gap-1 text-xs font-semibold shrink-0" style={{ color: "#16a34a" }}><span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: "#16a34a" }} />Selected</span>
                 </div>
               )}
             </>

@@ -1197,7 +1197,7 @@ function DispatchBoard({ focus, mode, items, roster, availability, dayStart, day
           {/* Now-line continues through the time-header row */}
           {now != null && (
             <div className="absolute top-0 bottom-0 pointer-events-none z-10" style={{ left: `${(now.min / totalMin) * 100}%` }}>
-              <div className="h-full" style={{ borderLeft: "1.5px dashed rgba(124, 58, 237, 0.45)" }} />
+              <div className="h-full" style={{ borderLeft: "1.5px dashed rgba(15, 133, 120, 0.5)" }} />
             </div>
           )}
         </div>
@@ -1360,7 +1360,7 @@ function DispatchBoard({ focus, mode, items, roster, availability, dayStart, day
               {/* "Now" line — dashed, translucent purple; non-interactive, spans all rows */}
               {now != null && (
                 <div className="absolute top-0 bottom-0 pointer-events-none z-10" style={{ left: `${(now.min / totalMin) * 100}%` }}>
-                  <div className="h-full" style={{ borderLeft: "1.5px dashed rgba(124, 58, 237, 0.45)" }} />
+                  <div className="h-full" style={{ borderLeft: "1.5px dashed rgba(15, 133, 120, 0.5)" }} />
                 </div>
               )}
 

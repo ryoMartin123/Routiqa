@@ -29,40 +29,18 @@ export interface TemplateNode {
   notes?: string;
   percent?: number;           // billing nodes: % of the project contract this invoice bills
   deposit?: boolean;          // billing nodes: tag the invoice as a deposit
-  // ── Builder v2 capabilities (all optional) ──
-  durationDays?: number;            // expected duration / SLA in business days
+  // ── Optional node metadata ──
+  // Every node does one of three real jobs: WATCH a record (mirror), GATE the
+  // steps after it (deps + gate), or ACT when reached (billing percent creates
+  // an invoice). durationDays / checklist are honest planning metadata.
+  durationDays?: number;            // planning estimate in business days (not enforced)
   checklist?: NodeChecklistItem[];  // sub-items for a manual node
-  automations?: NodeAutomation[];   // hooks fired on ready/complete
-  condition?: NodeCondition;        // node only applies when this is met
 }
 
 // ─── Node capabilities ────────────────────────────────────
 export interface NodeChecklistItem { id: string; label: string; required?: boolean; }
 
-export type NodeAutomationTrigger = "ready" | "completed";
-export type NodeAutomationAction = "notify_assignee" | "notify_customer" | "create_task" | "auto_advance";
-export interface NodeAutomation { id: string; on: NodeAutomationTrigger; action: NodeAutomationAction; }
-
-export type ConditionField = "project_value" | "customer_type" | "permit_required" | "project_size";
-export type ConditionOp = "gt" | "lt" | "eq" | "is_true" | "is_false";
-export interface NodeCondition { field: ConditionField; op: ConditionOp; value?: string; }
-
-export const AUTOMATION_LABEL: Record<NodeAutomationAction, string> = {
-  notify_assignee: "Notify assignee",
-  notify_customer: "Send customer update",
-  create_task: "Create a follow-up task",
-  auto_advance: "Auto-advance to next step",
-};
-export const TRIGGER_LABEL: Record<NodeAutomationTrigger, string> = { ready: "When ready", completed: "When completed" };
-export const CONDITION_FIELD_LABEL: Record<ConditionField, string> = {
-  project_value: "Project value", customer_type: "Customer type", permit_required: "Permit required", project_size: "Project size",
-};
-export const CONDITION_OP_LABEL: Record<ConditionOp, string> = {
-  gt: "is greater than", lt: "is less than", eq: "equals", is_true: "is required", is_false: "is not required",
-};
-
 export function newChecklistItemId(): string { return `cl${Date.now().toString(36)}${Math.random().toString(36).slice(2, 4)}`; }
-export function newAutomationId(): string { return `au${Date.now().toString(36)}${Math.random().toString(36).slice(2, 4)}`; }
 
 export interface MapTemplate {
   id: string;
@@ -158,6 +136,15 @@ export function templateForType(type: ProjectType): MapTemplate {
 }
 export function templateById(id?: string): MapTemplate | undefined {
   return id ? getMapTemplates().find(t => t.id === id) : undefined;
+}
+
+// The map a project actually runs: its explicitly-chosen template if it has one,
+// otherwise the default for its project type. This is the ONE resolution both the
+// map builder and the group view must use, so a pinned template is honored
+// everywhere (fixes the old dead `templateById(undefined)` fall-through).
+export function templateForProject(p?: { mapTemplateId?: string; type?: ProjectType }): MapTemplate {
+  return (p?.mapTemplateId ? templateById(p.mapTemplateId) : undefined)
+    ?? templateForType((p?.type ?? "other") as ProjectType);
 }
 
 export function newMapTemplateId(): string { return `tpl-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`; }

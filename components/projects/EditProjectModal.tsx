@@ -6,6 +6,7 @@ import UiSelect from "@/components/ui/Select";
 import DatePicker from "@/components/ui/DatePicker";
 import { updateProject, type Project, type ProjectPriority } from "@/lib/projects/data";
 import { getProjectTypes, getProjectStages } from "@/lib/projects/settings";
+import { getMapTemplates, templateForType } from "@/lib/projects/map-templates";
 import { getBoardCandidates } from "@/lib/users/data";
 
 const PRIORITIES: ProjectPriority[] = ["low", "normal", "high", "urgent"];
@@ -46,6 +47,8 @@ export default function EditProjectModal({ project, onClose, onSaved }: {
   const [type, setType]         = useState<string>(project.type);
   const [stage, setStage]       = useState(project.stage ?? stages[0]?.key ?? "");
   const [priority, setPriority] = useState<ProjectPriority>(project.priority);
+  const [mapTemplateId, setMapTemplateId] = useState(project.mapTemplateId ?? "");
+  const mapTemplates = getMapTemplates();
   const [estVal, setEstVal]     = useState(project.estimatedValue ?? "");
   const [startDate, setStartDate]   = useState(toISO(project.startDate));
   const [targetDate, setTargetDate] = useState(toISO(project.targetDate));
@@ -59,6 +62,7 @@ export default function EditProjectModal({ project, onClose, onSaved }: {
       type: type as Project["type"],
       stage,
       priority,
+      mapTemplateId: mapTemplateId || undefined,
       estimatedValue: estVal.trim() || undefined,
       startDate: toDisplay(startDate) || undefined,
       targetDate: toDisplay(targetDate) || undefined,
@@ -104,6 +108,15 @@ export default function EditProjectModal({ project, onClose, onSaved }: {
               <label className="block text-xs font-medium mb-1" style={{ color: "var(--text-secondary)" }}>Estimated Value</label>
               <input value={estVal} onChange={e => setEstVal(e.target.value)} placeholder="e.g. $24,000" className={inputCls} style={inputStyle} />
             </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium mb-1" style={{ color: "var(--text-secondary)" }}>Workflow Map</label>
+            <UiSelect value={mapTemplateId} onChange={setMapTemplateId} options={[
+              { value: "", label: `Auto — by type (${templateForType(type as Project["type"]).name})` },
+              ...mapTemplates.map(t => ({ value: t.id, label: t.name })),
+            ]} />
+            <p className="mt-1 text-[11px]" style={{ color: "var(--text-muted)" }}>Changing the map re-derives this project&apos;s workflow from the new template.</p>
           </div>
 
           <div className="grid grid-cols-2 gap-3">

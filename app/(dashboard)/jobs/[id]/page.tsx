@@ -8,7 +8,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, ArrowUpRight, CheckCircle, Circle, ChevronRight, Phone, MapPin, User, Clock, Calendar, DollarSign, Briefcase, AlertTriangle, ListChecks, Plus, Trash2, Ban, RotateCcw, Info, Repeat, Users, Check, Receipt, CircleDollarSign, Wallet } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getJob, updateJob, deleteJob, getWorkOrder, getWorkOrderById, getWorkOrdersForJob, getJobNotes, resolveJobStatus, type Job, type JobStatus, type JobNoteType, type WorkOrderStatus } from "@/lib/jobs/data";
-import { getAppointmentsForJob, VISIT_TYPE_CONFIG, type AppointmentStatus } from "@/lib/appointments/data";
+import { getAppointmentsForJob, type AppointmentStatus } from "@/lib/appointments/data";
 import { useDataVersion } from "@/lib/sync/useDataVersion";
 import ReturnVisitModal from "@/components/jobs/ReturnVisitModal";
 import MultiDayBookModal from "@/components/calendar/MultiDayBookModal";
@@ -83,15 +83,11 @@ function VisitsTab({ jobId, onSchedule }: { jobId: string; onSchedule: () => voi
       ) : visits.map((v, i) => {
         const wo = getWorkOrderById(v.workOrderId);
         const m = APPT_STATUS_META[v.status];
-        const vt = v.visitType ? VISIT_TYPE_CONFIG[v.visitType] : undefined;
         return (
           <div key={v.id} className="group rounded-xl p-3.5 flex items-start gap-3" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
             <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 text-[11px] font-bold" style={{ backgroundColor: "var(--accent-soft-bg)", color: "var(--accent-text)" }}>{i + 1}</div>
             <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2 flex-wrap">
-                <Link href={`/work-orders/${v.workOrderId}`} className="text-sm font-semibold truncate hover:underline" style={{ color: "var(--text-primary)" }}>{wo?.title || `Visit ${i + 1}`}</Link>
-                {vt && <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: vt.color + "22", color: vt.color }}>{vt.short}</span>}
-              </div>
+              <Link href={`/work-orders/${v.workOrderId}`} className="text-sm font-semibold truncate hover:underline block" style={{ color: "var(--text-primary)" }}>{wo?.title || `Visit ${i + 1}`}</Link>
               <div className="flex items-center gap-3 mt-1 text-xs" style={{ color: "var(--text-muted)" }}>
                 <span className="inline-flex items-center gap-1"><Calendar className="w-3 h-3" /> {v.scheduledDate || "Unscheduled"}{v.scheduledTime ? ` · ${v.scheduledTime}` : ""}</span>
                 <span className="inline-flex items-center gap-1"><Clock className="w-3 h-3" /> {v.durationMinutes} min</span>

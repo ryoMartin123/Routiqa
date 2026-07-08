@@ -6,8 +6,8 @@
 // gate the flow (the first incomplete node is the "next step"). Mock/local.
 // Ownership: the map LINKS records owned by CRM / Inventory / Accounting.
 
-import { getProject, type ProjectType } from "./data";
-import { templateForType, templateById, type MapTemplate, type MirrorSource } from "./map-templates";
+import { getProject } from "./data";
+import { templateForProject, type MapTemplate, type MirrorSource } from "./map-templates";
 import { getJobsForProject, getWorkOrder, createJob } from "@/lib/jobs/data";
 import { getAppointmentsForJob, getAppointmentsForWorkOrder } from "@/lib/appointments/data";
 import { createTask } from "@/lib/tasks/data";
@@ -192,7 +192,7 @@ export function getProjectMap(projectId: string): ProjectMapNode[] {
 
 function buildProjectMap(projectId: string): ProjectMapNode[] {
   const project = getProject(projectId);
-  const template: MapTemplate = templateById(undefined) ?? templateForType((project?.type ?? "other") as ProjectType);
+  const template: MapTemplate = templateForProject(project);
   const overdue = !!project?.targetDate && new Date(project.targetDate).getTime() < Date.now();
 
   // First pass — base status + links.
@@ -256,8 +256,7 @@ function buildProjectMap(projectId: string): ProjectMapNode[] {
 }
 
 export function getProjectMapByGroup(projectId: string): { group: string; nodes: ProjectMapNode[] }[] {
-  const project = getProject(projectId);
-  const template = templateForType((project?.type ?? "other") as ProjectType);
+  const template = templateForProject(getProject(projectId));
   const nodes = getProjectMap(projectId);
   return template.groups.map(group => ({ group, nodes: nodes.filter(n => n.group === group) }));
 }

@@ -9,16 +9,14 @@
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
-  X, Plus, Minus, Trash2, ChevronUp, ChevronDown, ArrowLeft, GitBranch, Clock, ListChecks, Zap, Split, SlidersHorizontal, Maximize,
+  X, Plus, Minus, Trash2, ChevronUp, ChevronDown, ArrowLeft, GitBranch, Clock, ListChecks, Split, SlidersHorizontal, Maximize,
   Layers, Flag, Briefcase, CheckSquare, ClipboardList, Package, ShoppingCart, HardHat, FileText, Receipt,
 } from "lucide-react";
 import UiSelect from "@/components/ui/Select";
 import { NODE_TYPE_LABEL, type MapNodeType } from "@/lib/projects/map";
 import {
   type MapTemplate, type TemplateNode, type MirrorSource,
-  type NodeAutomation, type NodeAutomationAction, type NodeAutomationTrigger, type NodeCondition, type ConditionField, type ConditionOp,
-  AUTOMATION_LABEL, TRIGGER_LABEL, CONDITION_FIELD_LABEL, CONDITION_OP_LABEL,
-  newMapNodeKey, newChecklistItemId, newAutomationId,
+  newMapNodeKey, newChecklistItemId,
 } from "@/lib/projects/map-templates";
 import type { ProjectTypeOption } from "@/lib/projects/settings";
 
@@ -356,10 +354,9 @@ function NodeCard({ node, selected, onClick, onDoubleClick, onUp, onDown, first,
 }) {
   const Icon = TYPE_ICON[node.type] ?? CheckSquare;
   const badges = [
+    node.type === "billing" && node.percent != null ? { icon: Receipt, label: `${node.percent}%` } : null,
     node.durationDays ? { icon: Clock, label: `${node.durationDays}d` } : null,
     node.checklist?.length ? { icon: ListChecks, label: String(node.checklist.length) } : null,
-    node.automations?.length ? { icon: Zap, label: String(node.automations.length) } : null,
-    node.condition ? { icon: Split, label: "if" } : null,
     node.deps.length ? { icon: GitBranch, label: String(node.deps.length) } : null,
   ].filter(Boolean) as { icon: typeof Clock; label: string }[];
   return (
@@ -431,9 +428,8 @@ function Inspector({ node, draft, onPatch, onSetSource, onToggleDep, onRemove, o
       )}
       <Field label="Gate reason (shown when blocked)"><input value={node.gate ?? ""} onChange={e => onPatch({ gate: e.target.value || undefined })} placeholder="e.g. Equipment not received" className={inputCls} style={inputStyle} /></Field>
 
+      {node.type === "billing" && <BillingEditor node={node} onPatch={onPatch} />}
       <ChecklistEditor node={node} onPatch={onPatch} />
-      <AutomationsEditor node={node} onPatch={onPatch} />
-      <ConditionEditor node={node} onPatch={onPatch} />
 
       <Field label="Notes"><textarea value={node.notes ?? ""} onChange={e => onPatch({ notes: e.target.value || undefined })} rows={2} className={inputCls} style={inputStyle} /></Field>
       </fieldset>
@@ -461,50 +457,30 @@ function ChecklistEditor({ node, onPatch }: { node: TemplateNode; onPatch: (p: P
   );
 }
 
-// ── Automations ──
-function AutomationsEditor({ node, onPatch }: { node: TemplateNode; onPatch: (p: Partial<TemplateNode>) => void }) {
-  const items = node.automations ?? [];
-  const set = (n: NodeAutomation[]) => onPatch({ automations: n.length ? n : undefined });
+// ── Billing (staged) ──
+// A billing node with a percent raises an invoice for that share of the
+// project's estimated value when the step is reached (e.g. 50 / 50, 20 / 40 / 40).
+// Leave it blank to instead watch the project's invoice via the Source picker.
+function BillingEditor({ node, onPatch }: { node: TemplateNode; onPatch: (p: Partial<TemplateNode>) => void }) {
   return (
-    <Capability icon={Zap} title="Automations" count={items.length}>
-      <div className="space-y-2">
-        {items.map(au => (
-          <div key={au.id} className="flex items-center gap-1.5">
-            <UiSelect size="sm" value={au.on} onChange={v => set(items.map(x => x.id === au.id ? { ...x, on: v as NodeAutomationTrigger } : x))} options={(["ready", "completed"] as NodeAutomationTrigger[]).map(t => ({ value: t, label: TRIGGER_LABEL[t] }))} />
-            <UiSelect size="sm" value={au.action} onChange={v => set(items.map(x => x.id === au.id ? { ...x, action: v as NodeAutomationAction } : x))} options={(Object.keys(AUTOMATION_LABEL) as NodeAutomationAction[]).map(a => ({ value: a, label: AUTOMATION_LABEL[a] }))} />
-            <button onClick={() => set(items.filter(x => x.id !== au.id))} className="shrink-0" style={{ color: "#9ca3af" }}><X className="w-3.5 h-3.5" /></button>
-          </div>
-        ))}
-        <button onClick={() => set([...items, { id: newAutomationId(), on: "completed", action: "notify_assignee" }])} className="flex items-center gap-1 text-xs font-medium" style={{ color: ACCENT }}><Plus className="w-3.5 h-3.5" /> Add automation</button>
-      </div>
-    </Capability>
-  );
-}
-
-// ── Condition ──
-function ConditionEditor({ node, onPatch }: { node: TemplateNode; onPatch: (p: Partial<TemplateNode>) => void }) {
-  const c = node.condition;
-  const fields = Object.keys(CONDITION_FIELD_LABEL) as ConditionField[];
-  const ops = Object.keys(CONDITION_OP_LABEL) as ConditionOp[];
-  const boolField = c?.field === "permit_required";
-  return (
-    <Capability icon={Split} title="Condition" count={c ? 1 : 0}>
-      {c ? (
-        <div className="space-y-2">
-          <UiSelect size="sm" value={c.field} onChange={v => onPatch({ condition: { ...c, field: v as ConditionField } })} options={fields.map(f => ({ value: f, label: CONDITION_FIELD_LABEL[f] }))} />
-          <div className="flex items-center gap-1.5">
-            <UiSelect size="sm" value={c.op} onChange={v => onPatch({ condition: { ...c, op: v as ConditionOp } })} options={ops.map(o => ({ value: o, label: CONDITION_OP_LABEL[o] }))} />
-            {!boolField && c.op !== "is_true" && c.op !== "is_false" && (
-              <input value={c.value ?? ""} onChange={e => onPatch({ condition: { ...c, value: e.target.value } })} placeholder="value" className={`${inputCls} py-1.5 text-xs`} style={inputStyle} />
-            )}
-          </div>
-          <button onClick={() => onPatch({ condition: undefined })} className="text-xs" style={{ color: "#9ca3af" }}>Remove condition</button>
-          <p className="text-[10px]" style={{ color: "var(--text-muted)" }}>This step only appears when the condition is met.</p>
+    <div className="rounded-lg p-3 space-y-2.5" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}>
+      <p className="text-[11px] font-semibold uppercase tracking-wider flex items-center gap-1.5" style={{ color: "var(--text-muted)" }}><Receipt className="w-3.5 h-3.5" /> Staged billing</p>
+      <Field label="% of contract">
+        <div className="flex items-center gap-1.5">
+          <input type="number" min={0} max={100} value={node.percent ?? ""} onChange={e => onPatch({ percent: e.target.value ? Number(e.target.value) : undefined })} placeholder="—" className={inputCls} style={inputStyle} />
+          <span className="text-xs shrink-0" style={{ color: "var(--text-muted)" }}>%</span>
         </div>
-      ) : (
-        <button onClick={() => onPatch({ condition: { field: "project_value", op: "gt" } })} className="flex items-center gap-1 text-xs font-medium" style={{ color: ACCENT }}><Plus className="w-3.5 h-3.5" /> Add condition</button>
-      )}
-    </Capability>
+      </Field>
+      <label className="flex items-center gap-2 cursor-pointer">
+        <Toggle on={!!node.deposit} onChange={v => onPatch({ deposit: v })} />
+        <span className="text-xs" style={{ color: "var(--text-secondary)" }}>Tag the invoice as a deposit</span>
+      </label>
+      <p className="text-[10px]" style={{ color: "var(--text-muted)" }}>
+        {node.percent != null
+          ? `Raises an invoice for ${node.percent}% of the project's estimated value when this step is reached.`
+          : "Blank = watch the project's invoice instead (set the Source above to “Invoice”)."}
+      </p>
+    </div>
   );
 }
 
