@@ -31,7 +31,11 @@ const MIRROR_LABEL: Record<MirrorSource, string> = {
   purchase_order: "Purchase Order", equipment_received: "Equipment Received", subcontractor: "Subcontractor", invoice: "Invoice",
 };
 const MIRROR_SOURCES = Object.keys(MIRROR_LABEL) as MirrorSource[];
-const SOURCE_OPTS = [{ value: "manual", label: "Manual checkbox" }, ...MIRROR_SOURCES.map(s => ({ value: s, label: `Mirror → ${MIRROR_LABEL[s]}` }))];
+const SOURCE_OPTS = [
+  { value: "manual", label: "Manual checkbox" },
+  { value: "checklist", label: "Checklist" },
+  ...MIRROR_SOURCES.map(s => ({ value: s, label: `Mirror → ${MIRROR_LABEL[s]}` })),
+];
 
 const inputCls = "w-full rounded-lg px-3 py-2 text-sm outline-none";
 const inputStyle = { border: "1px solid var(--border)", backgroundColor: "var(--bg-surface)", color: "var(--text-primary)" } as const;
@@ -67,9 +71,17 @@ export default function MapBuilder({
     if (j < 0 || j >= arr.length) return d;
     [arr[i], arr[j]] = [arr[j], arr[i]]; return { ...d, nodes: arr };
   });
-  const setSource = (key: string, v: string) =>
-    v === "manual" ? patchNode(key, { manual: true, mirror: undefined, createable: false })
-                   : patchNode(key, { manual: false, mirror: v as MirrorSource, createable: true });
+  const setSource = (key: string, v: string) => {
+    if (v === "manual") { patchNode(key, { manual: true, mirror: undefined, createable: false, checklist: undefined }); return; }
+    if (v === "checklist") {
+      // Checklist source = a manual step worked through item by item. Seed one
+      // empty item so the editor is ready; keep existing items if any.
+      const node = draft.nodes.find(n => n.key === key);
+      patchNode(key, { manual: true, mirror: undefined, createable: false, checklist: node?.checklist?.length ? node.checklist : [{ id: newChecklistItemId(), label: "" }] });
+      return;
+    }
+    patchNode(key, { manual: false, mirror: v as MirrorSource, createable: true, checklist: undefined });
+  };
   const toggleDep = (key: string, dep: string) => {
     const n = draft.nodes.find(x => x.key === key); if (!n) return;
     patchNode(key, { deps: n.deps.includes(dep) ? n.deps.filter(d => d !== dep) : [...n.deps, dep] });
@@ -403,7 +415,7 @@ function Inspector({ node, draft, onPatch, onSetSource, onToggleDep, onRemove, o
         <Field label="Lane"><UiSelect size="sm" value={node.group} onChange={v => onPatch({ group: v })} options={draft.groups.map(g => ({ value: g, label: g }))} /></Field>
         <Field label="Type"><UiSelect size="sm" value={node.type} onChange={v => onPatch({ type: v as MapNodeType })} options={NODE_TYPES.map(t => ({ value: t, label: NODE_TYPE_LABEL[t] }))} /></Field>
       </div>
-      <Field label="Source"><UiSelect size="sm" value={node.manual ? "manual" : (node.mirror ?? "manual")} onChange={onSetSource} options={SOURCE_OPTS} /></Field>
+      <Field label="Source"><UiSelect size="sm" value={node.manual ? (node.checklist?.length ? "checklist" : "manual") : (node.mirror ?? "manual")} onChange={onSetSource} options={SOURCE_OPTS} /></Field>
       {!node.manual && (
         <label className="flex items-center gap-2 cursor-pointer">
           <Toggle on={!!node.createable} onChange={v => onPatch({ createable: v })} />
@@ -429,7 +441,9 @@ function Inspector({ node, draft, onPatch, onSetSource, onToggleDep, onRemove, o
       <Field label="Gate reason (shown when blocked)"><input value={node.gate ?? ""} onChange={e => onPatch({ gate: e.target.value || undefined })} placeholder="e.g. Equipment not received" className={inputCls} style={inputStyle} /></Field>
 
       {node.type === "billing" && <BillingEditor node={node} onPatch={onPatch} />}
-      <ChecklistEditor node={node} onPatch={onPatch} />
+      {/* Checklist items drive completion only for manual steps; a mirror's
+          record drives it instead, so only offer the editor when manual. */}
+      {node.manual && <ChecklistEditor node={node} onPatch={onPatch} />}
 
       <Field label="Notes"><textarea value={node.notes ?? ""} onChange={e => onPatch({ notes: e.target.value || undefined })} rows={2} className={inputCls} style={inputStyle} /></Field>
       </fieldset>

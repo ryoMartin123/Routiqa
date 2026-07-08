@@ -7,7 +7,7 @@
 // Ownership: the map LINKS records owned by CRM / Inventory / Accounting.
 
 import { getProject } from "./data";
-import { templateForProject, type MapTemplate, type MirrorSource } from "./map-templates";
+import { templateForProject, type MapTemplate, type MirrorSource, type NodeChecklistItem } from "./map-templates";
 import { getJobsForProject, getJob, getWorkOrder, getWorkOrderById, createJob } from "@/lib/jobs/data";
 import { getAppointmentsForJob, getAppointmentsForWorkOrder } from "@/lib/appointments/data";
 import { createTask } from "@/lib/tasks/data";
@@ -63,6 +63,7 @@ export interface ProjectMapNode {
   expectedDate?: string;    // yyyy-mm-dd — when a waiting/blocked step should resolve
   percent?: number;         // billing nodes: % of contract this stage bills
   deposit?: boolean;
+  checklist?: NodeChecklistItem[];  // checklist-source steps: the items you work through
   order: number;
   notes?: string;
 }
@@ -118,6 +119,34 @@ export function setMapNodeStatus(nodeId: string, status: MapNodeStatus): void {
   const set = manualDone();
   if (status === "completed") set.add(nodeId); else set.delete(nodeId);
   try { localStorage.setItem(DONE_KEY, JSON.stringify([...set])); } catch { /* ignore */ }
+}
+
+// ─── Checklist-item state (per node, persisted) ───────────
+// A checklist-source node is worked through item by item; its completion is
+// derived from these checks (all required items done — or all items if none is
+// marked required). Keyed by node id → checked item ids.
+const CHECK_KEY = "crm-map-checklist";
+function checkStore(): Record<string, string[]> {
+  if (typeof window === "undefined") return {};
+  try { return JSON.parse(localStorage.getItem(CHECK_KEY) || "{}"); } catch { return {}; }
+}
+export function getCheckedItems(nodeId: string): string[] { return checkStore()[nodeId] ?? []; }
+export function toggleChecklistItem(nodeId: string, itemId: string): void {
+  const all = checkStore();
+  const cur = new Set(all[nodeId] ?? []);
+  if (cur.has(itemId)) cur.delete(itemId); else cur.add(itemId);
+  all[nodeId] = [...cur];
+  try { localStorage.setItem(CHECK_KEY, JSON.stringify(all)); } catch { /* ignore */ }
+}
+// Progress for a checklist node — done/total (all items) + whether it's complete
+// (every REQUIRED item, or every item if none required, is checked).
+export function checklistProgress(node: ProjectMapNode): { done: number; total: number; complete: boolean } | null {
+  const items = node.checklist;
+  if (!items?.length) return null;
+  const checked = new Set(getCheckedItems(node.id));
+  const gate = items.filter(i => i.required);
+  const need = gate.length ? gate : items;
+  return { done: items.filter(i => checked.has(i.id)).length, total: items.length, complete: need.every(i => checked.has(i.id)) };
 }
 
 // ─── Mirror resolution — node status from a real record ───
@@ -266,7 +295,16 @@ function buildProjectMap(projectId: string): ProjectMapNode[] {
     let baseStatus: BaseStatus = null;
     let link: MirrorResult = { status: null };
     if (t.manual) {
-      baseStatus = (manualDone().has(id) || t.key === "created") ? "completed" : null;
+      if (t.checklist && t.checklist.length > 0) {
+        // Checklist source: status is derived from the items worked through.
+        const checked = new Set(getCheckedItems(id));
+        const gate = t.checklist.filter(c => c.required);
+        const need = gate.length ? gate : t.checklist;
+        const anyDone = t.checklist.some(c => checked.has(c.id));
+        baseStatus = need.every(c => checked.has(c.id)) ? "completed" : anyDone ? "in_progress" : null;
+      } else {
+        baseStatus = (manualDone().has(id) || t.key === "created") ? "completed" : null;
+      }
     } else if (t.type === "billing" && t.percent != null) {
       const invId = metaStore()[id]?.invoiceId;
       const inv = invId ? getInvoice(invId) : undefined;
@@ -315,7 +353,7 @@ function buildProjectMap(projectId: string): ProjectMapNode[] {
       status, assignedTo: b.t.assignedTo, manual: !!b.t.manual, mirror: b.t.mirror, createable: !!b.t.createable,
       linkedApp: b.link.linkedApp, linkedLabel: b.link.linkedLabel, linkedId: b.link.linkedId,
       dependencies: deps, blockedReason, expectedDate: metaStore()[b.id]?.expectedDate,
-      percent: b.t.percent, deposit: b.t.deposit, order: i, notes: b.t.notes,
+      percent: b.t.percent, deposit: b.t.deposit, checklist: b.t.checklist, order: i, notes: b.t.notes,
     };
   });
 }

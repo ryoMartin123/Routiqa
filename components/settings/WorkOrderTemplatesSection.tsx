@@ -113,15 +113,26 @@ export default function WorkOrderTemplatesSection() {
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 min-w-0">
                     <p className="text-sm font-semibold truncate" style={{ color: "var(--text-primary)" }}>{t.name}</p>
-                    {/* Linked job type — the chip makes the type→template wiring visible at a glance. */}
+                    {/* Linked job type — revealed on card hover; hovering the chip
+                        itself explains the job-type ↔ work-order linkage (delayed
+                        tooltip, same timing as the settings scope hints). */}
                     {(() => {
                       const jt = jobTypes.find(j => j.key === t.jobTypeKey);
-                      return jt ? (
-                        <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded inline-flex items-center gap-1 shrink-0" style={{ backgroundColor: jt.color + "22", color: jt.color }}>
-                          <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: jt.color }} />{jt.name}
+                      const explain = jt
+                        ? `Linked job type. Booking a ${jt.name} job suggests this work-order template — that's how a job type and its work order connect.`
+                        : "No job type linked — this template won't be suggested automatically when a job is booked.";
+                      return (
+                        <span className="relative group/jt inline-flex shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                          {jt ? (
+                            <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded inline-flex items-center gap-1" style={{ backgroundColor: jt.color + "22", color: jt.color }}>
+                              <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: jt.color }} />{jt.name}
+                            </span>
+                          ) : (
+                            <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>No job type</span>
+                          )}
+                          <span className="pointer-events-none absolute top-full left-0 mt-2 w-56 px-3 py-2 rounded-lg text-[11px] leading-snug text-left opacity-0 group-hover/jt:opacity-100 transition-opacity duration-200 group-hover/jt:delay-700 z-30"
+                            style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", color: "var(--text-secondary)", boxShadow: "0 12px 32px -8px rgba(0,0,0,0.4)" }}>{explain}</span>
                         </span>
-                      ) : (
-                        <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded shrink-0" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>No job type</span>
                       );
                     })()}
                   </div>

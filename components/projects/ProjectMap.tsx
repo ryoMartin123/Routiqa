@@ -11,13 +11,14 @@ import SegmentedProgress from "@/components/shared/SegmentedProgress";
 import { Fragment, useEffect, useMemo, useState } from "react";
 import {
   Layers, Flag, Briefcase, CheckSquare, ClipboardList, Package, ShoppingCart, HardHat,
-  FileText, Receipt, ChevronRight, Check, AlertTriangle, CornerDownRight, User, Calendar, Link2,
+  FileText, Receipt, ChevronRight, Check, CheckCircle2, AlertTriangle, CornerDownRight, User, Calendar, Link2,
   Plus, ExternalLink, ArrowLeft, ListChecks, GitBranch, Circle,
 } from "lucide-react";
 import {
   getProjectMap, getProjectMapByGroup, setMapNodeStatus, createForNode, isQuickCreate, SOURCE_TAB,
   NODE_TYPE_LABEL, NODE_STATUS_META, nodeDayProgress, setMapNodeExpected, sweepDatedWaits,
   billingNodeAmount, billingNodeAmountLabel, createBillingInvoiceForNode, nodeDateSpan,
+  getCheckedItems, toggleChecklistItem, checklistProgress,
   type ProjectMapNode, type MapNodeType, type MapNodeStatus,
 } from "@/lib/projects/map";
 import DatePicker from "@/components/ui/DatePicker";
@@ -35,6 +36,7 @@ const TYPE_ICON: Record<MapNodeType, typeof Layers> = {
 
 // What completes this step (shown on the detail page so the user knows the goal).
 function completionRule(node: ProjectMapNode): string {
+  if (node.manual && node.checklist?.length) return "Completes when every required checklist item is checked off.";
   if (node.manual) return "This is a manual step — mark it complete once it's done.";
   switch (node.mirror) {
     case "quote": return "Completes automatically when an estimate is approved.";
@@ -54,8 +56,8 @@ function whatNow(node: ProjectMapNode): string {
     case "completed": return "This step is complete. Nothing more to do.";
     case "blocked": return node.blockedReason ?? "This step is blocked — resolve the issue below.";
     case "waiting": return node.blockedReason ?? "Waiting on materials / an external step.";
-    case "in_progress": return "In progress — open the linked record to keep it moving.";
-    case "ready": return node.manual ? "Ready — mark it complete when finished." : node.linkedLabel ? "Ready — open the record to continue." : "Ready to start — create the record to begin.";
+    case "in_progress": return node.manual && node.checklist?.length ? "In progress — keep working through the checklist below." : "In progress — open the linked record to keep it moving.";
+    case "ready": return node.manual && node.checklist?.length ? "Ready — work through the checklist below." : node.manual ? "Ready — mark it complete when finished." : node.linkedLabel ? "Ready — open the record to continue." : "Ready to start — create the record to begin.";
     default: return "Not started yet — finish the prerequisites below first.";
   }
 }
@@ -422,6 +424,17 @@ function NodeCard({ node, deps, onClick }: { node: ProjectMapNode; deps: Project
             </div>
           );
         })()}
+        {/* Checklist-source steps: how many items are done */}
+        {(() => {
+          const cp = checklistProgress(node);
+          if (!cp || done) return null;
+          return (
+            <div className="mt-1.5">
+              <p className="text-[10px] font-semibold mb-1 flex items-center gap-1" style={{ color: "var(--text-secondary)" }}><ListChecks className="w-3 h-3" /> {cp.done} of {cp.total}</p>
+              <SegmentedProgress segments={node.checklist!.map(it => ({ filled: getCheckedItems(node.id).includes(it.id), color: "#0f8578" }))} />
+            </div>
+          );
+        })()}
         {(node.status === "blocked" || node.status === "waiting") && node.blockedReason && (
           <p className="text-[10px] mt-1 flex items-center gap-1" style={{ color: node.status === "blocked" ? "#dc2626" : "#b45309" }}><AlertTriangle className="w-3 h-3 shrink-0" /> {node.blockedReason}</p>
         )}
@@ -465,9 +478,12 @@ function NodeDetail({ node, allNodes, byId, onBack, onSelectNode, onOpenTab, onC
   const openTab = () => (tab && onOpenTab ? onOpenTab(tab) : undefined);
 
   // The primary "do this" action.
+  const isChecklist = node.manual && !!node.checklist?.length;
   let primary: React.ReactNode = null;
   if (done) {
     primary = <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm" style={{ backgroundColor: "#d1fae5", color: "#065f46" }}><Check className="w-4 h-4" /> This step is complete</div>;
+  } else if (isChecklist) {
+    primary = null;   // the checklist below drives completion
   } else if (node.manual) {
     primary = <button onClick={onComplete} className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg text-sm font-medium text-white hover:brightness-110" style={{ backgroundColor: ACCENT }}><Check className="w-4 h-4" /> Mark Complete</button>;
   } else if (node.linkedLabel) {
@@ -555,6 +571,26 @@ function NodeDetail({ node, allNodes, byId, onBack, onSelectNode, onOpenTab, onC
                 </label>
                 <DatePicker size="sm" value={node.expectedDate ?? ""} className="w-44"
                   onChange={d => { setMapNodeExpected(node.id, d); onChanged(); }} />
+              </div>
+            )}
+            {/* Checklist source: the items are the step — work through them here */}
+            {isChecklist && node.checklist && (
+              <div className="mt-4 space-y-1.5">
+                {node.checklist.map(item => {
+                  const checked = getCheckedItems(node.id).includes(item.id);
+                  return (
+                    <button key={item.id} onClick={() => { toggleChecklistItem(node.id, item.id); onChanged(); }}
+                      className="flex items-start gap-2 w-full text-left group">
+                      {checked
+                        ? <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0" style={{ color: "#16a34a" }} />
+                        : <Circle className="w-4 h-4 mt-0.5 shrink-0" style={{ color: "var(--text-muted)" }} />}
+                      <span className="text-sm" style={{ color: checked ? "var(--text-muted)" : "var(--text-primary)", textDecoration: checked ? "line-through" : "none" }}>
+                        {item.label || "Untitled item"}
+                        {item.required && <span className="ml-1.5 text-[10px] font-semibold" style={{ color: "#dc2626" }}>Required</span>}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
             )}
             <div className="mt-4 space-y-2">
