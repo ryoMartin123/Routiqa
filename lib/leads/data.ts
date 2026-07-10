@@ -2,6 +2,8 @@
 // Maps to future DB tables: leads, lead_notes, lead_tasks
 // Supabase: replace ALL_LEADS with a .select() query filtered by org/company/location.
 
+import { emitAutomationEvent } from "@/lib/marketing/automation-engine";
+
 export type LeadStage =
   | "new_lead"
   | "contacted"
@@ -35,6 +37,7 @@ export interface Lead {
   title: string;
   stage: LeadStage;
   source: LeadSource;
+  sourceId?: string;        // managed marketing source (lib/marketing/lead-sources) this lead was filed under
   estimatedValue?: string;
 
   assignedTo: string;
@@ -153,6 +156,7 @@ export interface NewLeadInput {
 
   title: string;
   source: LeadSource;
+  sourceId?: string;             // managed marketing source this lead was filed under
   stage?: LeadStage;             // defaults to "new_lead"
   estimatedValue?: string;
   assignedTo?: string;           // defaults to "Unassigned"
@@ -199,6 +203,7 @@ export function createLead(input: NewLeadInput): Lead {
     title: input.title.trim(),
     stage: input.stage ?? "new_lead",
     source: input.source,
+    sourceId: input.sourceId,
     estimatedValue: input.estimatedValue?.trim() || undefined,
     assignedTo,
     assignedToInitials: assignedTo === "Unassigned" ? "—" : initialsOf(assignedTo),
@@ -214,6 +219,12 @@ export function createLead(input: NewLeadInput): Lead {
   };
   _extra = [lead, ...extraLeads()];
   persistLeads();
+  emitAutomationEvent("lead_created", {
+    subject: lead.customerName,
+    companyId: lead.companyId, locationId: lead.locationId,
+    customerId: lead.accountId, customerName: lead.customerName,
+    fields: { lead_source: lead.source },
+  });
   return lead;
 }
 

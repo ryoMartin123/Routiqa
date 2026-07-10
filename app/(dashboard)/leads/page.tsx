@@ -13,6 +13,7 @@ import {
   getAllLeads, LEAD_STAGE_CONFIG, LEAD_SOURCE_LABELS, leadAgeDays, getLeadTasks,
   type Lead, type LeadStage, type LeadSource,
 } from "@/lib/leads/data";
+import { leadSourceLabel } from "@/lib/marketing/lead-sources";
 import LeadWizard from "@/components/leads/LeadWizard";
 import { getStages, type PipelineStage, type StageCategory } from "@/lib/pipelines/data";
 import { useHierarchy } from "@/components/providers/HierarchyProvider";
@@ -112,7 +113,7 @@ function PipelineCard({ lead }: { lead: Lead }) {
           {lead.estimatedValue ?? "TBD"}
         </span>
         <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>
-          {LEAD_SOURCE_LABELS[lead.source]}
+          {leadSourceLabel(lead)}
         </span>
       </div>
 
@@ -615,7 +616,7 @@ export default function LeadsPage() {
 
                   {/* Source */}
                   <span className="text-sm" style={{ color: "var(--text-secondary)" }}>
-                    {LEAD_SOURCE_LABELS[lead.source]}
+                    {leadSourceLabel(lead)}
                   </span>
 
                   {/* Value */}
@@ -702,10 +703,11 @@ function OverviewView({ contextLeads, resolve, openStages, summaryCards }: {
   });
   const maxStage = Math.max(1, ...byStage.map(b => b.count));
 
-  // Leads by source
-  const sourceMap = new Map<LeadSource, number>();
-  contextLeads.forEach(l => sourceMap.set(l.source, (sourceMap.get(l.source) ?? 0) + 1));
-  const bySource = Array.from(sourceMap, ([k, v]) => ({ label: LEAD_SOURCE_LABELS[k] ?? k, count: v })).sort((a, b) => b.count - a.count);
+  // Leads by source — grouped by display name so managed custom sources
+  // (e.g. "Trade show") report under their own name, not "Other".
+  const sourceMap = new Map<string, number>();
+  contextLeads.forEach(l => { const k = leadSourceLabel(l); sourceMap.set(k, (sourceMap.get(k) ?? 0) + 1); });
+  const bySource = Array.from(sourceMap, ([label, count]) => ({ label, count })).sort((a, b) => b.count - a.count);
   const maxSource = Math.max(1, ...bySource.map(s => s.count));
 
   // Leads by rep (value-weighted)

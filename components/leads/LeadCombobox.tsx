@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown, Search, Check } from "lucide-react";
 import { useHierarchy } from "@/components/providers/HierarchyProvider";
-import { getAllLeads, getLead, LEAD_SOURCE_LABELS, LEAD_STAGE_CONFIG, type Lead } from "@/lib/leads/data";
+import { getAllLeads, getLead, LEAD_STAGE_CONFIG, type Lead } from "@/lib/leads/data";
+import { leadSourceLabel } from "@/lib/marketing/lead-sources";
 
 interface Props {
   value:        string;                 // selected lead id ("" = none)
@@ -40,7 +41,7 @@ export default function LeadCombobox({
     const q = query.trim().toLowerCase();
     if (!q) return scoped;
     const has = (v?: string) => (v ?? "").toLowerCase().includes(q);
-    return scoped.filter(l => has(l.customerName) || has(l.title) || has(LEAD_SOURCE_LABELS[l.source]) || has(l.customerPhone));
+    return scoped.filter(l => has(l.customerName) || has(l.title) || has(leadSourceLabel(l)) || has(l.customerPhone));
   }, [scoped, query]);
 
   const selected: Lead | undefined = value ? getLead(value) : undefined;

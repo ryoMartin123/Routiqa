@@ -39,13 +39,14 @@ export function stageIcon(key?: string): typeof Briefcase {
   return (key && JOB_STAGE_ICON[key]) || Briefcase;
 }
 
-export default function JobStageControl({ jobId, statusKey, onChanged, size = 18, variant = "badge", barColor }: {
+export default function JobStageControl({ jobId, statusKey, onChanged, size = 18, variant = "badge", barColor, readOnly = false }: {
   jobId: string;
   statusKey?: string;        // fallback status for non-job items (static icon)
   onChanged?: () => void;
   size?: number;
   variant?: "badge" | "bar"; // "bar" = full-height colored left section on a card
   barColor?: string;         // bar background (defaults to the status color)
+  readOnly?: boolean;        // display-only (calendar lenses) — no status menu
 }) {
   const { principal, me } = usePermissions();
   const btnRef = useRef<HTMLButtonElement>(null);
@@ -69,8 +70,8 @@ export default function JobStageControl({ jobId, statusKey, onChanged, size = 18
     : { width: badge, height: badge, backgroundColor: color + "22" };
   const iconColor = isBar ? "#fff" : color;
 
-  // Non-job item → static icon only (no lifecycle to drive).
-  if (!job) {
+  // Non-job item or a read-only lens → static icon only.
+  if (!job || readOnly) {
     return (
       <span className={isBar ? "flex items-center justify-center self-stretch shrink-0" : "inline-flex items-center justify-center rounded shrink-0"}
         title={meta?.name ?? status} style={btnStyle}>

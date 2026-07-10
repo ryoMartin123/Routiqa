@@ -103,10 +103,7 @@ export default function CommunicationsPage() {
     <div className="flex flex-col h-full overflow-hidden" style={{ backgroundColor: "var(--bg-page)" }}>
       {/* Page header */}
       <header className="shrink-0 px-5 py-3 flex items-center gap-4" style={{ borderBottom: "1px solid var(--border)", backgroundColor: "var(--bg-page)" }}>
-        <div className="flex-1 min-w-0">
-          <h1 className="text-lg font-semibold truncate" style={{ color: "var(--text-primary)" }}>Communications</h1>
-          <p className="text-xs hidden md:block truncate" style={{ color: "var(--text-muted)" }}>Messages, calls, and follow-ups in one place.</p>
-        </div>
+        <div className="flex-1 min-w-0" />
 
         {/* Centralized channel tabs — same centered segmented control as the Leads view tabs */}
         <div className="flex items-center rounded-lg overflow-hidden" style={{ border: "1px solid var(--border)" }}>

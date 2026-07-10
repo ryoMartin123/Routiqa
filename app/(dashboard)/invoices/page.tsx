@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import RowArrow from "@/components/shared/RowArrow";
-import { Search, Plus, SlidersHorizontal, ChevronUp, ChevronDown, AlertTriangle, CalendarClock, CheckCircle2, DollarSign, ArrowUpRight } from "lucide-react";
+import { Search, Plus, SlidersHorizontal, ChevronUp, ChevronDown, AlertTriangle, CalendarClock, CheckCircle2, DollarSign, ArrowUpRight, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getAllInvoices, fmt, type InvoiceRecord } from "@/lib/quotes/data";
 import { INVOICE_STATUS_STYLE, type InvoiceStatus } from "@/lib/quotes/types";
@@ -322,7 +322,10 @@ function InvoiceCard({ invoice: inv }: { invoice: InvoiceRecord }) {
         ) : (
           <span className="text-[10px] truncate" style={{ color: "var(--text-muted)" }}>{fmt(inv.total)} total</span>
         )}
-        <span className="text-[10px] shrink-0" style={{ color: isOverdue ? "#dc2626" : "var(--text-muted)" }}>Due {inv.dueDate}</span>
+        <span className="flex items-center gap-1.5 shrink-0">
+          <span className="text-[10px]" style={{ color: isOverdue ? "#dc2626" : "var(--text-muted)" }}>Due {inv.dueDate}</span>
+          <ArrowRight className="w-3.5 h-3.5 shrink-0 transition-transform group-hover:-rotate-45" style={{ color: "#0f8578" }} />
+        </span>
       </div>
     </Link>
   );

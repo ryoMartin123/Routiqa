@@ -13,6 +13,7 @@ import {
 export type { ChecklistItemType } from "@/lib/work-order-templates/data";
 import { notifyDataChanged, invalidateOnStorage } from "@/lib/sync/liveData";
 import { getSupabase } from "@/lib/supabase/client";
+import { emitAutomationEvent } from "@/lib/marketing/automation-engine";
 
 // ─── Agreement-visit revert hook ──────────────────────────
 // deleteJob must return a materialized agreement visit to the schedule queue,
@@ -399,6 +400,16 @@ export function updateJob(id: string, patch: Partial<Job>): Job | undefined {
   writeCache();
   notifyDataChanged();
   persistJobUpdate(id, patch);
+  // Real marketing-automation triggers on actual status transitions.
+  if (patch.status && patch.status !== existing.status) {
+    const eventKey = patch.status === "completed" ? "job_completed" : patch.status === "canceled" ? "job_canceled" : null;
+    if (eventKey) emitAutomationEvent(eventKey, {
+      subject: `${updated.customerName} — ${updated.title}`,
+      companyId: updated.companyId, locationId: updated.locationId,
+      customerId: updated.accountId, customerName: updated.customerName,
+      fields: { job_type: updated.type },
+    });
+  }
   return updated;
 }
 
@@ -460,6 +471,12 @@ export function createJob(input: NewJobInput): Job {
   materializeWorkOrderForJob(job);
   notifyDataChanged();
   persistJobInsert(job);
+  emitAutomationEvent("job_created", {
+    subject: `${job.customerName} — ${job.title}`,
+    companyId: job.companyId, locationId: job.locationId,
+    customerId: job.accountId, customerName: job.customerName,
+    fields: { job_type: job.type },
+  });
   return job;
 }
 

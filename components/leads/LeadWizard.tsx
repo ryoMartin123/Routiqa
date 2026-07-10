@@ -7,19 +7,14 @@ import AccountCombobox from "@/components/customers/AccountCombobox";
 import NewCustomerModal from "@/components/customers/NewCustomerModal";
 import { getCustomer } from "@/lib/customers/data";
 import { getBoardCandidates } from "@/lib/users/data";
-import {
-  createLead, LEAD_SOURCE_LABELS, LEAD_STAGE_CONFIG,
-  type LeadSource, type LeadStage,
-} from "@/lib/leads/data";
+import { createLead, LEAD_STAGE_CONFIG, type LeadStage } from "@/lib/leads/data";
+import { leadSourceOptions, leadFieldsFor, sourceSelectionFor } from "@/lib/marketing/lead-sources";
 
 // Creation stages a lead can start in — exclude the terminal Won/Lost columns.
 const START_STAGES = (Object.entries(LEAD_STAGE_CONFIG) as [LeadStage, { label: string; order: number }][])
   .filter(([, c]) => c.order <= 6)
   .sort((a, b) => a[1].order - b[1].order)
   .map(([key, c]) => ({ value: key, label: c.label }));
-
-const SOURCE_OPTIONS = (Object.entries(LEAD_SOURCE_LABELS) as [LeadSource, string][])
-  .map(([value, label]) => ({ value, label }));
 
 type AccountMode = "" | "existing" | "new";
 
@@ -33,9 +28,10 @@ export default function LeadWizard({ preset, onClose, onCreated }: {
   const [accountId, setAccountId] = useState(preset?.accountId ?? "");
   const [showNewAccount, setShowNewAccount] = useState(false);
 
-  // Lead fields (Step 2)
+  // Lead fields (Step 2) — source picks from the managed marketing source list
+  const sourceOpts = useMemo(() => leadSourceOptions(), []);
   const [title, setTitle]   = useState("");
-  const [source, setSource] = useState<LeadSource>("phone");
+  const [source, setSource] = useState<string>(() => sourceSelectionFor({ source: "phone" }));
   const [stage, setStage]   = useState<LeadStage>("new_lead");
   const [estVal, setEstVal] = useState("");
   const [tech, setTech]     = useState("");
@@ -57,7 +53,7 @@ export default function LeadWizard({ preset, onClose, onCreated }: {
     const lead = createLead({
       companyId: account.companyId, locationId: account.locationId, locationName: account.locationName,
       serviceAreaId: account.serviceAreaId, accountId: account.id,
-      title: title.trim(), source, stage,
+      title: title.trim(), ...leadFieldsFor(source), stage,
       estimatedValue: estVal.trim() || undefined,
       assignedTo: tech || undefined,
       customerName: account.name, customerPhone: account.phone, customerEmail: account.email,
@@ -140,7 +136,7 @@ export default function LeadWizard({ preset, onClose, onCreated }: {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium mb-1" style={{ color: "var(--text-secondary)" }}>Source *</label>
-                  <UiSelect value={source} onChange={v => setSource(v as LeadSource)} options={SOURCE_OPTIONS} />
+                  <UiSelect value={source} onChange={setSource} options={sourceOpts} />
                 </div>
                 <div>
                   <label className="block text-xs font-medium mb-1" style={{ color: "var(--text-secondary)" }}>Stage</label>

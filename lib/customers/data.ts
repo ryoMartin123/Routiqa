@@ -10,8 +10,10 @@
 
 import { getAllJobs, type JobStatus as RealJobStatus, type JobType as RealJobType } from "@/lib/jobs/data";
 import { notifyDataChanged, invalidateOnStorage } from "@/lib/sync/liveData";
-import { getAllLeads, LEAD_SOURCE_LABELS, type LeadStage } from "@/lib/leads/data";
+import { getAllLeads, type LeadStage } from "@/lib/leads/data";
+import { leadSourceLabel } from "@/lib/marketing/lead-sources";
 import { getTasksForCustomer, type TaskType as RealTaskType } from "@/lib/tasks/data";
+import { emitAutomationEvent } from "@/lib/marketing/automation-engine";
 
 // ─── Types ────────────────────────────────────────────────
 export type AccountType    = "residential" | "commercial" | "property_management" | "multi_site" | "other";
@@ -196,6 +198,12 @@ export function addCustomerPersisted(customer: Customer): void {
   _addToStore(customer);
   try { localStorage.setItem("crm-extra-customers", JSON.stringify(_extra)); } catch { /* ignore */ }
   notifyDataChanged();
+  emitAutomationEvent("customer_created", {
+    subject: customer.name,
+    companyId: customer.companyId, locationId: customer.locationId,
+    customerId: customer.id, customerName: customer.name,
+    fields: { customer_type: customer.type },
+  });
 }
 
 // A persisted record is only usable if it has the string fields the list/detail
@@ -425,7 +433,7 @@ export function getLeads(customerId: string): CustomerLead[] {
       status: LEAD_STAGE_MAP[l.stage] ?? "New",
       date: l.displayDate,
       value: l.estimatedValue,
-      source: LEAD_SOURCE_LABELS[l.source],
+      source: leadSourceLabel(l),
     }));
 }
 

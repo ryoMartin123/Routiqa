@@ -4,17 +4,12 @@ import { useMemo, useState } from "react";
 import { X, Pencil, Check } from "lucide-react";
 import UiSelect from "@/components/ui/Select";
 import { getBoardCandidates } from "@/lib/users/data";
-import {
-  updateLead, LEAD_SOURCE_LABELS, LEAD_STAGE_CONFIG,
-  type Lead, type LeadSource, type LeadStage,
-} from "@/lib/leads/data";
+import { updateLead, LEAD_STAGE_CONFIG, type Lead, type LeadStage } from "@/lib/leads/data";
+import { leadSourceOptions, leadFieldsFor, sourceSelectionFor, leadSourceLabel } from "@/lib/marketing/lead-sources";
 
 const STAGE_OPTIONS = (Object.entries(LEAD_STAGE_CONFIG) as [LeadStage, { label: string; order: number }][])
   .sort((a, b) => a[1].order - b[1].order)
   .map(([value, c]) => ({ value, label: c.label }));
-
-const SOURCE_OPTIONS = (Object.entries(LEAD_SOURCE_LABELS) as [LeadSource, string][])
-  .map(([value, label]) => ({ value, label }));
 
 function initialsOf(name: string): string {
   const p = name.replace(/\(.*\)/, "").trim().split(/\s+/);
@@ -38,7 +33,15 @@ export default function LeadEditModal({ lead, onClose, onSaved }: {
 
   const [title, setTitle]   = useState(lead.title);
   const [stage, setStage]   = useState<LeadStage>(lead.stage);
-  const [source, setSource] = useState<LeadSource>(lead.source);
+  // Source picks from the managed marketing source list; if this lead sits on a
+  // paused/removed source the current selection is kept as an extra option.
+  const [source, setSource] = useState<string>(() => sourceSelectionFor(lead));
+  const sourceOpts = useMemo(() => {
+    const opts = leadSourceOptions();
+    const sel = sourceSelectionFor(lead);
+    return opts.some(o => o.value === sel) ? opts : [{ value: sel, label: leadSourceLabel(lead) }, ...opts];
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [estVal, setEstVal] = useState(lead.estimatedValue ?? "");
   const [tech, setTech]     = useState(lead.assignedTo === "Unassigned" ? "" : lead.assignedTo);
   const [notes, setNotes]   = useState(lead.notes ?? "");
@@ -62,7 +65,7 @@ export default function LeadEditModal({ lead, onClose, onSaved }: {
     updateLead(lead.id, {
       title: title.trim(),
       stage,
-      source,
+      ...(source === sourceSelectionFor(lead) ? {} : leadFieldsFor(source)),
       estimatedValue: estVal.trim() || undefined,
       assignedTo,
       assignedToInitials: assignedTo === "Unassigned" ? "—" : initialsOf(assignedTo),
@@ -109,7 +112,7 @@ export default function LeadEditModal({ lead, onClose, onSaved }: {
             </div>
             <div>
               <label className={labelCls} style={labelStyle}>Source</label>
-              <UiSelect value={source} onChange={v => setSource(v as LeadSource)} options={SOURCE_OPTIONS} />
+              <UiSelect value={source} onChange={setSource} options={sourceOpts} />
             </div>
           </div>
 

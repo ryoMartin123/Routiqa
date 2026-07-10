@@ -13,9 +13,10 @@ import HoverInfo, { Pill } from "@/components/shared/HoverInfo";
 import ActionsMenu from "@/components/shared/ActionsMenu";
 import {
   getLead, getLeadNotes, getLeadTasks, deleteLead, leadAgeDays,
-  LEAD_STAGE_CONFIG, LEAD_SOURCE_LABELS,
+  LEAD_STAGE_CONFIG,
   type LeadStage, type LeadNoteType,
 } from "@/lib/leads/data";
+import { leadSourceLabel } from "@/lib/marketing/lead-sources";
 import LeadEditModal from "@/components/leads/LeadEditModal";
 import { getActivityEvents } from "@/lib/activity/data";
 import { EVENT_FILTER_MAP } from "@/lib/activity/types";
@@ -131,7 +132,7 @@ function OverviewTab({ id, onTab }: { id: string; onTab: (tab: string) => void }
 
   // Compact KPI strip — the lead's at-a-glance state (same card style as Customer).
   const summary: { icon: typeof Briefcase; label: string; value: string; sub?: string; accent?: string }[] = [
-    { icon: TrendingUp,  label: "Stage",       value: stageConfig.label, sub: LEAD_SOURCE_LABELS[lead.source], accent: stageConfig.color },
+    { icon: TrendingUp,  label: "Stage",       value: stageConfig.label, sub: leadSourceLabel(lead), accent: stageConfig.color },
     { icon: DollarSign,  label: "Est. Value",  value: lead.estimatedValue || "—", sub: "Opportunity" },
     { icon: FileText,    label: "Quotes",      value: String(quotes.length), sub: quoteValue > 0 ? `${fmtCurrency(quoteValue)} · ${openQuotes.length} open` : `${openQuotes.length} open` },
     { icon: Clock,       label: "Age",         value: `${ageDays} day${ageDays === 1 ? "" : "s"}`, sub: `Since ${lead.displayDate}` },
@@ -161,7 +162,7 @@ function OverviewTab({ id, onTab }: { id: string; onTab: (tab: string) => void }
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
             <DetailField icon={TrendingUp} label="Lead Title"   value={lead.title} />
             <DetailField icon={Tag}        label="Stage"        value={<span style={{ color: stageConfig.color, fontWeight: 600 }}>{stageConfig.label}</span>} />
-            <DetailField icon={Tag}        label="Source"       value={LEAD_SOURCE_LABELS[lead.source]} />
+            <DetailField icon={Tag}        label="Source"       value={leadSourceLabel(lead)} />
             <DetailField icon={DollarSign} label="Est. Value"   value={lead.estimatedValue} />
             <DetailField icon={User}       label="Assigned To"  value={lead.assignedTo} />
             <DetailField icon={Calendar}   label="Created"      value={`${lead.displayDate} · ${ageDays}d ago`} />
@@ -784,7 +785,7 @@ function LeadDetailContent({ params }: { params: Promise<{ id: string }> }) {
                   <h1 className="text-base font-semibold truncate" style={{ color: "var(--text-primary)" }}>{lead.customerName}</h1>
                   <HoverInfo rows={[
                     { label: "Stage",  node: <Pill text={stageConfig.label} style={{ backgroundColor: stageConfig.bg, color: stageConfig.color }} /> },
-                    { label: "Source", node: <Pill text={LEAD_SOURCE_LABELS[lead.source]} style={{ backgroundColor: "var(--bg-input)", color: "var(--text-secondary)" }} /> },
+                    { label: "Source", node: <Pill text={leadSourceLabel(lead)} style={{ backgroundColor: "var(--bg-input)", color: "var(--text-secondary)" }} /> },
                     ...(lead.estimatedValue
                       ? [{ label: "Value", node: <span className="text-xs font-semibold" style={{ color: "var(--text-primary)" }}>{lead.estimatedValue}</span> }]
                       : []),
