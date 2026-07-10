@@ -4,7 +4,7 @@
 // section is a SMART VIEW over the same documents, filtered by metadata (type /
 // folder subtree) — not a folder shortcut. Archived = a filtered view.
 
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import {
   FileText, FileSignature, GraduationCap, LayoutTemplate, UsersRound, FileBadge,
   HardHat, Settings, Building2, Archive,
@@ -29,8 +29,12 @@ const CONFIGS: Record<string, SmartViewConfig> = {
 
 export default function DocumentsSection() {
   const slug = String(useParams()?.section ?? "");
-  if (slug === "library") return <div className="h-full"><DocumentsExplorer /></div>;
+  // Overview deep-links: /documents/library?folder=…&doc=… focuses the explorer.
+  const sp = useSearchParams();
+  const folder = sp?.get("folder") ?? undefined;
+  const docId = sp?.get("doc") ?? undefined;
+  if (slug === "library") return <div className="h-full"><DocumentsExplorer initialFolderId={folder} initialDocId={docId} /></div>;
   const cfg = CONFIGS[slug];
   if (cfg) return <DocumentSmartView config={cfg} />;
-  return <div className="h-full"><DocumentsExplorer /></div>;
+  return <div className="h-full"><DocumentsExplorer initialFolderId={folder} initialDocId={docId} /></div>;
 }

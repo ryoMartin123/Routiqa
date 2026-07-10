@@ -5,6 +5,7 @@
 
 import {
   LayoutDashboard,
+  Plug,
   CalendarDays,
   Clock,
   DollarSign,
@@ -83,6 +84,7 @@ export const APP_NAV: Partial<Record<PlatformAppId, AppNavItem[]>> = {
     { name: "Templates", href: "/marketing/templates", icon: FileText },
     { name: "Automations", href: "/marketing/automations", icon: Zap },
     { name: "Lead Sources", href: "/marketing/lead-sources", icon: Radio },
+    { name: "Integrations", href: "/marketing/integrations", icon: Plug },
     { name: "Performance", href: "/marketing/performance", icon: BarChart3 },
     { name: "Settings", href: "/marketing/settings", icon: Settings },
   ],
@@ -134,7 +136,7 @@ export const APP_NAV: Partial<Record<PlatformAppId, AppNavItem[]>> = {
     { name: "Settings", href: "/accounting/settings", icon: Settings },
   ],
   documents: [
-    { name: "Dashboard", href: "/documents", icon: LayoutDashboard },
+    { name: "Overview", href: "/documents", icon: LayoutDashboard },
     { name: "Company Library", href: "/documents/library", icon: FolderTree },
     { name: "SOPs", href: "/documents/sops", icon: BookOpen },
     { name: "Policies", href: "/documents/policies", icon: ScrollText },

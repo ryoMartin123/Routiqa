@@ -6,6 +6,8 @@
 
 export const DOC_ROOT_ID = "root";
 
+import type { DesignDoc } from "@/lib/design-studio/model";
+
 export type DocType =
   | "SOP" | "Policy" | "Training" | "Template" | "HR Document" | "Sales Document"
   | "Safety Document" | "System Document" | "Vendor Document" | "Subcontractor Document"
@@ -59,7 +61,8 @@ export interface DocFolder {
 export interface DocItem {
   id: string;
   title: string;
-  body?: string;
+  body?: string;                 // plain text — derived from `design` when one exists
+  design?: DesignDoc;            // block design (Design Studio); opens in the studio, not the text editor
   folderId: string;              // where it LIVES (folder tree)
   type: DocType;                 // what it IS (drives which smart view it appears in)
   category?: string;             // department/grouping (defaults to top-level folder)
@@ -255,13 +258,13 @@ export function archivedDocs(): DocItem[] { return _docs.filter(isArchived); }
 
 export interface NewDocInput {
   title: string; folderId: string; type: DocType; status?: DocStatus; visibility: DocVisibility;
-  body?: string; tags?: string[]; owner?: string; linkedApp?: LinkedApp; linkedRecords?: LinkedRecord[];
+  body?: string; design?: DesignDoc; tags?: string[]; owner?: string; linkedApp?: LinkedApp; linkedRecords?: LinkedRecord[];
 }
 export function createDocument(input: NewDocInput): DocItem {
   const d: DocItem = {
     id: uid("doc"), title: input.title.trim() || "Untitled", folderId: input.folderId,
     type: input.type, status: input.status ?? "Draft", visibility: input.visibility,
-    body: input.body ?? "", tags: input.tags ?? [], owner: input.owner ?? "Ryo Martin",
+    body: input.body ?? "", design: input.design, tags: input.tags ?? [], owner: input.owner ?? "Ryo Martin",
     linkedApp: input.linkedApp, linkedRecords: input.linkedRecords, version: 1, createdAt: today, updated: today,
   };
   _docs = [d, ..._docs];

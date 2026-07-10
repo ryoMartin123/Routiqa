@@ -22,12 +22,10 @@ import {
   STATUS_COLOR, VIS_COLOR, LINKED_APP_COLOR, DOC_TYPES, DOC_STATUSES, DOC_VISIBILITIES, LINKED_APPS,
   type FolderNode, type DocItem, type DocType, type DocStatus, type DocVisibility, type LinkedApp, type NewFolderInput,
 } from "@/lib/documents/mock";
+import DesignStudio from "@/components/design-studio/DesignStudio";
+import { emptyDesign, plainTextFromDesign } from "@/lib/design-studio/model";
 
 const ACCENT = appById("documents")?.accent ?? "#f59e0b";   // = the Documents app icon color
-// Drop-target fill: a slightly DARKER amber than the accent (amber-600 vs the
-// accent's amber-500) so the move target reads distinctly deeper than a merely
-// selected row — subtle, no outline.
-const DROP_SHADE = "#d97706" + "47";   // ~28% alpha
 const inp = "w-full rounded-lg px-3 py-2 text-sm outline-none";
 const inpStyle: React.CSSProperties = { border: "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)", color: "var(--text-primary)" };
 
@@ -54,7 +52,7 @@ export { TYPE_ICON as DOC_TYPE_ICON };
 type View = "list" | "grid";
 type Sort = "updated" | "name" | "owner";
 
-export default function DocumentsExplorer({ initialFolderId }: { initialFolderId?: string }) {
+export default function DocumentsExplorer({ initialFolderId, initialDocId }: { initialFolderId?: string; initialDocId?: string }) {
   const [tick, setTick] = useState(0);
   const refresh = () => setTick(t => t + 1);
   const tree = useMemo(() => getFolderTree(), [tick]);
@@ -62,8 +60,9 @@ export default function DocumentsExplorer({ initialFolderId }: { initialFolderId
   const initialFolder = initialFolderId && getFolder(initialFolderId) ? initialFolderId : "hvac-service";
   const [selectedFolder, setSelectedFolder] = useState(initialFolder);
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set(folderPath(initialFolder).map(f => f.id)));
-  const [selectedDoc, setSelectedDoc] = useState<string | null>(null);
+  const [selectedDoc, setSelectedDoc] = useState<string | null>(initialDocId ?? null);
   const [treeSearch, setTreeSearch] = useState("");
+  const [newMenu, setNewMenu] = useState(false);
 
   // Center toolbar state
   const [search, setSearch] = useState("");
@@ -80,6 +79,9 @@ export default function DocumentsExplorer({ initialFolderId }: { initialFolderId
   const [uploading, setUploading] = useState(false);
   const [movingDoc, setMovingDoc] = useState<DocItem | null>(null);
   const [editingDoc, setEditingDoc] = useState<string | null>(null);
+  // Designed documents open in the Design Studio; plain ones in the text editor.
+  const [designingDoc, setDesigningDoc] = useState<string | null>(null);
+  const openEditor = (d: DocItem) => (d.design ? setDesigningDoc(d.id) : setEditingDoc(d.id));
 
   const toggle = (id: string) => setExpanded(p => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; });
   const folder = getFolder(selectedFolder);
@@ -179,16 +181,21 @@ export default function DocumentsExplorer({ initialFolderId }: { initialFolderId
           </span>
         </div>
       )}
-      {/* ── Left: folder tree ── */}
-      <aside className="w-64 shrink-0 flex flex-col" style={{ borderRight: "1px solid var(--border)", backgroundColor: "var(--bg-surface)" }}>
+      {/* ── Left: folder tree (transparent — sits on the page background) ── */}
+      <aside className="w-64 shrink-0 flex flex-col" style={{ borderRight: "1px solid var(--border)" }}>
         <div className="p-3 space-y-2 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
-          <div className="flex items-center justify-between">
-            <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>Folders</p>
-            <button onClick={() => setNewFolderParent(null)} title="New folder" className="flex items-center justify-center w-6 h-6 rounded-md" style={{ color: ACCENT, backgroundColor: ACCENT + "1f" }}><FolderPlus className="w-3.5 h-3.5" /></button>
-          </div>
-          <div className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5" style={{ backgroundColor: "var(--bg-input)" }}>
-            <Search className="w-3.5 h-3.5 shrink-0" style={{ color: "var(--text-muted)" }} />
-            <input value={treeSearch} onChange={e => setTreeSearch(e.target.value)} placeholder="Search folders" className="bg-transparent text-xs outline-none w-full" style={{ color: "var(--text-primary)" }} />
+          {/* Search + new-folder on one row — no section label needed */}
+          <div className="flex items-center gap-1.5">
+            <div className="flex-1 flex items-center gap-1.5 rounded-lg px-2.5 py-1.5" style={{ backgroundColor: "var(--bg-input)" }}>
+              <Search className="w-3.5 h-3.5 shrink-0" style={{ color: "var(--text-muted)" }} />
+              <input value={treeSearch} onChange={e => setTreeSearch(e.target.value)} placeholder="Search folders" className="bg-transparent text-xs outline-none w-full" style={{ color: "var(--text-primary)" }} />
+            </div>
+            {/* Bare icon — no background tile */}
+            <button onClick={() => setNewFolderParent(null)} title="New folder"
+              className="flex items-center justify-center w-7 h-7 shrink-0 transition-colors"
+              style={{ color: ACCENT }}>
+              <FolderPlus className="w-4 h-4" />
+            </button>
           </div>
         </div>
         <div className="flex-1 overflow-y-auto thin-scroll-y p-2">
@@ -212,73 +219,118 @@ export default function DocumentsExplorer({ initialFolderId }: { initialFolderId
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div className="min-w-0">
               <h2 className="text-lg font-semibold truncate" style={{ color: "var(--text-primary)" }}>{folder?.name ?? "Documents"}</h2>
-              <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>{folder?.description ? `${folder.description} · ` : ""}{docs.length} document{docs.length === 1 ? "" : "s"}</p>
+              {folder?.description && <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>{folder.description}</p>}
             </div>
+            {/* Actions ride the title row so the table starts higher */}
             <div className="flex items-center gap-2 shrink-0">
-              <button onClick={() => setUploading(true)} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}><Upload className="w-4 h-4" /> Upload</button>
-              <button onClick={() => setNewFolderParent(selectedFolder)} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}><FolderPlus className="w-4 h-4" /> New Folder</button>
-              <button onClick={newNote} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}><StickyNote className="w-4 h-4" /> New Note</button>
-              <button onClick={() => setCreatingDoc(true)} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-white hover:brightness-110" style={{ backgroundColor: ACCENT }}><Plus className="w-4 h-4" /> New Document</button>
-            </div>
-          </div>
-          {/* Toolbar */}
-          <div className="flex items-center justify-between gap-2 mt-3 flex-wrap">
-            <div className="flex items-center gap-1.5 rounded-lg px-3 py-1.5" style={{ backgroundColor: "var(--bg-input)" }}>
-              <Search className="w-3.5 h-3.5 shrink-0" style={{ color: "var(--text-muted)" }} />
-              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search in folder..." className="bg-transparent text-sm outline-none w-44" style={{ color: "var(--text-primary)" }} />
-            </div>
-            <div className="flex items-center gap-2">
+              <div className="relative shrink-0">
+                {/* Plain button — PlusClickEnhancer + the global .lucide-plus rules
+                    give it the exact CRM hover/press/spin-and-hold behavior. */}
+                <button onClick={() => setNewMenu(o => !o)} title="New…" aria-label="New"
+                  className="flex items-center justify-center w-9 h-9 rounded-lg text-white hover:brightness-110"
+                  style={{ backgroundColor: ACCENT }}>
+                  <Plus className="w-4 h-4" />
+                </button>
+                {newMenu && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setNewMenu(false)} />
+                    <div className="absolute right-0 top-full mt-1.5 w-48 rounded-xl z-50 p-1.5"
+                      style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "0 12px 32px rgba(0,0,0,0.18)" }}>
+                      {([
+                        { label: "Document", icon: FileText, onClick: () => setCreatingDoc(true) },
+                        { label: "Note", icon: StickyNote, onClick: newNote },
+                        { label: "Folder", icon: FolderPlus, onClick: () => setNewFolderParent(selectedFolder) },
+                        { label: "Upload files", icon: Upload, onClick: () => setUploading(true) },
+                      ] as const).map(item => (
+                        <button key={item.label} onClick={() => { setNewMenu(false); item.onClick(); }}
+                          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-left transition-colors hover:bg-[var(--bg-surface-2)]">
+                          <item.icon className="w-3.5 h-3.5 shrink-0" style={{ color: ACCENT }} />
+                          <span className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{item.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
               <div className="relative">
+                {/* Lights up while open, exactly like the CRM filter buttons */}
                 <button onClick={() => setFiltersOpen(o => !o)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors"
-                  style={{ border: `1px solid ${activeFilters ? ACCENT + "66" : "var(--border)"}`, backgroundColor: activeFilters ? ACCENT + "14" : "var(--bg-surface)", color: activeFilters ? ACCENT : "var(--text-secondary)" }}>
-                  <SlidersHorizontal className="w-3.5 h-3.5" /> Filter{activeFilters > 0 && <span className="text-[10px] font-bold px-1.5 rounded-full" style={{ backgroundColor: ACCENT + "26", color: ACCENT }}>{activeFilters}</span>}
+                  style={{
+                    border: `1px solid ${activeFilters > 0 || filtersOpen ? ACCENT + "66" : "var(--border)"}`,
+                    backgroundColor: activeFilters ? ACCENT + "14" : "var(--bg-surface)",
+                    color: activeFilters > 0 || filtersOpen ? ACCENT : "var(--text-secondary)",
+                  }}>
+                  <SlidersHorizontal className="w-3.5 h-3.5 transition-transform duration-200" style={{ transform: filtersOpen ? "rotate(90deg)" : "none" }} />
+                  Filter{activeFilters > 0 && <span className="text-[10px] font-bold px-1.5 rounded-full" style={{ backgroundColor: ACCENT + "26", color: ACCENT }}>{activeFilters}</span>}
                 </button>
                 {filtersOpen && (
                   <>
                     <div className="fixed inset-0 z-40" onClick={() => setFiltersOpen(false)} />
                     <div className="absolute right-0 top-full mt-2 z-50 rounded-xl p-4 w-64 space-y-2.5" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "0 12px 32px rgba(0,0,0,0.18)" }}>
                       <div className="flex items-center justify-between"><p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Filters</p>{activeFilters > 0 && <button onClick={() => { setFStatus("all"); setFType("all"); setFVis("all"); }} className="text-xs" style={{ color: ACCENT }}>Clear</button>}</div>
+                      {/* View first — full-width segmented control */}
+                      <FF label="View">
+                        <div className="grid grid-cols-2 rounded-lg overflow-hidden w-full" style={{ border: "1px solid var(--border)" }}>
+                          {(["list", "grid"] as View[]).map(v => (
+                            <button key={v} onClick={() => setView(v)} className="flex items-center justify-center gap-1.5 px-2.5 py-1.5 text-xs font-medium transition-colors"
+                              style={{ backgroundColor: view === v ? ACCENT : "var(--bg-surface)", color: view === v ? "#fff" : "var(--text-secondary)" }}>
+                              {v === "list" ? <List className="w-3.5 h-3.5" /> : <LayoutGrid className="w-3.5 h-3.5" />} {v === "list" ? "List" : "Cards"}
+                            </button>
+                          ))}
+                        </div>
+                      </FF>
                       <FF label="Status"><UiSelect size="sm" value={fStatus} onChange={setFStatus} options={[{ value: "all", label: "Any status" }, ...DOC_STATUSES.map(x => ({ value: x, label: x }))]} /></FF>
                       <FF label="Type"><UiSelect size="sm" value={fType} onChange={setFType} options={[{ value: "all", label: "Any type" }, ...DOC_TYPES.map(x => ({ value: x, label: x }))]} /></FF>
                       <FF label="Visibility"><UiSelect size="sm" value={fVis} onChange={setFVis} options={[{ value: "all", label: "Any visibility" }, ...DOC_VISIBILITIES.map(x => ({ value: x, label: x }))]} /></FF>
+                      <FF label="Sort by"><UiSelect size="sm" value={sort} onChange={v => setSort(v as Sort)} options={[{ value: "updated", label: "Updated" }, { value: "name", label: "Name" }, { value: "owner", label: "Owner" }]} /></FF>
                     </div>
                   </>
                 )}
-              </div>
-              <div className="w-36"><UiSelect size="sm" value={sort} onChange={v => setSort(v as Sort)} options={[{ value: "updated", label: "Sort: Updated" }, { value: "name", label: "Sort: Name" }, { value: "owner", label: "Sort: Owner" }]} /></div>
-              <div className="flex items-center rounded-lg overflow-hidden" style={{ border: "1px solid var(--border)" }}>
-                {(["list", "grid"] as View[]).map(v => (
-                  <button key={v} onClick={() => setView(v)} className="px-2 py-1.5 transition-colors" style={{ backgroundColor: view === v ? ACCENT : "var(--bg-surface)", color: view === v ? "#fff" : "var(--text-muted)" }}>
-                    {v === "list" ? <List className="w-4 h-4" /> : <LayoutGrid className="w-4 h-4" />}
-                  </button>
-                ))}
               </div>
             </div>
           </div>
         </div>
 
         {/* Documents */}
-        <div className="flex-1 overflow-y-auto p-5">
+        <div className="flex-1 overflow-y-auto px-5 pt-4 pb-5">
+          {/* Subfolders first — a parent folder isn't a dead end just because
+              its documents live one level down. */}
+          {childFolders(selectedFolder).length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-4">
+              {childFolders(selectedFolder).map(f => (
+                <button key={f.id} onClick={() => { selectFolder(f.id); setExpanded(p => new Set(p).add(selectedFolder)); }}
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors hover:bg-[var(--bg-surface-2)]"
+                  style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", color: "var(--text-secondary)" }}>
+                  <Folder className="w-3.5 h-3.5" style={{ color: ACCENT }} />
+                  {f.name}
+                  <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>{docCountDeep(f.id)}</span>
+                </button>
+              ))}
+            </div>
+          )}
           {docs.length === 0 ? (
             <div className="rounded-xl p-10 text-center" style={{ border: "1px dashed var(--border)" }}>
               <p className="text-sm" style={{ color: "var(--text-muted)" }}>No documents here yet.</p>
               <button onClick={() => setCreatingDoc(true)} className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-white" style={{ backgroundColor: ACCENT }}><Plus className="w-4 h-4" /> New Document</button>
             </div>
           ) : view === "list" ? (
-            <div className="rounded-xl overflow-hidden" style={{ border: "1px solid var(--border)" }}>
-              <div className="grid px-3 py-2 text-[10px] font-semibold uppercase tracking-wider" style={{ gridTemplateColumns: "2.2fr 1fr 0.9fr 1.1fr 0.9fr 1fr", gap: "0.5rem", color: "var(--text-muted)", backgroundColor: "var(--bg-surface-2)", borderBottom: "1px solid var(--border)" }}>
+            // Same table treatment as the smart views / CRM lists: bg-surface
+            // card, transparent header row, hover rows.
+            <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
+              <div className="grid px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider" style={{ gridTemplateColumns: "2.2fr 1fr 0.9fr 1.1fr 0.9fr 1fr", gap: "0.75rem", color: "var(--text-muted)", borderBottom: "1px solid var(--border)", backgroundColor: "transparent" }}>
                 <span>Name</span><span>Type</span><span>Status</span><span>Visibility</span><span>Owner</span><span>Updated</span>
               </div>
               {docs.map((d, i) => {
                 const Icon = TYPE_ICON[d.type] ?? FileText;
                 return (
                   <button key={d.id} onClick={() => openDoc(d.id)} draggable onDragStart={e => { e.dataTransfer.setData("text/plain", "doc:" + d.id); e.dataTransfer.effectAllowed = "move"; beginDrag(d.title, d.id, e); }} onDragEnd={endDrag}
-                    className="w-full grid px-3 py-2.5 items-center text-left transition-colors hover:bg-[var(--bg-surface-2)] cursor-grab active:cursor-grabbing"
-                    style={{ gridTemplateColumns: "2.2fr 1fr 0.9fr 1.1fr 0.9fr 1fr", gap: "0.5rem", borderTop: i === 0 ? "none" : "1px solid var(--border)", backgroundColor: selectedDoc === d.id ? ACCENT + "14" : "transparent" }}>
+                    className="w-full grid px-4 py-3 items-center text-left transition-colors hover:bg-[var(--bg-surface-2)] cursor-grab active:cursor-grabbing"
+                    style={{ gridTemplateColumns: "2.2fr 1fr 0.9fr 1.1fr 0.9fr 1fr", gap: "0.75rem", borderBottom: i < docs.length - 1 ? "1px solid var(--border)" : "none", backgroundColor: selectedDoc === d.id ? ACCENT + "14" : "transparent" }}>
                     <span className="flex items-center gap-2 min-w-0"><Icon className="w-4 h-4 shrink-0" style={{ color: ACCENT }} /><span className="text-sm truncate" style={{ color: "var(--text-primary)" }}>{d.title}</span></span>
                     <span className="text-xs truncate" style={{ color: "var(--text-secondary)" }}>{d.type}</span>
-                    <Chip color={STATUS_COLOR[d.status]}>{d.status}</Chip>
-                    <Chip color={VIS_COLOR[d.visibility]}>{d.visibility}</Chip>
+                    {/* Plain colored text — no pills in the table */}
+                    <span className="text-xs font-medium truncate" style={{ color: STATUS_COLOR[d.status] }}>{d.status}</span>
+                    <span className="text-xs font-medium truncate" style={{ color: VIS_COLOR[d.visibility] }}>{d.visibility}</span>
                     <span className="text-xs truncate" style={{ color: "var(--text-secondary)" }}>{d.owner}</span>
                     <span className="text-xs" style={{ color: "var(--text-muted)" }}>{d.updated}</span>
                   </button>
@@ -305,23 +357,34 @@ export default function DocumentsExplorer({ initialFolderId }: { initialFolderId
         </div>
       </section>
 
-      {/* ── Right: preview / details ── */}
-      <aside className="w-80 shrink-0 overflow-y-auto p-5" style={{ borderLeft: "1px solid var(--border)", backgroundColor: "var(--bg-surface)" }}>
-        {doc ? (
-          <DocDetails doc={doc} onClose={() => setSelectedDoc(null)} onOpen={() => setEditingDoc(doc.id)}
+      {/* ── Right: document details (only when a doc is selected) ── */}
+      {doc && (
+        <aside className="w-80 shrink-0 overflow-y-auto p-5" style={{ borderLeft: "1px solid var(--border)", backgroundColor: "var(--bg-surface)" }}>
+          <DocDetails doc={doc} onClose={() => setSelectedDoc(null)} onOpen={() => openEditor(doc)}
             onMove={() => setMovingDoc(doc)} onDuplicate={() => { const c = duplicateDocument(doc.id); refresh(); if (c) setSelectedDoc(c.id); }}
             onArchive={() => { archiveDocument(doc.id); setSelectedDoc(null); refresh(); }} />
-        ) : (
-          <FolderDetails folderId={selectedFolder} onNewDoc={() => setCreatingDoc(true)} onNewSub={() => setNewFolderParent(selectedFolder)} />
-        )}
-      </aside>
+        </aside>
+      )}
 
       {/* Modals / drawers */}
       {newFolderParent !== false && <NewFolderModal parentId={newFolderParent} onClose={() => setNewFolderParent(false)} onSaved={(f) => { setNewFolderParent(false); refresh(); if (f.parentId) setExpanded(p => new Set(p).add(f.parentId!)); }} />}
-      {creatingDoc && <CreateDocumentDrawer folderId={selectedFolder} onClose={() => setCreatingDoc(false)} onCreated={(d, open) => { setCreatingDoc(false); refresh(); setSelectedDoc(d.id); if (open) setEditingDoc(d.id); }} />}
+      {creatingDoc && <CreateDocumentDrawer folderId={selectedFolder} onClose={() => setCreatingDoc(false)} onCreated={(d, open) => { setCreatingDoc(false); refresh(); setSelectedDoc(d.id); if (open) openEditor(d); }} />}
       {uploading && <UploadModal folderId={selectedFolder} onClose={() => setUploading(false)} />}
       {movingDoc && <MoveDocModal doc={movingDoc} onClose={() => setMovingDoc(null)} onMoved={(fid) => { moveDocument(movingDoc.id, fid); setMovingDoc(null); setSelectedFolder(fid); refresh(); }} />}
       {editingDoc && <DocEditorDrawer docId={editingDoc} onClose={() => { setEditingDoc(null); refresh(); }} onSaved={refresh} />}
+      {designingDoc && (() => {
+        const d = getDocument(designingDoc);
+        if (!d) return null;
+        return (
+          <DesignStudio mode="document" backLabel="Documents"
+            initialName={d.title} initialDesign={d.design ?? emptyDesign("document")}
+            onSave={out => {
+              updateDocument(d.id, { title: out.name, body: plainTextFromDesign(out.design), design: out.design });
+              setDesigningDoc(null); refresh();
+            }}
+            onClose={() => setDesigningDoc(null)} />
+        );
+      })()}
     </div>
   );
 }
@@ -354,15 +417,15 @@ function TreeNode({ node, depth, expanded, selected, search, dragOver, dragSourc
         onDragLeave={() => onDragOverFolder(null)}
         onDrop={e => { if (!isSource) onDropFolder(node.id, e); }}
         style={{
-          // Minimal drop indicator: the destination folder is just subtly shaded
-          // in (no outline / ring), and at a clearly stronger tint than a merely
-          // selected row so the move target reads distinctly. The source itself is
+          // The move target wears the SAME shade the main nav uses for "you are
+          // here" (sidebar-item-active + its text color), so "this is where it
+          // lands" reads like "this is where you are". The source itself is
           // never shaded — the floating pill says where it's going.
-          backgroundColor: isDropTarget ? DROP_SHADE : isSelected ? ACCENT + "1f" : "transparent",
+          backgroundColor: isDropTarget ? "var(--sidebar-item-active)" : isSelected ? ACCENT + "1f" : "transparent",
         }}>
 
         <button onClick={() => { onSelect(node.id); if (hasChildren) onToggle(node.id); }}
-          className="flex-1 flex items-center gap-1.5 px-2 py-1.5 text-sm min-w-0" style={{ paddingLeft: 8 + depth * 14, color: isSelected ? ACCENT : "var(--text-secondary)" }}>
+          className="flex-1 flex items-center gap-1.5 px-2 py-1.5 text-sm min-w-0" style={{ paddingLeft: 8 + depth * 14, color: isDropTarget ? "var(--sidebar-text-active)" : isSelected ? ACCENT : "var(--text-secondary)" }}>
           {hasChildren ? <ChevronRight className="w-3.5 h-3.5 shrink-0 transition-transform" style={{ transform: isOpen ? "rotate(90deg)" : "none" }} /> : <span className="w-3.5 shrink-0" />}
           {isOpen && hasChildren ? <FolderOpen className="w-4 h-4 shrink-0" style={{ color: ACCENT }} /> : <Folder className="w-4 h-4 shrink-0" style={{ color: ACCENT }} />}
           <span className="truncate flex-1 text-left">{node.name}</span>
@@ -391,33 +454,6 @@ function TreeNode({ node, depth, expanded, selected, search, dragOver, dragSourc
 }
 function hasDescendantMatch(node: FolderNode, search: string): boolean {
   return node.children.some(c => c.name.toLowerCase().includes(search) || hasDescendantMatch(c, search));
-}
-
-// ─── Right panel: folder details ──────────────────────────
-function FolderDetails({ folderId, onNewDoc, onNewSub }: { folderId: string; onNewDoc: () => void; onNewSub: () => void }) {
-  const folder = getFolder(folderId);
-  if (!folder) return null;
-  const subs = childFolders(folderId);
-  const path = folderPath(folderId).map(f => f.name).join(" / ");
-  const recent = getActivity().slice(0, 4);
-  return (
-    <div>
-      <div className="flex items-center gap-2 mb-4"><span className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ backgroundColor: ACCENT + "1f" }}><Folder className="w-4.5 h-4.5" style={{ color: ACCENT, width: 18, height: 18 }} /></span><h3 className="text-sm font-semibold truncate" style={{ color: "var(--text-primary)" }}>{folder.name}</h3></div>
-      {folder.description && <p className="text-xs mb-4" style={{ color: "var(--text-secondary)" }}>{folder.description}</p>}
-      <dl className="space-y-3 mb-5">
-        <Detail icon={FolderInput} label="Path"><span className="text-xs text-right" style={{ color: "var(--text-secondary)" }}>{path}</span></Detail>
-        <Detail icon={FileText} label="Documents"><span style={{ color: "var(--text-secondary)" }}>{docCountDeep(folderId)}</span></Detail>
-        <Detail icon={Folder} label="Subfolders"><span style={{ color: "var(--text-secondary)" }}>{subs.length}</span></Detail>
-        <Detail icon={Eye} label="Visibility"><Chip color={VIS_COLOR[folder.visibility]}>{folder.visibility}</Chip></Detail>
-      </dl>
-      <div className="space-y-2">
-        <button onClick={onNewDoc} className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-white" style={{ backgroundColor: ACCENT }}><Plus className="w-4 h-4" /> New Document</button>
-        <button onClick={onNewSub} className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}><FolderPlus className="w-4 h-4" /> New Subfolder</button>
-      </div>
-      <p className="text-[10px] font-semibold uppercase tracking-widest mt-5 mb-2" style={{ color: "var(--text-muted)" }}>Recent Activity</p>
-      <ul className="space-y-2">{recent.map(a => (<li key={a.id} className="text-xs" style={{ color: "var(--text-secondary)" }}>{a.text}<span className="block text-[10px]" style={{ color: "var(--text-muted)" }}>{a.when}</span></li>))}</ul>
-    </div>
-  );
 }
 
 // ─── Right panel: document details ────────────────────────
@@ -502,17 +538,21 @@ function CreateDocumentDrawer({ folderId, onClose, onCreated }: { folderId: stri
   const [linkedApp, setLinkedApp] = useState<string>("");
   const [linkLabel, setLinkLabel] = useState("");
   const [body, setBody] = useState("");
+  // Content mode: plain text here, or a block design built in the Design Studio.
+  const [contentMode, setContentMode] = useState<"text" | "design">("text");
 
   function pickTemplate(id: string) {
     setTemplateId(id);
     const t = templates.find(x => x.id === id);
-    if (t) { setType(t.type); setBody(t.body); }
+    if (t) { setType(t.type); setBody(t.body); setContentMode("text"); }
     else setBody("");
   }
   function build(open: boolean) {
     if (!title.trim()) return;
     const d = createDocument({
-      title, folderId: folder, type, status, visibility, body,
+      title, folderId: folder, type, status, visibility,
+      body: contentMode === "design" ? "" : body,
+      design: contentMode === "design" ? emptyDesign("document") : undefined,
       linkedApp: (linkedApp || undefined) as LinkedApp | undefined,
       linkedRecords: linkedApp && linkLabel.trim() ? [{ app: linkedApp as LinkedApp, label: linkLabel.trim() }] : undefined,
     });
@@ -520,9 +560,9 @@ function CreateDocumentDrawer({ folderId, onClose, onCreated }: { folderId: stri
   }
 
   return (
-    <Slideover title="New Document" onClose={onClose} width={620}
+    <Modal title="New Document" onClose={onClose} width={640}
       footer={<><CancelBtn onClick={onClose} /><button onClick={() => build(false)} className="text-sm font-medium px-3 py-2 rounded-lg" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>Create Draft</button><SaveBtn onClick={() => build(true)} label="Create & Open" /></>}>
-      <div className="p-5 space-y-5">
+      <div className="space-y-5">
         <div>
           <BlockTitle>Document Basics</BlockTitle>
           <div className="grid grid-cols-2 gap-3">
@@ -549,11 +589,21 @@ function CreateDocumentDrawer({ folderId, onClose, onCreated }: { folderId: stri
         </div>
         <div>
           <BlockTitle>Content</BlockTitle>
-          <textarea value={body} onChange={e => setBody(e.target.value)} rows={6} placeholder="Write the document content…" className={`${inp} resize-none font-mono text-[13px]`} style={inpStyle} />
-          <p className="text-[11px] mt-1" style={{ color: "var(--text-muted)" }}>A full rich-text editor lands in a later phase.</p>
+          <div className="grid grid-cols-2 gap-2 mb-2.5">
+            <StartCard active={contentMode === "text"} title="Write text" desc="Plain text, edited inline" onClick={() => setContentMode("text")} />
+            <StartCard active={contentMode === "design"} title="Design in Studio" desc="Blocks, layout & styles — opens the visual builder" onClick={() => { setContentMode("design"); setTemplateId(""); }} />
+          </div>
+          {contentMode === "text" ? (
+            <>
+              <textarea value={body} onChange={e => setBody(e.target.value)} rows={6} placeholder="Write the document content…" className={`${inp} resize-none font-mono text-[13px]`} style={inpStyle} />
+              <p className="text-[11px] mt-1" style={{ color: "var(--text-muted)" }}>A full rich-text editor lands in a later phase.</p>
+            </>
+          ) : (
+            <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>“Create &amp; Open” drops you straight into the Design Studio to build this document.</p>
+          )}
         </div>
       </div>
-    </Slideover>
+    </Modal>
   );
 }
 
@@ -649,10 +699,10 @@ function StartCard({ active, title, desc, onClick }: { active: boolean; title: s
 function CancelBtn({ onClick }: { onClick: () => void }) { return <button onClick={onClick} className="text-sm font-medium px-3 py-2 rounded-lg" style={{ color: "var(--text-secondary)" }}>Cancel</button>; }
 function SaveBtn({ onClick, label }: { onClick: () => void; label: string }) { return <button onClick={onClick} className="text-sm font-medium px-4 py-2 rounded-lg text-white" style={{ backgroundColor: ACCENT }}>{label}</button>; }
 
-function Modal({ title, onClose, children, footer }: { title: string; onClose: () => void; children: React.ReactNode; footer: React.ReactNode }) {
+function Modal({ title, onClose, children, footer, width = 448 }: { title: string; onClose: () => void; children: React.ReactNode; footer: React.ReactNode; width?: number }) {
   return (
     <div className="fixed inset-0 z-[60] bg-black/40 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="w-full max-w-md rounded-2xl overflow-hidden flex flex-col" onClick={e => e.stopPropagation()} style={{ backgroundColor: "var(--bg-surface)", boxShadow: "0 16px 48px rgba(0,0,0,0.24)" }}>
+      <div className="w-full max-h-[92vh] rounded-2xl overflow-hidden flex flex-col" onClick={e => e.stopPropagation()} style={{ maxWidth: width, backgroundColor: "var(--bg-surface)", boxShadow: "0 16px 48px rgba(0,0,0,0.24)" }}>
         <div className="flex items-center justify-between px-5 py-4 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}><p className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>{title}</p><button onClick={onClose} style={{ color: "var(--text-muted)" }}><X className="w-4 h-4" /></button></div>
         <div className="flex-1 overflow-y-auto p-5 space-y-3">{children}</div>
         <div className="px-5 py-3 flex items-center justify-end gap-2 shrink-0" style={{ borderTop: "1px solid var(--border)" }}>{footer}</div>
