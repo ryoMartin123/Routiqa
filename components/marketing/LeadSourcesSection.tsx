@@ -7,14 +7,17 @@
 
 import { useMemo, useState } from "react";
 import {
-  Radio, Plus, X, TrendingUp, Users, Briefcase, DollarSign, Target, Trash2, ChevronUp, ChevronDown, Check,
+  Radio, Plus, X, TrendingUp, Users, Briefcase, DollarSign, Target, Trash2, ChevronUp, ChevronDown, Check, Pencil, Plug,
 } from "lucide-react";
 import PageTitle from "@/components/shared/PageTitle";
+import UiSelect from "@/components/ui/Select";
+import NumberStepper from "@/components/ui/NumberStepper";
 import {
-  getLeadSources, addLeadSource, toggleLeadSource, deleteLeadSource,
-  conversion, cpl, roi, totals, CATEGORY_META,
+  getLeadSources, addLeadSource, updateLeadSource, toggleLeadSource, deleteLeadSource,
+  conversion, cpl, roi, totals, CATEGORY_META, LEAD_KEY_OPTIONS,
   type LeadSource, type SourceCategory,
 } from "@/lib/marketing/lead-sources";
+import { INTEGRATIONS, integrationState } from "@/lib/marketing/integrations";
 
 const ACCENT = "#e11d48";
 const money = (n: number) => n >= 1000 ? `$${(n / 1000).toFixed(n >= 10000 ? 0 : 1)}k` : `$${n}`;
@@ -25,7 +28,8 @@ type SortKey = "leads" | "bookedJobs" | "conversion" | "revenue" | "cpl" | "roi"
 
 export default function LeadSourcesSection() {
   const [tick, setTick] = useState(0);
-  const [adding, setAdding] = useState(false);
+  // null = closed · undefined-source = creating · source = editing
+  const [editing, setEditing] = useState<{ source: LeadSource | null } | null>(null);
   const [sortKey, setSortKey] = useState<SortKey>("revenue");
   const [showInactive, setShowInactive] = useState(true);
   const reload = () => setTick(t => t + 1);
@@ -44,14 +48,14 @@ export default function LeadSourcesSection() {
     <div className="p-6 space-y-5">
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <PageTitle title="Lead Sources" description="Track where leads come from and which sources drive booked jobs and revenue." />
-        <button onClick={() => setAdding(true)} className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white active:scale-[0.99] transition-transform" style={{ backgroundColor: ACCENT }}>
+        <button onClick={() => setEditing({ source: null })} className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white active:scale-[0.99] transition-transform" style={{ backgroundColor: ACCENT }}>
           <Plus className="w-4 h-4" /> Add source
         </button>
       </div>
 
       {/* KPIs */}
       <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))" }}>
-        <Kpi icon={Users} label="Leads (90d)" value={t.leads.toLocaleString()} color="#2563eb" />
+        <Kpi icon={Users} label="Leads" value={t.leads.toLocaleString()} color="#2563eb" />
         <Kpi icon={Briefcase} label="Booked jobs" value={t.bookedJobs.toLocaleString()} color="#16a34a" />
         <Kpi icon={DollarSign} label="Revenue attributed" value={money(t.revenue)} color={ACCENT} />
         <Kpi icon={Target} label="Avg cost / lead" value={t.cpl ? moneyFull(t.cpl) : "—"} color="#f59e0b" />
@@ -90,6 +94,7 @@ export default function LeadSourcesSection() {
                 <SortTh label="Booked" k="bookedJobs" sortKey={sortKey} onSort={setSortKey} />
                 <SortTh label="Conv." k="conversion" sortKey={sortKey} onSort={setSortKey} />
                 <SortTh label="Revenue" k="revenue" sortKey={sortKey} onSort={setSortKey} />
+                <th className="px-3 py-2.5 text-right text-[11px] font-medium uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Spend/mo</th>
                 <SortTh label="CPL" k="cpl" sortKey={sortKey} onSort={setSortKey} />
                 <SortTh label="ROI" k="roi" sortKey={sortKey} onSort={setSortKey} />
                 <th className="px-3 py-2.5"></th>
@@ -104,12 +109,23 @@ export default function LeadSourcesSection() {
                       <div className="flex items-center gap-2">
                         <span className="font-medium" style={{ color: "var(--text-primary)" }}>{s.name}</span>
                         <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded" style={{ backgroundColor: cm.color + "1a", color: cm.color }}>{cm.label}</span>
+                        {(() => {
+                          // Connected integration that feeds this source → plug badge.
+                          const integ = INTEGRATIONS.find(i => i.registersLeadSource?.toLowerCase() === s.name.toLowerCase());
+                          return integ && integrationState(integ.key).status === "connected" ? (
+                            <span title={`Fed by ${integ.name} (connected)`} className="inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded" style={{ backgroundColor: "#d1fae5", color: "#065f46" }}>
+                              <Plug className="w-2.5 h-2.5" /> Connected
+                            </span>
+                          ) : null;
+                        })()}
+                        {!s.leadKey && <span title="Counts leads filed under this source in the lead form — edit to also map a built-in lead-source key for older leads" className="text-[10px] px-1.5 py-0.5 rounded" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>manual</span>}
                       </div>
                     </td>
                     <Td>{s.leads}</Td>
                     <Td>{s.bookedJobs}</Td>
                     <Td>{pct(conversion(s))}</Td>
                     <Td strong>{money(s.revenue)}</Td>
+                    <Td>{s.cost ? moneyFull(s.cost) : <span style={{ color: "var(--text-muted)" }}>—</span>}</Td>
                     <Td>{c ? moneyFull(c) : <span style={{ color: "var(--text-muted)" }}>—</span>}</Td>
                     <td className="px-3 py-3 text-right tabular-nums">
                       {r === null ? <span className="text-xs" style={{ color: "#16a34a" }}>Organic</span>
@@ -117,6 +133,7 @@ export default function LeadSourcesSection() {
                     </td>
                     <td className="px-3 py-3 text-right whitespace-nowrap">
                       <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button onClick={() => setEditing({ source: s })} title="Edit source" className="p-1.5 rounded-md"><Pencil className="w-3.5 h-3.5" style={{ color: "var(--text-secondary)" }} /></button>
                         <button onClick={() => { toggleLeadSource(s.id); reload(); }} title={s.active ? "Deactivate" : "Activate"} className="text-[11px] font-medium px-2 py-1 rounded-md" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>{s.active ? "Pause" : "Activate"}</button>
                         <button onClick={() => { deleteLeadSource(s.id); reload(); }} title="Remove" className="p-1.5 rounded-md"><Trash2 className="w-3.5 h-3.5" style={{ color: "#dc2626" }} /></button>
                       </div>
@@ -129,7 +146,11 @@ export default function LeadSourcesSection() {
         </div>
       </div>
 
-      {adding && <AddSourceModal onClose={() => setAdding(false)} onAdd={(name, cat) => { addLeadSource(name, cat); setAdding(false); reload(); }} />}
+      <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>
+        Leads, booked, and revenue are computed live from your Leads — nothing here is stored or simulated. Spend is entered per source until ad integrations pull it automatically.
+      </p>
+
+      {editing && <SourceModal source={editing.source} onClose={() => setEditing(null)} onSaved={() => { setEditing(null); reload(); }} />}
     </div>
   );
 }
@@ -156,14 +177,25 @@ function Td({ children, strong }: { children: React.ReactNode; strong?: boolean 
   return <td className="px-3 py-3 text-right tabular-nums" style={{ color: "var(--text-primary)", fontWeight: strong ? 600 : 400 }}>{children}</td>;
 }
 
-function AddSourceModal({ onClose, onAdd }: { onClose: () => void; onAdd: (name: string, cat: SourceCategory) => void }) {
-  const [name, setName] = useState("");
-  const [cat, setCat] = useState<SourceCategory>("digital");
+function SourceModal({ source, onClose, onSaved }: { source: LeadSource | null; onClose: () => void; onSaved: () => void }) {
+  const [name, setName] = useState(source?.name ?? "");
+  const [cat, setCat] = useState<SourceCategory>(source?.category ?? "digital");
+  const [cost, setCost] = useState(source ? String(source.cost || "") : "");
+  const [leadKey, setLeadKey] = useState<string>(source?.leadKey ?? "");
+
+  function save() {
+    if (!name.trim()) return;
+    const opts = { cost: Math.max(0, Number(cost) || 0), leadKey: (leadKey || undefined) as LeadSource["leadKey"] };
+    if (source) updateLeadSource(source.id, { name: name.trim(), category: cat, ...opts });
+    else addLeadSource(name, cat, opts);
+    onSaved();
+  }
+
   return (
     <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={onClose}>
       <div className="w-full max-w-sm rounded-2xl overflow-hidden" onClick={e => e.stopPropagation()} style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "0 20px 48px rgba(0,0,0,0.3)" }}>
         <div className="flex items-center justify-between px-5 py-3.5" style={{ borderBottom: "1px solid var(--border)" }}>
-          <p className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>Add lead source</p>
+          <p className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>{source ? "Edit lead source" : "Add lead source"}</p>
           <button onClick={onClose}><X className="w-4 h-4" style={{ color: "var(--text-muted)" }} /></button>
         </div>
         <div className="p-5 space-y-4">
@@ -185,10 +217,24 @@ function AddSourceModal({ onClose, onAdd }: { onClose: () => void; onAdd: (name:
               })}
             </div>
           </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Counts leads from</label>
+              <UiSelect size="sm" value={leadKey} onChange={setLeadKey}
+                options={[{ value: "", label: "Nothing yet" }, ...LEAD_KEY_OPTIONS]} />
+            </div>
+            <div>
+              <label className="block text-xs font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Spend / month</label>
+              <NumberStepper min={0} value={cost} placeholder="0 = organic" prefix="$" onChange={setCost} />
+            </div>
+          </div>
+          <p className="text-[11px] rounded-lg px-3 py-2" style={{ backgroundColor: "var(--bg-surface-2)", color: "var(--text-muted)" }}>
+            Leads, booked, and revenue come from real Lead records with the picked source — spend is the only number you enter.
+          </p>
         </div>
         <div className="px-5 py-3.5 flex justify-end gap-2" style={{ borderTop: "1px solid var(--border)" }}>
           <button onClick={onClose} className="px-4 py-2 rounded-lg text-sm font-medium" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>Cancel</button>
-          <button onClick={() => name.trim() && onAdd(name, cat)} disabled={!name.trim()} className="px-4 py-2 rounded-lg text-sm font-semibold text-white transition-opacity disabled:opacity-40" style={{ backgroundColor: ACCENT }}>Add source</button>
+          <button onClick={save} disabled={!name.trim()} className="px-4 py-2 rounded-lg text-sm font-semibold text-white transition-opacity disabled:opacity-40" style={{ backgroundColor: ACCENT }}>{source ? "Save changes" : "Add source"}</button>
         </div>
       </div>
     </div>

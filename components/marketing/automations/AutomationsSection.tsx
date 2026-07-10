@@ -10,7 +10,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Plus, Zap, Search, SlidersHorizontal, MoreHorizontal, Pencil, Trash2, Play, Pause, Copy,
-  AlertTriangle, MessageSquare, CheckCircle2, DollarSign, Activity, PieChart, LayoutGrid, TrendingUp, ChevronRight,
+  AlertTriangle, MessageSquare, CheckCircle2, Activity, PieChart, LayoutGrid, TrendingUp, ChevronRight,
   type LucideIcon,
 } from "lucide-react";
 import PageTitle from "@/components/shared/PageTitle";
@@ -22,8 +22,8 @@ import {
   getAutomations, deleteAutomation, setAutomationStatus, duplicateAutomation, blankAutomation,
   summarize, triggerSummary, actionSummary, STATUS_CONFIG,
   automationCategory, automationChannel, CATEGORY_CONFIG, automationWarnings, needsAttention,
-  getTrigger, TRIGGER_OBJECTS,
-  type MarketingAutomation, type TriggerObject,
+  getTrigger, TRIGGER_OBJECTS, automationRunStats, getRuns,
+  type MarketingAutomation, type TriggerObject, type AutomationRun,
 } from "@/lib/marketing/automations";
 
 const ACCENT = "#e11d48";
@@ -49,13 +49,11 @@ const CATEGORY_OPTIONS: { value: CatKey; label: string }[] = [
 ];
 const SORTS = [
   { value: "last_run", label: "Sort: Last run" },
-  { value: "performance", label: "Sort: Performance" },
-  { value: "revenue", label: "Sort: Revenue" },
+  { value: "runs", label: "Sort: Most runs" },
   { value: "created", label: "Sort: Recently created" },
 ];
 const CHANNELS = ["all", "SMS", "Email", "Campaign", "Task", "Team", "Tag", "Audience"];
-const LIST_COLS = "2.3fr 1.5fr 1.5fr 0.7fr 0.9fr 1fr 0.4fr";
-const money = (n?: number) => `$${(n ?? 0).toLocaleString()}`;
+const LIST_COLS = "2.3fr 1.5fr 1.5fr 0.7fr 0.7fr 1.1fr 0.4fr";
 
 export default function AutomationsSection() {
   const [items, setItems] = useState<MarketingAutomation[]>([]);
@@ -80,16 +78,18 @@ export default function AutomationsSection() {
     return () => document.removeEventListener("mousedown", onDown);
   }, [filtersOpen]);
 
-  const kpi = useMemo(() => ({
-    active: items.filter(a => a.status === "active").length,
-    draft: items.filter(a => a.status === "draft").length,
-    paused: items.filter(a => a.status === "paused").length,
-    attention: items.filter(needsAttention).length,
-    contacts: items.reduce((s, a) => s + (a.stats?.contacts ?? 0), 0),
-    replies: items.reduce((s, a) => s + (a.stats?.replies ?? 0), 0),
-    booked: items.reduce((s, a) => s + (a.stats?.booked ?? 0), 0),
-    revenue: items.reduce((s, a) => s + (a.stats?.revenue ?? 0), 0),
-  }), [items]);
+  // All counts derive from the REAL runs log — nothing is stored or seeded.
+  const kpi = useMemo(() => {
+    const perItem = items.map(a => automationRunStats(a.id));
+    return {
+      active: items.filter(a => a.status === "active").length,
+      draft: items.filter(a => a.status === "draft").length,
+      paused: items.filter(a => a.status === "paused").length,
+      attention: items.filter(needsAttention).length,
+      runs: perItem.reduce((s, r) => s + r.runs, 0),
+      tasks: perItem.reduce((s, r) => s + r.tasks, 0),
+    };
+  }, [items]);
 
   const statusCount = (k: StatusKey) => items.filter(a => matchesStatus(a, k)).length;
 
@@ -102,8 +102,7 @@ export default function AutomationsSection() {
       .filter(a => fTrigger === "all" || getTrigger(a.triggerKey)?.object === fTrigger)
       .filter(a => !q || a.name.toLowerCase().includes(q) || summarize(a).toLowerCase().includes(q))
       .sort((x, y) => {
-        if (sort === "performance") return (y.stats?.replies ?? 0) - (x.stats?.replies ?? 0);
-        if (sort === "revenue") return (y.stats?.revenue ?? 0) - (x.stats?.revenue ?? 0);
+        if (sort === "runs") return automationRunStats(y.id).runs - automationRunStats(x.id).runs;
         return 0;
       });
   }, [items, statusTab, category, query, sort, fChannel, fTrigger]);
@@ -240,7 +239,7 @@ export default function AutomationsSection() {
             <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
               <div className="hidden md:grid px-5 py-2.5 text-[10px] font-semibold uppercase tracking-wider"
                 style={{ gridTemplateColumns: LIST_COLS, color: "var(--text-muted)", borderBottom: "1px solid var(--border)", backgroundColor: "transparent" }}>
-                <span>Automation</span><span>When</span><span>Then</span><span className="text-right">Contacts</span><span>Last run</span><span>Performance</span><span></span>
+                <span>Automation</span><span>When</span><span>Then</span><span className="text-right">Runs</span><span className="text-right">Tasks</span><span>Last run</span><span></span>
               </div>
               {visible.map((a, i) => <AutomationListRow key={a.id} a={a} last={i === visible.length - 1} {...rowProps(a)} />)}
             </div>
@@ -297,8 +296,7 @@ function AutomationCard({ a, onOpen, showStatusOnHover }: { a: MarketingAutomati
   const cat = CATEGORY_CONFIG[automationCategory(a)];
   const channel = automationChannel(a);
   const attn = automationWarnings(a).length > 0;
-  const replies = a.stats?.replies ?? 0;
-  const revenue = a.stats?.revenue ?? 0;
+  const rs = automationRunStats(a.id);
   return (
     <div className="group rounded-xl p-4 cursor-pointer transition-all duration-150 hover:-translate-y-0.5"
       style={{ backgroundColor: "var(--bg-surface)", border: `1px solid ${attn ? AMBER + "66" : "var(--border-subtle)"}`, boxShadow: "var(--shadow-card)" }}
@@ -326,7 +324,9 @@ function AutomationCard({ a, onOpen, showStatusOnHover }: { a: MarketingAutomati
         {channel !== "—" && (
           <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded shrink-0" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>{channel}</span>
         )}
-        <span className="ml-auto text-[11px] shrink-0" style={{ color: "var(--text-muted)" }}>{replies} repl{revenue > 0 ? ` · ${money(revenue)}` : ""}</span>
+        <span className="ml-auto text-[11px] shrink-0" style={{ color: "var(--text-muted)" }}>
+          {rs.runs === 0 ? "Never run" : `${rs.runs} run${rs.runs === 1 ? "" : "s"} · ${rs.lastRun}`}
+        </span>
       </div>
     </div>
   );
@@ -335,7 +335,7 @@ function AutomationCard({ a, onOpen, showStatusOnHover }: { a: MarketingAutomati
 // ── List view row (compact) ──
 function AutomationListRow({ a, last, ...actions }: { a: MarketingAutomation; last: boolean } & RowActions) {
   const sc = STATUS_CONFIG[a.status];
-  const perf = a.stats && a.stats.sent > 0 ? `${a.stats.replies} repl · ${money(a.stats.revenue)}` : "—";
+  const rs = automationRunStats(a.id);
   const attn = automationWarnings(a).length > 0;
   return (
     <div className="md:grid flex flex-col gap-2 px-5 py-3.5 items-center cursor-pointer transition-colors hover:bg-[var(--bg-surface-2)]"
@@ -351,9 +351,9 @@ function AutomationListRow({ a, last, ...actions }: { a: MarketingAutomation; la
       </div>
       <span className="text-xs truncate w-full pr-2 md:block hidden" style={{ color: "var(--text-secondary)" }}>{triggerSummary(a)}</span>
       <span className="text-xs truncate w-full pr-2 md:block hidden" style={{ color: "var(--text-secondary)" }}>{actionSummary(a)}</span>
-      <span className="text-sm font-semibold md:text-right w-full" style={{ color: "var(--text-primary)" }}>{a.stats?.contacts ?? 0}</span>
-      <span className="text-xs w-full md:block hidden" style={{ color: "var(--text-muted)" }}>{a.lastRun ?? "Never"}</span>
-      <span className="text-xs w-full md:block hidden" style={{ color: "var(--text-secondary)" }}>{perf}</span>
+      <span className="text-sm font-semibold md:text-right w-full" style={{ color: "var(--text-primary)" }}>{rs.runs}</span>
+      <span className="text-sm font-semibold md:text-right w-full" style={{ color: "var(--text-primary)" }}>{rs.tasks}</span>
+      <span className="text-xs w-full md:block hidden" style={{ color: "var(--text-muted)" }}>{rs.lastRun ?? "Never"}</span>
       <div className="md:justify-self-end"><RowMenu a={a} {...actions} /></div>
     </div>
   );
@@ -384,8 +384,8 @@ function MenuItem({ icon: Icon, label, onClick, danger }: { icon: typeof Pencil;
   );
 }
 
-// ── Overview: a visual, data-rich dashboard (replaces the KPI bar) ──
-interface Kpi { active: number; draft: number; paused: number; attention: number; contacts: number; replies: number; booked: number; revenue: number }
+// ── Overview: a visual dashboard fed ONLY by the real runs log ──
+interface Kpi { active: number; draft: number; paused: number; attention: number; runs: number; tasks: number }
 
 function OverviewDashboard({ items, kpi }: { items: MarketingAutomation[]; kpi: Kpi }) {
   const cats = (Object.keys(CATEGORY_CONFIG) as (keyof typeof CATEGORY_CONFIG)[])
@@ -393,11 +393,10 @@ function OverviewDashboard({ items, kpi }: { items: MarketingAutomation[]; kpi: 
     .filter(c => c.n > 0).sort((a, b) => b.n - a.n);
   const maxCat = Math.max(1, ...cats.map(c => c.n));
 
-  const top = [...items].sort((a, b) => (b.stats?.revenue ?? 0) - (a.stats?.revenue ?? 0)).filter(a => (a.stats?.revenue ?? 0) > 0).slice(0, 5);
-  const maxRev = Math.max(1, ...top.map(a => a.stats?.revenue ?? 0));
-
-  const replyRate = kpi.contacts ? Math.round((kpi.replies / kpi.contacts) * 100) : 0;
-  const bookRate = kpi.contacts ? Math.round((kpi.booked / kpi.contacts) * 100) : 0;
+  const withRuns = items.map(a => ({ a, rs: automationRunStats(a.id) })).filter(x => x.rs.runs > 0).sort((x, y) => y.rs.runs - x.rs.runs).slice(0, 5);
+  const maxRuns = Math.max(1, ...withRuns.map(x => x.rs.runs));
+  const recent: AutomationRun[] = getRuns().slice(0, 6);
+  const nameOf = (id: string) => items.find(a => a.id === id)?.name ?? "Deleted automation";
 
   const statusSegs = [
     { label: "Active", value: kpi.active, color: "#16a34a" },
@@ -408,18 +407,26 @@ function OverviewDashboard({ items, kpi }: { items: MarketingAutomation[]; kpi: 
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatTile icon={DollarSign}    label="Revenue attributed" value={money(kpi.revenue)}        sub="from automations"          color={ACCENT} />
-        <StatTile icon={CheckCircle2}  label="Booked jobs"        value={kpi.booked.toLocaleString()} sub={`${bookRate}% of contacts`} color="#16a34a" />
-        <StatTile icon={MessageSquare} label="Replies"            value={kpi.replies.toLocaleString()} sub={`${replyRate}% reply rate`} color="#7c3aed" />
+        <StatTile icon={Activity}      label="Runs"               value={kpi.runs.toLocaleString()}  sub="real firings, this browser" color={ACCENT} />
+        <StatTile icon={CheckCircle2}  label="Tasks created"      value={kpi.tasks.toLocaleString()} sub="live in Tasks"              color="#16a34a" />
         <StatTile icon={Zap}           label="Active automations" value={String(kpi.active)}         sub={`${items.length} total`}    color="#2563eb" />
+        <StatTile icon={MessageSquare} label="Needs attention"    value={String(kpi.attention)}      sub="config problems"            color={AMBER} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <DashCard title="Engagement funnel" icon={Activity}>
-          <FunnelBar label="Contacts reached" value={kpi.contacts} pct={100} color="#0891b2" />
-          <FunnelBar label="Replies" value={kpi.replies} pct={kpi.contacts ? (kpi.replies / kpi.contacts) * 100 : 0} color="#7c3aed" />
-          <FunnelBar label="Booked jobs" value={kpi.booked} pct={kpi.contacts ? (kpi.booked / kpi.contacts) * 100 : 0} color="#16a34a" />
-          <p className="text-[11px] mt-3" style={{ color: "var(--text-muted)" }}>{replyRate}% reply rate · {bookRate}% booking rate across all sends.</p>
+        <DashCard title="Recent activity" subtitle="from the runs log" icon={Activity}>
+          {recent.length === 0
+            ? <Empty label="No runs yet — automations fire when their trigger actually happens (a job completes, a quote is approved…)." />
+            : recent.map(r => (
+              <div key={r.id} className="mb-2.5 last:mb-0 text-xs">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: r.status === "executed" ? "#16a34a" : AMBER }} />
+                  <span className="font-medium truncate" style={{ color: "var(--text-primary)" }}>{r.subject}</span>
+                  <span className="ml-auto shrink-0" style={{ color: "var(--text-muted)" }}>{r.atLabel}</span>
+                </div>
+                <p className="ml-3 mt-0.5 truncate" style={{ color: "var(--text-muted)" }}>{nameOf(r.automationId)}{r.notes[0] ? ` — ${r.notes[0]}` : ""}</p>
+              </div>
+            ))}
         </DashCard>
 
         <DashCard title="Status mix" icon={PieChart}>
@@ -441,15 +448,15 @@ function OverviewDashboard({ items, kpi }: { items: MarketingAutomation[]; kpi: 
           {cats.length === 0 ? <Empty /> : cats.map(c => <Bar key={c.label} label={c.label} value={c.n} pct={(c.n / maxCat) * 100} color={c.color} />)}
         </DashCard>
 
-        <DashCard title="Top performers" subtitle="by revenue" icon={TrendingUp}>
-          {top.length === 0 ? <Empty label="No revenue attributed yet." /> : top.map(a => (
+        <DashCard title="Most active" subtitle="by real runs" icon={TrendingUp}>
+          {withRuns.length === 0 ? <Empty label="Nothing has fired yet." /> : withRuns.map(({ a, rs }) => (
             <div key={a.id} className="mb-2.5 last:mb-0">
               <div className="flex items-center justify-between text-xs mb-1">
                 <span className="truncate pr-2" style={{ color: "var(--text-secondary)" }}>{a.name}</span>
-                <span className="font-semibold shrink-0" style={{ color: "var(--text-primary)" }}>{money(a.stats?.revenue)}</span>
+                <span className="font-semibold shrink-0" style={{ color: "var(--text-primary)" }}>{rs.runs} run{rs.runs === 1 ? "" : "s"}</span>
               </div>
               <div className="h-2 rounded-full" style={{ backgroundColor: "var(--bg-input)" }}>
-                <div className="h-2 rounded-full" style={{ width: `${((a.stats?.revenue ?? 0) / maxRev) * 100}%`, backgroundColor: ACCENT }} />
+                <div className="h-2 rounded-full" style={{ width: `${(rs.runs / maxRuns) * 100}%`, backgroundColor: ACCENT }} />
               </div>
             </div>
           ))}
@@ -496,20 +503,6 @@ function Bar({ label, value, pct, color }: { label: string; value: number; pct: 
       </div>
       <div className="h-2 rounded-full" style={{ backgroundColor: "var(--bg-input)" }}>
         <div className="h-2 rounded-full" style={{ width: `${pct}%`, backgroundColor: color }} />
-      </div>
-    </div>
-  );
-}
-
-function FunnelBar({ label, value, pct, color }: { label: string; value: number; pct: number; color: string }) {
-  return (
-    <div className="mb-2.5 last:mb-0">
-      <div className="flex items-center justify-between text-xs mb-1">
-        <span style={{ color: "var(--text-secondary)" }}>{label}</span>
-        <span className="font-semibold" style={{ color: "var(--text-primary)" }}>{value.toLocaleString()}</span>
-      </div>
-      <div className="h-2.5 rounded-full" style={{ backgroundColor: "var(--bg-input)" }}>
-        <div className="h-2.5 rounded-full" style={{ width: `${Math.max(2, pct)}%`, backgroundColor: color }} />
       </div>
     </div>
   );

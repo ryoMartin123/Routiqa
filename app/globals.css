@@ -330,6 +330,12 @@ body {
     0 1px 2px rgba(0, 0, 0, 0.45);
 }
 
+/* ─── Documents overview folder tiles ────────────────────────────────────────
+   Tile labels read as headings for their folders: normal text in light mode,
+   FULL white in dark (the muted off-white --text-primary is too quiet here). */
+.doc-tile-label { color: var(--text-primary); }
+[data-theme="dark"] .doc-tile-label { color: #ffffff; }
+
 /* ─── Detail sub-tabs — the indigo/purple CRM accent ─────────────────────────
    The tab strip inside a single record (a specific customer, project, job,
    quote, invoice, …). Active = a flat pill using the --accent-* (indigo) tokens
@@ -936,6 +942,15 @@ body[data-comment-mode="1"] [data-comment-ui] {
 .lucide-plus-circle,
 .lucide-circle-plus {
   transition: transform 0.18s ease;
+}
+/* Escape hatch: zoom / stepper "+" glyphs are controls, not create buttons —
+   no grow, no press-shrink, no spin. */
+.no-plus-anim .lucide-plus,
+button:hover.no-plus-anim .lucide-plus,
+.no-plus-anim:hover .lucide-plus,
+.no-plus-anim:active .lucide-plus {
+  transition: none;
+  transform: none !important;
 }
 /* Hover (closed) — subtle grow */
 button:hover .lucide-plus,

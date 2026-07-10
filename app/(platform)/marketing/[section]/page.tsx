@@ -12,6 +12,7 @@ const SLUG_TO_SECTION: Record<string, MarketingSection> = {
   templates: "templates",
   automations: "automations",
   "lead-sources": "lead_sources",
+  integrations: "integrations",
   performance: "performance",
   settings: "settings",
 };

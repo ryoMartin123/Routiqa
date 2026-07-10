@@ -1,7 +1,12 @@
 // ─── Marketing automations — rule engine model ────────────
 // A marketing automation reads like a sentence:
-//   WHEN <trigger> happens, IF <conditions> are true, THEN <action>,
+//   WHEN <trigger> happens, IF <conditions> are true, THEN <step chain>,
 //   WITH <timing>, AND <stop/safety rules>.
+// THEN is a chain of steps (action / wait / only-continue-if gate), so one
+// trigger can drive "send email → wait 3 days → if no reply → call task".
+// Execution is REAL where the prototype can be: lib/marketing/automation-engine
+// hooks actual store events and logs every firing to a runs log — stats are
+// derived from real runs, never stored or seeded.
 //
 // Triggers can come from almost any CRM object/event (leads, customers, jobs,
 // estimates, invoices, payments, maintenance plans, equipment, forms, calls,
@@ -222,10 +227,38 @@ export const SAFETY_RULES: SafetyRuleDef[] = [
 ];
 export function getSafetyRule(key: string): SafetyRuleDef | undefined { return SAFETY_RULES.find(r => r.key === key); }
 
+// ─── Steps — the THEN chain ───────────────────────────────
+export type StepKind = "action" | "wait" | "gate";
+
+export interface AutomationStep {
+  id: string;
+  kind: StepKind;
+  // action
+  actionKey?: string;
+  actionValue?: string;
+  // wait
+  amount?: number;
+  unit?: "hours" | "days";
+  // gate — the chain continues only if ALL of these hold
+  conditions?: ConditionRow[];
+}
+
+export function newStep(kind: StepKind): AutomationStep {
+  const id = `s-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`;
+  if (kind === "wait") return { id, kind, amount: 1, unit: "days" };
+  if (kind === "gate") return { id, kind, conditions: [] };
+  return { id, kind, actionKey: "", actionValue: "" };
+}
+
+export function firstAction(a: MarketingAutomation): AutomationStep | undefined {
+  return a.steps.find(s => s.kind === "action" && s.actionKey);
+}
+export function actionSteps(a: MarketingAutomation): AutomationStep[] {
+  return a.steps.filter(s => s.kind === "action");
+}
+
 // ─── Automation record ────────────────────────────────────
 export type AutomationStatus = "active" | "draft" | "paused";
-
-export interface AutomationStats { contacts: number; sent: number; replies: number; booked: number; revenue?: number }
 
 export interface MarketingAutomation {
   id: string;
@@ -235,15 +268,13 @@ export interface MarketingAutomation {
   triggerParam?: number;
   conditions: ConditionRow[];
   timing: Timing;
-  actionKey: string;
-  actionValue?: string;
+  steps: AutomationStep[];
   safety: string[];        // enabled safety-rule keys
   dedupeDays?: number;
   createdAt: string;
-  lastRun?: string;
-  stats?: AutomationStats;
-  /** Explicit health issue for the needs-attention surface (e.g. "Last run failed"). */
-  issue?: string;
+  /** @deprecated pre-chain single-action fields — migrated into steps on load. */
+  actionKey?: string;
+  actionValue?: string;
 }
 
 export const STATUS_CONFIG: Record<AutomationStatus, { label: string; bg: string; color: string }> = {
@@ -266,7 +297,7 @@ export const CATEGORY_CONFIG: Record<AutomationCategoryKey, { label: string; col
 };
 
 export function automationCategory(a: MarketingAutomation): AutomationCategoryKey {
-  switch (a.actionKey) {
+  switch (firstAction(a)?.actionKey) {
     case "send_review":                          return "review_request";
     case "send_estimate_fu": case "send_financing_fu": return "estimate_followup";
     case "send_maint_remind":                    return "maintenance";
@@ -280,9 +311,9 @@ export function automationCategory(a: MarketingAutomation): AutomationCategoryKe
   return "other";
 }
 
-// SMS / Email / Campaign / Task / Team / Tag / Audience — the action's channel.
+// SMS / Email / Campaign / Task / Team / Tag / Audience — the first action's channel.
 export function automationChannel(a: MarketingAutomation): string {
-  switch (a.actionKey) {
+  switch (firstAction(a)?.actionKey) {
     case "send_sms": return "SMS";
     case "send_email": case "send_review": case "send_estimate_fu":
     case "send_maint_remind": case "send_financing_fu": case "send_reactivation": return "Email";
@@ -296,14 +327,15 @@ export function automationChannel(a: MarketingAutomation): string {
 }
 
 // ─── Needs-attention heuristics ───────────────────────────
-// Lightweight checks now; richer signals (failed sends, unsubscribe rate, missing
-// audience) connect when real execution lands.
+// Only REAL config problems — no invented health signals.
 export function automationWarnings(a: MarketingAutomation): string[] {
   const w: string[] = [];
-  if (a.issue) w.push(a.issue);
-  const act = getAction(a.actionKey);
-  if (act?.value && act.value.kind !== "none" && !a.actionValue) w.push(`${act.value.label} missing`);
-  if (a.status === "active" && a.stats && a.stats.sent > 20 && a.stats.replies / a.stats.sent < 0.03) w.push("Low reply rate");
+  for (const s of actionSteps(a)) {
+    const act = getAction(s.actionKey ?? "");
+    if (!act) { w.push("Step has no action picked"); continue; }
+    if (act.value && act.value.kind !== "none" && !s.actionValue) w.push(`${act.value.label} missing`);
+  }
+  for (const s of a.steps) if (s.kind === "gate" && !(s.conditions?.length)) w.push("Empty condition gate");
   return Array.from(new Set(w));
 }
 export function needsAttention(a: MarketingAutomation): boolean { return automationWarnings(a).length > 0; }
@@ -331,25 +363,39 @@ export function triggerSummary(a: MarketingAutomation): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
+// One step as a clause: "send the Review Request email" / "wait 3 days" /
+// "only if has replied is not set".
+export function stepPhrase(s: AutomationStep): string {
+  if (s.kind === "wait") return `wait ${s.amount ?? 1} ${s.unit ?? "days"}`;
+  if (s.kind === "gate") {
+    const conds = (s.conditions ?? []).map(conditionPhrase).filter(Boolean);
+    return conds.length ? `only if ${conds.join(" and ")}` : "only if… (empty gate)";
+  }
+  const act = getAction(s.actionKey ?? "");
+  return act ? act.clause(s.actionValue) : "…";
+}
+
 export function actionSummary(a: MarketingAutomation): string {
-  const act = getAction(a.actionKey);
+  const first = firstAction(a);
+  const act = first ? getAction(first.actionKey!) : undefined;
   if (!act) return "—";
-  const s = act.clause(a.actionValue);
-  return s.charAt(0).toUpperCase() + s.slice(1);
+  const s = act.clause(first!.actionValue);
+  const extra = a.steps.length - a.steps.indexOf(first!) - 1;
+  const base = s.charAt(0).toUpperCase() + s.slice(1);
+  return extra > 0 ? `${base} +${extra} more step${extra === 1 ? "" : "s"}` : base;
 }
 
 // The full sentence shown in the builder's Preview card and on hover in the list.
 export function summarize(a: MarketingAutomation): string {
   const t = getTrigger(a.triggerKey);
-  const act = getAction(a.actionKey);
-  if (!t || !act) return "Finish the trigger and action to see the summary.";
+  if (!t || !firstAction(a)) return "Finish the trigger and at least one action step to see the summary.";
 
   const parts: string[] = [`When ${t.clause(a.triggerParam ?? t.param?.default)}`];
   if (a.conditions.length) {
     parts.push(`if ${a.conditions.map(conditionPhrase).filter(Boolean).join(" and ")}`);
   }
-  let then = `then ${act.clause(a.actionValue)}`;
-  if (a.timing.kind !== "immediately") then += ` ${timingClause(a.timing)}`;
+  let then = `then ${a.steps.map(stepPhrase).join(", then ")}`;
+  if (a.timing.kind !== "immediately") then += ` — starting ${timingClause(a.timing)}`;
   if (a.timing.businessHoursOnly) then += " (business hours only)";
   parts.push(then);
 
@@ -374,52 +420,67 @@ function readStore<T>(key: string, fallback: T): T {
 }
 function persist() { try { localStorage.setItem(A_KEY, JSON.stringify(_autos)); } catch { /* ignore */ } }
 
+// Example configurations only — no metrics. Stats come from the real runs log.
 const SEED_AUTOMATIONS: MarketingAutomation[] = [
   {
     id: "auto-financing", name: "Financing follow-up on stalled estimates",
     status: "active", triggerKey: "estimate_not_approved", triggerParam: 3,
     conditions: [{ id: "c1", field: "estimate_amount", op: "gt", value: "3000" }],
     timing: { kind: "immediately", businessHoursOnly: true },
-    actionKey: "send_financing_fu", actionValue: "Financing Follow-Up",
+    steps: [{ id: "s1", kind: "action", actionKey: "send_financing_fu", actionValue: "Financing Follow-Up" }],
     safety: ["estimate_approved", "already_replied", "opted_out"],
-    createdAt: "Apr 2026", lastRun: "2 days ago",
-    stats: { contacts: 42, sent: 38, replies: 9, booked: 4, revenue: 18400 },
+    createdAt: "Apr 2026",
   },
   {
     id: "auto-review", name: "Review request after completed jobs",
     status: "active", triggerKey: "job_completed", triggerParam: undefined,
     conditions: [], timing: { kind: "after", amount: 1, unit: "days", businessHoursOnly: true },
-    actionKey: "send_review", actionValue: "Review Request",
+    steps: [
+      { id: "s1", kind: "action", actionKey: "send_review", actionValue: "Review Request" },
+      { id: "s2", kind: "wait", amount: 3, unit: "days" },
+      { id: "s3", kind: "gate", conditions: [{ id: "g1", field: "has_replied", op: "is_false", value: "" }] },
+      { id: "s4", kind: "action", actionKey: "create_call_task", actionValue: "No review yet — quick thank-you call" },
+    ],
     safety: ["opted_out", "dedupe"], dedupeDays: 30,
-    createdAt: "Apr 2026", lastRun: "Today",
-    stats: { contacts: 120, sent: 118, replies: 31, booked: 0, revenue: 0 },
+    createdAt: "Apr 2026",
   },
   {
     id: "auto-reactivation", name: "Win back customers with no recent service",
-    status: "active", triggerKey: "customer_not_booked", triggerParam: 12,
+    status: "paused", triggerKey: "customer_not_booked", triggerParam: 12,
     conditions: [{ id: "c1", field: "do_not_contact", op: "is_false", value: "" }],
     timing: { kind: "immediately", businessHoursOnly: true },
-    actionKey: "send_reactivation", actionValue: "",   // ← no template selected → needs attention
+    steps: [{ id: "s1", kind: "action", actionKey: "send_reactivation", actionValue: "" }],  // no template → needs attention
     safety: ["opted_out", "dedupe"], dedupeDays: 45,
-    createdAt: "Apr 2026", issue: "Last run failed",
-    stats: { contacts: 64, sent: 0, replies: 0, booked: 0, revenue: 0 },
+    createdAt: "Apr 2026",
   },
   {
     id: "auto-renewal", name: "Maintenance plan renewal reminder",
     status: "draft", triggerKey: "plan_expiring", triggerParam: 30,
     conditions: [{ id: "c1", field: "plan_status", op: "is", value: "due_soon" }],
     timing: { kind: "immediately" },
-    actionKey: "add_to_campaign", actionValue: "Maintenance Renewal",
+    steps: [{ id: "s1", kind: "action", actionKey: "add_to_campaign", actionValue: "Maintenance Renewal" }],
     safety: ["opted_out", "stop_after_payment"],
     createdAt: "Apr 2026",
-    stats: { contacts: 0, sent: 0, replies: 0, booked: 0, revenue: 0 },
   },
 ];
+
+// Pre-chain records carried a single actionKey (and possibly fake stats) —
+// migrate to a one-step chain and drop anything that wasn't configuration.
+function migrate(a: MarketingAutomation & { stats?: unknown; issue?: string; lastRun?: string }): MarketingAutomation {
+  const steps = a.steps?.length ? a.steps
+    : a.actionKey ? [{ id: "s1", kind: "action" as const, actionKey: a.actionKey, actionValue: a.actionValue }]
+    : [];
+  return {
+    id: a.id, name: a.name, status: a.status, triggerKey: a.triggerKey, triggerParam: a.triggerParam,
+    conditions: a.conditions ?? [], timing: a.timing, steps, safety: a.safety ?? [],
+    dedupeDays: a.dedupeDays, createdAt: a.createdAt,
+  };
+}
 
 function load(): MarketingAutomation[] {
   if (_autos) return _autos;
   const stored = readStore<MarketingAutomation[] | null>(A_KEY, null);
-  _autos = stored ?? SEED_AUTOMATIONS.map(a => ({ ...a }));
+  _autos = (stored ?? SEED_AUTOMATIONS).map(migrate);
   return _autos;
 }
 
@@ -430,7 +491,7 @@ export function blankAutomation(): MarketingAutomation {
   return {
     id: `auto-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`,
     name: "", status: "draft", triggerKey: "", conditions: [],
-    timing: { kind: "immediately" }, actionKey: "", safety: ["opted_out"],
+    timing: { kind: "immediately" }, steps: [newStep("action")], safety: ["opted_out"],
     createdAt: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
   };
 }
@@ -459,9 +520,43 @@ export function duplicateAutomation(id: string): MarketingAutomation | undefined
     id: `auto-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`,
     name: `${a.name} (copy)`,
     status: "draft",
-    lastRun: undefined,
-    stats: undefined,
-    issue: undefined,
   };
   return saveAutomation(copy);
+}
+
+// ─── Runs log — the only source of automation stats ───────
+// Every real firing (from lib/marketing/automation-engine) is appended here;
+// counts shown in the UI are derived from these entries, never stored.
+export interface AutomationRun {
+  id: string;
+  automationId: string;
+  at: string;              // ISO
+  atLabel: string;         // "Jul 9, 2:41 PM"
+  subject: string;         // who/what it fired for, e.g. "Robert Johnson"
+  trigger: string;         // plain-English trigger clause
+  notes: string[];         // per-step outcomes, honest wording
+  tasksCreated: number;
+  status: "executed" | "stopped";
+}
+
+const R_KEY = "crm-marketing-automation-runs";
+let _runs: AutomationRun[] | null = null;
+function loadRuns(): AutomationRun[] {
+  if (_runs) return _runs;
+  _runs = readStore<AutomationRun[]>(R_KEY, []);
+  return _runs;
+}
+export function getRuns(automationId?: string): AutomationRun[] {
+  const all = loadRuns();
+  return automationId ? all.filter(r => r.automationId === automationId) : [...all];
+}
+export function recordRun(run: AutomationRun): void {
+  _runs = [run, ...loadRuns()].slice(0, 500);
+  try { localStorage.setItem(R_KEY, JSON.stringify(_runs)); } catch { /* ignore */ }
+}
+
+export interface RunStats { runs: number; tasks: number; lastRun?: string }
+export function automationRunStats(id: string): RunStats {
+  const mine = getRuns(id);
+  return { runs: mine.length, tasks: mine.reduce((s, r) => s + r.tasksCreated, 0), lastRun: mine[0]?.atLabel };
 }
