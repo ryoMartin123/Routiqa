@@ -12,13 +12,14 @@
 //   • QuoteDesignPreviewModal / QuoteDesignThumbnail — reused by both
 
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
-import { Palette, Eye, Check, Star, X, Layers, Info } from "lucide-react";
+import { Palette, Eye, Check, Star, X, Layers, Info, Plus, Pencil, Trash2 } from "lucide-react";
 import ProposalFamilyDocument from "@/components/quotes/family/ProposalFamilyDocument";
+import QuoteDesignStudio from "@/components/settings/QuoteDesignStudio";
 import { buildSampleProposalDoc, buildSampleProposalDocForMode } from "@/lib/proposals/sampleDoc";
 import {
   getQuoteDesigns, getDesignsForMode, getActiveQuoteDesignId, setActiveQuoteDesign,
   resolveQuoteDesign, designFamilyLabel, designVariantLabel,
-  designSupportsMode,
+  designSupportsMode, deleteCustomQuoteDesign,
   PRICING_PRESENTATION_LABELS, PRICING_PRESENTATION_SHORT,
   QUOTE_DESIGN_MODE_LABELS,
   type QuoteDesign, type QuoteDesignMode,
@@ -28,24 +29,45 @@ import {
 export default function QuoteDesignsManager() {
   const [activeId, setActiveId] = useState(getActiveQuoteDesignId());
   const [previewId, setPreviewId] = useState<string | null>(null);
-  const designs = useMemo(() => getQuoteDesigns(), []);
+  const [tick, setTick] = useState(0);   // re-read after Studio save / delete
+  // { id } = edit a custom design; {} = build a new one; null = closed.
+  const [studio, setStudio] = useState<{ id?: string } | null>(null);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- tick forces a re-read after Studio save/delete
+  const designs = useMemo(() => getQuoteDesigns(), [tick]);
   const previewDesign = designs.find(d => d.id === previewId) ?? null;
 
   function use(id: string) { setActiveQuoteDesign(id); setActiveId(id); }
 
+  if (studio) {
+    return <QuoteDesignStudio designId={studio.id}
+      onClose={() => setStudio(null)}
+      onSaved={() => { setStudio(null); setTick(t => t + 1); }} />;
+  }
+
   return (
     <div className="space-y-4">
-      <div className="rounded-xl p-3.5 flex items-start gap-2.5" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}>
-        <Palette className="w-4 h-4 shrink-0 mt-0.5" style={{ color: "var(--accent-text)" }} />
-        <p className="text-xs leading-relaxed" style={{ color: "var(--text-secondary)" }}>
-          Choose what your customer-facing quote looks like. Each Quote Design is a complete proposal — its layout, visual style, sections, and pricing presentation. Your brand color &amp; logo (from <span style={{ fontWeight: 600 }}>Proposal Branding</span>) carry through every design. One design is active by default; salesbooks and quotes can pick their own.
-        </p>
+      <div className="flex items-start gap-2.5">
+        <div className="flex-1 rounded-xl p-3.5 flex items-start gap-2.5" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}>
+          <Palette className="w-4 h-4 shrink-0 mt-0.5" style={{ color: "var(--accent-text)" }} />
+          <p className="text-xs leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+            Choose what your customer-facing quote looks like. Each Quote Design is a complete proposal — its layout, visual style, sections, and pricing presentation. Your brand color &amp; logo (from <span style={{ fontWeight: 600 }}>Proposal Branding</span>) carry through every design. One design is active by default; salesbooks and quotes can pick their own.
+          </p>
+        </div>
+        <button onClick={() => setStudio({})}
+          className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-lg text-sm font-medium text-white shrink-0 bg-[#0f8578] hover:bg-[#0c6b60] transition-colors">
+          <Plus className="w-4 h-4" /> New Design
+        </button>
       </div>
 
       <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))" }}>
         {designs.map(d => (
           <DesignCard key={d.id} d={d} active={activeId === d.id}
-            onUse={() => use(d.id)} onPreview={() => setPreviewId(d.id)} />
+            onUse={() => use(d.id)} onPreview={() => setPreviewId(d.id)}
+            onEdit={d.custom ? () => setStudio({ id: d.id }) : undefined}
+            onDelete={d.custom ? () => {
+              if (activeId === d.id) return;   // can't delete the active design
+              deleteCustomQuoteDesign(d.id); setTick(t => t + 1);
+            } : undefined} />
         ))}
       </div>
 
@@ -58,7 +80,10 @@ export default function QuoteDesignsManager() {
 }
 
 // ─── Design card ──────────────────────────────────────────
-function DesignCard({ d, active, onUse, onPreview }: { d: QuoteDesign; active: boolean; onUse: () => void; onPreview: () => void }) {
+function DesignCard({ d, active, onUse, onPreview, onEdit, onDelete }: {
+  d: QuoteDesign; active: boolean; onUse: () => void; onPreview: () => void;
+  onEdit?: () => void; onDelete?: () => void;
+}) {
   return (
     <div className="rounded-2xl overflow-hidden flex flex-col transition-all hover:shadow-md"
       style={{ backgroundColor: "var(--bg-surface)", border: `1px solid ${active ? "var(--accent-text)" : "var(--border-subtle)"}`, boxShadow: active ? "0 0 0 3px var(--accent-soft-bg)" : "var(--shadow-card)" }}>
@@ -73,6 +98,13 @@ function DesignCard({ d, active, onUse, onPreview }: { d: QuoteDesign; active: b
           <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{d.name}</p>
           {active && <span className="flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: "#d1fae5", color: "#065f46" }}><Check className="w-3 h-3" /> Active</span>}
           {!active && d.isDefault && <span className="flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: "#d3ebe6", color: "#0a5c53" }}><Star className="w-2.5 h-2.5" /> Default</span>}
+          {d.custom && <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>Custom</span>}
+          {(onEdit || onDelete) && (
+            <span className="ml-auto flex items-center gap-0.5">
+              {onEdit && <button onClick={onEdit} title="Edit in Design Studio" className="p-1" style={{ color: "var(--text-muted)" }}><Pencil className="w-3.5 h-3.5" /></button>}
+              {onDelete && <button onClick={onDelete} disabled={active} title={active ? "Active design — pick another first" : "Delete"} className="p-1 disabled:opacity-25" style={{ color: "var(--text-muted)" }}><Trash2 className="w-3.5 h-3.5" /></button>}
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-1.5 mt-2 flex-wrap">
           <Badge>{designFamilyLabel(d)}</Badge>

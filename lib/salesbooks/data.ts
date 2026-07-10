@@ -212,36 +212,6 @@ export const SALESBOOK_TEMPLATES: SalesbookTemplate[] = [
     terms: "Proposal valid 30 days.",
   },
   {
-    id: "sb-roof-replace",
-    name: "Roofing Replacement",
-    industry: "roofing", proposalType: "good_better_best", complexity: "premium",
-    bestFor: "Full roof replacement with shingle tiers.",
-    styleBadge: "Shingle Tiers",
-    proposalTemplateId: "ptmpl-2",
-    sections: ["cover_header", "customer_info", "property_info", "inspection_findings", "recommended_solution", "gbb_options", "photos", "warranty", "financing_note", "terms", "approval"],
-    options: [
-      opt({ tier: "good",   name: "Architectural Shingles", image: img("1566071634551-224a639a1c7d"), brand: "GAF", model: "Timberline HDZ", description: "Durable, popular, great value.", price: 12500, monthlyPrice: 189, warranty: "25-yr limited", category: "Roofing", includes: ["Tear-off & disposal", "Synthetic underlayment", "Ridge vent", "Cleanup & magnet sweep"] }),
-      opt({ tier: "better", name: "Designer Shingles",      image: img("1590365876016-da05ac533e83"), brand: "GAF", model: "Grand Sequoia", description: "Premium look, heavier weight.", price: 16800, monthlyPrice: 254, warranty: "Lifetime limited", category: "Roofing", includes: ["Tear-off & disposal", "Ice & water shield", "Designer shingles", "Ridge vent", "Cleanup"] }),
-      opt({ tier: "best",   name: "Standing Seam Metal",    image: img("1602193230480-7840a38eb0c3"), brand: "—", model: "24-gauge", description: "50+ year lifespan, energy efficient.", price: 28500, monthlyPrice: 429, warranty: "30-yr finish", category: "Roofing", includes: ["Tear-off & disposal", "Full underlayment", "Standing seam panels", "Custom flashing", "Cleanup"] }),
-    ],
-    financingNote: "Roofing financing available with low monthly payments.",
-    warranty: "Manufacturer material warranty plus 10-yr workmanship.",
-    terms: "Proposal valid 30 days. Subject to deck inspection on tear-off.",
-  },
-  {
-    id: "sb-roof-repair",
-    name: "Roofing Repair",
-    industry: "roofing", proposalType: "repair", complexity: "simple",
-    bestFor: "Targeted leak and storm-damage repairs.",
-    styleBadge: "Quick Repair",
-    proposalTemplateId: "ptmpl-1",
-    sections: ["cover_header", "customer_info", "property_info", "inspection_findings", "photos", "line_items", "terms", "approval"],
-    options: [
-      opt({ name: "Leak Repair & Flashing", image: img("1634853982486-c06f0e17940f"), description: "Repair active leak and reseal flashing.", price: 850, category: "Roofing", includes: ["Replace damaged shingles", "Reseal flashing", "Repair underlayment"] }),
-    ],
-    terms: "Repairs warrantied 1 year. Proposal valid 30 days.",
-  },
-  {
     id: "sb-hvac-commercial-pm",
     name: "Commercial HVAC PM",
     industry: "hvac", proposalType: "commercial_pm", complexity: "premium",
@@ -255,31 +225,34 @@ export const SALESBOOK_TEMPLATES: SalesbookTemplate[] = [
     terms: "12-month agreement, auto-renewing. Billed monthly.",
   },
   {
-    id: "sb-plumbing-membership",
-    name: "Plumbing Membership",
-    industry: "plumbing", proposalType: "maintenance_plan", complexity: "standard",
-    bestFor: "Recurring plumbing membership / service plan.",
+    id: "sb-hvac-membership",
+    name: "Residential Maintenance Membership",
+    industry: "hvac", proposalType: "maintenance_plan", complexity: "standard",
+    bestFor: "Recurring residential tune-up memberships with tiered plans.",
     styleBadge: "Membership",
     proposalTemplateId: "ptmpl-4",
-    sections: ["cover_header", "customer_info", "recommended_solution", "scope_of_work", "line_items", "warranty", "terms", "approval"],
+    sections: ["cover_header", "customer_info", "recommended_solution", "gbb_options", "scope_of_work", "warranty", "terms", "approval"],
     options: [
-      opt({ tier: "good",   name: "Essential Plan", image: img("1676210134188-4c05dd172f89"), description: "Annual inspection + priority booking.", price: 144, monthlyPrice: 12, category: "Membership", includes: ["Annual plumbing inspection", "Priority scheduling", "10% repair discount"] }),
-      opt({ tier: "better", name: "Total Care Plan", image: img("1542013936693-884638332954"), description: "Two visits + water heater flush.", price: 264, monthlyPrice: 22, category: "Membership", includes: ["2 inspections/yr", "Water heater flush", "Priority scheduling", "15% repair discount", "Waived diagnostic fees"] }),
+      opt({ tier: "good",   name: "Comfort Club Basic", image: img("1614447413576-b346c641c128"), description: "One seasonal tune-up a year.", price: 149, monthlyPrice: 12, category: "Membership", includes: ["1 precision tune-up / yr", "Standard filter included", "Priority scheduling", "10% repair discount"] }),
+      opt({ tier: "better", name: "Comfort Club Plus",  image: img("1615309662243-70f6df917b59"), description: "Heating + cooling tune-ups with repair perks.", price: 249, monthlyPrice: 21, category: "Membership", includes: ["2 tune-ups / yr (heat + cool)", "Standard filters included", "Priority scheduling", "15% repair discount", "Waived diagnostic fees"] }),
+      opt({ tier: "best",   name: "Comfort Club Total", image: img("1550998251-1e18917c975c"), description: "Full coverage: both tune-ups, same-day priority, top discounts.", price: 349, monthlyPrice: 29, category: "Membership", includes: ["2 tune-ups / yr (heat + cool)", "Filters + condensate treatment", "Same-day priority service", "20% repair discount", "Waived diagnostic fees", "No overtime charges"] }),
     ],
-    terms: "Membership renews annually. Cancel anytime.",
+    warranty: "Tune-up workmanship guaranteed between visits.",
+    terms: "Membership renews annually. Billed monthly or annually. Cancel anytime.",
   },
   {
-    id: "sb-property-maintenance",
-    name: "Property Maintenance",
-    industry: "property_maintenance", proposalType: "maintenance_plan", complexity: "standard",
-    bestFor: "Recurring property / facility maintenance contracts.",
-    styleBadge: "Contract",
-    proposalTemplateId: "ptmpl-4",
-    sections: ["cover_header", "customer_info", "property_info", "scope_of_work", "line_items", "terms", "approval"],
+    id: "sb-hvac-repair",
+    name: "HVAC Repair / Diagnostic",
+    industry: "hvac", proposalType: "repair", complexity: "simple",
+    bestFor: "Same-visit repair quotes after a diagnostic.",
+    styleBadge: "Quick Repair",
+    proposalTemplateId: "ptmpl-1",
+    sections: ["cover_header", "customer_info", "property_info", "problem_need", "line_items", "optional_addons", "warranty", "terms", "approval"],
     options: [
-      opt({ name: "Monthly Property Care", image: img("1486406146926-c627a92ad1ab"), description: "Recurring maintenance across the property.", price: 9600, monthlyPrice: 800, category: "Maintenance", includes: ["Monthly site visit", "Preventive checklist", "Minor repairs included", "Priority dispatch", "Quarterly reporting"] }),
+      opt({ name: "Diagnostic & Repair", image: img("1698479603408-1a66a6d9e80f"), description: "Restore cooling — replace the failed component found in diagnosis.", price: 389, category: "Repair", includes: ["Full system diagnostic", "Replace failed capacitor", "Refrigerant level check", "Test & verify operation"] }),
     ],
-    terms: "12-month contract, billed monthly. 30-day cancellation notice.",
+    warranty: "Repairs warrantied 1 year, parts and labor.",
+    terms: "Diagnostic fee waived with completed repair. Proposal valid 30 days.",
   },
 ];
 
@@ -372,6 +345,39 @@ export function installSalesbook(templateId: string, opts: InstallSalesbookOptio
   };
   write([copy, ...read()]);
   return copy;
+}
+
+// Start-from-scratch: a draft company template with no sample content. The
+// section skeleton comes from the proposal type's default Quote Design — the
+// design is the source of layout (the studio has no Sections step).
+export function createBlankSalesbook(opts: { companyId: string; locationId?: string; name?: string; proposalType?: SalesbookProposalType }): CompanySalesbook {
+  const proposalType = opts.proposalType ?? "custom";
+  const BLANK_SECTIONS = [...getQuoteDesign(defaultQuoteDesignId(proposalType)).defaultSections];
+  const blank: CompanySalesbook = {
+    id: rid("csb"),
+    companyId: opts.companyId,
+    locationId: opts.locationId,
+    active: true,
+    installedAt: nowStamp(),
+    name: opts.name?.trim() || "Untitled Proposal Template",
+    industry: "hvac",
+    proposalType,
+    complexity: "standard",
+    bestFor: "",
+    styleBadge: "Custom",
+    sections: [...BLANK_SECTIONS],
+    options: [],
+    status: "draft",
+    quoteDesignId: defaultQuoteDesignId(proposalType),
+    sectionLayout: defaultSectionLayout(BLANK_SECTIONS),
+    media: [],
+    showMonthly: false,
+    monthlyEnabled: true,
+    validityDays: 30,
+    updatedAt: nowStamp(),
+  };
+  write([blank, ...read()]);
+  return blank;
 }
 
 export function renameCompanySalesbook(id: string, name: string): void {

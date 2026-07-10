@@ -406,8 +406,8 @@ function OverviewTab({ id, onTab }: { id: string; onTab: (tab: string) => void }
           {quote.linkedLabel && (
             <OvCard title="Linked To">
               <Link href={linkedHref} className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-                <div className="w-8 h-8 rounded-lg bg-[#d3ebe6] flex items-center justify-center shrink-0">
-                  <LinkedIcon className="w-4 h-4 text-[#0f8578]" />
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: quote.linkedType === "project" ? "var(--accent-soft-bg)" : "#d3ebe6" }}>
+                  <LinkedIcon className="w-4 h-4" style={{ color: quote.linkedType === "project" ? "var(--accent-text)" : "#0f8578" }} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{quote.linkedLabel}</p>

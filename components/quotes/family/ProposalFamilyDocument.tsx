@@ -85,12 +85,22 @@ export default function ProposalFamilyDocument({
 // ══════════════════════════════════════════════════════════
 //  CLASSIC — one-column document
 // ══════════════════════════════════════════════════════════
+// Body sections that flow in the ORDER of the document's section list. The
+// header, cover, customer/property grid, and signature stay pinned — everything
+// between them renders top-to-bottom exactly as the template orders it.
+const CLASSIC_FLOW: SectionKey[] = [
+  "problem_need", "inspection_findings", "recommended_solution", "scope_of_work",
+  "custom_text", "optional_addons", "gbb_options", "line_items",
+  "financing_note", "warranty", "terms",
+];
+
 function ClassicLayout({ ctx }: { ctx: Ctx }) {
   const { data, skin, visible } = ctx;
   const pad = "44px 56px 52px";
   // Auto-hide rules: a free-text section with no wording is dropped; option/line
   // sections are dropped when there's nothing to show.
   const showSection = (k: SectionKey) => visible.has(k) && shows(ctx, k);
+  const flow = data.sections.filter(s => s.visible).map(s => s.key as SectionKey).filter(k => CLASSIC_FLOW.includes(k));
   return (
     <div>
       <LetterheadHeader ctx={ctx} />
@@ -102,17 +112,13 @@ function ClassicLayout({ ctx }: { ctx: Ctx }) {
           {visible.has("property_info") && <PropertyInfo ctx={ctx} />}
         </div>
 
-        {(["problem_need", "inspection_findings", "recommended_solution", "scope_of_work"] as SectionKey[])
-          .filter(showSection)
-          .map(k => <Narrative key={k} ctx={ctx} sectionKey={k} />)}
+        {flow.map((k, i) => {
+          if (!showSection(k)) return null;
+          if (k === "gbb_options") return <StackedOptions key={`${k}-${i}`} ctx={ctx} />;
+          if (k === "line_items") return <LineItemsTable key={`${k}-${i}`} ctx={ctx} withTotals />;
+          return <Narrative key={`${k}-${i}`} ctx={ctx} sectionKey={k} small={k === "terms"} />;
+        })}
 
-        {showSection("gbb_options") && <StackedOptions ctx={ctx} />}
-
-        {visible.has("line_items") && <LineItemsTable ctx={ctx} withTotals />}
-
-        {showSection("financing_note") && <Narrative ctx={ctx} sectionKey="financing_note" />}
-        {showSection("warranty") && <Narrative ctx={ctx} sectionKey="warranty" />}
-        {showSection("terms") && <Narrative ctx={ctx} sectionKey="terms" small />}
         {visible.has("approval") && <Signature ctx={ctx} />}
 
         {data.branding.footer && (
@@ -126,24 +132,34 @@ function ClassicLayout({ ctx }: { ctx: Ctx }) {
 // ══════════════════════════════════════════════════════════
 //  COMPARISON — presentation layout
 // ══════════════════════════════════════════════════════════
+// Narrative sections flow in the template's order here too; the presentation
+// scaffolding (hero, customer strip, summary band, financing, warranty/terms,
+// signature) keeps its fixed positions.
+const COMPARISON_FLOW: SectionKey[] = [
+  "problem_need", "inspection_findings", "recommended_solution", "scope_of_work",
+  "custom_text", "optional_addons", "gbb_options",
+];
+
 function ComparisonLayout({ ctx }: { ctx: Ctx }) {
   const { data, visible } = ctx;
   const hasOptions = (data.options?.length ?? 0) > 0;
   const showSection = (k: SectionKey) => visible.has(k) && shows(ctx, k);
   const showWarranty = showSection("warranty");
   const showTerms = showSection("terms");
+  const flow = data.sections.filter(s => s.visible).map(s => s.key as SectionKey).filter(k => COMPARISON_FLOW.includes(k));
   return (
     <div>
       <HeroHeader ctx={ctx} />
       <div style={{ padding: "26px 48px 48px" }}>
         {visible.has("customer_info") && <CustomerStrip ctx={ctx} />}
 
-        {(["problem_need", "recommended_solution"] as SectionKey[])
-          .filter(showSection)
-          .map(k => <Narrative key={k} ctx={ctx} sectionKey={k} />)}
+        {flow.map((k, i) => {
+          if (k === "gbb_options") return hasOptions ? <ComparisonCards key={`${k}-${i}`} ctx={ctx} /> : null;
+          return showSection(k) ? <Narrative key={`${k}-${i}`} ctx={ctx} sectionKey={k} /> : null;
+        })}
 
-        {/* Centerpiece: side-by-side comparison cards (only when there are options) */}
-        {hasOptions && <ComparisonCards ctx={ctx} />}
+        {/* Options with no gbb section in the list still get their centerpiece */}
+        {hasOptions && !flow.includes("gbb_options") && <ComparisonCards ctx={ctx} />}
 
         {visible.has("line_items") && <SummaryBand ctx={ctx} />}
 
@@ -534,7 +550,7 @@ function Label({ ctx, sectionKey, fallback }: { ctx: Ctx; sectionKey: SectionKey
 function shows(ctx: Ctx, k: SectionKey): boolean {
   if (k === "gbb_options") return (ctx.data.options?.length ?? 0) > 0;
   if (k === "photos") return false; // no photo content wired into the doc yet
-  const TEXT: SectionKey[] = ["problem_need", "inspection_findings", "recommended_solution", "scope_of_work", "financing_note", "warranty", "terms", "custom_text"];
+  const TEXT: SectionKey[] = ["problem_need", "inspection_findings", "recommended_solution", "scope_of_work", "financing_note", "warranty", "terms", "custom_text", "optional_addons"];
   if (TEXT.includes(k)) return Boolean(ctx.body(k).trim());
   return true;
 }

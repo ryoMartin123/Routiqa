@@ -12,10 +12,10 @@ import { useMemo, useState } from "react";
 import {
   BookOpen, Eye, Check, Download, Trash2, X, Layers, Package,
   CreditCard, ShieldCheck, FileText, Sparkles, Pencil, Palette, ChevronRight,
-  Image as ImageIcon, Upload, Tag, Sliders,
+  Image as ImageIcon, Upload, Tag, Sliders, Plus,
 } from "lucide-react";
 import UiSelect from "@/components/ui/Select";
-import CompanySalesbookEditor from "@/components/settings/CompanySalesbookEditor";
+import SalesbookStudio from "@/components/settings/SalesbookStudio";
 import QuoteDesignsManager from "@/components/settings/QuoteDesignsManager";
 import OfferLibrarySection from "@/components/settings/OfferLibrarySection";
 import MediaLibrarySection from "@/components/settings/MediaLibrarySection";
@@ -26,7 +26,7 @@ import { useHierarchy } from "@/components/providers/HierarchyProvider";
 import { SECTION_LABELS, type SectionKey } from "@/lib/proposals/data";
 import {
   getSalesbookTemplates, getCompanySalesbooks, isTemplateInstalled,
-  installSalesbook, uninstallSalesbook,
+  installSalesbook, uninstallSalesbook, createBlankSalesbook,
   INDUSTRY_LABELS, PROPOSAL_TYPE_LABELS, COMPLEXITY_LABELS, INDUSTRY_ACCENT,
   type SalesbookTemplate, type SalesbookOption,
 } from "@/lib/salesbooks/data";
@@ -73,9 +73,19 @@ export default function SalesbookLibrarySection({ activeModule, onOpen, onBack }
   const previewTmpl = templates.find(t => t.id === previewId) ?? null;
   const installTmpl = templates.find(t => t.id === installId) ?? null;
 
-  // Editing an installed company salesbook takes over the whole section.
+  // Start-from-scratch: create a blank draft and jump straight into the editor —
+  // naming, sections, and options all happen there (no ceremony up front).
+  function newBlankTemplate() {
+    const companyId = effectiveCompanyId ?? allCompanies[0]?.id ?? "";
+    if (!companyId) return;
+    const sb = createBlankSalesbook({ companyId });
+    refresh();
+    setEditingId(sb.id);
+  }
+
+  // Editing opens the full-screen Salesbook Studio (canvas builder).
   if (editingId) {
-    return <CompanySalesbookEditor sbId={editingId} onBack={() => { setEditingId(null); refresh(); }} />;
+    return <SalesbookStudio sbId={editingId} onBack={() => { setEditingId(null); refresh(); }} />;
   }
 
   // ── Hub (cards) ──
@@ -125,9 +135,32 @@ export default function SalesbookLibrarySection({ activeModule, onOpen, onBack }
     <div className="space-y-5">
       {/* Offer Library owns its own workspace header — avoid the duplicate heading. */}
       {mod.key !== "offer_library" && (
-        <div>
-          <h2 className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>{mod.label}</h2>
-          <p className="text-sm mt-0.5" style={{ color: "var(--text-secondary)" }}>{mod.description}</p>
+        <div className="flex items-start justify-between gap-3 flex-wrap">
+          <div>
+            <h2 className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>{mod.label}</h2>
+            <p className="text-sm mt-0.5" style={{ color: "var(--text-secondary)" }}>{mod.description}</p>
+          </div>
+          {/* Both template surfaces offer BOTH ways in: start from a starter, or from scratch. */}
+          {mod.key === "installed" && (
+            <div className="flex items-center gap-2 shrink-0">
+              <button onClick={() => onOpen("library", "Starter Templates")}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium"
+                style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>
+                <BookOpen className="w-3.5 h-3.5" /> Browse Starters
+              </button>
+              <button onClick={newBlankTemplate}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-white bg-[#0f8578] hover:bg-[#0c6b60] transition-colors">
+                <Plus className="w-3.5 h-3.5" /> New Template
+              </button>
+            </div>
+          )}
+          {mod.key === "library" && (
+            <button onClick={newBlankTemplate}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium shrink-0"
+              style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>
+              <Plus className="w-3.5 h-3.5" /> Start from Scratch
+            </button>
+          )}
         </div>
       )}
 
@@ -140,7 +173,8 @@ export default function SalesbookLibrarySection({ activeModule, onOpen, onBack }
         </div>
       )}
 
-      {mod.key === "installed" && <InstalledList installed={installed} onRefresh={refresh} onEdit={setEditingId} />}
+      {mod.key === "installed" && <InstalledList installed={installed} onRefresh={refresh} onEdit={setEditingId}
+        onNew={newBlankTemplate} onBrowse={() => onOpen("library", "Starter Templates")} />}
 
       {mod.key === "designs" && <QuoteDesignsManager />}
 
@@ -223,52 +257,46 @@ function LibraryToolbar({ icon: Icon, text }: { icon: typeof Package; text: stri
 }
 
 // ─── Gallery card ─────────────────────────────────────────
+// Deliberately quiet: the card IS the preview affordance (click anywhere to open
+// the full preview drawer), one line of meta, and a single Use action. Industry /
+// complexity badges and the gradient header were noise — the drawer has the detail.
 function SalesbookCard({ t, installed, onPreview, onUse }: { t: SalesbookTemplate; installed: boolean; onPreview: () => void; onUse: () => void }) {
   const accent = INDUSTRY_ACCENT[t.industry];
   return (
-    <div className="rounded-2xl overflow-hidden flex flex-col transition-all hover:shadow-md"
+    <div onClick={onPreview} role="button" tabIndex={0}
+      onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onPreview(); } }}
+      className="group rounded-xl p-4 flex flex-col gap-3 cursor-pointer transition-all hover:shadow-md"
       style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
-      {/* Visual header */}
-      <div className="px-4 pt-4 pb-3 relative" style={{ background: `linear-gradient(135deg, ${accent}14, transparent)` }}>
-        <div className="flex items-start justify-between gap-2">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: accent + "1f" }}>
-            <BookOpen className="w-5 h-5" style={{ color: accent }} />
-          </div>
-          {installed ? (
-            <span className="flex items-center gap-1 text-[10px] font-semibold px-2 py-1 rounded-full" style={{ backgroundColor: "#d1fae5", color: "#065f46" }}>
-              <Check className="w-3 h-3" /> Installed
-            </span>
-          ) : (
-            <span className="text-[10px] font-semibold px-2 py-1 rounded-full" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>{t.styleBadge}</span>
-          )}
+      <div className="flex items-start gap-3">
+        <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: accent + "1a" }}>
+          <BookOpen className="w-4 h-4" style={{ color: accent }} />
         </div>
-        <p className="text-sm font-semibold mt-2.5 leading-snug" style={{ color: "var(--text-primary)" }}>{t.name}</p>
-        <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-          <Badge color={accent}>{INDUSTRY_LABELS[t.industry]}</Badge>
-          <Badge>{PROPOSAL_TYPE_LABELS[t.proposalType]}</Badge>
-          <Badge>{COMPLEXITY_LABELS[t.complexity]}</Badge>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold leading-snug" style={{ color: "var(--text-primary)" }}>{t.name}</p>
+          <p className="text-xs mt-0.5 leading-snug" style={{ color: "var(--text-muted)" }}>{t.bestFor}</p>
         </div>
+        {installed && (
+          <span className="flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0" style={{ backgroundColor: "#d1fae5", color: "#065f46" }}>
+            <Check className="w-3 h-3" /> Installed
+          </span>
+        )}
       </div>
-
-      {/* Body */}
-      <div className="px-4 py-3 flex-1">
-        <p className="text-xs leading-relaxed" style={{ color: "var(--text-secondary)" }}>{t.bestFor}</p>
-        <div className="flex items-center gap-4 mt-3">
-          <span className="flex items-center gap-1 text-[11px]" style={{ color: "var(--text-muted)" }}><Layers className="w-3.5 h-3.5" /> {t.sections.length} sections</span>
-          <span className="flex items-center gap-1 text-[11px]" style={{ color: "var(--text-muted)" }}><Package className="w-3.5 h-3.5" /> {t.options.length} option{t.options.length === 1 ? "" : "s"}</span>
-        </div>
-      </div>
-
-      {/* Actions */}
-      <div className="px-4 py-3 flex items-center gap-2" style={{ borderTop: "1px solid var(--border)" }}>
-        <button onClick={onPreview} className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium"
-          style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>
-          <Eye className="w-3.5 h-3.5" /> Preview
-        </button>
-        <button onClick={onUse} className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-white"
-          style={{ backgroundColor: installed ? "var(--text-muted)" : accent }}>
-          {installed ? <><Download className="w-3.5 h-3.5" /> Install again</> : <><Download className="w-3.5 h-3.5" /> Use This Template</>}
-        </button>
+      <div className="flex items-center justify-between gap-2 pt-2.5 mt-auto" style={{ borderTop: "1px solid var(--border)" }}>
+        <span className="text-[11px] truncate" style={{ color: "var(--text-muted)" }}>
+          {PROPOSAL_TYPE_LABELS[t.proposalType]} · {t.sections.length} sections{t.options.length > 0 ? ` · ${t.options.length} option${t.options.length === 1 ? "" : "s"}` : ""}
+        </span>
+        <span className="flex items-center gap-1.5 shrink-0">
+          <span className="hidden group-hover:inline-flex items-center gap-1 text-[11px]" style={{ color: "var(--text-muted)" }}>
+            <Eye className="w-3.5 h-3.5" /> Preview
+          </span>
+          <button onClick={e => { e.stopPropagation(); onUse(); }}
+            className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium transition-colors"
+            style={installed
+              ? { border: "1px solid var(--border)", color: "var(--text-muted)" }
+              : { backgroundColor: accent, color: "#fff" }}>
+            <Download className="w-3 h-3" /> {installed ? "Again" : "Use"}
+          </button>
+        </span>
       </div>
     </div>
   );
@@ -488,13 +516,24 @@ function CheckRow({ label, checked, onChange }: { label: string; checked: boolea
 }
 
 // ─── Installed list ───────────────────────────────────────
-function InstalledList({ installed, onRefresh, onEdit }: { installed: ReturnType<typeof getCompanySalesbooks>; onRefresh: () => void; onEdit: (id: string) => void }) {
+function InstalledList({ installed, onRefresh, onEdit, onNew, onBrowse }: {
+  installed: ReturnType<typeof getCompanySalesbooks>; onRefresh: () => void; onEdit: (id: string) => void;
+  onNew: () => void; onBrowse: () => void;
+}) {
   if (installed.length === 0) {
     return (
-      <div className="rounded-xl py-16 text-center" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
+      <div className="rounded-xl py-14 text-center" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
         <BookOpen className="w-8 h-8 mx-auto mb-3" style={{ color: "var(--text-muted)" }} />
         <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>No proposal templates yet</p>
-        <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>Browse Starter Templates and choose “Use This Template” to copy one in.</p>
+        <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>Start from a ready-made HVAC starter, or build your own from scratch.</p>
+        <div className="flex items-center justify-center gap-2 mt-4">
+          <button onClick={onBrowse} className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-medium text-white bg-[#0f8578] hover:bg-[#0c6b60] transition-colors">
+            <BookOpen className="w-3.5 h-3.5" /> Browse Starter Templates
+          </button>
+          <button onClick={onNew} className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-medium" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>
+            <Plus className="w-3.5 h-3.5" /> Start from Scratch
+          </button>
+        </div>
       </div>
     );
   }
@@ -502,6 +541,7 @@ function InstalledList({ installed, onRefresh, onEdit }: { installed: ReturnType
     <div className="space-y-2.5">
       {installed.map(sb => {
         const accent = INDUSTRY_ACCENT[sb.industry];
+        const draft = sb.status === "draft";
         return (
           <div key={sb.id} className="rounded-xl p-4 flex items-center gap-3" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
             <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: accent + "1a" }}>
@@ -510,11 +550,12 @@ function InstalledList({ installed, onRefresh, onEdit }: { installed: ReturnType
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold truncate" style={{ color: "var(--text-primary)" }}>{sb.name}</p>
               <p className="text-[11px] truncate" style={{ color: "var(--text-muted)" }}>
-                {INDUSTRY_LABELS[sb.industry]} · {PROPOSAL_TYPE_LABELS[sb.proposalType]} · {sb.sections.length} sections · {sb.options.length} options · installed {sb.installedAt}
+                {PROPOSAL_TYPE_LABELS[sb.proposalType]} · {sb.sections.length} sections · {sb.options.length} options · added {sb.installedAt}
               </p>
             </div>
-            <span className="hidden sm:flex items-center gap-1 text-[10px] font-semibold px-2 py-1 rounded-full shrink-0" style={{ backgroundColor: "#d1fae5", color: "#065f46" }}>
-              <Check className="w-3 h-3" /> Company-owned
+            <span className="hidden sm:flex items-center gap-1 text-[10px] font-semibold px-2 py-1 rounded-full shrink-0"
+              style={draft ? { backgroundColor: "var(--warning-soft-bg)", color: "var(--warning-text)" } : { backgroundColor: "#d1fae5", color: "#065f46" }}>
+              {draft ? "Draft" : <><Check className="w-3 h-3" /> Published</>}
             </span>
             <button onClick={() => onEdit(sb.id)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium shrink-0" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>
               <Pencil className="w-3.5 h-3.5" /> Edit

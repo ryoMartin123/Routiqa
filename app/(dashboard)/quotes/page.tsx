@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import RowArrow from "@/components/shared/RowArrow";
-import { Search, Plus, SlidersHorizontal, ChevronUp, ChevronDown, FilePen, Send, AlarmClock, DollarSign } from "lucide-react";
+import { Search, Plus, SlidersHorizontal, ChevronUp, ChevronDown, FilePen, Send, AlarmClock, DollarSign, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getAllQuotes, getArchivedQuotes, fmt, type QuoteRecord } from "@/lib/quotes/data";
 import { QUOTE_STATUS_STYLE, type QuoteStatus } from "@/lib/quotes/types";
@@ -47,7 +47,7 @@ function quoteRecency(q: QuoteRecord): number {
 }
 
 // Full column layout (Quote# · Customer · Property · Related · Status · Total · Assigned · Location · Created · Expires)
-const GRID_COLS = "110px 1.7fr 1.4fr 1.4fr 100px 110px 1fr 1fr 110px 110px";
+const GRID_COLS = "170px 1.7fr 1.4fr 1.4fr 100px 110px 1fr 1fr 110px 110px";
 const GRID_MIN_WIDTH = "1240px";
 
 const LINKED_TYPE_STYLE: Record<string, { bg: string; color: string }> = {
@@ -222,8 +222,11 @@ export default function QuotesPage() {
                     className="relative group grid px-4 py-3 items-center hover:bg-[var(--bg-surface-2)] transition-colors"
                     style={{ gridTemplateColumns: GRID_COLS, borderBottom: i < displayed.length - 1 ? "1px solid var(--border)" : "none", textDecoration: "none" }}>
                     <RowArrow />
-                    {/* Quote # */}
-                    <span className="text-sm font-mono font-medium truncate" style={{ color: "var(--text-primary)" }}>{q.quoteNumber}</span>
+                    {/* Quote # — icon tile matches the Jobs list rows */}
+                    <div className="flex items-center gap-2.5 min-w-0 pr-4">
+                      <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: "var(--accent-soft-bg)" }}><FilePen className="w-3.5 h-3.5" style={{ color: "var(--accent-text)" }} /></div>
+                      <span className="text-sm font-mono font-medium truncate" style={{ color: "var(--text-primary)" }}>{q.quoteNumber}</span>
+                    </div>
                     {/* Customer / Account (+ title) */}
                     <div className="min-w-0 pr-2">
                       <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{q.customerName}</p>
@@ -307,7 +310,10 @@ function QuoteCard({ quote: q }: { quote: QuoteRecord }) {
         ) : (
           <span className="text-[10px] truncate" style={{ color: "var(--text-muted)" }}>{q.expiresAt ? `Expires ${q.expiresAt}` : `Created ${q.createdAt}`}</span>
         )}
-        <span className="text-[10px] shrink-0" style={{ color: "var(--text-muted)" }}>{q.createdAt}</span>
+        <span className="flex items-center gap-1.5 shrink-0">
+          <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>{q.createdAt}</span>
+          <ArrowRight className="w-3.5 h-3.5 shrink-0 transition-transform group-hover:-rotate-45" style={{ color: "#0f8578" }} />
+        </span>
       </div>
     </Link>
   );

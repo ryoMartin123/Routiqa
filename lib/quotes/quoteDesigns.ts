@@ -97,6 +97,7 @@ export interface QuoteDesign {
   isDefaultForQuickQuote?: boolean;   // seed default for the Quick Quote flow
   isDefaultForSalesbook?: boolean;    // seed default for the Salesbook Proposal flow
   isDefaultForCustom?: boolean;       // seed default for the Custom Proposal flow
+  custom?: boolean;              // user-built in the Quote Design Studio (editable/deletable)
 }
 
 // ─── Curated library ──────────────────────────────────────
@@ -192,11 +193,81 @@ export const QUOTE_DESIGNS: QuoteDesign[] = [
 
 export const DEFAULT_QUOTE_DESIGN = QUOTE_DESIGNS.find(d => d.isDefault) ?? QUOTE_DESIGNS[0];
 
+// ─── Custom designs (built in the Quote Design Studio) ────
+// User-authored designs live beside the curated library: same QuoteDesign shape,
+// stored in localStorage (Supabase `quote_designs` rows later). Structure is an
+// ordered list of section keys; supportedModes and the pricing presentation are
+// DERIVED from that structure so custom designs obey the same design↔content
+// correlation rules as curated ones.
+const CUSTOM_KEY = "crm-custom-quote-designs";
+let _custom: QuoteDesign[] | null = null;
+
+function readCustom(): QuoteDesign[] {
+  if (_custom) return _custom;
+  if (typeof window === "undefined") return [];
+  try { const r = localStorage.getItem(CUSTOM_KEY); _custom = r ? JSON.parse(r) : []; }
+  catch { _custom = []; }
+  return _custom!;
+}
+function writeCustom(list: QuoteDesign[]): void {
+  _custom = list;
+  try { localStorage.setItem(CUSTOM_KEY, JSON.stringify(list)); } catch { /* ignore */ }
+}
+
+export function getCustomQuoteDesigns(): QuoteDesign[] { return readCustom().filter(d => d.active); }
+
+export interface CustomQuoteDesignInput {
+  id?: string;                   // present = update
+  name: string;
+  description?: string;
+  layoutFamily: FamilyId;        // document vs comparison presentation
+  visualVariant: VariantId;      // visual skin
+  defaultSections: SectionKey[]; // the ordered structure built on the canvas
+  styleSettings?: QuoteDesignStyleSettings;
+}
+
+export function saveCustomQuoteDesign(input: CustomQuoteDesignInput): QuoteDesign {
+  const hasOptions = input.defaultSections.includes("gbb_options");
+  const family = getFamily(input.layoutFamily);
+  const design: QuoteDesign = {
+    id: input.id ?? `custom-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    name: input.name.trim() || "Untitled Design",
+    description: input.description?.trim() || "Custom quote design.",
+    layoutFamily: input.layoutFamily,
+    visualVariant: input.visualVariant,
+    familyLabel: family.name,
+    variantLabel: VARIANTS[input.visualVariant].name,
+    previewTitle: input.name.trim() || "Custom Proposal",
+    defaultSections: [...input.defaultSections],
+    pricingPresentation: family.optionTreatment === "comparison-cards"
+      ? "comparison_cards"
+      : hasOptions ? "stacked_packages" : "line_item_table",
+    styleSettings: input.styleSettings ?? {},
+    supportedModes: hasOptions
+      ? ["single_offer", "multi_option", "salesbook", "custom"]
+      : ["quick_quote", "single_offer", "salesbook", "custom"],
+    fallbackMode: "single_offer",
+    active: true,
+    isDefault: false,
+    custom: true,
+  };
+  const list = readCustom();
+  const i = list.findIndex(d => d.id === design.id);
+  writeCustom(i >= 0 ? list.map(d => (d.id === design.id ? design : d)) : [...list, design]);
+  return design;
+}
+
+export function deleteCustomQuoteDesign(id: string): void {
+  writeCustom(readCustom().filter(d => d.id !== id));
+}
+
 // ─── Reads / resolution ───────────────────────────────────
-export function getQuoteDesigns(): QuoteDesign[] { return QUOTE_DESIGNS.filter(d => d.active); }
+export function getQuoteDesigns(): QuoteDesign[] {
+  return [...QUOTE_DESIGNS.filter(d => d.active), ...getCustomQuoteDesigns()];
+}
 
 export function getQuoteDesign(id?: string): QuoteDesign {
-  return QUOTE_DESIGNS.find(d => d.id === id) ?? DEFAULT_QUOTE_DESIGN;
+  return QUOTE_DESIGNS.find(d => d.id === id) ?? readCustom().find(d => d.id === id) ?? DEFAULT_QUOTE_DESIGN;
 }
 
 export interface ResolvedQuoteDesign {

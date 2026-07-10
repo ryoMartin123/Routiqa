@@ -14,6 +14,7 @@ import { createPartOrder } from "@/lib/jobs/parts";
 import { isBilled, markLinesBilled, markLedgerLinesBilled, releaseInvoiceLines, markInvoicePaid, getJobLedger } from "@/lib/billing/ledger";
 import { createProject, type Project } from "@/lib/projects/data";
 import { currentUser } from "@/lib/hierarchy/data";   // signed-in user (org admin) — drives createdBy / assignedTo / activity actor
+import { emitAutomationEvent } from "@/lib/marketing/automation-engine";
 
 const STATUS_LABEL: Record<QuoteStatus, string> =
   Object.fromEntries(Object.entries(QUOTE_STATUS_STYLE).map(([k, v]) => [k, v.label])) as Record<QuoteStatus, string>;
@@ -233,7 +234,16 @@ export function updateInvoiceStatus(id: string, status: InvoiceStatus): InvoiceR
   persistInvoiceEdit(id, patch);
   if (status === "paid") markInvoicePaid(id);            // flip its ledger lines to paid
   if (status === "void" || status === "canceled") releaseInvoiceLines(id);  // return lines to unbilled
+  if (status === "paid" && inv.status !== "paid") fireInvoicePaid(inv);
   return getInvoice(id);
+}
+
+function fireInvoicePaid(inv: InvoiceRecord): void {
+  emitAutomationEvent("invoice_paid", {
+    subject: `${inv.invoiceNumber} — ${inv.title}`,
+    companyId: inv.companyId, locationId: inv.locationId, customerId: inv.customerId,
+    fields: { invoice_status: "paid" },
+  });
 }
 
 // Record a payment against an invoice. Reduces the balance; flips status to
@@ -250,6 +260,7 @@ export function recordPayment(id: string, amount: number): InvoiceRecord | undef
   else patch.status = "partially_paid";
   persistInvoiceEdit(id, patch);
   if (balance <= 0) markInvoicePaid(id);   // settled in full → mark its ledger lines paid
+  if (balance <= 0 && inv.status !== "paid") fireInvoicePaid(inv);
   return getInvoice(id);
 }
 
@@ -326,6 +337,15 @@ export function updateQuoteStatus(id: string, status: QuoteStatus, actor = curre
   const kind = STATUS_VERB[status] ?? "status";
   const label = STATUS_LABEL[status];
   persistEdit(id, patch, newActivity(kind, `Marked ${label}`, actor));
+  // Real marketing-automation triggers — only on an actual transition.
+  if (q.status !== status) {
+    const eventKey = status === "sent" ? "estimate_sent" : status === "approved" ? "estimate_approved" : status === "rejected" ? "estimate_declined" : null;
+    if (eventKey) emitAutomationEvent(eventKey, {
+      subject: `${q.quoteNumber} — ${q.title}`,
+      companyId: q.companyId, locationId: q.locationId, customerId: q.customerId,
+      fields: { estimate_amount: q.total, estimate_status: status },
+    });
+  }
   return getQuote(id);
 }
 
