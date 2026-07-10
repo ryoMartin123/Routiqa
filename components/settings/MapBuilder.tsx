@@ -10,34 +10,47 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   X, Plus, Minus, Trash2, ChevronUp, ChevronDown, ArrowLeft, GitBranch, Clock, ListChecks, Split, SlidersHorizontal, Maximize,
-  Layers, Flag, Briefcase, CheckSquare, ClipboardList, Package, ShoppingCart, HardHat, FileText, Receipt,
+  Layers, Briefcase, CheckSquare, ClipboardList, Package, ShoppingCart, HardHat, FileText, Receipt,
 } from "lucide-react";
 import UiSelect from "@/components/ui/Select";
-import { NODE_TYPE_LABEL, type MapNodeType } from "@/lib/projects/map";
+import type { MapNodeType } from "@/lib/projects/map";
 import {
   type MapTemplate, type TemplateNode, type MirrorSource,
+  MIRROR_MILESTONES, mirrorMilestone,
   newMapNodeKey, newChecklistItemId,
 } from "@/lib/projects/map-templates";
 import { CHECKLIST_TYPE_LABELS, type ChecklistItemType } from "@/lib/work-order-templates/data";
 import type { ProjectTypeOption } from "@/lib/projects/settings";
 
 const ACCENT = "#0f8578";
-const TYPE_ICON: Record<MapNodeType, typeof Layers> = {
-  phase: Layers, milestone: Flag, job: Briefcase, task: CheckSquare, work_order: ClipboardList,
-  material_request: Package, purchase_order: ShoppingCart, subcontractor: HardHat, document: FileText, billing: Receipt,
-};
-const NODE_TYPES = Object.keys(NODE_TYPE_LABEL) as MapNodeType[];
 const MIRROR_LABEL: Record<MirrorSource, string> = {
   quote: "Quote", job: "Job", work_order: "Work Order", material_request: "Material Request",
   purchase_order: "Purchase Order", equipment_received: "Equipment Received", subcontractor: "Subcontractor", invoice: "Invoice",
 };
+const MIRROR_ICON: Record<MirrorSource, typeof Layers> = {
+  quote: FileText, job: Briefcase, work_order: ClipboardList, material_request: Package,
+  purchase_order: ShoppingCart, equipment_received: Package, subcontractor: HardHat, invoice: Receipt,
+};
+// A step's icon follows what it IS — a checklist, a billing action, or the
+// record it mirrors. (The old free-form Type dropdown was decorative.)
+const nodeIcon = (n: TemplateNode) =>
+  n.mirror ? MIRROR_ICON[n.mirror] : n.type === "billing" ? Receipt : CheckSquare;
+// Data stays typed for older consumers (activity feed icons) — derive it.
+const DERIVED_TYPE: Record<MirrorSource, MapNodeType> = {
+  quote: "milestone", job: "job", work_order: "work_order", material_request: "material_request",
+  purchase_order: "purchase_order", equipment_received: "milestone", subcontractor: "subcontractor", invoice: "milestone",
+};
 const MIRROR_SOURCES = Object.keys(MIRROR_LABEL) as MirrorSource[];
 // A manual step IS a checklist (a single check-off item = the old "manual
-// checkbox"), so there's no separate manual option — you pick Checklist or a mirror.
+// checkbox"), so there's no separate manual option — you pick Checklist, a
+// billing action, or a mirror. equipment_received is legacy (new maps use
+// Purchase Order → Fully received) and only shows for nodes that still use it.
 const SOURCE_OPTS = [
   { value: "checklist", label: "Checklist" },
-  ...MIRROR_SOURCES.map(s => ({ value: s, label: `Mirror → ${MIRROR_LABEL[s]}` })),
+  { value: "billing", label: "Bill % of contract" },
+  ...MIRROR_SOURCES.filter(s => s !== "equipment_received").map(s => ({ value: s, label: `Mirror → ${MIRROR_LABEL[s]}` })),
 ];
+const sourceValue = (n: TemplateNode) => n.mirror ?? (n.type === "billing" ? "billing" : "checklist");
 
 const inputCls = "w-full rounded-lg px-3 py-2 text-sm outline-none";
 const inputStyle = { border: "1px solid var(--border)", backgroundColor: "var(--bg-surface)", color: "var(--text-primary)" } as const;
@@ -67,21 +80,34 @@ export default function MapBuilder({
     setDraft(d => ({ ...d, nodes: [...d.nodes, n] })); setSelKey(n.key);
   };
   const removeNode = (key: string) =>
-    setDraft(d => ({ ...d, nodes: d.nodes.filter(n => n.key !== key).map(n => ({ ...n, deps: n.deps.filter(x => x !== key) })) }));
+    setDraft(d => ({ ...d, nodes: d.nodes.filter(n => n.key !== key).map(n => ({ ...n, deps: n.deps.filter(x => x !== key), sameRecordAs: n.sameRecordAs === key ? undefined : n.sameRecordAs })) }));
   const moveNode = (key: string, dir: -1 | 1) => setDraft(d => {
     const arr = [...d.nodes]; const i = arr.findIndex(n => n.key === key); const j = i + dir;
     if (j < 0 || j >= arr.length) return d;
     [arr[i], arr[j]] = [arr[j], arr[i]]; return { ...d, nodes: arr };
   });
   const setSource = (key: string, v: string) => {
-    if (v === "checklist") {
-      // A manual step is a checklist. Seed one item so the editor is ready
-      // (a single check-off item is the old "manual checkbox"); keep any items.
-      const node = draft.nodes.find(n => n.key === key);
-      patchNode(key, { manual: true, mirror: undefined, createable: false, checklist: node?.checklist?.length ? node.checklist : [{ id: newChecklistItemId(), label: "" }] });
-      return;
-    }
-    patchNode(key, { manual: false, mirror: v as MirrorSource, createable: true, checklist: undefined });
+    const mirror = v !== "checklist" && v !== "billing" ? (v as MirrorSource) : undefined;
+    setDraft(d => ({
+      ...d,
+      nodes: d.nodes.map(n => {
+        // Steps sharing this node's record stop sharing if it changes source.
+        if (n.key !== key) return n.sameRecordAs === key && n.mirror !== mirror ? { ...n, sameRecordAs: undefined } : n;
+        if (v === "checklist") {
+          // A manual step is a checklist. Seed one item so the editor is ready
+          // (a single check-off item is the old "manual checkbox"); keep any items.
+          return { ...n, manual: true, type: "task" as MapNodeType, mirror: undefined, milestone: undefined, sameRecordAs: undefined,
+            createable: false, percent: undefined, deposit: undefined,
+            checklist: n.checklist?.length ? n.checklist : [{ id: newChecklistItemId(), label: "" }] };
+        }
+        if (v === "billing") {
+          return { ...n, manual: false, type: "billing" as MapNodeType, mirror: undefined, milestone: undefined, sameRecordAs: undefined,
+            createable: false, checklist: undefined };
+        }
+        return { ...n, manual: false, type: DERIVED_TYPE[mirror!], mirror, milestone: undefined, sameRecordAs: undefined,
+          createable: true, checklist: undefined, percent: undefined, deposit: undefined };
+      }),
+    }));
   };
   const toggleDep = (key: string, dep: string) => {
     const n = draft.nodes.find(x => x.key === key); if (!n) return;
@@ -365,7 +391,7 @@ function CtrlBtn({ onClick, title, children }: { onClick: () => void; title: str
 function NodeCard({ node, selected, onClick, onDoubleClick, onUp, onDown, first, last, setRef, readOnly }: {
   node: TemplateNode; selected: boolean; onClick: () => void; onDoubleClick: () => void; onUp: () => void; onDown: () => void; first: boolean; last: boolean; setRef: (el: HTMLElement | null) => void; readOnly?: boolean;
 }) {
-  const Icon = TYPE_ICON[node.type] ?? CheckSquare;
+  const Icon = nodeIcon(node);
   const badges = [
     node.type === "billing" && node.percent != null ? { icon: Receipt, label: `${node.percent}%` } : null,
     node.durationDays ? { icon: Clock, label: `${node.durationDays}d` } : null,
@@ -384,7 +410,11 @@ function NodeCard({ node, selected, onClick, onDoubleClick, onUp, onDown, first,
         </div>
       </div>
       <div className="flex items-center gap-1 mt-1.5 flex-wrap">
-        <span className="text-[9px] px-1.5 py-0.5 rounded" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>{node.manual ? "Manual" : `↪ ${MIRROR_LABEL[node.mirror as MirrorSource] ?? "Mirror"}`}</span>
+        <span className="text-[9px] px-1.5 py-0.5 rounded" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>
+          {node.mirror
+            ? `↪ ${MIRROR_LABEL[node.mirror]}${MIRROR_MILESTONES[node.mirror].length > 1 ? ` · ${mirrorMilestone(node.mirror, node.milestone).label}` : ""}`
+            : node.type === "billing" ? "Billing" : "Checklist"}
+        </span>
         {node.assignedTo && <span className="text-[9px]" style={{ color: "var(--text-muted)" }}>· {node.assignedTo.split(" ")[0]}</span>}
       </div>
       {badges.length > 0 && (
@@ -415,18 +445,47 @@ function Inspector({ node, draft, onPatch, onSetSource, onToggleDep, onRemove, o
       <div className="flex-1 min-h-0 overflow-y-auto thin-scroll-y">
       <fieldset disabled={readOnly} className="p-4 space-y-5 border-0 m-0 min-w-0">
       <Field label="Title"><input value={node.title} onChange={e => onPatch({ title: e.target.value })} className={inputCls} style={inputStyle} /></Field>
-      <div className="grid grid-cols-2 gap-2.5">
-        <Field label="Lane"><UiSelect size="sm" value={node.group} onChange={v => onPatch({ group: v })} options={draft.groups.map(g => ({ value: g, label: g }))} /></Field>
-        <Field label="Type"><UiSelect size="sm" value={node.type} onChange={v => onPatch({ type: v as MapNodeType })} options={NODE_TYPES.map(t => ({ value: t, label: NODE_TYPE_LABEL[t] }))} /></Field>
-      </div>
-      <Field label="Source"><UiSelect size="sm" value={node.manual ? "checklist" : (node.mirror ?? "checklist")} onChange={onSetSource} options={SOURCE_OPTS} /></Field>
-      {!node.manual && (
+      <Field label="Source">
+        <UiSelect size="sm" value={sourceValue(node)} onChange={onSetSource}
+          options={node.mirror === "equipment_received"
+            ? [...SOURCE_OPTS, { value: "equipment_received", label: "Mirror → Equipment Received (legacy)" }]
+            : SOURCE_OPTS} />
+      </Field>
+      {node.mirror && (() => {
+        const milestones = MIRROR_MILESTONES[node.mirror];
+        // Earlier steps watching the same record type — this step can watch the
+        // SAME record at its own milestone instead of consuming a second one.
+        const idx = draft.nodes.findIndex(n => n.key === node.key);
+        const priorSame = draft.nodes.slice(0, Math.max(idx, 0))
+          .filter(n => n.mirror === node.mirror && !n.sameRecordAs && n.mirror !== "work_order" && n.mirror !== "equipment_received");
+        return (
+          <>
+            {milestones.length > 1 && (
+              <Field label="Completes when the record is…">
+                <UiSelect size="sm" value={mirrorMilestone(node.mirror, node.milestone).value}
+                  onChange={v => onPatch({ milestone: v })}
+                  options={milestones.map(m => ({ value: m.value, label: m.label }))} />
+              </Field>
+            )}
+            {priorSame.length > 0 && (
+              <Field label="Watches">
+                <UiSelect size="sm" value={node.sameRecordAs ?? ""}
+                  onChange={v => onPatch({ sameRecordAs: v || undefined, createable: v ? false : node.createable })}
+                  options={[{ value: "", label: `Its own ${MIRROR_LABEL[node.mirror!].toLowerCase()}` },
+                    ...priorSame.map(o => ({ value: o.key, label: `Same record as “${o.title}”` }))]} />
+              </Field>
+            )}
+          </>
+        );
+      })()}
+      {node.mirror && !node.sameRecordAs && (
         <label className="flex items-center gap-2 cursor-pointer">
           <Toggle on={!!node.createable} onChange={v => onPatch({ createable: v })} />
           <span className="text-xs" style={{ color: "var(--text-secondary)" }}>Offer “Create &amp; link” when no record exists</span>
         </label>
       )}
       <div className="grid grid-cols-2 gap-2.5">
+        <Field label="Lane"><UiSelect size="sm" value={node.group} onChange={v => onPatch({ group: v })} options={draft.groups.map(g => ({ value: g, label: g }))} /></Field>
         <Field label="Assignee"><input value={node.assignedTo ?? ""} onChange={e => onPatch({ assignedTo: e.target.value || undefined })} placeholder="Unassigned" className={inputCls} style={inputStyle} /></Field>
         <Field label="Duration / SLA"><div className="flex items-center gap-1.5"><input type="number" min={0} value={node.durationDays ?? ""} onChange={e => onPatch({ durationDays: e.target.value ? Number(e.target.value) : undefined })} placeholder="—" className={inputCls} style={inputStyle} /><span className="text-xs shrink-0" style={{ color: "var(--text-muted)" }}>days</span></div></Field>
       </div>
@@ -444,7 +503,7 @@ function Inspector({ node, draft, onPatch, onSetSource, onToggleDep, onRemove, o
       )}
       <Field label="Gate reason (shown when blocked)"><input value={node.gate ?? ""} onChange={e => onPatch({ gate: e.target.value || undefined })} placeholder="e.g. Equipment not received" className={inputCls} style={inputStyle} /></Field>
 
-      {node.type === "billing" && <BillingEditor node={node} onPatch={onPatch} />}
+      {node.type === "billing" && !node.mirror && <BillingEditor node={node} onPatch={onPatch} />}
       {/* Checklist items drive completion only for manual steps; a mirror's
           record drives it instead, so only offer the editor when manual. */}
       {node.manual && <ChecklistEditor node={node} onPatch={onPatch} />}
@@ -528,10 +587,10 @@ function BillingEditor({ node, onPatch }: { node: TemplateNode; onPatch: (p: Par
         <Toggle on={!!node.deposit} onChange={v => onPatch({ deposit: v })} />
         <span className="text-xs" style={{ color: "var(--text-secondary)" }}>Tag the invoice as a deposit</span>
       </label>
-      <p className="text-[10px]" style={{ color: "var(--text-muted)" }}>
+      <p className="text-[10px]" style={{ color: node.percent != null ? "var(--text-muted)" : "#b45309" }}>
         {node.percent != null
           ? `Raises an invoice for ${node.percent}% of the project's estimated value when this step is reached.`
-          : "Blank = watch the project's invoice instead (set the Source above to “Invoice”)."}
+          : "Set a percent — or switch the Source to Mirror → Invoice to watch an existing invoice instead."}
       </p>
     </div>
   );

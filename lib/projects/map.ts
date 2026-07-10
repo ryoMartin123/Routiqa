@@ -7,7 +7,7 @@
 // Ownership: the map LINKS records owned by CRM / Inventory / Accounting.
 
 import { getProject } from "./data";
-import { templateForProject, type MapTemplate, type MirrorSource, type NodeChecklistItem } from "./map-templates";
+import { templateForProject, mirrorMilestone, type MapTemplate, type MirrorSource, type NodeChecklistItem } from "./map-templates";
 import { getJobsForProject, getJob, getWorkOrder, getWorkOrderById, createJob } from "@/lib/jobs/data";
 import { getAppointmentsForJob, getAppointmentsForWorkOrder } from "@/lib/appointments/data";
 import { createTask } from "@/lib/tasks/data";
@@ -54,12 +54,14 @@ export interface ProjectMapNode {
   dueDate?: string;
   manual: boolean;
   mirror?: MirrorSource;
+  milestone?: string;       // which record event completes a mirrored step (unset = default)
   createable: boolean;
   linkedApp?: LinkedApp;
   linkedLabel?: string;
   linkedId?: string;
   dependencies: string[];   // node ids
   blockedReason?: string;
+  skipReason?: string;      // why a skipped step doesn't apply (set on skipped nodes only)
   expectedDate?: string;    // yyyy-mm-dd — when a waiting/blocked step should resolve
   percent?: number;         // billing nodes: % of contract this stage bills
   deposit?: boolean;
@@ -82,7 +84,7 @@ export const SOURCE_TAB: Record<MirrorSource, string> = {
 // Expected dates on waiting/blocked steps + the follow-up-task guard, keyed by
 // node id. Small and additive — the map itself stays derived from live records.
 const META_KEY = "crm-map-node-meta";
-interface NodeMeta { expectedDate?: string; followUpTaskId?: string; invoiceId?: string; recordId?: string }
+interface NodeMeta { expectedDate?: string; followUpTaskId?: string; invoiceId?: string; recordId?: string; skipped?: boolean; skipReason?: string }
 function metaStore(): Record<string, NodeMeta> {
   if (typeof window === "undefined") return {};
   try { return JSON.parse(localStorage.getItem(META_KEY) || "{}"); } catch { return {}; }
@@ -95,6 +97,23 @@ function saveMeta(all: Record<string, NodeMeta>): void {
 export function bindMapNodeRecord(nodeId: string, recordId: string): void {
   const all = metaStore();
   all[nodeId] = { ...(all[nodeId] ?? {}), recordId };
+  saveMeta(all);
+}
+// Skip a step that doesn't apply to this project (no crane sub on a ground
+// unit, no permit in this county). Skipped ≠ done: it leaves the progress
+// denominator but SATISFIES dependencies, so downstream work isn't held
+// hostage by a step that will never happen. Reality still wins — a skipped
+// mirror whose record completes anyway shows completed.
+export function setMapNodeSkipped(nodeId: string, reason?: string): void {
+  const all = metaStore();
+  all[nodeId] = { ...(all[nodeId] ?? {}), skipped: true, skipReason: reason?.trim() || undefined };
+  saveMeta(all);
+}
+export function clearMapNodeSkipped(nodeId: string): void {
+  const all = metaStore();
+  if (!all[nodeId]) return;
+  delete all[nodeId].skipped;
+  delete all[nodeId].skipReason;
   saveMeta(all);
 }
 export function setMapNodeExpected(nodeId: string, date: string): void {
@@ -181,14 +200,17 @@ interface MirrorResult { status: BaseStatus; linkedApp?: LinkedApp; linkedLabel?
 // Resolve a node against the SPECIFIC record bound to it (recordId), not "the
 // first record of this type" — so a project's site-visit job and install job
 // each drive their own node instead of one job completing every job step.
-// equipment_received stays project-wide (any PO fully received is the gate).
-function resolveMirror(src: MirrorSource, projectId: string, recordId?: string): MirrorResult {
+// `milestone` (a resolved MIRROR_MILESTONES value) picks WHICH event on the
+// record completes the step — "Quote sent" vs "Quote approved" on one quote.
+// equipment_received stays project-wide (legacy; any PO fully received).
+function resolveMirror(src: MirrorSource, projectId: string, recordId: string | undefined, milestone: string): MirrorResult {
   switch (src) {
     case "job": {
       const j = recordId ? getJob(recordId) : undefined;
       if (!j) return { status: null };
       const done = ["completed", "closed", "invoiced"].includes(j.status);
-      return { status: done ? "completed" : "in_progress", linkedApp: "CRM", linkedLabel: j.title, linkedId: j.id };
+      const hit = milestone === "scheduled" ? (done || !["new", "canceled", "no_show"].includes(j.status)) : done;
+      return { status: hit ? "completed" : "in_progress", linkedApp: "CRM", linkedLabel: j.title, linkedId: j.id };
     }
     case "work_order": {
       const wo = recordId ? getWorkOrderById(recordId) : undefined;
@@ -199,18 +221,26 @@ function resolveMirror(src: MirrorSource, projectId: string, recordId?: string):
     case "quote": {
       const q = recordId ? getQuotesForProject(projectId).find(x => x.id === recordId) : undefined;
       if (!q) return { status: null };
-      const approved = ["approved", "converted"].includes(q.status);
-      return { status: approved ? "completed" : "in_progress", linkedApp: "CRM", linkedLabel: q.quoteNumber, linkedId: q.id };
+      const hit = milestone === "sent"
+        ? ["sent", "viewed", "approved", "converted"].includes(q.status)
+        : ["approved", "converted"].includes(q.status);
+      return { status: hit ? "completed" : "in_progress", linkedApp: "CRM", linkedLabel: q.quoteNumber, linkedId: q.id };
     }
     case "material_request": {
       const m = recordId ? materialRequestsForProject(projectId).find(x => x.id === recordId) : undefined;
       if (!m) return { status: null };
-      return { status: m.status === "fulfilled" ? "completed" : "in_progress", linkedApp: "Inventory", linkedLabel: m.number, linkedId: m.id };
+      const hit = milestone === "ordered" ? ["ordered", "fulfilled"].includes(m.status) : m.status === "fulfilled";
+      return { status: hit ? "completed" : "in_progress", linkedApp: "Inventory", linkedLabel: m.number, linkedId: m.id };
     }
     case "purchase_order": {
       const p = recordId ? posForProject(projectId).find(x => x.id === recordId) : undefined;
       if (!p) return { status: null };
-      return { status: p.status !== "draft" ? "completed" : "in_progress", linkedApp: "Inventory", linkedLabel: p.number, linkedId: p.id };
+      const link = { linkedApp: "Inventory" as LinkedApp, linkedLabel: p.number, linkedId: p.id };
+      if (milestone === "ordered") return { status: p.status !== "draft" ? "completed" : "in_progress", ...link };
+      const state = poReceivingState(p);
+      const hit = milestone === "received_partial" ? state !== "none" : state === "full";
+      // Placed but not arrived is a wait on the vendor, not work in progress.
+      return { status: hit ? "completed" : p.status !== "draft" ? "waiting" : "in_progress", ...link };
     }
     case "equipment_received": {
       const pos = posForProject(projectId);
@@ -223,14 +253,20 @@ function resolveMirror(src: MirrorSource, projectId: string, recordId?: string):
       if (!a) return { status: null };
       const sub = a.subcontractorId ? getSubcontractor(a.subcontractorId) : undefined;
       const issue = sub ? subCompliance(sub) === "issue" : false;
-      const status: BaseStatus = a.status === "completed" ? "completed" : issue ? "blocked" : "in_progress";
+      const hit = milestone === "compliant" ? (!!sub && !issue) : a.status === "completed";
+      const status: BaseStatus = hit ? "completed" : issue ? "blocked" : "in_progress";
       return { status, linkedApp: "Inventory", linkedLabel: sub?.companyName ?? "Subcontractor", linkedId: a.id };
     }
     case "invoice": {
       const inv = recordId ? getInvoicesForProject(projectId).find(x => x.id === recordId) : undefined;
       if (!inv) return { status: null };
       const sent = ["sent", "viewed", "partially_paid", "paid", "past_due"].includes(inv.status);
-      return { status: sent ? "completed" : "in_progress", linkedApp: "Accounting", linkedLabel: inv.invoiceNumber, linkedId: inv.id };
+      const hit = milestone === "created" ? !["void", "canceled"].includes(inv.status)
+        : milestone === "paid" ? inv.status === "paid"
+        : sent;
+      // A sent-but-unpaid invoice under the "paid" milestone waits on the customer.
+      const status: BaseStatus = hit ? "completed" : milestone === "paid" && sent ? "waiting" : "in_progress";
+      return { status, linkedApp: "Accounting", linkedLabel: inv.invoiceNumber, linkedId: inv.id };
     }
   }
 }
@@ -239,8 +275,10 @@ function resolveMirror(src: MirrorSource, projectId: string, recordId?: string):
 // Each mirror node binds to ONE specific record. Explicit bindings (set by
 // createForNode / the seed, stored in meta.recordId) claim first; remaining
 // nodes of a kind consume the project's unclaimed records in template order, so
-// a record can satisfy at most one node. A work_order node watches the work
-// order of the job bound to the nearest preceding job node.
+// a record can satisfy at most one node — EXCEPT a `sameRecordAs` node, which
+// watches the same record as its (earlier) target step at its own milestone
+// ("PO ordered" and "PO fully received" on one PO). A work_order node watches
+// the work order of the job bound to the nearest preceding job node.
 const POOL_TYPES: MirrorSource[] = ["job", "quote", "material_request", "purchase_order", "subcontractor", "invoice"];
 function bindMirrorNodes(projectId: string, template: MapTemplate): Map<string, string | undefined> {
   const meta = metaStore();
@@ -264,24 +302,29 @@ function bindMirrorNodes(projectId: string, template: MapTemplate): Map<string, 
   }
 
   const binding = new Map<string, string | undefined>();
-  // Phase 1 — explicit bindings claim their record.
+  // Phase 1 — explicit bindings claim their record (sameRecordAs nodes follow
+  // their target instead, so they never claim).
   for (const t of template.nodes) {
     const m = t.mirror;
-    if (t.manual || !m || !POOL_TYPES.includes(m)) continue;
+    if (t.manual || !m || !POOL_TYPES.includes(m) || t.sameRecordAs) continue;
     const rid = meta[`${projectId}__${t.key}`]?.recordId;
     if (rid && pools[m]?.some(r => r.id === rid) && !claimed[m].has(rid)) {
       binding.set(t.key, rid); claimed[m].add(rid);
     }
   }
-  // Phase 2 — positional fallback + work_order follows the last job.
+  // Phase 2 — sameRecordAs copies an earlier node's record; positional fallback
+  // consumes unclaimed records; work_order follows the last job.
   let lastJobId: string | undefined;
   for (const t of template.nodes) {
     const m = t.mirror;
     if (t.manual || !m) continue;
     if (m === "work_order") { binding.set(t.key, lastJobId ? getWorkOrder(lastJobId)?.id : undefined); continue; }
-    if (!POOL_TYPES.includes(m)) continue;   // equipment_received: project-wide
+    if (!POOL_TYPES.includes(m)) continue;   // equipment_received: project-wide (legacy)
     let id = binding.get(t.key);
-    if (!id) {
+    if (!id && t.sameRecordAs) {
+      id = binding.get(t.sameRecordAs);
+      if (id) binding.set(t.key, id);
+    } else if (!id) {
       const next = pools[m]?.find(r => !claimed[m].has(r.id));
       if (next) { id = next.id; claimed[m].add(id); binding.set(t.key, id); }
     }
@@ -313,6 +356,7 @@ function buildProjectMap(projectId: string): ProjectMapNode[] {
   const template: MapTemplate = templateForProject(project);
   const overdue = !!project?.targetDate && new Date(project.targetDate).getTime() < Date.now();
   const binding = bindMirrorNodes(projectId, template);
+  const meta = metaStore();
 
   // First pass — base status + links.
   const base = template.nodes.map((t) => {
@@ -331,7 +375,7 @@ function buildProjectMap(projectId: string): ProjectMapNode[] {
         baseStatus = (manualDone().has(id) || t.key === "created") ? "completed" : null;
       }
     } else if (t.type === "billing" && t.percent != null) {
-      const invId = metaStore()[id]?.invoiceId;
+      const invId = meta[id]?.invoiceId;
       const inv = invId ? getInvoice(invId) : undefined;
       if (inv) {
         const sent = ["sent", "viewed", "partially_paid", "paid", "past_due"].includes(inv.status);
@@ -339,24 +383,30 @@ function buildProjectMap(projectId: string): ProjectMapNode[] {
         link = { status: baseStatus, linkedApp: "Accounting", linkedLabel: inv.invoiceNumber, linkedId: inv.id };
       }
     } else if (t.mirror) {
-      link = resolveMirror(t.mirror, projectId, binding.get(t.key));
+      link = resolveMirror(t.mirror, projectId, binding.get(t.key), mirrorMilestone(t.mirror, t.milestone).value);
       baseStatus = link.status;
     }
-    return { t, id, baseStatus, link };
+    // Skipped = "doesn't apply here" — but reality wins over the skip.
+    const skipped = !!meta[id]?.skipped && baseStatus !== "completed";
+    return { t, id, baseStatus, link, skipped };
   });
 
   const keyToId = new Map(template.nodes.map(t => [t.key, `${projectId}__${t.key}`]));
-  const completedIds = new Set(base.filter(b => b.baseStatus === "completed").map(b => b.id));
-  const firstIncomplete = base.findIndex(b => b.baseStatus !== "completed");
+  // Skipped steps satisfy dependencies (they will never happen — downstream
+  // work must not wait on them) and are never the frontier.
+  const satisfiedIds = new Set(base.filter(b => b.baseStatus === "completed" || b.skipped).map(b => b.id));
+  const firstIncomplete = base.findIndex(b => b.baseStatus !== "completed" && !b.skipped);
 
   return base.map((b, i): ProjectMapNode => {
     const deps = b.t.deps.map(k => keyToId.get(k)!).filter(Boolean);
-    const depsDone = deps.every(d => completedIds.has(d));
+    const depsDone = deps.every(d => satisfiedIds.has(d));
     let status: MapNodeStatus;
     let blockedReason: string | undefined;
 
     if (b.baseStatus === "completed") {
       status = "completed";
+    } else if (b.skipped) {
+      status = "skipped";
     } else if (!depsDone) {
       status = "not_started";
     } else if (b.baseStatus === "in_progress") {
@@ -375,9 +425,9 @@ function buildProjectMap(projectId: string): ProjectMapNode[] {
 
     return {
       id: b.id, projectId, key: b.t.key, title: b.t.title, type: b.t.type, group: b.t.group,
-      status, assignedTo: b.t.assignedTo, manual: !!b.t.manual, mirror: b.t.mirror, createable: !!b.t.createable,
+      status, assignedTo: b.t.assignedTo, manual: !!b.t.manual, mirror: b.t.mirror, milestone: b.t.milestone, createable: !!b.t.createable,
       linkedApp: b.link.linkedApp, linkedLabel: b.link.linkedLabel, linkedId: b.link.linkedId,
-      dependencies: deps, blockedReason, expectedDate: metaStore()[b.id]?.expectedDate,
+      dependencies: deps, blockedReason, expectedDate: meta[b.id]?.expectedDate, skipReason: b.skipped ? meta[b.id]?.skipReason : undefined,
       percent: b.t.percent, deposit: b.t.deposit, checklist: b.t.checklist, order: i, notes: b.t.notes,
     };
   });

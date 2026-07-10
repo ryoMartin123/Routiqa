@@ -1,27 +1,29 @@
 "use client";
 
 // ─── CRM Project · Project Map ────────────────────────────
-// The connected workflow (template-driven). Nodes are MANUAL (check off) or
-// MIRRORED (reflect a real Job / Quote / PO / Material Request / Subcontractor /
-// Work Order / Invoice). Clicking a node opens its OWN full detail section that
-// explains what the step needs, what completes it, its dependencies (with links
-// to go do them), and the right action. Mock/local.
+// The connected workflow (template-driven). Nodes are CHECKLISTS (worked
+// through on the map), BILLING actions, or MIRRORS (watch a real Job / Quote /
+// PO / Material Request / Subcontractor / Work Order / Invoice until a chosen
+// milestone). Clicking a node opens a slide-over drawer — the map stays
+// visible behind it. Mock/local.
 
 import SegmentedProgress from "@/components/shared/SegmentedProgress";
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import {
-  Layers, Flag, Briefcase, CheckSquare, ClipboardList, Package, ShoppingCart, HardHat,
-  FileText, Receipt, ChevronRight, Check, CheckCircle2, AlertTriangle, CornerDownRight, User, Calendar, Link2,
-  Plus, ExternalLink, ArrowLeft, ListChecks, GitBranch, Circle,
+  Layers, Briefcase, CheckSquare, ClipboardList, Package, ShoppingCart, HardHat,
+  FileText, Receipt, ChevronRight, Check, CheckCircle2, AlertTriangle, CornerDownRight, Calendar, Link2,
+  Plus, ExternalLink, ListChecks, GitBranch, Circle, X, Ban, RotateCcw,
 } from "lucide-react";
+import ActionsMenu from "@/components/shared/ActionsMenu";
 import {
   getProjectMap, getProjectMapByGroup, setMapNodeStatus, createForNode, isQuickCreate, SOURCE_TAB,
-  NODE_TYPE_LABEL, NODE_STATUS_META, nodeDayProgress, setMapNodeExpected, sweepDatedWaits,
+  NODE_STATUS_META, nodeDayProgress, setMapNodeExpected, sweepDatedWaits,
+  setMapNodeSkipped, clearMapNodeSkipped,
   billingNodeAmount, billingNodeAmountLabel, createBillingInvoiceForNode, nodeDateSpan,
   getItemAnswers, setItemAnswer, toggleChecklistItem, checklistProgress,
-  type ProjectMapNode, type MapNodeType, type MapNodeStatus,
+  type ProjectMapNode,
 } from "@/lib/projects/map";
-import type { NodeChecklistItem } from "@/lib/projects/map-templates";
+import { mirrorMilestone, MIRROR_MILESTONES, type NodeChecklistItem, type MirrorSource } from "@/lib/projects/map-templates";
 import UiSelect from "@/components/ui/Select";
 import DatePicker from "@/components/ui/DatePicker";
 import MultiDayBookModal from "@/components/calendar/MultiDayBookModal";
@@ -31,31 +33,34 @@ import { pingSaved, pingError } from "@/components/shared/SavedPill";
 const ACCENT = "#0f8578"; // CRM indigo
 const initials = (n: string) => { const p = n.trim().split(/\s+/); return (p.length >= 2 ? p[0][0] + p[p.length - 1][0] : n.slice(0, 2)).toUpperCase(); };
 
-const TYPE_ICON: Record<MapNodeType, typeof Layers> = {
-  phase: Layers, milestone: Flag, job: Briefcase, task: CheckSquare, work_order: ClipboardList,
-  material_request: Package, purchase_order: ShoppingCart, subcontractor: HardHat, document: FileText, billing: Receipt,
+// A step's icon and label follow what it IS — a checklist, a billing action,
+// or the record it watches (the stored `type` is legacy authoring data).
+const MIRROR_ICON: Record<MirrorSource, typeof Layers> = {
+  quote: FileText, job: Briefcase, work_order: ClipboardList, material_request: Package,
+  purchase_order: ShoppingCart, equipment_received: Package, subcontractor: HardHat, invoice: Receipt,
 };
+const MIRROR_LABEL: Record<MirrorSource, string> = {
+  quote: "Quote", job: "Job", work_order: "Work Order", material_request: "Material Request",
+  purchase_order: "Purchase Order", equipment_received: "Equipment", subcontractor: "Subcontractor", invoice: "Invoice",
+};
+const isBillingAction = (n: ProjectMapNode) => n.type === "billing" && n.percent != null && !n.mirror;
+const nodeIcon = (n: ProjectMapNode) => (n.mirror ? MIRROR_ICON[n.mirror] : n.type === "billing" ? Receipt : CheckSquare);
+const kindLabel = (n: ProjectMapNode) =>
+  n.mirror ? MIRROR_LABEL[n.mirror] : n.type === "billing" ? "Billing" : "Checklist";
 
-// What completes this step (shown on the detail page so the user knows the goal).
+// What completes this step (shown in the drawer so the user knows the goal).
 function completionRule(node: ProjectMapNode): string {
   if (node.manual && node.checklist?.length) return "Completes when every required checklist item is checked off.";
   if (node.manual) return "This is a manual step — mark it complete once it's done.";
-  switch (node.mirror) {
-    case "quote": return "Completes automatically when an estimate is approved.";
-    case "job": return "Completes automatically when the linked job is finished.";
-    case "work_order": return "Completes automatically when the required checklist items are done.";
-    case "material_request": return "Completes automatically when the material request is fulfilled.";
-    case "purchase_order": return "Completes automatically when the purchase order is created/ordered.";
-    case "equipment_received": return "Completes automatically when the purchase order is fully received.";
-    case "subcontractor": return "Completes when the assignment is finished — and stays blocked until compliance (COI / W-9) is valid.";
-    case "invoice": return "Completes automatically when the invoice is sent.";
-    default: return "Mark complete when done.";
-  }
+  if (isBillingAction(node)) return `Bills ${node.percent}% of the contract — completes when the invoice is sent.`;
+  if (node.mirror) return `Completes automatically when ${mirrorMilestone(node.mirror, node.milestone).caption}.`;
+  return "Mark complete when done.";
 }
 // One-line "what to do now" based on status.
 function whatNow(node: ProjectMapNode): string {
   switch (node.status) {
     case "completed": return "This step is complete. Nothing more to do.";
+    case "skipped": return "Skipped — this step doesn't apply to this project. Downstream steps aren't waiting on it.";
     case "blocked": return node.blockedReason ?? "This step is blocked — resolve the issue below.";
     case "waiting": return node.blockedReason ?? "Waiting on materials / an external step.";
     case "in_progress": return node.manual && node.checklist?.length ? "In progress — keep working through the checklist below." : "In progress — open the linked record to keep it moving.";
@@ -77,22 +82,15 @@ export default function ProjectMap({ projectId, onOpenTab }: { projectId: string
   const allNodes = useMemo(() => getProjectMap(projectId), [projectId, tick]);
   const byId = useMemo(() => new Map(allNodes.map(n => [n.id, n])), [allNodes]);
 
-  // ── Node detail section (its own "page") ──
+  // ── Step drawer — slides over the map, which stays visible behind it ──
   const selected = selectedId ? byId.get(selectedId) ?? null : null;
-  if (selected) {
-    return (
-      <NodeDetail node={selected} allNodes={allNodes} byId={byId} onChanged={refresh}
-        onBack={() => setSelectedId(null)} onSelectNode={setSelectedId} onOpenTab={onOpenTab}
-        onComplete={() => { setMapNodeStatus(selected.id, "completed"); refresh(); }}
-        onCreate={() => { if (selected.mirror) { createForNode(projectId, selected.mirror, selected.id, selected.title); refresh(); } }} />
-    );
-  }
 
-  // ── Map grid ──
-  const completed = allNodes.filter(n => n.status === "completed").length;
+  // ── Map grid ── (skipped steps leave the denominator — they'll never happen)
+  const active = allNodes.filter(n => n.status !== "skipped");
+  const completed = active.filter(n => n.status === "completed").length;
   const blocked = allNodes.filter(n => n.status === "blocked").length;
   const next = allNodes.find(n => ["in_progress", "ready", "waiting", "blocked"].includes(n.status));
-  const pct = allNodes.length ? Math.round((completed / allNodes.length) * 100) : 0;
+  const pct = active.length ? Math.round((completed / active.length) * 100) : 0;
 
   return (
     <div className="space-y-4">
@@ -108,7 +106,7 @@ export default function ProjectMap({ projectId, onOpenTab }: { projectId: string
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-baseline gap-2">
             <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{pct}%</span>
-            <span className="text-xs" style={{ color: "var(--text-muted)" }}>{completed} of {allNodes.length} steps complete</span>
+            <span className="text-xs" style={{ color: "var(--text-muted)" }}>{completed} of {active.length} steps complete{active.length < allNodes.length ? ` · ${allNodes.length - active.length} skipped` : ""}</span>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
             {/* Map ↔ Timeline lens toggle */}
@@ -157,6 +155,13 @@ export default function ProjectMap({ projectId, onOpenTab }: { projectId: string
           </Fragment>
         ))}
       </div>
+      )}
+
+      {selected && (
+        <NodeDrawer node={selected} byId={byId} onChanged={refresh}
+          onClose={() => setSelectedId(null)} onSelectNode={setSelectedId} onOpenTab={onOpenTab}
+          onComplete={() => { setMapNodeStatus(selected.id, "completed"); refresh(); }}
+          onCreate={() => { if (selected.mirror) { createForNode(projectId, selected.mirror, selected.id, selected.title); refresh(); } }} />
       )}
     </div>
   );
@@ -400,21 +405,24 @@ function TimelineView({ nodes, onSelect, onChanged }: { nodes: ProjectMapNode[];
 
 // ─── Node card (in the grid) ──────────────────────────────
 function NodeCard({ node, deps, onClick }: { node: ProjectMapNode; deps: ProjectMapNode[]; onClick: () => void }) {
-  const Icon = TYPE_ICON[node.type];
+  const Icon = nodeIcon(node);
   const sm = NODE_STATUS_META[node.status];
   const done = node.status === "completed";
-  const depBlocked = deps.some(d => d.status !== "completed") && !done;
+  const skipped = node.status === "skipped";
+  const depBlocked = deps.some(d => d.status !== "completed" && d.status !== "skipped") && !done && !skipped;
   const canCreate = node.createable && !node.linkedLabel && node.status === "ready";
+  const milestone = node.mirror && MIRROR_MILESTONES[node.mirror].length > 1 ? mirrorMilestone(node.mirror, node.milestone).label : null;
   return (
     <button onClick={onClick} className="w-full text-left rounded-lg overflow-hidden transition-all hover:-translate-y-0.5"
-      style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)", opacity: done ? 0.72 : 1 }}>
+      style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)", opacity: done || skipped ? 0.72 : 1 }}>
       <div style={{ height: 3, backgroundColor: sm.color }} />
       <div className="p-2.5">
         <div className="flex items-center justify-between gap-1 mb-1">
-          <span className="flex items-center gap-1 text-[10px] font-medium" style={{ color: "var(--text-muted)" }}><Icon className="w-3 h-3" /> {NODE_TYPE_LABEL[node.type]}{node.manual && <span className="opacity-60">· manual</span>}</span>
+          <span className="flex items-center gap-1 text-[10px] font-medium" style={{ color: "var(--text-muted)" }}><Icon className="w-3 h-3" /> {kindLabel(node)}{milestone && <span className="opacity-60">· {milestone.toLowerCase()}</span>}</span>
           {done ? <Check className="w-3.5 h-3.5" style={{ color: "#10b981" }} /> : <span className="w-2 h-2 rounded-full" style={{ backgroundColor: sm.color }} />}
         </div>
         <p className="text-sm font-medium leading-snug" style={{ color: "var(--text-primary)", textDecoration: done ? "line-through" : "none" }}>{node.title}</p>
+        {skipped && <p className="text-[10px] mt-1 italic" style={{ color: "var(--text-muted)" }}>Skipped — {node.skipReason || "doesn't apply"}</p>}
         {/* Multi-day steps read as days, not a binary box */}
         {(() => {
           const dp = nodeDayProgress(node);
@@ -462,32 +470,62 @@ function NodeCard({ node, deps, onClick }: { node: ProjectMapNode; deps: Project
   );
 }
 
-// ─── Node detail (its own full section) ───────────────────
-function NodeDetail({ node, allNodes, byId, onBack, onSelectNode, onOpenTab, onComplete, onCreate, onChanged }: {
-  node: ProjectMapNode; allNodes: ProjectMapNode[]; byId: Map<string, ProjectMapNode>;
-  onBack: () => void; onSelectNode: (id: string) => void; onOpenTab?: (t: string) => void;
+// ─── Node drawer (slides over the map) ────────────────────
+// The map stays visible behind it — position in the workflow is the map
+// itself, so the drawer only carries what the step needs: status, the one
+// action, the checklist / days / expected date when relevant, prerequisites.
+function NodeDrawer({ node, byId, onClose, onSelectNode, onOpenTab, onComplete, onCreate, onChanged }: {
+  node: ProjectMapNode; byId: Map<string, ProjectMapNode>;
+  onClose: () => void; onSelectNode: (id: string) => void; onOpenTab?: (t: string) => void;
   onComplete: () => void; onCreate: () => void; onChanged: () => void;
 }) {
   const [bookOpen, setBookOpen] = useState(false);
+  // Skip flow: the menu opens an inline confirm with an optional reason.
+  const [skipConfirm, setSkipConfirm] = useState(false);
+  const [skipReason, setSkipReason] = useState("");
+
+  // Enter/exit animation: mount hidden → rAF flips `visible` on (slide in);
+  // close slides out first, then unmounts via onClose after the transition.
+  const [visible, setVisible] = useState(false);
+  const reduce = useRef(false);
+  useEffect(() => {
+    reduce.current = typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const id = requestAnimationFrame(() => setVisible(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
+  const requestClose = () => {
+    if (reduce.current) { onClose(); return; }
+    setVisible(false);
+    setTimeout(onClose, 300);
+  };
+
   const dayProg = nodeDayProgress(node);
-  // The job to book multi-day visits against (job nodes directly; WO nodes via their job).
+  // The job to book multi-day visits against (job nodes directly).
   const bookJobId = node.mirror === "job" ? node.linkedId : undefined;
-  const Icon = TYPE_ICON[node.type];
+  const Icon = nodeIcon(node);
   const sm = NODE_STATUS_META[node.status];
   const done = node.status === "completed";
+  const skipped = node.status === "skipped";
   const deps = node.dependencies.map(d => byId.get(d)).filter(Boolean) as ProjectMapNode[];
+  // Deps are satisfied by completion OR skip; unmet ones fuel the early-action warning.
+  const unmetDeps = deps.filter(d => d.status !== "completed" && d.status !== "skipped");
+  const actingEarly = !done && !skipped && unmetDeps.length > 0;
   const tab = node.mirror ? SOURCE_TAB[node.mirror] : node.type === "billing" && node.linkedId ? "Invoices" : undefined;
-  const openTab = () => (tab && onOpenTab ? onOpenTab(tab) : undefined);
+  const openTab = () => { if (tab && onOpenTab) { onOpenTab(tab); requestClose(); } };
+  const restore = () => { clearMapNodeSkipped(node.id); onChanged(); };
+  const confirmSkip = () => { setMapNodeSkipped(node.id, skipReason); setSkipConfirm(false); setSkipReason(""); onChanged(); };
 
   // The primary "do this" action.
   const isChecklist = node.manual && !!node.checklist?.length;
   let primary: React.ReactNode = null;
   if (done) {
-    primary = <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm" style={{ backgroundColor: "#d1fae5", color: "#065f46" }}><Check className="w-4 h-4" /> This step is complete</div>;
+    primary = <div className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm" style={{ backgroundColor: "#d1fae5", color: "#065f46" }}><Check className="w-4 h-4" /> This step is complete</div>;
+  } else if (skipped) {
+    primary = <button onClick={restore} className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg text-sm font-medium" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)", backgroundColor: "var(--bg-surface)" }}><RotateCcw className="w-4 h-4" /> Restore this step</button>;
   } else if (isChecklist) {
-    primary = null;   // the checklist below drives completion
+    primary = null;   // the checklist drives completion
   } else if (node.manual) {
-    primary = <button onClick={onComplete} className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg text-sm font-medium text-white hover:brightness-110" style={{ backgroundColor: ACCENT }}><Check className="w-4 h-4" /> Mark Complete</button>;
+    primary = <button onClick={onComplete} className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg text-sm font-medium text-white hover:brightness-110" style={{ backgroundColor: ACCENT }}><Check className="w-4 h-4" /> {actingEarly ? "Complete anyway" : "Mark Complete"}</button>;
   } else if (node.linkedLabel) {
     primary = <button onClick={openTab} className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg text-sm font-medium text-white hover:brightness-110" style={{ backgroundColor: ACCENT }}><ExternalLink className="w-4 h-4" /> Open {node.linkedLabel}</button>;
   } else if (node.type === "billing" && node.percent != null) {
@@ -502,161 +540,179 @@ function NodeDetail({ node, allNodes, byId, onBack, onSelectNode, onOpenTab, onC
       </button>
     );
   } else if (node.createable && isQuickCreate(node.mirror)) {
-    primary = <button onClick={onCreate} className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg text-sm font-medium text-white hover:brightness-110" style={{ backgroundColor: ACCENT }}><Plus className="w-4 h-4" /> Create {NODE_TYPE_LABEL[node.type]} &amp; link</button>;
+    primary = <button onClick={onCreate} className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg text-sm font-medium text-white hover:brightness-110" style={{ backgroundColor: ACCENT }}><Plus className="w-4 h-4" /> Create {MIRROR_LABEL[node.mirror!]} &amp; link</button>;
   } else {
     primary = <button onClick={openTab} className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg text-sm font-medium text-white hover:brightness-110" style={{ backgroundColor: ACCENT }}><ExternalLink className="w-4 h-4" /> Open {tab ?? "record"}</button>;
   }
 
-  // Workflow neighbors (previous / next in the overall order).
-  const idx = allNodes.findIndex(n => n.id === node.id);
-  const prev = allNodes[idx - 1];
-  const nextN = allNodes[idx + 1];
-
   return (
-    <div className="space-y-4 w-full">
-      {/* Back + header */}
-      <button onClick={onBack} className="flex items-center gap-1.5 text-sm font-medium" style={{ color: "var(--text-secondary)" }}><ArrowLeft className="w-4 h-4" /> Project Map</button>
+    <>
+      <div className="fixed inset-0 z-40 bg-black/40" onClick={requestClose}
+        style={{ opacity: visible ? 1 : 0, transition: "opacity 0.3s ease" }} />
+      <div className="fixed inset-y-0 right-0 z-50 flex flex-col w-[420px] max-w-full"
+        style={{
+          backgroundColor: "var(--bg-page)", borderLeft: "1px solid var(--border)", boxShadow: "-4px 0 24px rgba(0,0,0,0.18)",
+          transform: visible ? "translateX(0)" : "translateX(100%)",
+          transition: "transform 0.34s cubic-bezier(0.22, 1, 0.36, 1)",
+        }}>
 
-      <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
-        <div style={{ height: 4, backgroundColor: sm.color }} />
-        <div className="p-5">
-          <div className="flex items-start justify-between gap-3 flex-wrap">
-            <div className="flex items-start gap-3 min-w-0">
-              <span className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: sm.color + "1f" }}><Icon className="w-5 h-5" style={{ color: sm.color }} /></span>
-              <div className="min-w-0">
-                <h2 className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>{node.title}</h2>
-                <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>{node.group} · {NODE_TYPE_LABEL[node.type]} · {node.manual ? "manual step" : `mirrors a ${node.linkedApp ?? "module"} record`}</p>
-              </div>
-            </div>
-            <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full shrink-0" style={{ backgroundColor: sm.color + "22", color: sm.color }}><span className="w-2 h-2 rounded-full" style={{ backgroundColor: sm.color }} /> {sm.label}</span>
+        {/* ── Header ── */}
+        <div className="shrink-0 px-5 pt-4 pb-4" style={{ backgroundColor: "var(--bg-surface)", borderBottom: "1px solid var(--border)" }}>
+          <div className="flex items-center justify-between mb-2.5">
+            <p className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Map Step · {node.group}</p>
+            <button onClick={requestClose} aria-label="Close" className="w-9 h-9 rounded-lg flex items-center justify-center transition-colors hover:bg-[var(--bg-surface-2)]" style={{ color: "var(--text-muted)" }}><X className="w-4 h-4" /></button>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
-            <Meta icon={User} label="Assigned to" value={node.assignedTo ?? "—"} />
-            <Meta icon={Calendar} label="Due date" value={node.dueDate ?? "—"} />
-            <Meta icon={Layers} label="Stage" value={node.group} />
-            <Meta icon={Link2} label="Linked record" value={node.linkedLabel ? `${node.linkedApp} · ${node.linkedLabel}` : node.createable ? "Not created" : "—"} />
+          <div className="flex items-start gap-3 min-w-0">
+            <span className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: sm.color + "1f" }}><Icon className="w-5 h-5" style={{ color: sm.color }} /></span>
+            <div className="min-w-0 flex-1">
+              <h2 className="text-base font-semibold leading-snug" style={{ color: "var(--text-primary)" }}>{node.title}</h2>
+              <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>{completionRule(node)}</p>
+            </div>
+          </div>
+          <div className="mt-3 flex items-center gap-2 flex-wrap">
+            <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full" style={{ backgroundColor: sm.color + "22", color: sm.color }}><span className="w-2 h-2 rounded-full" style={{ backgroundColor: sm.color }} /> {sm.label}</span>
+            {node.assignedTo && <span className="text-xs" style={{ color: "var(--text-secondary)" }}>{node.assignedTo}</span>}
+            {node.linkedLabel && (
+              <button onClick={openTab} className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded hover:underline" style={{ backgroundColor: ACCENT + "14", color: ACCENT }}>
+                <Link2 className="w-3 h-3" /> {node.linkedLabel}
+              </button>
+            )}
+            {!done && (
+              <div className="ml-auto">
+                <ActionsMenu actions={[
+                  skipped
+                    ? { label: "Restore step", icon: RotateCcw, onClick: restore }
+                    : { label: "Skip step — doesn't apply", icon: Ban, onClick: () => setSkipConfirm(true) },
+                ]} />
+              </div>
+            )}
           </div>
         </div>
-      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Main */}
-        <div className="lg:col-span-2 space-y-4">
-          <Card title="What this step needs" icon={ListChecks}>
-            <p className="text-sm" style={{ color: "var(--text-primary)" }}>{whatNow(node)}</p>
-            <p className="text-xs mt-1.5" style={{ color: "var(--text-muted)" }}>{completionRule(node)}</p>
-            {(node.status === "blocked" || node.status === "waiting") && node.blockedReason && (
-              <div className="mt-3 rounded-lg px-3 py-2 flex items-start gap-2" style={{ backgroundColor: node.status === "blocked" ? "#fef2f2" : "#fffbeb", border: `1px solid ${node.status === "blocked" ? "#fecaca" : "#fde68a"}` }}>
-                <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" style={{ color: node.status === "blocked" ? "#dc2626" : "#b45309" }} />
-                <p className="text-xs" style={{ color: node.status === "blocked" ? "#991b1b" : "#92400e" }}>{node.blockedReason}</p>
-              </div>
-            )}
-            {/* Multi-day steps: the day-by-day picture */}
-            {dayProg && !done && (
-              <div className="mt-3 rounded-lg p-3" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}>
-                <p className="text-[11px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-muted)" }}>Day {dayProg.day} of {dayProg.total}</p>
-                <SegmentedProgress segments={dayProg.visits.map(v => ({ filled: v.done, color: "#0f8578", current: v.today && !v.done }))} />
-                <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2">
-                  {dayProg.visits.map((v, i) => (
-                    <span key={v.date} className="text-[11px]" style={{ color: v.done ? "#10b981" : v.today ? "var(--accent-text)" : "var(--text-muted)", fontWeight: v.today ? 600 : 400 }}>
-                      Day {i + 1} · {new Date(`${v.date}T12:00:00`).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}{v.done ? " ✓" : v.today ? " · today" : ""}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-            {/* Dated waits: when should this resolve? Passing the date spawns a follow-up task. */}
-            {(node.status === "waiting" || node.status === "blocked") && (
-              <div className="mt-3">
-                <label className="block text-[11px] font-medium mb-1" style={{ color: "var(--text-secondary)" }}>Expected by
-                  <span className="font-normal" style={{ color: "var(--text-muted)" }}> — a follow-up task is created if this date passes</span>
-                </label>
-                <DatePicker size="sm" value={node.expectedDate ?? ""} className="w-44"
-                  onChange={d => { setMapNodeExpected(node.id, d); onChanged(); }} />
-              </div>
-            )}
-            {/* Checklist source: the items are the step — work through them here */}
-            {isChecklist && node.checklist && (
-              <div className="mt-4 space-y-2">
-                {node.checklist.map(item => (
-                  <MapChecklistItem key={item.id} nodeId={node.id} item={item} onChanged={onChanged} />
-                ))}
-              </div>
-            )}
-            <div className="mt-4 space-y-2">
-              {primary}
-              {bookJobId && !done && (
-                <button onClick={() => setBookOpen(true)}
-                  className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg text-sm font-medium"
-                  style={{ border: "1px solid var(--border)", color: "var(--text-secondary)", backgroundColor: "var(--bg-surface)" }}>
-                  <Calendar className="w-4 h-4" /> Book multi-day visits
-                </button>
-              )}
+        {/* ── Body ── */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-3.5">
+          <p className="text-sm px-0.5" style={{ color: "var(--text-primary)" }}>{whatNow(node)}</p>
+
+          {skipped && node.skipReason && (
+            <div className="rounded-lg px-3 py-2 flex items-start gap-2" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}>
+              <Ban className="w-3.5 h-3.5 mt-0.5 shrink-0" style={{ color: "var(--text-muted)" }} />
+              <p className="text-xs italic" style={{ color: "var(--text-secondary)" }}>{node.skipReason}</p>
             </div>
-            {node.notes && <p className="text-[11px] mt-3 pt-3" style={{ borderTop: "1px solid var(--border)", color: "var(--text-muted)" }}>{node.notes}</p>}
-          </Card>
-          {bookOpen && bookJobId && (
-            <MultiDayBookModal jobId={bookJobId} onClose={() => setBookOpen(false)} onBooked={onChanged} />
           )}
 
-          <Card title="Before this can start" icon={GitBranch}>
-            {deps.length === 0 ? (
-              <p className="text-sm" style={{ color: "var(--text-muted)" }}>No prerequisites — this can begin anytime.</p>
-            ) : (
-              <div className="space-y-2">
-                {deps.map(d => {
-                  const dm = NODE_STATUS_META[d.status];
-                  const dDone = d.status === "completed";
-                  const dTab = d.mirror ? SOURCE_TAB[d.mirror] : undefined;
-                  return (
-                    <div key={d.id} className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg" style={{ border: "1px solid var(--border)", backgroundColor: dDone ? "transparent" : "var(--bg-surface-2)" }}>
-                      {dDone ? <Check className="w-4 h-4 shrink-0" style={{ color: "#10b981" }} /> : <Circle className="w-4 h-4 shrink-0" style={{ color: dm.color }} />}
-                      <button onClick={() => onSelectNode(d.id)} className="text-sm font-medium text-left hover:underline flex-1 min-w-0 truncate" style={{ color: "var(--text-primary)" }}>{d.title}</button>
-                      <span className="text-[11px] shrink-0" style={{ color: dm.color }}>{dm.label}</span>
-                      {!dDone && dTab && onOpenTab && <button onClick={() => onOpenTab(dTab)} className="text-[11px] font-medium flex items-center gap-0.5 shrink-0" style={{ color: ACCENT }}>Go <ExternalLink className="w-3 h-3" /></button>}
-                    </div>
-                  );
-                })}
-                <p className="text-[11px] pt-1" style={{ color: "var(--text-muted)" }}>Click a prerequisite to open it, or “Go” to where it gets done.</p>
+          {/* Acting ahead of the plan is allowed — but it's a choice, not an accident. */}
+          {actingEarly && !skipConfirm && (
+            <div className="rounded-lg px-3 py-2 flex items-start gap-2" style={{ backgroundColor: "#fffbeb", border: "1px solid #fde68a" }}>
+              <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" style={{ color: "#b45309" }} />
+              <p className="text-xs" style={{ color: "#92400e" }}>
+                {unmetDeps.length} prerequisite{unmetDeps.length === 1 ? " isn't" : "s aren't"} done yet — you can still work this step if reality got ahead of the plan.
+              </p>
+            </div>
+          )}
+
+          {skipConfirm && (
+            <div className="rounded-xl p-3.5 space-y-2" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
+              <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>Skip this step?</p>
+              <p className="text-xs" style={{ color: "var(--text-muted)" }}>It leaves the progress count and downstream steps stop waiting on it. You can restore it anytime.</p>
+              <input value={skipReason} onChange={e => setSkipReason(e.target.value)} autoFocus
+                onKeyDown={e => { if (e.key === "Enter") confirmSkip(); if (e.key === "Escape") setSkipConfirm(false); }}
+                placeholder="Why doesn't it apply? (optional)"
+                className="w-full rounded-lg px-2.5 py-1.5 text-sm outline-none"
+                style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-input)", color: "var(--text-primary)" }} />
+              <div className="flex items-center gap-2">
+                <button onClick={confirmSkip} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-white" style={{ backgroundColor: "#6b7280" }}><Ban className="w-3.5 h-3.5" /> Skip step</button>
+                <button onClick={() => { setSkipConfirm(false); setSkipReason(""); }} className="px-3 py-1.5 rounded-lg text-xs font-medium" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>Cancel</button>
               </div>
+            </div>
+          )}
+
+          {(node.status === "blocked" || node.status === "waiting") && node.blockedReason && (
+            <div className="rounded-lg px-3 py-2 flex items-start gap-2" style={{ backgroundColor: node.status === "blocked" ? "#fef2f2" : "#fffbeb", border: `1px solid ${node.status === "blocked" ? "#fecaca" : "#fde68a"}` }}>
+              <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" style={{ color: node.status === "blocked" ? "#dc2626" : "#b45309" }} />
+              <p className="text-xs" style={{ color: node.status === "blocked" ? "#991b1b" : "#92400e" }}>{node.blockedReason}</p>
+            </div>
+          )}
+
+          {/* Multi-day steps: the day-by-day picture */}
+          {dayProg && !done && !skipped && (
+            <div className="rounded-xl p-3.5" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
+              <p className="text-[11px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-muted)" }}>Day {dayProg.day} of {dayProg.total}</p>
+              <SegmentedProgress segments={dayProg.visits.map(v => ({ filled: v.done, color: "#0f8578", current: v.today && !v.done }))} />
+              <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2">
+                {dayProg.visits.map((v, i) => (
+                  <span key={v.date} className="text-[11px]" style={{ color: v.done ? "#10b981" : v.today ? "var(--accent-text)" : "var(--text-muted)", fontWeight: v.today ? 600 : 400 }}>
+                    Day {i + 1} · {new Date(`${v.date}T12:00:00`).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}{v.done ? " ✓" : v.today ? " · today" : ""}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Dated waits: when should this resolve? Passing the date spawns a follow-up task. */}
+          {(node.status === "waiting" || node.status === "blocked") && (
+            <div className="rounded-xl p-3.5" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
+              <label className="block text-[11px] font-medium mb-1" style={{ color: "var(--text-secondary)" }}>Expected by
+                <span className="font-normal" style={{ color: "var(--text-muted)" }}> — a follow-up task is created if this date passes</span>
+              </label>
+              <DatePicker size="sm" value={node.expectedDate ?? ""} className="w-44"
+                onChange={d => { setMapNodeExpected(node.id, d); onChanged(); }} />
+            </div>
+          )}
+
+          {/* Checklist source: the items ARE the step — work through them here */}
+          {isChecklist && !skipped && node.checklist && (
+            <div className="rounded-xl p-3.5 space-y-2" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
+              <p className="text-[11px] font-semibold uppercase tracking-wider flex items-center gap-1.5" style={{ color: "var(--text-muted)" }}><ListChecks className="w-3.5 h-3.5" /> Checklist</p>
+              {node.checklist.map(item => (
+                <MapChecklistItem key={item.id} nodeId={node.id} item={item} onChanged={onChanged} />
+              ))}
+            </div>
+          )}
+
+          {/* Prerequisites — click to view, "Go" to where it gets done */}
+          {deps.length > 0 && (
+            <div className="rounded-xl p-3.5 space-y-2" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
+              <p className="text-[11px] font-semibold uppercase tracking-wider flex items-center gap-1.5" style={{ color: "var(--text-muted)" }}><GitBranch className="w-3.5 h-3.5" /> Before this can start</p>
+              {deps.map(d => {
+                const dm = NODE_STATUS_META[d.status];
+                // Completed OR skipped satisfies the dependency (a skipped step never happens).
+                const dSat = d.status === "completed" || d.status === "skipped";
+                const dTab = d.mirror ? SOURCE_TAB[d.mirror] : undefined;
+                return (
+                  <div key={d.id} className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg" style={{ border: "1px solid var(--border)", backgroundColor: dSat ? "transparent" : "var(--bg-surface-2)" }}>
+                    {dSat ? <Check className="w-4 h-4 shrink-0" style={{ color: d.status === "completed" ? "#10b981" : dm.color }} /> : <Circle className="w-4 h-4 shrink-0" style={{ color: dm.color }} />}
+                    <button onClick={() => onSelectNode(d.id)} className="text-sm font-medium text-left hover:underline flex-1 min-w-0 truncate" style={{ color: "var(--text-primary)" }}>{d.title}</button>
+                    <span className="text-[11px] shrink-0" style={{ color: dm.color }}>{dm.label}</span>
+                    {!dSat && dTab && onOpenTab && <button onClick={() => { onOpenTab(dTab); requestClose(); }} className="text-[11px] font-medium flex items-center gap-0.5 shrink-0" style={{ color: ACCENT }}>Go <ExternalLink className="w-3 h-3" /></button>}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {node.notes && <p className="text-[11px] px-0.5" style={{ color: "var(--text-muted)" }}>{node.notes}</p>}
+        </div>
+
+        {/* ── Footer: the one action ── */}
+        {(primary || (bookJobId && !done && !skipped)) && (
+          <div className="shrink-0 p-4 space-y-2" style={{ backgroundColor: "var(--bg-surface)", borderTop: "1px solid var(--border)" }}>
+            {primary}
+            {bookJobId && !done && !skipped && (
+              <button onClick={() => setBookOpen(true)}
+                className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg text-sm font-medium"
+                style={{ border: "1px solid var(--border)", color: "var(--text-secondary)", backgroundColor: "var(--bg-surface)" }}>
+                <Calendar className="w-4 h-4" /> Book multi-day visits
+              </button>
             )}
-          </Card>
-        </div>
-
-        {/* Side */}
-        <div className="space-y-4">
-          <Card title="Workflow position" icon={CornerDownRight}>
-            <div className="space-y-1.5">
-              {prev && <WfRow node={prev} onClick={() => onSelectNode(prev.id)} />}
-              <WfRow node={node} current />
-              {nextN && <WfRow node={nextN} onClick={() => onSelectNode(nextN.id)} />}
-            </div>
-            <button onClick={onBack} className="w-full mt-3 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}><Layers className="w-3.5 h-3.5" /> View full map</button>
-          </Card>
-
-          <Card title="Quick actions" icon={Plus}>
-            <div className="space-y-2">
-              {tab && onOpenTab && <SideLink icon={ExternalLink} label={`Open ${tab}`} onClick={() => onOpenTab(tab)} />}
-              <SideLink icon={Plus} label="Add Task" onClick={() => alert("Add task — coming soon")} />
-              <SideLink icon={GitBranch} label="Add Dependency" onClick={() => alert("Add dependency — coming soon")} />
-            </div>
-          </Card>
-        </div>
+          </div>
+        )}
       </div>
-    </div>
-  );
-}
 
-function WfRow({ node, current, onClick }: { node: ProjectMapNode; current?: boolean; onClick?: () => void }) {
-  const sm = NODE_STATUS_META[node.status];
-  const Inner = (
-    <div className="flex items-center gap-2 px-2.5 py-2 rounded-lg" style={{ backgroundColor: current ? ACCENT + "12" : "transparent", border: `1px solid ${current ? ACCENT + "40" : "transparent"}` }}>
-      <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: sm.color }} />
-      <span className="text-sm flex-1 min-w-0 truncate" style={{ color: current ? ACCENT : "var(--text-primary)", fontWeight: current ? 600 : 400 }}>{node.title}</span>
-      {current && <span className="text-[9px] font-semibold uppercase" style={{ color: ACCENT }}>You are here</span>}
-    </div>
+      {bookOpen && bookJobId && (
+        <MultiDayBookModal jobId={bookJobId} onClose={() => setBookOpen(false)} onBooked={onChanged} />
+      )}
+    </>
   );
-  return onClick ? <button onClick={onClick} className="w-full text-left hover:opacity-80">{Inner}</button> : Inner;
 }
 
 // ─── Checklist-step item (the typed fill-out on the live step) ──
@@ -737,24 +793,3 @@ function MapChecklistItem({ nodeId, item, onChanged }: { nodeId: string; item: N
   );
 }
 
-function Meta({ icon: Icon, label, value }: { icon: typeof User; label: string; value: string }) {
-  return (
-    <div className="flex items-start gap-2">
-      <Icon className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: "var(--text-muted)" }} />
-      <div className="min-w-0"><p className="text-[10px]" style={{ color: "var(--text-muted)" }}>{label}</p><p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{value}</p></div>
-    </div>
-  );
-}
-function Card({ title, icon: Icon, children }: { title: string; icon: typeof User; children: React.ReactNode }) {
-  return (
-    <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)" }}>
-      <div className="flex items-center gap-2 px-4 py-3" style={{ borderBottom: "1px solid var(--border)", backgroundColor: "var(--bg-surface-2)" }}>
-        <Icon className="w-4 h-4" style={{ color: "var(--text-muted)" }} /><p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{title}</p>
-      </div>
-      <div className="p-4">{children}</div>
-    </div>
-  );
-}
-function SideLink({ icon: Icon, label, onClick }: { icon: typeof User; label: string; onClick: () => void }) {
-  return <button onClick={onClick} className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors hover:bg-[var(--bg-surface-2)]" style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}><Icon className="w-3.5 h-3.5" style={{ color: ACCENT }} /> {label}</button>;
-}

@@ -28,6 +28,8 @@ export interface TemplateNode {
   assignedTo?: string;
   manual?: boolean;            // true = checkbox; otherwise mirrored
   mirror?: MirrorSource;       // record reflected (and created) by this node
+  milestone?: string;          // which record event completes the step (default = the record's "done")
+  sameRecordAs?: string;       // node key: watch the SAME record as that (earlier) step
   createable?: boolean;        // show "Create" when no record is linked yet
   deps: string[];             // dependency node keys
   gate?: string;              // reason shown when blocked by an unmet dependency
@@ -56,6 +58,61 @@ export interface NodeChecklistItem {
 
 export function newChecklistItemId(): string { return `cl${Date.now().toString(36)}${Math.random().toString(36).slice(2, 4)}`; }
 
+// ─── Mirror milestones ────────────────────────────────────
+// Which event on the watched record completes the step. Every source exposes
+// its meaningful checkpoints; a node picks one (unset = the record's "done",
+// which matches the old hardcoded behavior). Two steps can watch the same
+// record at different milestones via `sameRecordAs` — that's how "Quote sent"
+// and "Quote approved" become two steps on one quote.
+export interface MirrorMilestone { value: string; label: string; caption: string }
+export const MIRROR_MILESTONES: Record<MirrorSource, MirrorMilestone[]> = {
+  quote: [
+    { value: "sent",     label: "Sent",     caption: "the quote is sent to the customer" },
+    { value: "approved", label: "Approved", caption: "the quote is approved" },
+  ],
+  job: [
+    { value: "scheduled", label: "Scheduled", caption: "the job is on the calendar" },
+    { value: "completed", label: "Completed", caption: "the job is finished" },
+  ],
+  work_order: [
+    { value: "completed", label: "Checklist complete", caption: "every required checklist item is done" },
+  ],
+  material_request: [
+    { value: "ordered",   label: "Ordered",   caption: "the requested materials are ordered" },
+    { value: "fulfilled", label: "Fulfilled", caption: "the material request is fulfilled" },
+  ],
+  purchase_order: [
+    { value: "ordered",          label: "Ordered",            caption: "the purchase order is placed" },
+    { value: "received_partial", label: "Partially received", caption: "at least part of the order has arrived" },
+    { value: "received_full",    label: "Fully received",     caption: "every line is received in full" },
+  ],
+  // Legacy project-wide source — new maps use purchase_order → Fully received.
+  equipment_received: [
+    { value: "received_full", label: "Fully received", caption: "a purchase order is fully received" },
+  ],
+  subcontractor: [
+    { value: "compliant", label: "Compliant",     caption: "COI / W-9 compliance is valid" },
+    { value: "completed", label: "Work complete", caption: "the assignment is finished" },
+  ],
+  invoice: [
+    { value: "created", label: "Created", caption: "the invoice exists" },
+    { value: "sent",    label: "Sent",    caption: "the invoice is sent" },
+    { value: "paid",    label: "Paid",    caption: "the invoice is paid in full" },
+  ],
+};
+// Behavior-preserving defaults — an unset milestone means what mirrors always meant.
+const DEFAULT_MILESTONE: Record<MirrorSource, string> = {
+  quote: "approved", job: "completed", work_order: "completed",
+  material_request: "fulfilled", purchase_order: "ordered",
+  equipment_received: "received_full", subcontractor: "completed", invoice: "sent",
+};
+export function mirrorMilestone(src: MirrorSource, milestone?: string): MirrorMilestone {
+  const list = MIRROR_MILESTONES[src];
+  return list.find(m => m.value === milestone)
+    ?? list.find(m => m.value === DEFAULT_MILESTONE[src])
+    ?? list[list.length - 1];
+}
+
 export interface MapTemplate {
   id: string;
   name: string;
@@ -76,8 +133,8 @@ const HVAC_REPLACEMENT: MapTemplate = {
     { key: "quote",    title: "Quote Approved",          type: "milestone",        group: "Planning",   assignedTo: "Ryo Martin",    mirror: "quote", createable: true, deps: ["site"] },
     { key: "matreq",   title: "Material Request Created", type: "material_request", group: "Materials",  assignedTo: "Kylie Brooks",  mirror: "material_request", createable: true, deps: ["quote"] },
     { key: "po",       title: "Purchase Order Created",  type: "purchase_order",   group: "Materials",  assignedTo: "Kylie Brooks",  mirror: "purchase_order", createable: true, deps: ["matreq"] },
-    { key: "received", title: "Equipment Received",      type: "milestone",        group: "Materials",  assignedTo: "Tucker Hayes",  mirror: "equipment_received", deps: ["po"], gate: "Equipment not received", notes: "Install can't start until equipment is received." },
-    { key: "schedule", title: "Install Job Scheduled",   type: "job",              group: "Scheduling", assignedTo: "Kylie Brooks",  mirror: "job", createable: true, deps: ["received"], gate: "Equipment not received" },
+    { key: "received", title: "Equipment Received",      type: "milestone",        group: "Materials",  assignedTo: "Tucker Hayes",  mirror: "purchase_order", milestone: "received_full", sameRecordAs: "po", deps: ["po"], gate: "Equipment not received", notes: "Install can't start until equipment is received." },
+    { key: "schedule", title: "Install Job Scheduled",   type: "job",              group: "Scheduling", assignedTo: "Kylie Brooks",  mirror: "job", milestone: "scheduled", createable: true, deps: ["received"], gate: "Equipment not received" },
     { key: "install",  title: "Install Work Order",      type: "work_order",       group: "Install",    assignedTo: "DeAndre Smith", mirror: "work_order", deps: ["schedule"] },
     { key: "startup",  title: "Startup Checklist",       type: "task",             group: "Install",    assignedTo: "DeAndre Smith", manual: true, deps: ["install"], notes: "Inspection can't be scheduled until startup is complete." },
     { key: "photos",   title: "Final Photos Uploaded",   type: "document",         group: "Closeout",   assignedTo: "DeAndre Smith", manual: true, deps: ["install"], gate: "Final photos required", notes: "Closeout needs final photos." },
@@ -100,7 +157,7 @@ const COMMERCIAL_RTU: MapTemplate = {
     { key: "quote",    title: "Quote Approved",         type: "milestone",        group: "Planning",       assignedTo: "Ryo Martin",   mirror: "quote", createable: true, deps: ["created"] },
     { key: "matreq",   title: "Material Request",       type: "material_request", group: "Materials",      assignedTo: "Kylie Brooks", mirror: "material_request", createable: true, deps: ["quote"] },
     { key: "po",       title: "Purchase Order",         type: "purchase_order",   group: "Materials",      assignedTo: "Kylie Brooks", mirror: "purchase_order", createable: true, deps: ["matreq"] },
-    { key: "received", title: "Equipment Received",     type: "milestone",        group: "Materials",      assignedTo: "Tucker Hayes", mirror: "equipment_received", deps: ["po"], gate: "Equipment not received" },
+    { key: "received", title: "Equipment Received",     type: "milestone",        group: "Materials",      assignedTo: "Tucker Hayes", mirror: "purchase_order", milestone: "received_full", sameRecordAs: "po", deps: ["po"], gate: "Equipment not received" },
     { key: "crane",    title: "Crane Subcontractor",    type: "subcontractor",    group: "Subcontractors", assignedTo: "Kylie Brooks", mirror: "subcontractor", createable: true, deps: ["received"], gate: "Subcontractor COI must be valid", notes: "Crane phase can't start until the COI is valid." },
     { key: "install",  title: "Install Work Order",     type: "work_order",       group: "Install",        assignedTo: "DeAndre Smith", mirror: "work_order", deps: ["crane"] },
     { key: "photos",   title: "Final Photos",           type: "document",         group: "Closeout",       assignedTo: "DeAndre Smith", manual: true, deps: ["install"], gate: "Final photos required" },
@@ -118,7 +175,7 @@ const GENERIC: MapTemplate = {
   nodes: [
     { key: "created",  title: "Project Created",   type: "milestone", group: "Planning", assignedTo: "Ryo Martin",   manual: true, deps: [] },
     { key: "quote",    title: "Quote Approved",    type: "milestone", group: "Planning", assignedTo: "Ryo Martin",   mirror: "quote", createable: true, deps: ["created"] },
-    { key: "scheduled",title: "Work Scheduled",    type: "job",       group: "Work",     assignedTo: "Kylie Brooks", mirror: "job", createable: true, deps: ["quote"] },
+    { key: "scheduled",title: "Work Scheduled",    type: "job",       group: "Work",     assignedTo: "Kylie Brooks", mirror: "job", milestone: "scheduled", createable: true, deps: ["quote"] },
     { key: "work",     title: "Work Completed",    type: "work_order",group: "Work",     assignedTo: "DeAndre Smith", mirror: "work_order", deps: ["scheduled"] },
     { key: "photos",   title: "Final Photos",      type: "document",  group: "Closeout", assignedTo: "DeAndre Smith", manual: true, deps: ["work"] },
     { key: "invoice",  title: "Invoice Sent",      type: "billing",   group: "Closeout", assignedTo: "Nicole Adams",  mirror: "invoice", createable: true, deps: ["work"], gate: "Work must be complete" },
