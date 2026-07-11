@@ -12,7 +12,7 @@ import {
   createInvoice, updateInvoice, computeTotals, fmt,
   type LineItem, type InvoiceRecord,
 } from "@/lib/quotes/data";
-import { getAllItems, itemToQuoteLine, getItemDefaults, createItem, type Item } from "@/lib/items/data";
+import { getAllItems, itemToQuoteLines, getItemDefaults, createItem, type Item } from "@/lib/items/data";
 import { LINE_ITEM_CATEGORIES, type LineItemCategory } from "@/lib/quotes/types";
 import { useHierarchy } from "@/components/providers/HierarchyProvider";
 
@@ -141,7 +141,7 @@ export default function InvoiceWizard({ preset, editInvoice, onClose, onCreated 
   function addCatalogItems(sel: Item[]) {
     setItems(prev => {
       const kept = prev.filter(it => it.name.trim() || it.description.trim() || it.itemId);
-      return [...kept, ...sel.map(it => lineToDraft(itemToQuoteLine(it)))];
+      return [...kept, ...sel.flatMap(it => itemToQuoteLines(it).map(lineToDraft))];
     });
     setShowCatalog(false);
   }

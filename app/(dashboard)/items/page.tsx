@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef } from "react";
-import { Package, Plus, Search, Layers, LayoutList, EyeOff, SlidersHorizontal } from "lucide-react";
+import { Plus, Search, Layers, SlidersHorizontal, Boxes, X } from "lucide-react";
+import { getInventoryItems, type InventoryItem } from "@/lib/inventory/data";
+import type { ItemPreset } from "@/components/items/ItemFormDrawer";
 import { useHierarchy } from "@/components/providers/HierarchyProvider";
 import PageTitle from "@/components/shared/PageTitle";
 import StatusBadge from "@/components/shared/StatusBadge";
@@ -24,7 +26,7 @@ function ItemRow({ it, last, onClick }: { it: Item; last: boolean; onClick: () =
       style={{ gridTemplateColumns: GRID, borderBottom: last ? "none" : "1px solid var(--border)", opacity: it.active ? 1 : 0.55 }}>
       <div className="min-w-0 pr-2">
         <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{it.name}</p>
-        <p className="text-[10px] truncate" style={{ color: "var(--text-muted)" }}>{it.sku ? `${it.sku} · ` : ""}{it.description ?? ""}</p>
+        <p className="text-[10px] truncate" style={{ color: "var(--text-muted)" }}>{it.sku ? `${it.sku} · ` : ""}{it.components?.length ? `Bundle · ${it.components.length} components · ` : ""}{it.description ?? ""}</p>
       </div>
       <StatusBadge label={tc.label} color={tc.color} />
       <span className="text-xs truncate pr-2" style={{ color: "var(--text-secondary)" }}>{it.category}</span>
@@ -46,7 +48,8 @@ export default function ItemsPage() {
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<"all" | ItemType>("all");
   const [catFilter, setCatFilter] = useState<string>("all");
-  const [drawer, setDrawer] = useState<{ open: boolean; item?: Item }>({ open: false });
+  const [drawer, setDrawer] = useState<{ open: boolean; item?: Item; preset?: ItemPreset }>({ open: false });
+  const [invPickOpen, setInvPickOpen] = useState(false);
   const [catalogOpen, setCatalogOpen] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const filtersRef = useRef<HTMLDivElement>(null);
@@ -94,9 +97,9 @@ export default function ItemsPage() {
     packages: contextItems.filter(i => i.type === "package").length,
     inactive: contextItems.filter(i => !i.active).length,
   };
-  const TABS: { key: Tab; label: string; icon: typeof LayoutList }[] = [
-    { key: "all", label: "All Items", icon: LayoutList }, { key: "categories", label: "Categories", icon: Layers },
-    { key: "packages", label: "Packages", icon: Package }, { key: "inactive", label: "Inactive", icon: EyeOff },
+  const TABS: { key: Tab; label: string }[] = [
+    { key: "all", label: "All Items" }, { key: "categories", label: "Categories" },
+    { key: "packages", label: "Packages" }, { key: "inactive", label: "Inactive" },
   ];
 
   return (
@@ -112,6 +115,11 @@ export default function ItemsPage() {
             className="flex items-center gap-1.5 text-sm font-medium px-3 py-2 rounded-lg transition-colors"
             style={{ border: "1px solid var(--border)", color: "var(--text-secondary)", backgroundColor: "var(--bg-surface)" }}>
             <Layers className="w-4 h-4" /> Starter Catalog
+          </button>
+          <button onClick={() => setInvPickOpen(true)}
+            className="flex items-center gap-1.5 text-sm font-medium px-3 py-2 rounded-lg transition-colors"
+            style={{ border: "1px solid var(--border)", color: "var(--text-secondary)", backgroundColor: "var(--bg-surface)" }}>
+            <Boxes className="w-4 h-4" /> From Inventory
           </button>
           <button onClick={() => setDrawer({ open: true })}
             className="flex items-center gap-1.5 bg-[#0f8578] hover:bg-[#0c6b60] text-white text-sm font-medium px-3 py-2 rounded-lg transition-colors">
@@ -129,7 +137,7 @@ export default function ItemsPage() {
                 <button key={t.key} onClick={() => setTab(t.key)}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
                   style={{ backgroundColor: active ? "var(--accent-soft-bg)" : "transparent", color: active ? "var(--accent-text)" : "var(--text-muted)", border: `1px solid ${active ? "var(--accent-soft-border)" : "transparent"}` }}>
-                  <t.icon className="w-3.5 h-3.5" /> {t.label}
+                  {t.label}
                   <span className="text-xs tabular-nums" style={{ color: active ? "var(--accent-text)" : "var(--text-muted)", opacity: 0.7 }}>{counts[t.key]}</span>
                 </button>
               );
@@ -224,14 +232,89 @@ export default function ItemsPage() {
       </div>
 
       {drawer.open && (
-        <ItemFormDrawer item={drawer.item}
+        <ItemFormDrawer item={drawer.item} preset={drawer.preset}
           onClose={() => setDrawer({ open: false })}
           onSaved={() => { setDrawer({ open: false }); setRefresh(n => n + 1); }} />
+      )}
+      {invPickOpen && (
+        <InventoryPickModal existing={items}
+          onClose={() => setInvPickOpen(false)}
+          onPick={inv => {
+            setInvPickOpen(false);
+            setDrawer({ open: true, preset: {
+              name: inv.name, sku: inv.sku,
+              type: inv.category === "Equipment" ? "equipment" : "material",
+              category: inv.category,
+              unitPrice: inv.sellPrice ?? 0, unitCost: inv.cost ?? 0,
+              inventoryItemId: inv.id,
+            } });
+          }} />
       )}
       {catalogOpen && (
         <IndustryCatalogModal onClose={() => setCatalogOpen(false)}
           onApplied={() => { setCatalogOpen(false); setRefresh(n => n + 1); }} />
       )}
+    </div>
+  );
+}
+
+// ─── New item from inventory — pick a stock record to sell ──
+// Prefills the item form from the inventory record and keeps the link, so cost
+// and price drift is surfaced on the item later (never auto-synced).
+function InventoryPickModal({ existing, onClose, onPick }: {
+  existing: Item[]; onClose: () => void; onPick: (inv: InventoryItem) => void;
+}) {
+  const [q, setQ] = useState("");
+  const inventory = useMemo(() => getInventoryItems(), []);
+  const linked = useMemo(() => new Set(existing.map(i => i.inventoryItemId).filter(Boolean)), [existing]);
+  const filtered = inventory.filter(i => {
+    if (!q) return true;
+    const s = q.toLowerCase();
+    return i.name.toLowerCase().includes(s) || i.sku.toLowerCase().includes(s) || (i.category ?? "").toLowerCase().includes(s);
+  });
+  return (
+    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="w-full max-w-lg max-h-[85vh] flex flex-col rounded-2xl overflow-hidden" onClick={e => e.stopPropagation()}
+        style={{ backgroundColor: "var(--bg-surface)", boxShadow: "0 16px 48px rgba(0,0,0,0.24)" }}>
+        <div className="flex items-center gap-2.5 px-5 py-4 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: "var(--accent-soft-bg)" }}>
+            <Boxes className="w-4 h-4" style={{ color: "var(--accent-text)" }} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>New Item from Inventory</p>
+            <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>Pick a stock record — name, SKU, cost &amp; price prefill and stay linked.</p>
+          </div>
+          <button onClick={onClose} style={{ color: "var(--text-muted)" }}><X className="w-4 h-4" /></button>
+        </div>
+        <div className="px-5 py-3 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
+          <div className="flex items-center gap-2 rounded-lg px-3 py-1.5" style={{ backgroundColor: "var(--bg-input)" }}>
+            <Search className="w-3.5 h-3.5 shrink-0" style={{ color: "var(--text-muted)" }} />
+            <input autoFocus placeholder="Search inventory…" value={q} onChange={e => setQ(e.target.value)}
+              className="bg-transparent text-sm outline-none w-full" style={{ color: "var(--text-primary)" }} />
+          </div>
+        </div>
+        <div className="flex-1 min-h-0 overflow-y-auto thin-scroll-y p-2">
+          {filtered.length === 0 ? (
+            <p className="text-xs text-center py-8" style={{ color: "var(--text-muted)" }}>No inventory records match.</p>
+          ) : filtered.map(inv => {
+            const already = linked.has(inv.id);
+            return (
+              <button key={inv.id} onClick={() => onPick(inv)}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors hover:bg-[var(--bg-surface-2)]">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{inv.name}</p>
+                  <p className="text-[10px] truncate" style={{ color: "var(--text-muted)" }}>{inv.sku} · {inv.category} · {inv.qtyOnHand ?? 0} on hand{inv.vendor ? ` · ${inv.vendor}` : ""}</p>
+                </div>
+                {already && <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full shrink-0" style={{ backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }}>Linked</span>}
+                <div className="text-right shrink-0">
+                  <p className="text-sm font-semibold tabular-nums" style={{ color: "var(--text-primary)" }}>{fmt(inv.sellPrice ?? 0)}</p>
+                  <p className="text-[10px] tabular-nums" style={{ color: "var(--text-muted)" }}>cost {fmt(inv.cost ?? 0)}</p>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }

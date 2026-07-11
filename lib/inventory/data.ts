@@ -8,6 +8,8 @@
 // local tick. No Supabase, no payments, no real approval workflow yet.
 
 // ─── Vendor type / status ─────────────────────────────────
+import { getItem as getPricebookItem } from "@/lib/items/data";
+
 export type VendorType =
   | "material_supplier" | "equipment_supplier" | "subcontractor"
   | "service_provider" | "utility" | "professional_service" | "other";
@@ -287,6 +289,7 @@ export interface InventoryMovement {
   relatedPoId?: string;
   relatedProjectId?: string;
   relatedJobId?: string;
+  relatedWorkOrderId?: string;   // set by auto-consumption on WO completion (idempotency key)
   createdBy: string;
   createdAt: string;
   notes?: string;
@@ -603,6 +606,43 @@ export function consumeFromTruck(sku: string, locationName: string, qty: number,
   }, ..._movements];
   return { item, qtyBefore: before, qtyAfter: Math.max(0, before - qty) };
 }
+
+// ─── Work-order consumption (pricebook link → stock) ──────
+// When a work order completes, its PART lines that trace to inventory decrement
+// stock and log "usage" movements: line.itemId → pricebook item.inventoryItemId,
+// and one-line bundles decompose into their components' links. Idempotent per
+// WO (guarded by relatedWorkOrderId) so re-completing never double-counts.
+export function consumeStockForWorkOrder(
+  wo: { id: string; jobId?: string; lineItems?: { kind: string; qty: number; itemId?: string }[] },
+  opts?: { createdBy?: string },
+): StockChange[] {
+  if (_movements.some(m => m.relatedWorkOrderId === wo.id)) return [];
+  const changes: StockChange[] = [];
+  const consume = (invId: string, qty: number) => {
+    const item = _items.find(i => i.id === invId);
+    if (!item || qty <= 0) return;
+    const before = item.qtyOnHand;
+    adjustItemQty(item.id, -qty);
+    _movements = [{
+      id: uid("mv"), movementType: "usage", itemName: item.name, quantity: qty,
+      fromLocation: item.location, relatedJobId: wo.jobId, relatedWorkOrderId: wo.id,
+      createdBy: opts?.createdBy ?? "—", createdAt: nowIso(), notes: "Auto — parts used on completed work order",
+    }, ..._movements];
+    changes.push({ item, qtyBefore: before, qtyAfter: Math.max(0, before - qty) });
+  };
+  for (const line of wo.lineItems ?? []) {
+    if (line.kind !== "part" || !line.itemId) continue;
+    const pb = getPricebookItem(line.itemId);
+    if (!pb) continue;
+    if (pb.inventoryItemId) consume(pb.inventoryItemId, line.qty);
+    for (const c of pb.components ?? []) {
+      const comp = getPricebookItem(c.itemId);
+      if (comp?.inventoryItemId) consume(comp.inventoryItemId, c.quantity * line.qty);
+    }
+  }
+  return changes;
+}
+
 
 // Put stock back (e.g. a WO line was removed before invoicing).
 export function returnToTruck(sku: string, locationName: string, qty: number): void {

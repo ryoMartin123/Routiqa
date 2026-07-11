@@ -5,12 +5,12 @@
 // session "extras" + per-item "overrides", all merged on read so a given item
 // stays consistent everywhere. Replace with Supabase queries when ready.
 
-import type { Item, ItemType } from "./types";
+import type { Item, ItemType, BundleComponent } from "./types";
 import type { LineItem } from "@/lib/quotes/data";
 import type { LineItemCategory } from "@/lib/quotes/types";
 import { getIndustryCatalog, type StarterItem } from "./industry-catalogs";
 
-export type { Item, ItemType } from "./types";
+export type { Item, ItemType, BundleComponent } from "./types";
 export { INDUSTRY_CATALOGS, getIndustryCatalog } from "./industry-catalogs";
 
 // ─── Customizable categories ──────────────────────────────
@@ -118,6 +118,8 @@ export interface NewItemInput {
   name: string; description?: string; type: ItemType; category: string;
   unitPrice: number; unitCost?: number; taxable: boolean; defaultQuantity: number;
   sku?: string; active?: boolean; companyId?: string; locationId?: string;
+  components?: BundleComponent[]; bundlePricing?: "sum" | "fixed"; expandOnAdd?: boolean;
+  inventoryItemId?: string;
 }
 
 export function createItem(input: NewItemInput): Item {
@@ -132,6 +134,10 @@ export function createItem(input: NewItemInput): Item {
     taxable: input.taxable, defaultQuantity: input.defaultQuantity,
     sku: input.sku?.trim() || undefined,
     active: input.active ?? true,
+    components: input.components,
+    bundlePricing: input.bundlePricing,
+    expandOnAdd: input.expandOnAdd,
+    inventoryItemId: input.inventoryItemId,
     createdAt: nowStamp(), updatedAt: nowStamp(),
   };
   _extra = [item, ...extra()];
@@ -268,6 +274,61 @@ export function itemToQuoteLine(item: Item): LineItem {
     taxable: item.taxable,
     optional: false,
     itemId: item.id,
-    unitCost: item.unitCost,
+    unitCost: resolveItemCost(item),
   };
+}
+
+// ─── Bundles ──────────────────────────────────────────────
+// A bundle (type "package" with components) composes other pricebook items.
+// "sum" pricing tracks the components live; "fixed" is a flat bundle price —
+// cost ALWAYS sums from components so margin stays honest either way.
+export function bundleComponentSum(item: Item, all: Item[] = getAllItems()): { price: number; cost: number } {
+  let price = 0, cost = 0;
+  for (const c of item.components ?? []) {
+    const comp = all.find(i => i.id === c.itemId);
+    if (!comp) continue;
+    price += comp.unitPrice * c.quantity;
+    cost += (comp.unitCost ?? 0) * c.quantity;
+  }
+  return { price: Math.round(price * 100) / 100, cost: Math.round(cost * 100) / 100 };
+}
+
+export function isBundle(item: Item): boolean {
+  return item.type === "package" && (item.components?.length ?? 0) > 0;
+}
+
+// The price the item actually sells at right now (sum-mode bundles are live).
+export function resolveItemPrice(item: Item): number {
+  if (isBundle(item) && (item.bundlePricing ?? "sum") === "sum") return bundleComponentSum(item).price;
+  return item.unitPrice;
+}
+export function resolveItemCost(item: Item): number | undefined {
+  if (isBundle(item)) return bundleComponentSum(item).cost;
+  return item.unitCost;
+}
+
+// Bundle-aware add-to-quote: expandOnAdd bundles become one line PER component
+// (each with its own itemId back-ref); everything else is a single line at the
+// resolved price. All values are snapshots — later catalog edits never touch
+// existing quotes.
+export function itemToQuoteLines(item: Item): LineItem[] {
+  if (isBundle(item) && item.expandOnAdd) {
+    const all = getAllItems();
+    const lines: LineItem[] = [];
+    for (const c of item.components ?? []) {
+      const comp = all.find(i => i.id === c.itemId);
+      if (!comp) continue;
+      const line = itemToQuoteLine(comp);
+      line.quantity = c.quantity;
+      line.total = Math.round(c.quantity * line.unitPrice * 100) / 100;
+      lines.push(line);
+    }
+    return lines.length ? lines : [itemToQuoteLine(item)];
+  }
+  const line = itemToQuoteLine(item);
+  if (isBundle(item)) {
+    line.unitPrice = resolveItemPrice(item);
+    line.total = Math.round(line.quantity * line.unitPrice * 100) / 100;
+  }
+  return [line];
 }

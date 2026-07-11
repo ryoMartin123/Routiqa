@@ -12,6 +12,7 @@ import {
 } from "@/lib/work-order-templates/data";
 export type { ChecklistItemType } from "@/lib/work-order-templates/data";
 import { notifyDataChanged, invalidateOnStorage } from "@/lib/sync/liveData";
+import { consumeStockForWorkOrder } from "@/lib/inventory/data";
 import { getSupabase } from "@/lib/supabase/client";
 import { emitAutomationEvent } from "@/lib/marketing/automation-engine";
 
@@ -579,6 +580,11 @@ export function updateWorkOrderById(id: string, patch: Partial<WorkOrder>): Work
   const updated = { ...existing, ...patch };
   _woById = { ...woStore(), [id]: updated };
   persistWO();
+  // Completing a WO consumes stock for inventory-linked part lines (usage
+  // movements; idempotent). Never allowed to block the completion itself.
+  if (existing.status !== "completed" && updated.status === "completed") {
+    try { consumeStockForWorkOrder(updated); } catch { /* ignore */ }
+  }
   notifyDataChanged();
   return updated;
 }

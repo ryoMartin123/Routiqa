@@ -1,14 +1,24 @@
 "use client";
 
-import { useState } from "react";
-import { X } from "lucide-react";
+import { useMemo, useState } from "react";
+import { X, Plus, Trash2, Boxes, AlertTriangle } from "lucide-react";
 import UiSelect from "@/components/ui/Select";
+import NumberStepper from "@/components/ui/NumberStepper";
 import { useHierarchy } from "@/components/providers/HierarchyProvider";
 import {
   createItem, updateItem, getActiveCategoryNames, addItemCategory, getItemDefaults,
+  getAllItems, fmt,
   type Item,
 } from "@/lib/items/data";
-import { ITEM_TYPES, ITEM_TYPE_CONFIG, type ItemType } from "@/lib/items/types";
+import { ITEM_TYPES, ITEM_TYPE_CONFIG, type ItemType, type BundleComponent } from "@/lib/items/types";
+import { getInventoryItem } from "@/lib/inventory/data";
+
+// Prefill for "New item from inventory" (Items page picker) — carries the
+// inventoryItemId link so cost/price drift can be surfaced later.
+export interface ItemPreset {
+  name?: string; sku?: string; type?: ItemType; category?: string;
+  unitPrice?: number; unitCost?: number; inventoryItemId?: string;
+}
 
 function Toggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void }) {
   return (
@@ -34,8 +44,9 @@ function Field({ label, children, hint }: { label: string; children: React.React
 const inputCls = "w-full rounded-lg px-3 py-2 text-sm outline-none";
 const inputStyle = { border: "1px solid var(--border)", backgroundColor: "var(--bg-surface)", color: "var(--text-primary)" } as const;
 
-export default function ItemFormDrawer({ item, onClose, onSaved }: {
+export default function ItemFormDrawer({ item, preset, onClose, onSaved }: {
   item?: Item;
+  preset?: ItemPreset;
   onClose: () => void;
   onSaved: () => void;
 }) {
@@ -43,19 +54,49 @@ export default function ItemFormDrawer({ item, onClose, onSaved }: {
   const defaults = getItemDefaults();
   const editing = Boolean(item);
 
-  const [name, setName] = useState(item?.name ?? "");
-  const [sku, setSku] = useState(item?.sku ?? "");
-  const [type, setType] = useState<ItemType>(item?.type ?? "service");
-  const [categories] = useState<string[]>(() => getActiveCategoryNames());
-  const [category, setCategory] = useState(item?.category ?? categories[0] ?? "Other");
+  const [name, setName] = useState(item?.name ?? preset?.name ?? "");
+  const [sku, setSku] = useState(item?.sku ?? preset?.sku ?? "");
+  const [type, setType] = useState<ItemType>(item?.type ?? preset?.type ?? "service");
+  const [categories] = useState<string[]>(() => {
+    const cats = getActiveCategoryNames();
+    // A preset category (e.g. from inventory) joins the list even if it's new.
+    return preset?.category && !cats.includes(preset.category) ? [...cats, preset.category] : cats;
+  });
+  const [category, setCategory] = useState(item?.category ?? preset?.category ?? categories[0] ?? "Other");
   const [addingCat, setAddingCat] = useState(false);
   const [newCat, setNewCat] = useState("");
   const [description, setDescription] = useState(item?.description ?? "");
-  const [unitPrice, setUnitPrice] = useState(String(item?.unitPrice ?? 0));
-  const [unitCost, setUnitCost] = useState(item?.unitCost != null ? String(item.unitCost) : "");
+  const [unitPrice, setUnitPrice] = useState(String(item?.unitPrice ?? preset?.unitPrice ?? 0));
+  const [unitCost, setUnitCost] = useState(item?.unitCost != null ? String(item.unitCost) : preset?.unitCost != null ? String(preset.unitCost) : "");
   const [defaultQuantity, setDefaultQuantity] = useState(String(item?.defaultQuantity ?? defaults.defaultQuantity));
   const [taxable, setTaxable] = useState(item?.taxable ?? defaults.defaultTaxable);
   const [active, setActive] = useState(item?.active ?? true);
+
+  // ── Bundle (type "package") ──
+  const [components, setComponents] = useState<BundleComponent[]>(item?.components ?? []);
+  const [bundlePricing, setBundlePricing] = useState<"sum" | "fixed">(item?.bundlePricing ?? "sum");
+  const [expandOnAdd, setExpandOnAdd] = useState(item?.expandOnAdd ?? false);
+  // Candidates: active, not a bundle (no nesting), not the item being edited.
+  const candidates = useMemo(() => getAllItems().filter(i => i.active && i.type !== "package" && i.id !== item?.id), [item?.id]);
+  const isBundleForm = type === "package" && components.length > 0;
+  const compSum = useMemo(() => {
+    let price = 0, cost = 0;
+    for (const c of components) {
+      const comp = candidates.find(i => i.id === c.itemId);
+      if (!comp) continue;
+      price += comp.unitPrice * c.quantity;
+      cost += (comp.unitCost ?? 0) * c.quantity;
+    }
+    return { price: Math.round(price * 100) / 100, cost: Math.round(cost * 100) / 100 };
+  }, [components, candidates]);
+
+  // ── Inventory link — surface drift, never auto-sync ──
+  const inventoryItemId = item?.inventoryItemId ?? preset?.inventoryItemId;
+  const inv = inventoryItemId ? getInventoryItem(inventoryItemId) : undefined;
+  const invDrift = !!inv && !!item && inv.cost != null && inv.sellPrice != null && (
+    (item.unitCost != null && Math.abs(inv.cost - item.unitCost) >= 0.01) ||
+    Math.abs(inv.sellPrice - item.unitPrice) >= 0.01
+  );
 
   const canSave = Boolean(name.trim() && category && !isNaN(parseFloat(unitPrice)));
 
@@ -71,10 +112,16 @@ export default function ItemFormDrawer({ item, onClose, onSaved }: {
     if (!canSave) return;
     const payload = {
       name, description: description || undefined, type, category,
-      unitPrice: parseFloat(unitPrice) || 0,
-      unitCost: unitCost.trim() === "" ? undefined : parseFloat(unitCost),
+      // Sum-priced bundles store the computed sum (kept fresh on every save);
+      // cost always sums from components so margin stays honest.
+      unitPrice: isBundleForm && bundlePricing === "sum" ? compSum.price : (parseFloat(unitPrice) || 0),
+      unitCost: isBundleForm ? compSum.cost : (unitCost.trim() === "" ? undefined : parseFloat(unitCost)),
       taxable, defaultQuantity: parseFloat(defaultQuantity) || 1,
       sku: sku || undefined, active,
+      components: type === "package" && components.length ? components : undefined,
+      bundlePricing: type === "package" && components.length ? bundlePricing : undefined,
+      expandOnAdd: type === "package" && components.length ? expandOnAdd : undefined,
+      inventoryItemId,
     };
     if (editing && item) updateItem(item.id, payload);
     else createItem({ ...payload, companyId: effectiveCompanyId || undefined });
@@ -97,6 +144,24 @@ export default function ItemFormDrawer({ item, onClose, onSaved }: {
             <input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. 3 Ton Heat Pump System"
               className={inputCls} style={inputStyle} />
           </Field>
+
+          {inv && (
+            <div className="rounded-lg px-3 py-2 flex items-start gap-2" style={{ backgroundColor: invDrift ? "var(--warning-soft-bg)" : "var(--bg-surface-2)", border: `1px solid ${invDrift ? "var(--warning-soft-border)" : "var(--border)"}` }}>
+              {invDrift ? <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: "var(--warning-icon)" }} /> : <Boxes className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: "var(--text-muted)" }} />}
+              <div className="min-w-0 flex-1">
+                <p className="text-[11px] leading-snug" style={{ color: invDrift ? "var(--warning-text)" : "var(--text-muted)" }}>
+                  Linked to inventory: <span className="font-semibold">{inv.name}</span> ({inv.sku}) — cost {fmt(inv.cost ?? 0)}, sells {fmt(inv.sellPrice ?? 0)}.
+                  {invDrift ? " Inventory numbers have changed." : ""}
+                </p>
+                {invDrift && (
+                  <button onClick={() => { setUnitCost(String(inv.cost ?? 0)); setUnitPrice(String(inv.sellPrice ?? 0)); }}
+                    className="mt-0.5 text-[11px] font-semibold underline underline-offset-2" style={{ color: "var(--warning-text)" }}>
+                    Use current inventory cost &amp; price
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-3">
             <Field label="Type *">
@@ -132,9 +197,68 @@ export default function ItemFormDrawer({ item, onClose, onSaved }: {
               className={`${inputCls} resize-none thin-scroll-y`} style={inputStyle} placeholder="Shown on quotes and invoices" />
           </Field>
 
+          {/* ── Bundle components (type "package") ── */}
+          {type === "package" && (
+            <div className="rounded-xl p-3 space-y-2" style={{ backgroundColor: "var(--bg-surface-2)", border: "1px solid var(--border)" }}>
+              <div className="flex items-center justify-between">
+                <p className="flex items-center gap-1.5 text-xs font-semibold" style={{ color: "var(--text-primary)" }}>
+                  <Boxes className="w-3.5 h-3.5" style={{ color: "#0f8578" }} /> Bundle components
+                </p>
+                <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>{components.length === 0 ? "optional" : `sums to ${fmt(compSum.price)}`}</span>
+              </div>
+              {components.map((c, i) => {
+                const comp = candidates.find(x => x.id === c.itemId);
+                return (
+                  <div key={i} className="flex items-center gap-1.5">
+                    <div className="flex-1 min-w-0">
+                      <UiSelect size="sm" value={c.itemId} onChange={v => setComponents(prev => prev.map((x, j) => j === i ? { ...x, itemId: v } : x))}
+                        options={candidates.map(ci => ({ value: ci.id, label: `${ci.name} — ${fmt(ci.unitPrice)}` }))} />
+                    </div>
+                    <NumberStepper size="sm" min={1} className="w-20" value={String(c.quantity)}
+                      onChange={v => setComponents(prev => prev.map((x, j) => j === i ? { ...x, quantity: Math.max(1, parseInt(v) || 1) } : x))} />
+                    <span className="text-xs w-16 text-right tabular-nums shrink-0" style={{ color: "var(--text-secondary)" }}>{comp ? fmt(comp.unitPrice * c.quantity) : "—"}</span>
+                    <button onClick={() => setComponents(prev => prev.filter((_, j) => j !== i))} title="Remove" className="p-1 shrink-0" style={{ color: "var(--text-muted)" }}><Trash2 className="w-3.5 h-3.5" /></button>
+                  </div>
+                );
+              })}
+              <button onClick={() => { const first = candidates[0]; if (first) setComponents(prev => [...prev, { itemId: first.id, quantity: 1 }]); }}
+                className="flex items-center gap-1 text-xs font-medium" style={{ color: "#0f8578" }}>
+                <Plus className="w-3.5 h-3.5" /> Add component
+              </button>
+
+              {components.length > 0 && (
+                <>
+                  <div className="flex items-center rounded-lg overflow-hidden" style={{ border: "1px solid var(--border)" }}>
+                    {([{ k: "sum", label: `Sum of components — ${fmt(compSum.price)}` }, { k: "fixed", label: "Fixed bundle price" }] as const).map(m => (
+                      <button key={m.k} onClick={() => setBundlePricing(m.k)} className="flex-1 px-2 py-1.5 text-[11px] font-medium transition-colors"
+                        style={{ backgroundColor: bundlePricing === m.k ? "#0f8578" : "var(--bg-surface)", color: bundlePricing === m.k ? "#fff" : "var(--text-muted)" }}>
+                        {m.label}
+                      </button>
+                    ))}
+                  </div>
+                  {bundlePricing === "fixed" && (parseFloat(unitPrice) || 0) < compSum.price && (
+                    <p className="text-[10px]" style={{ color: "var(--text-muted)" }}>
+                      Customer saves {fmt(compSum.price - (parseFloat(unitPrice) || 0))} vs. the {fmt(compSum.price)} component sum.
+                    </p>
+                  )}
+                  <div className="flex items-center justify-between pt-1">
+                    <div>
+                      <span className="text-xs" style={{ color: "var(--text-primary)" }}>Add as separate lines</span>
+                      <p className="text-[10px]" style={{ color: "var(--text-muted)" }}>Off = one line on the quote; components stay internal.</p>
+                    </div>
+                    <Toggle on={expandOnAdd} onChange={setExpandOnAdd} />
+                  </div>
+                  <p className="text-[10px]" style={{ color: "var(--text-muted)" }}>Component cost sums to {fmt(compSum.cost)} — used for margin either way.</p>
+                </>
+              )}
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Unit Price *">
-              <input type="number" step="0.01" value={unitPrice} onChange={e => setUnitPrice(e.target.value)} className={inputCls} style={inputStyle} />
+            <Field label="Unit Price *" hint={isBundleForm && bundlePricing === "sum" ? "Auto — sum of components" : undefined}>
+              <input type="number" step="0.01" value={isBundleForm && bundlePricing === "sum" ? String(compSum.price) : unitPrice}
+                onChange={e => setUnitPrice(e.target.value)} disabled={isBundleForm && bundlePricing === "sum"}
+                className={`${inputCls} disabled:opacity-60`} style={inputStyle} />
             </Field>
             {defaults.showCostField && (
               <Field label="Unit Cost" hint="Internal — not shown to customers">

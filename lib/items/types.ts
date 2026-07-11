@@ -33,8 +33,22 @@ export interface Item {
   sku?: string;                 // item code / SKU
   active: boolean;
 
+  // ── Bundle (type "package") — composed of other pricebook items ──
+  components?: BundleComponent[];   // what this bundle is made of (no nested bundles)
+  bundlePricing?: "sum" | "fixed";  // sum = live total of components; fixed = flat price (unitPrice)
+  expandOnAdd?: boolean;            // add to quotes as separate component lines instead of one line
+
+  // ── Inventory link — this item was created from a stock record ──
+  // Cost/price drift against inventory is SURFACED in the editor, never auto-synced.
+  inventoryItemId?: string;
+
   createdAt: string;
   updatedAt: string;
+}
+
+export interface BundleComponent {
+  itemId: string;
+  quantity: number;
 }
 
 // ─── Type display config ──────────────────────────────────
