@@ -112,11 +112,14 @@ function ClassicLayout({ ctx }: { ctx: Ctx }) {
           {visible.has("property_info") && <PropertyInfo ctx={ctx} />}
         </div>
 
+        {/* data-flow-sec anchors let builders (Quote Design Studio) hit-test
+            drop positions against the real rendered sections. */}
         {flow.map((k, i) => {
           if (!showSection(k)) return null;
-          if (k === "gbb_options") return <StackedOptions key={`${k}-${i}`} ctx={ctx} />;
-          if (k === "line_items") return <LineItemsTable key={`${k}-${i}`} ctx={ctx} withTotals />;
-          return <Narrative key={`${k}-${i}`} ctx={ctx} sectionKey={k} small={k === "terms"} />;
+          const el = k === "gbb_options" ? <StackedOptions ctx={ctx} />
+            : k === "line_items" ? <LineItemsTable ctx={ctx} withTotals />
+            : <Narrative ctx={ctx} sectionKey={k} small={k === "terms"} />;
+          return <div key={`${k}-${i}`} data-flow-sec={k}>{el}</div>;
         })}
 
         {visible.has("approval") && <Signature ctx={ctx} />}
@@ -154,8 +157,10 @@ function ComparisonLayout({ ctx }: { ctx: Ctx }) {
         {visible.has("customer_info") && <CustomerStrip ctx={ctx} />}
 
         {flow.map((k, i) => {
-          if (k === "gbb_options") return hasOptions ? <ComparisonCards key={`${k}-${i}`} ctx={ctx} /> : null;
-          return showSection(k) ? <Narrative key={`${k}-${i}`} ctx={ctx} sectionKey={k} /> : null;
+          const el = k === "gbb_options"
+            ? (hasOptions ? <ComparisonCards ctx={ctx} /> : null)
+            : (showSection(k) ? <Narrative ctx={ctx} sectionKey={k} /> : null);
+          return el ? <div key={`${k}-${i}`} data-flow-sec={k}>{el}</div> : null;
         })}
 
         {/* Options with no gbb section in the list still get their centerpiece */}

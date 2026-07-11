@@ -99,10 +99,24 @@ export default function QuoteDesignStudio({ designId, onClose, onSaved }: {
   const [cardPos, setCardPos] = useState({ x: 0, y: 0 });
   const cardPosRef = useRef(cardPos); cardPosRef.current = cardPos;
 
+  // The canvas isn't infinite: pans and zooms are clamped so the sheet can never
+  // be stranded — at least MARGIN px of it always stays inside the viewport.
+  const VIEW_MARGIN = 140;
+  const clampView = (v: { x: number; y: number; zoom: number }) => {
+    const vp = viewportRef.current; if (!vp) return v;
+    const h = (sheetRef.current?.offsetHeight ?? 1000) * v.zoom;
+    const w = DOC_W * v.zoom;
+    const cx = cardPosRef.current.x * v.zoom, cy = cardPosRef.current.y * v.zoom;
+    const x = Math.min(Math.max(v.x, VIEW_MARGIN - w - cx), vp.clientWidth - VIEW_MARGIN - cx);
+    const y = Math.min(Math.max(v.y, VIEW_MARGIN - h - cy), vp.clientHeight - VIEW_MARGIN - cy);
+    return x === v.x && y === v.y ? v : { ...v, x, y };
+  };
+  const sheetRef = useRef<HTMLDivElement>(null);
+
   const zoomAt = (factor: number, cx: number, cy: number) => setViewT(v => {
     const z = clampZ(v.zoom * factor, 0.35, 2);
     const wx = (cx - v.x) / v.zoom, wy = (cy - v.y) / v.zoom;
-    return { x: cx - wx * z, y: cy - wy * z, zoom: z };
+    return clampView({ x: cx - wx * z, y: cy - wy * z, zoom: z });
   });
   const zoomButton = (factor: number) => { const vp = viewportRef.current; if (vp) zoomAt(factor, vp.clientWidth / 2, vp.clientHeight / 2); };
   const centerOn = () => {
@@ -128,7 +142,7 @@ export default function QuoteDesignStudio({ designId, onClose, onSaved }: {
       e.preventDefault();
       const rect = vp.getBoundingClientRect();
       if (e.ctrlKey || e.metaKey) zoomAt(e.deltaY < 0 ? 1.12 : 0.89, e.clientX - rect.left, e.clientY - rect.top);
-      else setViewT(v => ({ ...v, x: v.x - e.deltaX, y: v.y - e.deltaY }));
+      else setViewT(v => clampView({ ...v, x: v.x - e.deltaX, y: v.y - e.deltaY }));
     };
     vp.addEventListener("wheel", onWheel, { passive: false });
     return () => vp.removeEventListener("wheel", onWheel);
@@ -141,7 +155,7 @@ export default function QuoteDesignStudio({ designId, onClose, onSaved }: {
     panning.current = true;
     document.body.style.cursor = "grabbing";
     const sx = e.clientX, sy = e.clientY, ox = viewTRef.current.x, oy = viewTRef.current.y;
-    const move = (ev: PointerEvent) => { if (panning.current) setViewT(v => ({ ...v, x: ox + (ev.clientX - sx), y: oy + (ev.clientY - sy) })); };
+    const move = (ev: PointerEvent) => { if (panning.current) setViewT(v => clampView({ ...v, x: ox + (ev.clientX - sx), y: oy + (ev.clientY - sy) })); };
     const up = () => {
       panning.current = false;
       document.body.style.cursor = "";
@@ -156,7 +170,17 @@ export default function QuoteDesignStudio({ designId, onClose, onSaved }: {
     const z = viewTRef.current.zoom;
     document.body.style.cursor = "grabbing";
     document.body.style.userSelect = "none";
-    const move = (ev: PointerEvent) => setCardPos({ x: ox + (ev.clientX - sx) / z, y: oy + (ev.clientY - sy) / z });
+    const move = (ev: PointerEvent) => {
+      const vp = viewportRef.current;
+      let nx = ox + (ev.clientX - sx) / z, ny = oy + (ev.clientY - sy) / z;
+      if (vp) {
+        const vt = viewTRef.current;
+        const h = (sheetRef.current?.offsetHeight ?? 1000);
+        nx = Math.min(Math.max(nx, (VIEW_MARGIN - vt.x) / z - DOC_W), (vp.clientWidth - VIEW_MARGIN - vt.x) / z);
+        ny = Math.min(Math.max(ny, (VIEW_MARGIN - vt.y) / z - h), (vp.clientHeight - VIEW_MARGIN - vt.y) / z);
+      }
+      setCardPos({ x: nx, y: ny });
+    };
     const up = () => {
       document.body.style.cursor = ""; document.body.style.userSelect = "";
       window.removeEventListener("pointermove", move); window.removeEventListener("pointerup", up);
@@ -165,14 +189,63 @@ export default function QuoteDesignStudio({ designId, onClose, onSaved }: {
   };
 
   // ── Structure ops — one instance per block type ──
-  const add = (k: SectionKey) => setSections(s => (s.includes(k) ? s : [...s, k]));
+  // New blocks land before the trailing pinned run (the signature stays last).
+  const insertBeforeTrailingPinned = (s: SectionKey[], k: SectionKey): SectionKey[] => {
+    let end = s.length;
+    while (end > 0 && PINNED.includes(s[end - 1])) end--;
+    return [...s.slice(0, end), k, ...s.slice(end)];
+  };
+  const add = (k: SectionKey) => setSections(s => (s.includes(k) ? s : insertBeforeTrailingPinned(s, k)));
   const remove = (k: SectionKey) => setSections(s => s.filter(x => x !== k));
+  // Reorder can never cross a pinned block — pinned positions are the layout's.
   const move = (i: number, dir: -1 | 1) => setSections(s => {
     const a = [...s]; const j = i + dir;
-    if (j < 0 || j >= a.length) return s;
+    if (j < 0 || j >= a.length || PINNED.includes(a[j])) return s;
     [a[i], a[j]] = [a[j], a[i]];
     return a;
   });
+  // Insert `k` before another flow section (null = end of the flow).
+  const insertAt = (k: SectionKey, beforeKey: SectionKey | null) => setSections(s => {
+    if (s.includes(k)) return s;
+    if (!beforeKey) return insertBeforeTrailingPinned(s, k);
+    const i = s.indexOf(beforeKey);
+    return i >= 0 ? [...s.slice(0, i), k, ...s.slice(i)] : insertBeforeTrailingPinned(s, k);
+  });
+
+  // ── Palette → document drag & drop ──
+  // The rendered document carries data-flow-sec anchors on its body sections;
+  // hit-test the cursor against them to find the insertion point, draw an
+  // accent line there, and insert on drop. Pinned chrome (header, customer
+  // info, signature) has no anchors, so drops can only land in the body flow.
+  const docRef = useRef<HTMLDivElement>(null);
+  const [dragKey, setDragKey] = useState<SectionKey | null>(null);
+  const [dropHint, setDropHint] = useState<{ y: number; beforeKey: SectionKey | null } | null>(null);
+
+  function onDocDragOver(e: React.DragEvent) {
+    if (!dragKey) return;
+    e.preventDefault();
+    const card = docRef.current; if (!card) return;
+    const cardRect = card.getBoundingClientRect();
+    const zoom = viewTRef.current.zoom;
+    const nodes = Array.from(card.querySelectorAll<HTMLElement>("[data-flow-sec]"));
+    let beforeKey: SectionKey | null = null;
+    let lineY: number;
+    const hit = nodes.find(n => { const r = n.getBoundingClientRect(); return e.clientY < r.top + r.height / 2; });
+    if (hit) {
+      beforeKey = hit.dataset.flowSec as SectionKey;
+      lineY = (hit.getBoundingClientRect().top - cardRect.top) / zoom;
+    } else {
+      const last = nodes[nodes.length - 1];
+      lineY = last ? (last.getBoundingClientRect().bottom - cardRect.top) / zoom : (cardRect.height / zoom) * 0.75;
+    }
+    setDropHint(h => (h?.y === lineY && h.beforeKey === beforeKey ? h : { y: lineY, beforeKey }));
+  }
+  function onDocDrop(e: React.DragEvent) {
+    if (!dragKey) return;
+    e.preventDefault();
+    insertAt(dragKey, dropHint?.beforeKey ?? null);
+    setDragKey(null); setDropHint(null);
+  }
 
   // ── Live document ──
   const { family: fam, variant: skin } = resolveTemplate(family, variant);
@@ -219,14 +292,26 @@ export default function QuoteDesignStudio({ designId, onClose, onSaved }: {
             backgroundPosition: `${viewT.x}px ${viewT.y}px`,
           }}>
           <div style={{ position: "absolute", top: 0, left: 0, transformOrigin: "0 0", transform: `translate(${viewT.x}px, ${viewT.y}px) scale(${viewT.zoom})`, width: "max-content" }}>
-            <div className="relative" style={{ width: DOC_W, transform: `translate(${cardPos.x}px, ${cardPos.y}px)` }}>
+            <div ref={sheetRef} className="relative" style={{ width: DOC_W, transform: `translate(${cardPos.x}px, ${cardPos.y}px)` }}>
               <button onPointerDown={onCardHandleDown} title="Drag to move the proposal"
                 className="absolute -top-9 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold cursor-grab active:cursor-grabbing select-none"
                 style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "0 6px 18px -6px rgba(0,0,0,0.3)", color: "var(--text-secondary)" }}>
                 <GripVertical className="w-3.5 h-3.5" /> Proposal
               </button>
-              <div className="rounded-xl overflow-hidden" style={{ border: "1px solid var(--border)", boxShadow: "0 16px 48px -16px rgba(0,0,0,0.35)" }}>
+              <div ref={docRef} className="relative rounded-xl overflow-hidden"
+                onDragOver={onDocDragOver}
+                onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setDropHint(null); }}
+                onDrop={onDocDrop}
+                style={{
+                  border: dragKey ? `1.5px dashed ${ACCENT}` : "1px solid var(--border)",
+                  boxShadow: "0 16px 48px -16px rgba(0,0,0,0.35)",
+                }}>
                 <ProposalFamilyDocument data={doc} family={fam} variant={skin} shadow={false} />
+                {/* Insertion line — where the dragged block will land */}
+                {dragKey && dropHint && (
+                  <div className="absolute left-10 right-10 pointer-events-none z-10 rounded-full"
+                    style={{ top: dropHint.y - 2, height: 3, backgroundColor: ACCENT, boxShadow: `0 0 10px ${ACCENT}88` }} />
+                )}
               </div>
             </div>
           </div>
@@ -249,8 +334,15 @@ export default function QuoteDesignStudio({ designId, onClose, onSaved }: {
                       const used = sections.includes(p.key);
                       return (
                         <button key={p.key} onClick={() => add(p.key)} disabled={used}
+                          draggable={!used}
+                          onDragStart={e => {
+                            setDragKey(p.key);
+                            e.dataTransfer.effectAllowed = "copy";
+                            try { e.dataTransfer.setData("text/plain", p.key); } catch { /* ignore */ }
+                          }}
+                          onDragEnd={() => { setDragKey(null); setDropHint(null); }}
                           title={used ? "Already on the design" : p.hint}
-                          className="flex items-center gap-1.5 px-2 py-2 rounded-lg text-xs font-medium text-left transition-colors hover:bg-[var(--bg-surface-2)] disabled:opacity-35 disabled:cursor-not-allowed"
+                          className="flex items-center gap-1.5 px-2 py-2 rounded-lg text-xs font-medium text-left transition-colors hover:bg-[var(--bg-surface-2)] disabled:opacity-35 disabled:cursor-not-allowed cursor-grab active:cursor-grabbing"
                           style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>
                           <p.icon className="w-3.5 h-3.5 shrink-0" style={{ color: ACCENT }} />
                           <span className="truncate">{p.label}</span>
@@ -261,7 +353,7 @@ export default function QuoteDesignStudio({ designId, onClose, onSaved }: {
                 </div>
               ))}
               <p className="text-[10px] leading-relaxed" style={{ color: "var(--text-muted)" }}>
-                Content slots sync with your Content Blocks library — templates built on this design can fill each slot with saved wording.
+                Click to add — or drag a block straight onto the proposal where you want it. Content slots sync with your Content Blocks library, so templates built on this design fill each slot with saved wording.
               </p>
             </div>
 
@@ -279,8 +371,9 @@ export default function QuoteDesignStudio({ designId, onClose, onSaved }: {
                       {pinned && <span className="text-[9px] shrink-0" style={{ color: "var(--text-muted)" }}>pinned</span>}
                       {!pinned && (
                         <span className="hidden group-hover:flex items-center gap-0.5 shrink-0">
-                          <button onClick={() => move(i, -1)} disabled={i === 0} className="disabled:opacity-20 p-0.5" style={{ color: "var(--text-muted)" }}><ChevronUp className="w-3 h-3" /></button>
-                          <button onClick={() => move(i, 1)} disabled={i === sections.length - 1} className="disabled:opacity-20 p-0.5" style={{ color: "var(--text-muted)" }}><ChevronDown className="w-3 h-3" /></button>
+                          {/* Arrows stop at pinned neighbors — blocks can't cross the layout's chrome */}
+                          <button onClick={() => move(i, -1)} disabled={i === 0 || PINNED.includes(sections[i - 1])} className="disabled:opacity-20 p-0.5" style={{ color: "var(--text-muted)" }}><ChevronUp className="w-3 h-3" /></button>
+                          <button onClick={() => move(i, 1)} disabled={i === sections.length - 1 || PINNED.includes(sections[i + 1])} className="disabled:opacity-20 p-0.5" style={{ color: "var(--text-muted)" }}><ChevronDown className="w-3 h-3" /></button>
                         </span>
                       )}
                       <button onClick={() => remove(k)} title="Remove" className="p-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: "var(--text-muted)" }}><Trash2 className="w-3 h-3" /></button>
