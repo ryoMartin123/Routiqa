@@ -9,7 +9,7 @@
 // One design is "active" at a time — installing/using a design just sets it as
 // active. localStorage-backed singleton (mirrors getProposalBranding).
 
-export type DesignHeader = "band" | "centered" | "bold" | "serif" | "minimal";
+export type DesignHeader = "band" | "centered" | "bold" | "serif" | "minimal" | "none";
 export type DesignLabel = "caps" | "bar" | "rule";
 export type DesignTotals = "box" | "accentbar" | "plain";
 

@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { X, Search, Package, Check, Plus } from "lucide-react";
 import UiSelect from "@/components/ui/Select";
-import { fmt, type Item } from "@/lib/items/data";
+import { fmt, type Item, resolveItemPrice, resolveItemCost } from "@/lib/items/data";
 import { ITEM_TYPE_CONFIG } from "@/lib/items/types";
 
 // Searchable, multi-select catalog picker. Overlays whatever wizard launched it
@@ -25,7 +25,9 @@ export default function CatalogPicker({ items, showCost, onAdd, onClose }: {
   function confirm() { onAdd(items.filter(i => sel[i.id])); }
 
   return (
-    <div className="fixed inset-0 z-[60] bg-black/50 flex items-center justify-center p-4" onClick={onClose}>
+    // z-[80]: opens from INSIDE editor modals (section editor is z-[60]) — must
+    // stack above them, not behind.
+    <div className="fixed inset-0 z-[80] bg-black/50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="w-full max-w-2xl max-h-[88vh] flex flex-col rounded-2xl overflow-hidden" onClick={e => e.stopPropagation()}
         style={{ backgroundColor: "var(--bg-surface)", boxShadow: "0 16px 48px rgba(0,0,0,0.3)" }}>
         {/* Header */}
@@ -61,7 +63,9 @@ export default function CatalogPicker({ items, showCost, onAdd, onClose }: {
               {filtered.map(i => {
                 const on = !!sel[i.id];
                 const cfg = ITEM_TYPE_CONFIG[i.type];
-                const m = i.unitCost != null ? i.unitPrice - i.unitCost : null;
+                const price = resolveItemPrice(i);
+                const cost = resolveItemCost(i);
+                const m = cost != null ? price - cost : null;
                 return (
                   <button key={i.id} onClick={() => toggle(i.id)}
                     className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors"
@@ -75,10 +79,10 @@ export default function CatalogPicker({ items, showCost, onAdd, onClose }: {
                         <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{i.name}</p>
                         <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full shrink-0" style={{ backgroundColor: cfg.bg, color: cfg.color }}>{cfg.label}</span>
                       </div>
-                      <p className="text-[11px] truncate" style={{ color: "var(--text-muted)" }}>{i.category}{i.sku ? ` · ${i.sku}` : ""}</p>
+                      <p className="text-[11px] truncate" style={{ color: "var(--text-muted)" }}>{i.category}{i.sku ? ` · ${i.sku}` : ""}{i.components?.length ? ` · bundle of ${i.components.length}${i.expandOnAdd ? " — adds separate lines" : ""}` : ""}</p>
                     </div>
                     <div className="text-right shrink-0">
-                      <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{fmt(i.unitPrice)}</p>
+                      <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{fmt(price)}</p>
                       {showCost && m != null && <p className="text-[10px]" style={{ color: "#059669" }}>{fmt(m)} margin</p>}
                     </div>
                   </button>

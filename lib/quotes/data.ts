@@ -33,6 +33,7 @@ export interface LineItem {
   notes?: string;
   itemId?: string;                // catalog item this line was added from (snapshot + back-ref)
   unitCost?: number;              // snapshotted cost for margin display (rep-only)
+  optionId?: string;              // materialized from a selected option card (kept in sync by the builder)
 }
 
 // ─── Proposal section (copied from a proposal template) ──
@@ -92,6 +93,7 @@ export interface QuoteRecord extends Quote {
   customerNotes?: string;          // customer-facing notes shown on the quote
   templateKey?: string;            // template the quote was created from
   quoteDesignId?: string;          // customer-facing Quote Design (copied from the salesbook at creation; overridable)
+  proposalHeader?: string;         // custom-proposal letterhead style override ("none" hides it)
   salesbookId?: string;            // company salesbook the quote was started from (template path)
   proposalTemplateId?: string;     // proposal template the quote was built from
   sections?: QuoteSection[];       // ordered, snapshot-copied proposal sections (template path)

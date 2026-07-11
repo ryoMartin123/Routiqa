@@ -84,6 +84,8 @@ export default function CustomProposalDocument({ data, shadow = true, highlightI
 
 // ─── Letterhead — varies by design ────────────────────────
 function DocHeader({ data, accent, ds, shadow }: { data: CustomDocData; accent: string; ds: ProposalDesignStyle; shadow: boolean }) {
+  // "No header" — the quote opted out of a letterhead entirely.
+  if (ds.header === "none") return null;
   const hf = ds.headingFamily;
   const logo = data.branding.logoUrl;
   const company = data.branding.companyName;

@@ -479,6 +479,45 @@ body {
   to   { opacity: 1; transform: translateX(0); }
 }
 
+/* ─── Liquid-glass modal chrome (section editor & friends) ───
+   Translucent panel over a blurred backdrop: modern and light, but anchored by
+   the CRM's hairline borders and accent buttons so it stays professional. */
+.glass-overlay {
+  background: rgba(10, 14, 20, 0.42);
+  backdrop-filter: blur(10px) saturate(1.1);
+  animation: dash-frame-in 0.2s ease both;
+}
+.glass-panel {
+  background: color-mix(in srgb, var(--bg-surface) 90%, transparent);
+  backdrop-filter: blur(28px) saturate(1.5);
+  border: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
+  box-shadow: 0 32px 90px -20px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  animation: start-pop-in 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.glass-hairline { border-color: color-mix(in srgb, var(--border) 55%, transparent) !important; }
+
+/* ─── Custom-proposal start chooser ──────────────────────────
+   The overlay fades in, the panel pops, and the start cards (blank / starter /
+   quote designs) rise in a stagger — delays set inline per card. Cards lift on
+   hover so the choice feels tactile. */
+@keyframes start-pop-in {
+  from { opacity: 0; transform: translateY(16px) scale(0.965); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.start-overlay { animation: dash-frame-in 0.22s ease both; }
+.start-panel   { animation: start-pop-in 0.38s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.start-card {
+  /* fill-mode BACKWARDS (not both): "both" keeps the animation's final transform
+     applied forever, which overrides the hover lift — backwards releases it. */
+  animation: platform-rise 0.45s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+.start-card:hover {
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 14px 30px -10px rgba(0, 0, 0, 0.28);
+}
+.start-card:active { transform: translateY(-1px) scale(0.99); transition-duration: 0.08s; }
+
 /* Content-block live drag preview — the ghost grows into each position it lands
    on as the rep drags it through the proposal, so neighbouring sections glide to
    make room (the same feel as dropping a widget on the dashboard). Longer, eased. */

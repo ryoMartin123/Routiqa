@@ -17,11 +17,12 @@ import {
 interface ActiveState { bold: boolean; italic: boolean; underline: boolean; ul: boolean; ol: boolean; block: string }
 const EMPTY: ActiveState = { bold: false, italic: false, underline: false, ul: false, ol: false, block: "" };
 
-export default function RichTextEditor({ value, onChange, placeholder, minHeight = 320, seamless = false }: {
+export default function RichTextEditor({ value, onChange, placeholder, minHeight = 320, seamless = false, toolbarExtra }: {
   value: string; onChange: (html: string) => void; placeholder?: string; minHeight?: number;
   // seamless: no surrounding box — the surface blends into the page (flowing
   // document feel) and the toolbar floats above the text only while focused.
   seamless?: boolean;
+  toolbarExtra?: React.ReactNode;   // host-provided control at the toolbar's right end (e.g. Ask Riq)
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -156,6 +157,7 @@ export default function RichTextEditor({ value, onChange, placeholder, minHeight
         <Sep />
         <Tb title="Undo" onClick={() => exec("undo")}><Undo2 className="w-4 h-4" /></Tb>
         <Tb title="Redo" onClick={() => exec("redo")}><Redo2 className="w-4 h-4" /></Tb>
+        {toolbarExtra && <span className="ml-auto flex items-center">{toolbarExtra}</span>}
         <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={onPickFile} />
       </div>
       )}

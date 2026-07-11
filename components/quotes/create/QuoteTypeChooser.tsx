@@ -6,7 +6,7 @@
 // that fits the path:
 //   quick    → /quotes/[id]/quick      (simple catalog quote)
 //   template → /quotes/[id]/proposal   (proposal workspace, prefilled from a salesbook)
-//   custom   → /quotes/[id]/pricing    (pricing wizard → proposal workspace)
+//   custom   → /quotes/[id]/custom     (proposal studio; pricing calculator lives inside)
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -38,7 +38,6 @@ export interface QuoteTypeChooserPreset {
 
 // Default section sets for the non-template paths.
 const QUICK_SECTIONS  = ["cover_header", "customer_info", "property_info", "line_items", "approval"] as const;
-const CUSTOM_SECTIONS = ["cover_header", "customer_info", "property_info", "recommended_solution", "scope_of_work", "line_items", "terms", "approval"] as const;
 
 const CARDS: { mode: QuoteMode; title: string; subtitle: string; bestFor: string; icon: typeof Zap; accent: string }[] = [
   { mode: "quick",    title: "Quick Quote",            subtitle: "Simple branded quote from catalog items.",        bestFor: "Repairs, add-ons, standard services, simple line-item quotes.", icon: Zap,              accent: "#0f8578" },
@@ -160,9 +159,12 @@ export default function QuoteTypeChooser({ preset, onClose }: {
       return;
     }
 
-    const sectionKeys = mode === "quick" ? [...QUICK_SECTIONS] : [...CUSTOM_SECTIONS];
-    const sections: QuoteSection[] = buildSectionsFromKeys(sectionKeys)
-      .map(s => ({ key: s.key, label: s.label, body: s.body, visible: s.visible }));
+    // Quick quotes get their fixed section set; CUSTOM starts with NO sections —
+    // the builder's start chooser (blank / starter / from a Quote Design) owns
+    // the structure decision, so pre-seeding here would defeat it.
+    const sections: QuoteSection[] = mode === "quick"
+      ? buildSectionsFromKeys([...QUICK_SECTIONS]).map(s => ({ key: s.key, label: s.label, body: s.body, visible: s.visible }))
+      : [];
     const q = createQuote({
       ...base, quoteMode: mode,
       title: title.trim() || (mode === "quick" ? "Quick Quote" : "Custom Proposal"),
@@ -174,7 +176,7 @@ export default function QuoteTypeChooser({ preset, onClose }: {
       renderMode: mode === "quick" ? "quick_quote" : "single_offer",
     });
     onClose();
-    router.push(mode === "quick" ? `/quotes/${q.id}/quick` : `/quotes/${q.id}/pricing`);
+    router.push(mode === "quick" ? `/quotes/${q.id}/quick` : `/quotes/${q.id}/custom`);
   }
 
   const activeCard = CARDS.find(c => c.mode === mode)!;
