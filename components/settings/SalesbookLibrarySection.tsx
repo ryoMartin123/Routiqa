@@ -290,11 +290,12 @@ function SalesbookCard({ t, installed, onPreview, onUse }: { t: SalesbookTemplat
             <Eye className="w-3.5 h-3.5" /> Preview
           </span>
           <button onClick={e => { e.stopPropagation(); onUse(); }}
-            className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium transition-colors"
+            title={installed ? "Install again" : "Use this template"}
+            className="flex items-center justify-center w-7 h-7 rounded-lg transition-colors"
             style={installed
               ? { border: "1px solid var(--border)", color: "var(--text-muted)" }
               : { backgroundColor: accent, color: "#fff" }}>
-            <Download className="w-3 h-3" /> {installed ? "Again" : "Use"}
+            <Download className="w-3.5 h-3.5" />
           </button>
         </span>
       </div>

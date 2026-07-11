@@ -17,6 +17,7 @@ import {
   Package, Palette, CreditCard, ShieldCheck, Image as ImageIcon, Info, FileText,
 } from "lucide-react";
 import UiSelect from "@/components/ui/Select";
+import NumberStepper from "@/components/ui/NumberStepper";
 import OptionImageInput from "@/components/quotes/OptionImageInput";
 import ProposalFamilyDocument from "@/components/quotes/family/ProposalFamilyDocument";
 import { QuoteDesignThumbnail } from "@/components/settings/QuoteDesignsManager";
@@ -662,11 +663,9 @@ function OptionsStep({ sb, patch }: { sb: DraftState; patch: (p: Partial<DraftSt
                   </div>
                   <input value={o.description ?? ""} onChange={e => update(o.id, { description: e.target.value || undefined })} placeholder="Short description" className={inputCls} style={inputStyle} />
                   <div className="flex items-center gap-3 flex-wrap">
-                    <div className="flex items-center gap-1"><span className="text-[10px]" style={{ color: "var(--text-muted)" }}>$</span>
-                      <input type="number" min={0} value={o.price} onChange={e => update(o.id, { price: numOr(e.target.value) })} className="w-24 rounded-lg px-2 py-1.5 text-xs outline-none" style={inputStyle} /></div>
+                    <NumberStepper size="sm" min={0} prefix="$" className="w-28" value={String(o.price)} onChange={v => update(o.id, { price: numOr(v) })} />
                     {sb.monthlyEnabled && (
-                      <div className="flex items-center gap-1"><span className="text-[10px]" style={{ color: "var(--text-muted)" }}>$/mo</span>
-                        <input type="number" min={0} value={o.monthlyPrice ?? ""} onChange={e => update(o.id, { monthlyPrice: e.target.value === "" ? undefined : numOr(e.target.value) })} className="w-20 rounded-lg px-2 py-1.5 text-xs outline-none" style={inputStyle} /></div>
+                      <NumberStepper size="sm" min={0} prefix="$" suffix="/mo" className="w-32" value={o.monthlyPrice != null ? String(o.monthlyPrice) : ""} onChange={v => update(o.id, { monthlyPrice: v === "" ? undefined : numOr(v) })} />
                     )}
                   </div>
                   <div className="flex gap-2">
@@ -723,7 +722,7 @@ function WarrantyStep({ sb, patch }: { sb: DraftState; patch: (p: Partial<DraftS
       </Field>
       <div className="grid grid-cols-2 gap-3">
         <Field label="Validity (days)">
-          <input type="number" min={1} value={sb.validityDays} onChange={e => patch({ validityDays: parseInt(e.target.value) || 0 })} className={inputCls} style={inputStyle} />
+          <NumberStepper size="sm" min={1} value={String(sb.validityDays)} onChange={v => patch({ validityDays: parseInt(v) || 0 })} />
         </Field>
         <Field label="Deposit wording">
           <input value={sb.depositTerms} onChange={e => patch({ depositTerms: e.target.value })} className={inputCls} style={inputStyle} placeholder="e.g. 50% deposit to schedule." />
@@ -922,7 +921,7 @@ function BlockInsertButton({ type, onInsert }: { type?: ContentBlockType; onInse
   return (
     <>
       <button onClick={() => setOpen(true)} className="flex items-center gap-1 text-[11px] font-medium shrink-0" style={{ color: ACCENT }}>
-        <FileText className="w-3 h-3" /> Insert saved wording
+        <FileText className="w-3 h-3" /> Insert Content Block
       </button>
       {open && <ContentBlockPicker filterType={type} onPick={b => { onInsert(b.text); setOpen(false); }} onClose={() => setOpen(false)} />}
     </>
